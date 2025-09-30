@@ -5,12 +5,12 @@
 
 ## 概要
 
-Kria KV260 で [グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)(設計は[こちら](https://github.com/ryuz/rtcl-p3s7-mipi))を動かすサンプルです。
+Kria KV260 で [グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)(設計は[こちら](https://github.com/ryuz/rtcl-p3s7-mipi-pcb))を動かすサンプルです。
 
 このプロジェクトは、PYTHON300 センサー + Spartan-7 FPGA を搭載したカメラモジュールを KV260 に接続し、D-PHY 上で独自プロトコルを用いた高速画像伝送を行います。MIPI-CSI規格を使わずに独自プロトコルで伝送することで、画像1フレームを1パケットとして転送し、伝送帯域を有効活用して高速度撮影を実現しています。
 
 PYTHON300 センサーは 640×480 で 815fps、画像サイズを小さくすれば 1000fps を超える撮影が可能な高性能グローバルシャッターセンサーです。
-
+v
 ## 環境
 
 ### PC環境
@@ -38,7 +38,7 @@ sudo apt install libopencv-dev
 ### gitリポジトリ取得
 
 ```bash
-git clone https://github.com/ryuz/jelly.git
+git clone https://github.com/ryuz/rtcl-designs.git --recurse-submodules
 ```
 
 で一式取得してください。

@@ -13,7 +13,7 @@ BIN_FILE  = $(BIT_FILE).bin
 FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
 
-CFLAGS  += -Wall -g -O2 `pkg-config --cflags opencv4` -I../../../../include
+CFLAGS  += -Wall -g -O2 `pkg-config --cflags opencv4` -I../../../../jelly/include
 LDFLAGS += -g  `pkg-config --libs opencv4`
 
 RUN_OPT ?=
