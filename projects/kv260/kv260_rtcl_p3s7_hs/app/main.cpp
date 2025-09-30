@@ -13,7 +13,6 @@
 #include "jelly/UdmabufAccessor.h"
 #include "jelly/JellyRegs.h"
 #include "jelly/I2cAccessor.h"
-#include "jelly/Imx219Control.h"
 #include "jelly/GpioAccessor.h"
 #include "jelly/VideoDmaControl.h"
 
