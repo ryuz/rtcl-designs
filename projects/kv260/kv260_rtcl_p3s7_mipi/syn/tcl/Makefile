@@ -26,7 +26,7 @@ TOP_DIR = ../../../../..
 PRJ_DIR = ../..
 
 # include
-JELLY_TOP_DIR = $(TOP_DIR)/jelly
+JELLY_TOP_DIR = $(TOP_DIR)/rtcl-designs
 -include $(JELLY_TOP_DIR)/include/make/def_sources.inc
 
 # HLS IP

@@ -14,7 +14,7 @@ export TOP_MODULE   = $(PROJECT_NAME)
 export DEVICE_PART  = xc7s6ftgb196-2
 
 
-BOARD_WORK_DIR ?= git-work/jelly
+BOARD_WORK_DIR ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
 MCS_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).mcs
