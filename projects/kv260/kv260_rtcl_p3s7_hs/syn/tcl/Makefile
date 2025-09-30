@@ -15,7 +15,7 @@ export BOARD_PART   = xilinx.com:kv260_som*
 export DEVICE_PART  =
 
 BOARD_ADDRESS  ?= kria
-BOARD_WORK_DIR ?= git-work/jelly
+BOARD_WORK_DIR ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
 
