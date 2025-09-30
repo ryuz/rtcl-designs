@@ -12,25 +12,24 @@
 
 module system_control
         #(
-            parameter   int             REGADR_BITS            = 8                          ,
-            parameter   type            regadr_t               = logic [REGADR_BITS-1:0]    ,
+            parameter   int             REGADR_BITS              = 8                        ,
+            parameter   type            regadr_t                 = logic [REGADR_BITS-1:0]  ,
   
-            parameter                   MODULE_ID              = 16'h5254                   ,
-            parameter                   MODULE_VERSION         = 16'h0100                   ,
-            parameter   bit             INIT_SENSOR_ENABLE     = 1'b0                       ,
-            parameter   bit             INIT_RECVER_RESET      = 1'b1                       ,
-            parameter   bit [4:0]       INIT_RECVER_CLKDLY_VAL = 5'd8                       ,
-            parameter   bit             INIT_RECVER_CLKDLY_LD  = 1'b1                       ,
-            parameter   bit             INIT_ALIGN_RESET       = 1'b1                       ,
-            parameter   bit [9:0]       INIT_ALIGN_PATTERN     = 10'h3a6                    ,
-            parameter   bit             INIT_CLIP_ENABLE       = 1'b1                       ,
-            parameter   bit             INIT_CSI_MODE          = 1'b0                       ,
-            parameter   bit [7:0]       INIT_CSI_DT            = 8'h2b                      ,
-            parameter   bit [15:0]      INIT_CSI_WC            = 16'(256*5/4)               ,
-            parameter   bit             INIT_DPHY_CORE_RESET   = 1'b1                       ,
-            parameter   bit             INIT_DPHY_SYS_RESET    = 1'b1                       ,
-            parameter   bit [1:0]       INIT_MMCM_CONTROL      = 2'b00                      ,
-            parameter   bit [1:0]       INIT_PLL_CONTROL       = 2'b00                      
+            parameter                   MODULE_ID                = 16'h5254                 ,
+            parameter                   MODULE_VERSION           = 16'h0100                 ,
+            parameter   bit             INIT_SENSOR_ENABLE       = 1'b0                     ,
+            parameter   bit             INIT_RECVER_RESET        = 1'b1                     ,
+            parameter   bit [4:0]       INIT_RECVER_CLK_CNTVALUE = 5'd8                     ,
+            parameter   bit             INIT_ALIGN_RESET         = 1'b1                     ,
+            parameter   bit [9:0]       INIT_ALIGN_PATTERN       = 10'h3a6                  ,
+            parameter   bit             INIT_CLIP_ENABLE         = 1'b1                     ,
+            parameter   bit             INIT_CSI_MODE            = 1'b0                     ,
+            parameter   bit [7:0]       INIT_CSI_DT              = 8'h2b                    ,
+            parameter   bit [15:0]      INIT_CSI_WC              = 16'(256*5/4)             ,
+            parameter   bit             INIT_DPHY_CORE_RESET     = 1'b1                     ,
+            parameter   bit             INIT_DPHY_SYS_RESET      = 1'b1                     ,
+            parameter   bit [1:0]       INIT_MMCM_CONTROL        = 2'b00                    ,
+            parameter   bit [1:0]       INIT_PLL_CONTROL         = 2'b00                    
         )
         (
             jelly3_axi4l_if.s           s_axi4l             ,
@@ -71,8 +70,7 @@ module system_control
     localparam  regadr_t REGADR_SENSOR_ENABLE       = regadr_t'('h04);
     localparam  regadr_t REGADR_SENSOR_READY        = regadr_t'('h08);
     localparam  regadr_t REGADR_RECVER_RESET        = regadr_t'('h10);
-    localparam  regadr_t REGADR_RECVER_CLKDLY_VAL   = regadr_t'('h12);
-    localparam  regadr_t REGADR_RECVER_CLKDLY_LD    = regadr_t'('h13);
+    localparam  regadr_t REGADR_RECVER_CLK_CNTVALUE = regadr_t'('h12);
     localparam  regadr_t REGADR_ALIGN_RESET         = regadr_t'('h20);
     localparam  regadr_t REGADR_ALIGN_PATTERN       = regadr_t'('h22);
     localparam  regadr_t REGADR_ALIGN_STATUS        = regadr_t'('h28);
@@ -127,7 +125,7 @@ module system_control
     always_ff @(posedge s_axi4l.aclk) begin
         if ( ~s_axi4l.aresetn ) begin
             reg_sensor_enable   <= INIT_SENSOR_ENABLE   ;
-            reg_recv_reset      <= INIT_RECV_RESET      ;
+            reg_recv_reset      <= INIT_RECVER_RESET    ;
             reg_align_reset     <= INIT_ALIGN_RESET     ;
             reg_align_pattern   <= INIT_ALIGN_PATTERN   ;
             reg_clip_enable     <= INIT_CLIP_ENABLE     ;
@@ -144,7 +142,7 @@ module system_control
             if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
                 case ( regadr_write )
                 REGADR_SENSOR_ENABLE      :   reg_sensor_enable   <=  1'(write_mask(axi4l_data_t'(reg_sensor_enable  ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_RECV_RESET         :   reg_recv_reset      <=  1'(write_mask(axi4l_data_t'(reg_recv_reset     ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_RECVER_RESET       :   reg_recv_reset      <=  1'(write_mask(axi4l_data_t'(reg_recv_reset     ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_ALIGN_RESET        :   reg_align_reset     <=  1'(write_mask(axi4l_data_t'(reg_align_reset    ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_ALIGN_PATTERN      :   reg_align_pattern   <= 10'(write_mask(axi4l_data_t'(reg_align_pattern  ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_CLIP_ENABLE        :   reg_clip_enable     <=  1'(write_mask(axi4l_data_t'(reg_clip_enable    ), s_axi4l.wdata, s_axi4l.wstrb));
@@ -188,7 +186,7 @@ module system_control
             REGADR_MODULE_VERSION   :   s_axi4l.rdata <= axi4l_data_t'(MODULE_VERSION      );
             REGADR_SENSOR_ENABLE    :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_enable   );
             REGADR_SENSOR_READY     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_ready    );
-            REGADR_RECV_RESET       :   s_axi4l.rdata <= axi4l_data_t'(reg_recv_reset      );
+            REGADR_RECVER_RESET     :   s_axi4l.rdata <= axi4l_data_t'(reg_recv_reset      );
             REGADR_ALIGN_RESET      :   s_axi4l.rdata <= axi4l_data_t'(reg_align_reset     );
             REGADR_ALIGN_PATTERN    :   s_axi4l.rdata <= axi4l_data_t'(reg_align_pattern   );
             REGADR_ALIGN_STATUS     :   s_axi4l.rdata <= axi4l_data_t'(reg_align_status    );

@@ -272,7 +272,7 @@ module rtcl_p3s7_mipi
 
     logic           ctl_sensor_enable   ;
     logic           ctl_sensor_ready    ;
-    logic           ctl_recv_reset      ;
+    logic           ctl_recver_reset    ;
     logic           ctl_align_reset     ;
     logic   [9:0]   ctl_align_pattern   ;
     logic           ctl_align_done      ;
@@ -294,7 +294,7 @@ module rtcl_p3s7_mipi
                 .MODULE_ID              (16'h527a               ),
                 .MODULE_VERSION         (16'h0100               ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
-                .INIT_RECV_RESET        (1'b1                   ),
+                .INIT_RECVER_RESET      (1'b1                   ),
                 .INIT_ALIGN_RESET       (1'b1                   ),
                 .INIT_ALIGN_PATTERN     (10'h3a6                ),
                 .INIT_CLIP_ENABLE       (1'b1                   ),
@@ -312,7 +312,7 @@ module rtcl_p3s7_mipi
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
                 .in_sensor_ready        (ctl_sensor_ready       ),
-                .out_recv_reset         (ctl_recv_reset         ),
+                .out_recv_reset         (ctl_recver_reset       ),
                 .out_align_reset        (ctl_align_reset        ),
                 .out_align_pattern      (ctl_align_pattern      ),
                 .in_align_done          (ctl_align_done         ),
@@ -422,7 +422,7 @@ module rtcl_p3s7_mipi
                 .in_data_n      (python_data_n      ),
                 .in_sync_p      (python_sync_p      ),
                 .in_sync_n      (python_sync_n      ),
-                .sw_reset       (ctl_recv_reset     ),
+                .sw_reset       (ctl_recver_reset   ),
 
                 .bitslip        (bitslip            ),
                 .out_reset      (python_reset       ),

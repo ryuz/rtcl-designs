@@ -59,8 +59,7 @@ module python_receiver_10bit
                 .DELAY_SRC              ("IDATAIN"          ),
                 .HIGH_PERFORMANCE_MODE  ("FALSE"            ),
                 .IDELAY_TYPE            ("FIXED"            ),
-//              .IDELAY_VALUE           (8                  ),
-                .IDELAY_VALUE           (16                 ),
+                .IDELAY_VALUE           (8                  ),
                 .REFCLK_FREQUENCY       (REFCLK_FREQUENCY   ),
                 .PIPE_SEL               ("FALSE"            ),
                 .SIGNAL_PATTERN         ("CLOCK"            )
