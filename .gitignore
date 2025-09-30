@@ -2,6 +2,7 @@
 # special file
 .*
 !.gitignore
+!.gitmodules
 !.python-version
 !.vitis-version
 !.cargo
