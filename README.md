@@ -7,7 +7,7 @@
 ## リポジトリ構成
 
 - `projects/` : 各種プロジェクトの設計データ
-  - `rtcl_p3s7/` : RTCL-P3S70MIPI カメラモジュール用FPGA設計
+  - `rtcl_p3s7_mipi/` : RTCL-P3S70MIPI カメラモジュール用FPGA設計
     - `rtcl_p3s7_mipi/` : カメラモジュール用FPGA設計
   - `kv260/` : KV260 用
     - `kv260_rtcl_p3s7_hs/` : 独自仕様ハイスピード版
