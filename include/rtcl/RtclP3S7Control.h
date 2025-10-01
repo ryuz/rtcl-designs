@@ -45,16 +45,17 @@ class RtclP3S7ControlI2c
 protected:
     jelly::I2cAccessor m_i2c;
 
-    int         m_aoi_x    = 0;
-    int         m_aoi_y    = 0;
-    int         m_width    = 640;
-    int         m_height   = 480;
+    int             m_aoi_x    = 0;
+    int             m_aoi_y    = 0;
+    int             m_width    = 640;
+    int             m_height   = 480;
 
-    float       m_framerate = 1000;
-    float       m_exposure  = 1;
+    float           m_framerate = 1000;
+    float           m_exposure  = 1;
 
-    float       m_analog_gain  = 1.0;
-    float       m_digital_gain = 1.0;
+    float           m_analog_gain  = 1.0;
+    float           m_digital_gain = 1.0;
+    std::uint16_t   m_general_configuration = 0;
 
     bool        m_flip_h = false;
     bool        m_flip_v = false;
@@ -194,6 +195,122 @@ public:
         spi_write(112, 0x7);      // Serializers/LVDS/IO 
         spi_write(10, 0x0000);    // soft_reset_analog
 
+        spi_write(192, m_general_configuration); 
+
+        return true;
+    }
+
+    // シーケンサ有効/無効
+    bool SetSequencerEnable(bool enable) {
+        if ( !IsOpend() ) { return false; }
+        if ( enable ) {
+            m_general_configuration |= 0x1;
+        }
+        else {
+            m_general_configuration &= ~0x1;
+        }
+        spi_write(192, m_general_configuration);
+        return true;
+    }
+
+    bool SetZeroRotEnable(bool enable) {
+        if ( enable ) {
+            m_general_configuration |= (1 << 2);
+        }
+        else {
+            m_general_configuration &= ~(1 << 2);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetTriggeredMode(bool triggered_mode) {
+        if ( triggered_mode ) {
+            m_general_configuration |= (1 << 4);
+        }
+        else {
+            m_general_configuration &= ~(1 << 4);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetSlaveMode(bool slave_mode) {
+        if ( slave_mode ) {
+            m_general_configuration |= (1 << 5);
+        }
+        else {
+            m_general_configuration &= ~(1 << 5);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetNzrotXsmDelayEnable(bool enable) {
+        if ( enable ) {
+            m_general_configuration |= (1 << 6);
+        }
+        else {
+            m_general_configuration &= ~(1 << 6);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetSubsampling(bool enable) {
+        if ( enable ) {
+            m_general_configuration |= (1 << 7);
+        }
+        else {
+            m_general_configuration &= ~(1 << 7);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetBinning(bool enable) {
+        if ( enable ) {
+            m_general_configuration |= (1 << 8);
+        }
+        else {
+            m_general_configuration &= ~(1 << 8);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetRoiAecEnable(bool enable) {
+        if ( enable ) {
+            m_general_configuration |= (1 << 10);
+        }
+        else {
+            m_general_configuration &= ~(1 << 10);
+        }
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
+        return true;
+    }
+
+    bool SetMonitorSelect(int mode) {
+        mode &= 0x7;
+        m_general_configuration &= ~(0x7 << 11);
+        m_general_configuration |= ~(mode << 11);
+        if ( IsOpend() ) {
+            spi_write(192, m_general_configuration);
+        }
         return true;
     }
 
