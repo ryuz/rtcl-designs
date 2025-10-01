@@ -18,7 +18,6 @@
 
 namespace rtcl {
 
-
 #define RTCL_P3S7_MODULE_ID             0x0000
 #define RTCL_P3S7_MODULE_VERSION        0x0001
 #define RTCL_P3S7_SENSOR_ENABLE         0x0004
@@ -48,8 +47,9 @@ protected:
 
     int         m_aoi_x    = 0;
     int         m_aoi_y    = 0;
+    int         m_raw_bits = 10;
     int         m_width    = 640;
-    int         m_height   = 480;
+    int         m_height   = 132;
 
     float       m_framerate = 1000;
     float       m_exposure  = 1;
@@ -224,6 +224,27 @@ public:
         return true;
     }
 
+
+    bool SetAnalogGain(float gain) {
+        if ( !IsOpend() ) { return false; }
+
+        if ( gain <= 1.0 ) {
+            spi_write(204, 0x01e3);
+        }
+        else if ( gain <= 1.9 ) {
+            spi_write(204, 0x01e1);
+        }
+        else if ( gain <= 3.5 ) {
+            spi_write(204, 0x01e4);
+        }
+        else if ( gain <= 14.0 ) {
+            spi_write(204, 0x01e8);
+        }
+
+        return true;
+    }
+
+
 protected:
     void i2c_write(std::uint16_t addr, std::uint16_t data) {
         addr <<= 1;
@@ -315,7 +336,7 @@ protected:
 
 }
 
-#endif  // __RTCL_P3S7_CONTORL__H__
+#endif  // __JELLY__RTCL_P3S7_CONTORL__H__
 
 
 // end of file
