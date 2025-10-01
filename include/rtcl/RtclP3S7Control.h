@@ -47,13 +47,14 @@ protected:
 
     int         m_aoi_x    = 0;
     int         m_aoi_y    = 0;
-    int         m_raw_bits = 10;
     int         m_width    = 640;
-    int         m_height   = 132;
+    int         m_height   = 480;
 
     float       m_framerate = 1000;
     float       m_exposure  = 1;
-    float       m_gain = 1;
+
+    float       m_analog_gain  = 1.0;
+    float       m_digital_gain = 1.0;
 
     bool        m_flip_h = false;
     bool        m_flip_v = false;
@@ -225,23 +226,70 @@ public:
     }
 
 
-    bool SetAnalogGain(float gain) {
+    bool SetAnalogGainLinear(float linear_gain) {
         if ( !IsOpend() ) { return false; }
 
-        if ( gain <= 1.0 ) {
-            spi_write(204, 0x01e3);
-        }
-        else if ( gain <= 1.9 ) {
-            spi_write(204, 0x01e1);
-        }
-        else if ( gain <= 3.5 ) {
-            spi_write(204, 0x01e4);
-        }
-        else if ( gain <= 14.0 ) {
+        if ( linear_gain >= 14.0 ) {
             spi_write(204, 0x01e8);
+            m_analog_gain = 14.0;
+        }
+        else if ( linear_gain >= 3.5 ) {
+            spi_write(204, 0x01e4);
+            m_analog_gain = 3.5;
+        }
+        else if ( linear_gain >= 1.9 ) {
+            spi_write(204, 0x01e1);
+            m_analog_gain = 1.9;
+        }
+        else {
+            spi_write(204, 0x01e3);
+            m_analog_gain = 1.0;
         }
 
         return true;
+    }
+
+    float GetAnalogGainLinear(void) {
+        return m_analog_gain;
+    }
+
+    bool SetDigitalGainLinear(float linear_gain) {
+        if ( !IsOpend() ) { return false; }
+        std::uint16_t reg_val = (std::uint16_t)(linear_gain * 128.0f);
+        spi_write(205, reg_val);    // [11:0]  5.7 unsigned number
+        m_digital_gain = (float)reg_val / 128.0f;
+        return true;
+    }
+
+    float GetDigitalGainLinear(void) {
+        return m_digital_gain;
+    }
+
+    bool SetGainLinear(float linear_gain) {
+        // アナログゲイン設定
+        SetAnalogGainLinear(linear_gain);
+
+        // 不足分をデジタルゲインで追加
+        linear_gain /= GetAnalogGainLinear();
+        SetDigitalGainLinear(linear_gain);
+
+        return true;
+    }
+
+    float GetGainLinear(void) {
+        return GetAnalogGainLinear() * GetDigitalGainLinear();
+    }
+
+    bool SetGainDb(float db_gain) {
+        // db を gain に変換
+        float linear_gain = std::pow(10.0f, db_gain / 20.0f);
+        return SetGainLinear(linear_gain);
+    }
+
+    float GetGainDb(void) {
+        float linear_gain = GetGainLinear();
+        float db_gain = 20.0f * std::log10(linear_gain);
+        return db_gain;
     }
 
 
