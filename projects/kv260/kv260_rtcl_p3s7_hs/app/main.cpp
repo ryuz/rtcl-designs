@@ -39,7 +39,8 @@ void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
 #define CAMREG_CORE_VERSION         0x0001
 #define CAMREG_SENSOR_ENABLE        0x0004
 #define CAMREG_SENSOR_READY         0x0008
-#define CAMREG_RECV_RESET           0x0010
+#define CAMREG_RECEIVER_RESET       0x0010
+#define CAMREG_RECEIVER_CLK_DLY     0x0012
 #define CAMREG_ALIGN_RESET          0x0020
 #define CAMREG_ALIGN_PATTERN        0x0022
 #define CAMREG_ALIGN_STATUS         0x0028
@@ -279,10 +280,10 @@ int main(int argc, char *argv[])
 
     spi_change(i2c, 192, 0x0);  // 動作停止(トレーニングパターン出力状態へ)
     usleep(1000);
-    i2c_write(i2c,  CAMREG_RECV_RESET,  1);
+    i2c_write(i2c,  CAMREG_RECEIVER_RESET,  1);
     i2c_write(i2c,  CAMREG_ALIGN_RESET, 1);
     usleep(1000);
-    i2c_write(i2c,  CAMREG_RECV_RESET,  0);
+    i2c_write(i2c,  CAMREG_RECEIVER_RESET,  0);
     usleep(1000);
     i2c_write(i2c,  CAMREG_ALIGN_RESET, 0);
     usleep(1000);
