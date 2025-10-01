@@ -272,7 +272,8 @@ module rtcl_p3s7_mipi
 
     logic           ctl_sensor_enable   ;
     logic           ctl_sensor_ready    ;
-    logic           ctl_recver_reset    ;
+    logic           ctl_receiver_reset  ;
+    logic   [4:0]   ctl_receiver_clk_dly;
     logic           ctl_align_reset     ;
     logic   [9:0]   ctl_align_pattern   ;
     logic           ctl_align_done      ;
@@ -294,7 +295,8 @@ module rtcl_p3s7_mipi
                 .MODULE_ID              (16'h527a               ),
                 .MODULE_VERSION         (16'h0100               ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
-                .INIT_RECVER_RESET      (1'b1                   ),
+                .INIT_RECEIVER_RESET    (1'b1                   ),
+                .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
                 .INIT_ALIGN_RESET       (1'b1                   ),
                 .INIT_ALIGN_PATTERN     (10'h3a6                ),
                 .INIT_CLIP_ENABLE       (1'b1                   ),
@@ -312,7 +314,8 @@ module rtcl_p3s7_mipi
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
                 .in_sensor_ready        (ctl_sensor_ready       ),
-                .out_recv_reset         (ctl_recver_reset       ),
+                .out_receiver_reset     (ctl_receiver_reset     ),
+                .out_receiver_clk_dly   (ctl_receiver_clk_dly   ),
                 .out_align_reset        (ctl_align_reset        ),
                 .out_align_pattern      (ctl_align_pattern      ),
                 .in_align_done          (ctl_align_done         ),
@@ -415,20 +418,22 @@ module rtcl_p3s7_mipi
     python_receiver_10bit
         u_python_receiver_10bit
             (
-                .in_reset       (reset              ),
-                .in_clk_p       (python_clk_p       ),
-                .in_clk_n       (python_clk_n       ),
-                .in_data_p      (python_data_p      ),
-                .in_data_n      (python_data_n      ),
-                .in_sync_p      (python_sync_p      ),
-                .in_sync_n      (python_sync_n      ),
-                .sw_reset       (ctl_recver_reset   ),
+                .in_reset       (reset                  ),
+                .in_clk_p       (python_clk_p           ),
+                .in_clk_n       (python_clk_n           ),
+                .in_data_p      (python_data_p          ),
+                .in_data_n      (python_data_n          ),
+                .in_sync_p      (python_sync_p          ),
+                .in_sync_n      (python_sync_n          ),
+                .sw_reset       (ctl_receiver_reset     ),
+                .clk            (clk72                  ),
+                .dly_cval       (ctl_receiver_clk_dly   ),
 
-                .bitslip        (bitslip            ),
-                .out_reset      (python_reset       ),
-                .out_clk        (python_clk         ),
-                .out_data       (python_rx_data     ),
-                .out_sync       (python_rx_sync     )
+                .bitslip        (bitslip                ),
+                .out_reset      (python_reset           ),
+                .out_clk        (python_clk             ),
+                .out_data       (python_rx_data         ),
+                .out_sync       (python_rx_sync         )
             );
 
     // Alignment

@@ -29,6 +29,8 @@ module python_receiver_10bit
             input   var logic                       in_sync_p   ,
             input   var logic                       in_sync_n   ,
             input   var logic                       sw_reset    ,
+            input   var logic                       clk         ,
+            input   var logic   [4:0]               dly_cval    ,
 
             input   var logic                       bitslip     ,
             output  var logic                       out_reset   ,
@@ -58,7 +60,7 @@ module python_receiver_10bit
                 .CINVCTRL_SEL           ("FALSE"            ),
                 .DELAY_SRC              ("IDATAIN"          ),
                 .HIGH_PERFORMANCE_MODE  ("FALSE"            ),
-                .IDELAY_TYPE            ("FIXED"            ),
+                .IDELAY_TYPE            ("VAR_LOAD"         ),
                 .IDELAY_VALUE           (8                  ),
                 .REFCLK_FREQUENCY       (REFCLK_FREQUENCY   ),
                 .PIPE_SEL               ("FALSE"            ),
@@ -68,14 +70,14 @@ module python_receiver_10bit
             (
                 .DATAOUT                (in_clk_dly         ),
                 .DATAIN                 (1'b0               ),
-                .C                      (1'b0               ),
+                .C                      (clk                ),
                 .CE                     (1'b0               ),
                 .INC                    (1'b0               ),
                 .IDATAIN                (in_clk             ),
                 .LD                     (sw_reset           ),
                 .LDPIPEEN               (1'b0               ),
                 .REGRST                 (1'b0               ),
-                .CNTVALUEIN             (5'b00000           ),
+                .CNTVALUEIN             (dly_cval           ),
                 .CNTVALUEOUT            (                   ),
                 .CINVCTRL               (1'b0               )
             );
