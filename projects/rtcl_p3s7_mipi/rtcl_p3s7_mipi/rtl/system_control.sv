@@ -18,8 +18,8 @@ module system_control
             parameter                   MODULE_ID                = 16'h5254                 ,
             parameter                   MODULE_VERSION           = 16'h0100                 ,
             parameter   bit             INIT_SENSOR_ENABLE       = 1'b0                     ,
-            parameter   bit             INIT_RECVER_RESET        = 1'b1                     ,
-            parameter   bit [4:0]       INIT_RECVER_CLK_CNTVALUE = 5'd8                     ,
+            parameter   bit             INIT_RECEIVER_RESET      = 1'b1                     ,
+            parameter   bit [4:0]       INIT_RECEIVER_CLK_DLY    = 5'd8                     ,
             parameter   bit             INIT_ALIGN_RESET         = 1'b1                     ,
             parameter   bit [9:0]       INIT_ALIGN_PATTERN       = 10'h3a6                  ,
             parameter   bit             INIT_CLIP_ENABLE         = 1'b1                     ,
@@ -36,7 +36,8 @@ module system_control
 
             output  var logic           out_sensor_enable   ,
             input   var logic           in_sensor_ready     ,
-            output  var logic           out_recv_reset      ,
+            output  var logic           out_receiver_reset  ,
+            output  var logic   [4:0]   out_receiver_clk_dly,
             output  var logic           out_align_reset     ,
             output  var logic   [9:0]   out_align_pattern   ,
             input   var logic           in_align_done       ,
@@ -69,8 +70,8 @@ module system_control
     localparam  regadr_t REGADR_MODULE_VERSION      = regadr_t'('h01);
     localparam  regadr_t REGADR_SENSOR_ENABLE       = regadr_t'('h04);
     localparam  regadr_t REGADR_SENSOR_READY        = regadr_t'('h08);
-    localparam  regadr_t REGADR_RECVER_RESET        = regadr_t'('h10);
-    localparam  regadr_t REGADR_RECVER_CLK_CNTVALUE = regadr_t'('h12);
+    localparam  regadr_t REGADR_RECEIVER_RESET      = regadr_t'('h10);
+    localparam  regadr_t REGADR_RECEIVER_CLK_DLY    = regadr_t'('h12);
     localparam  regadr_t REGADR_ALIGN_RESET         = regadr_t'('h20);
     localparam  regadr_t REGADR_ALIGN_PATTERN       = regadr_t'('h22);
     localparam  regadr_t REGADR_ALIGN_STATUS        = regadr_t'('h28);
@@ -85,21 +86,22 @@ module system_control
     localparam  regadr_t REGADR_PLL_CONTROL         = regadr_t'('ha1);
 
     // registers
-    logic           reg_sensor_enable   ;
-    logic           reg_sensor_ready    ;
-    logic           reg_recv_reset      ;
-    logic           reg_align_reset     ;
-    logic   [9:0]   reg_align_pattern   ;
-    logic   [1:0]   reg_align_status    ;
-    logic           reg_clip_enable     ;
-    logic           reg_csi_mode        ;
-    logic   [7:0]   reg_csi_dt          ;
-    logic   [15:0]  reg_csi_wc          ;
-    logic           reg_dphy_core_reset ;
-    logic           reg_dphy_sys_reset  ;
-    logic           reg_dphy_init_done  ;
-    logic   [1:0]   reg_mmcm_control    ;
-    logic   [1:0]   reg_pll_control     ;
+    logic           reg_sensor_enable       ;
+    logic           reg_sensor_ready        ;
+    logic           reg_receiver_reset      ;
+    logic   [4:0]   reg_receiver_clk_dly    ;
+    logic           reg_align_reset         ;
+    logic   [9:0]   reg_align_pattern       ;
+    logic   [1:0]   reg_align_status        ;
+    logic           reg_clip_enable         ;
+    logic           reg_csi_mode            ;
+    logic   [7:0]   reg_csi_dt              ;
+    logic   [15:0]  reg_csi_wc              ;
+    logic           reg_dphy_core_reset     ;
+    logic           reg_dphy_sys_reset      ;
+    logic           reg_dphy_init_done      ;
+    logic   [1:0]   reg_mmcm_control        ;
+    logic   [1:0]   reg_pll_control         ;
 
     always_ff @(posedge s_axi4l.aclk) begin
         reg_sensor_ready   <= in_sensor_ready;
@@ -124,35 +126,37 @@ module system_control
 
     always_ff @(posedge s_axi4l.aclk) begin
         if ( ~s_axi4l.aresetn ) begin
-            reg_sensor_enable   <= INIT_SENSOR_ENABLE   ;
-            reg_recv_reset      <= INIT_RECVER_RESET    ;
-            reg_align_reset     <= INIT_ALIGN_RESET     ;
-            reg_align_pattern   <= INIT_ALIGN_PATTERN   ;
-            reg_clip_enable     <= INIT_CLIP_ENABLE     ;
-            reg_csi_mode        <= INIT_CSI_MODE        ;
-            reg_csi_dt          <= INIT_CSI_DT          ;
-            reg_csi_wc          <= INIT_CSI_WC          ;
-            reg_dphy_core_reset <= INIT_DPHY_CORE_RESET ;
-            reg_dphy_sys_reset  <= INIT_DPHY_SYS_RESET  ;
-            reg_mmcm_control    <= INIT_MMCM_CONTROL    ;
-            reg_pll_control     <= INIT_PLL_CONTROL     ;
+            reg_sensor_enable    <= INIT_SENSOR_ENABLE   ;
+            reg_receiver_reset   <= INIT_RECEIVER_RESET  ;
+            reg_receiver_clk_dly <= INIT_RECEIVER_CLK_DLY;
+            reg_align_reset      <= INIT_ALIGN_RESET     ;
+            reg_align_pattern    <= INIT_ALIGN_PATTERN   ;
+            reg_clip_enable      <= INIT_CLIP_ENABLE     ;
+            reg_csi_mode         <= INIT_CSI_MODE        ;
+            reg_csi_dt           <= INIT_CSI_DT          ;
+            reg_csi_wc           <= INIT_CSI_WC          ;
+            reg_dphy_core_reset  <= INIT_DPHY_CORE_RESET ;
+            reg_dphy_sys_reset   <= INIT_DPHY_SYS_RESET  ;
+            reg_mmcm_control     <= INIT_MMCM_CONTROL    ;
+            reg_pll_control      <= INIT_PLL_CONTROL     ;
         end
         else if ( s_axi4l.aclken ) begin
             // write
             if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
                 case ( regadr_write )
-                REGADR_SENSOR_ENABLE      :   reg_sensor_enable   <=  1'(write_mask(axi4l_data_t'(reg_sensor_enable  ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_RECVER_RESET       :   reg_recv_reset      <=  1'(write_mask(axi4l_data_t'(reg_recv_reset     ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_ALIGN_RESET        :   reg_align_reset     <=  1'(write_mask(axi4l_data_t'(reg_align_reset    ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_ALIGN_PATTERN      :   reg_align_pattern   <= 10'(write_mask(axi4l_data_t'(reg_align_pattern  ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_CLIP_ENABLE        :   reg_clip_enable     <=  1'(write_mask(axi4l_data_t'(reg_clip_enable    ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_CSI_MODE           :   reg_csi_mode        <=  1'(write_mask(axi4l_data_t'(reg_csi_mode       ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_CSI_DT             :   reg_csi_dt          <=  8'(write_mask(axi4l_data_t'(reg_csi_dt         ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_CSI_WC             :   reg_csi_wc          <= 16'(write_mask(axi4l_data_t'(reg_csi_wc         ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_DPHY_CORE_RESET    :   reg_dphy_core_reset <=  1'(write_mask(axi4l_data_t'(reg_dphy_core_reset), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_DPHY_SYS_RESET     :   reg_dphy_sys_reset  <=  1'(write_mask(axi4l_data_t'(reg_dphy_sys_reset ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_MMCM_CONTROL       :   reg_mmcm_control    <=  2'(write_mask(axi4l_data_t'(reg_mmcm_control   ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_PLL_CONTROL        :   reg_pll_control     <=  2'(write_mask(axi4l_data_t'(reg_pll_control    ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_SENSOR_ENABLE      :   reg_sensor_enable    <=  1'(write_mask(axi4l_data_t'(reg_sensor_enable   ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_RECEIVER_RESET     :   reg_receiver_reset   <=  1'(write_mask(axi4l_data_t'(reg_receiver_reset  ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_RECEIVER_CLK_DLY   :   reg_receiver_clk_dly <=  5'(write_mask(axi4l_data_t'(reg_receiver_clk_dly), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_ALIGN_RESET        :   reg_align_reset      <=  1'(write_mask(axi4l_data_t'(reg_align_reset     ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_ALIGN_PATTERN      :   reg_align_pattern    <= 10'(write_mask(axi4l_data_t'(reg_align_pattern   ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_CLIP_ENABLE        :   reg_clip_enable      <=  1'(write_mask(axi4l_data_t'(reg_clip_enable     ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_CSI_MODE           :   reg_csi_mode         <=  1'(write_mask(axi4l_data_t'(reg_csi_mode        ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_CSI_DT             :   reg_csi_dt           <=  8'(write_mask(axi4l_data_t'(reg_csi_dt          ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_CSI_WC             :   reg_csi_wc           <= 16'(write_mask(axi4l_data_t'(reg_csi_wc          ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_DPHY_CORE_RESET    :   reg_dphy_core_reset  <=  1'(write_mask(axi4l_data_t'(reg_dphy_core_reset ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_DPHY_SYS_RESET     :   reg_dphy_sys_reset   <=  1'(write_mask(axi4l_data_t'(reg_dphy_sys_reset  ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_MMCM_CONTROL       :   reg_mmcm_control     <=  2'(write_mask(axi4l_data_t'(reg_mmcm_control    ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PLL_CONTROL        :   reg_pll_control      <=  2'(write_mask(axi4l_data_t'(reg_pll_control     ), s_axi4l.wdata, s_axi4l.wstrb));
                 default: ;
                 endcase
             end
@@ -186,7 +190,8 @@ module system_control
             REGADR_MODULE_VERSION   :   s_axi4l.rdata <= axi4l_data_t'(MODULE_VERSION      );
             REGADR_SENSOR_ENABLE    :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_enable   );
             REGADR_SENSOR_READY     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_ready    );
-            REGADR_RECVER_RESET     :   s_axi4l.rdata <= axi4l_data_t'(reg_recv_reset      );
+            REGADR_RECEIVER_RESET   :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_reset  );
+            REGADR_RECEIVER_CLK_DLY :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_clk_dly);
             REGADR_ALIGN_RESET      :   s_axi4l.rdata <= axi4l_data_t'(reg_align_reset     );
             REGADR_ALIGN_PATTERN    :   s_axi4l.rdata <= axi4l_data_t'(reg_align_pattern   );
             REGADR_ALIGN_STATUS     :   s_axi4l.rdata <= axi4l_data_t'(reg_align_status    );
@@ -224,20 +229,21 @@ module system_control
 
 
     // output
-    assign  out_sensor_enable   = reg_sensor_enable     ;
-    assign  out_recv_reset      = reg_recv_reset        ;
-    assign  out_align_reset     = reg_align_reset       ;
-    assign  out_align_pattern   = reg_align_pattern     ;
-    assign  out_clip_enable     = reg_clip_enable       ;
-    assign  out_csi_mode        = reg_csi_mode          ;
-    assign  out_csi_dt          = reg_csi_dt            ;
-    assign  out_csi_wc          = reg_csi_wc            ;
-    assign  out_dphy_core_reset = reg_dphy_core_reset   ;
-    assign  out_dphy_sys_reset  = reg_dphy_sys_reset    ;
-    assign  out_mmcm_rst        = reg_mmcm_control[0]   ;
-    assign  out_mmcm_pwrdwn     = reg_mmcm_control[1]   ;
-    assign  out_pll_rst         = reg_pll_control[0]    ;
-    assign  out_pll_pwrdwn      = reg_pll_control[1]    ;
+    assign  out_sensor_enable    = reg_sensor_enable     ;
+    assign  out_receiver_reset   = reg_receiver_reset    ;
+    assign  out_receiver_clk_dly = reg_receiver_clk_dly  ;
+    assign  out_align_reset      = reg_align_reset       ;
+    assign  out_align_pattern    = reg_align_pattern     ;
+    assign  out_clip_enable      = reg_clip_enable       ;
+    assign  out_csi_mode         = reg_csi_mode          ;
+    assign  out_csi_dt           = reg_csi_dt            ;
+    assign  out_csi_wc           = reg_csi_wc            ;
+    assign  out_dphy_core_reset  = reg_dphy_core_reset   ;
+    assign  out_dphy_sys_reset   = reg_dphy_sys_reset    ;
+    assign  out_mmcm_rst         = reg_mmcm_control[0]   ;
+    assign  out_mmcm_pwrdwn      = reg_mmcm_control[1]   ;
+    assign  out_pll_rst          = reg_pll_control[0]    ;
+    assign  out_pll_pwrdwn       = reg_pll_control[1]    ;
     
 endmodule
 
