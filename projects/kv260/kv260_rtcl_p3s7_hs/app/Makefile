@@ -13,6 +13,10 @@ BIN_FILE  = $(BIT_FILE).bin
 FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
 
+ARCH ?= aarch64-linux-gnu-
+CC  = $(ARCH)gcc
+CXX = $(ARCH)g++
+
 CFLAGS  += -Wall -g -O2 `pkg-config --cflags opencv4` -I../../../../include  -I../../../../jelly/include
 LDFLAGS += -g  `pkg-config --libs opencv4`
 
@@ -47,10 +51,10 @@ server: load
 
 
 $(TARGET): $(OBJS)
-	g++ -o $(TARGET) $(OBJS) $(LDFLAGS)
+	$(CXX) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o : %.cpp
-	g++ $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 main.o: main.cpp ../../../../include/rtcl/RtclP3S7Control.h
 
