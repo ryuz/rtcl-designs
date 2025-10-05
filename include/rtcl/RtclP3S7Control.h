@@ -314,6 +314,13 @@ public:
         return true;
     }
 
+    bool SetXsmDelay(int delay) {
+        if ( !IsOpend() ) { return false; }
+        delay &= 0xff;
+        spi_write(193, delay << 8);
+        return true;
+    }
+
     bool SetRoi0(int width, int height, int x=-1, int y=-1) {
         if ( !IsOpend() ) { return false; }
 
