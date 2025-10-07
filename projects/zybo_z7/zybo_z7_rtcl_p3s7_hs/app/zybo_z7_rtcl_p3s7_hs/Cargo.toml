@@ -1,0 +1,7 @@
+[package]
+name = "zybo_z7_rtcl_p3s7_hs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+opencv = "0.93.5"
