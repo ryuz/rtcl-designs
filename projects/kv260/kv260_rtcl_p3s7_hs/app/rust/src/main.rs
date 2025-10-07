@@ -9,6 +9,11 @@ use jelly_lib::{i2c_access::I2cAccess, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
 use jelly_pac::video_dma_control::VideoDmaControl;
 
+use opencv::{
+    core::*,
+    highgui::*,
+};
+
 const CAMREG_CORE_ID: u16 = 0x0000;
 const CAMREG_CORE_VERSION: u16 = 0x0001;
 const CAMREG_RECV_RESET: u16 = 0x0010;
@@ -56,6 +61,15 @@ const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    println!("start kv260_rtcl_p3s7_hs");
+
+    // TODO: OpenCV test code - currently disabled for cross-compilation
+    let img : Mat = Mat::zeros(480, 640, opencv::core::CV_8UC3)?.to_mat()?;
+    println!("img = {:?}", img);
+    imshow("test", &img)?;
+    wait_key(0)?;
+    return Ok(());
+
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
     println!("\nudmabuf open");

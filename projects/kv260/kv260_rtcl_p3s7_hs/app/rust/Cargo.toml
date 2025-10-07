@@ -1,11 +1,16 @@
 [package]
 name = "kv260_rtcl_p3s7_hs"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 jelly-mem_access = "0.2.2"
-#jelly-mem_access = { path = "../../../../../rust/mem_access" }
-jelly-lib        = { path = "../../../../../rust/lib" }
-jelly-pac        = { path = "../../../../../rust/pac" }
+#jelly-mem_access = { path = "../../../../../jelly/rust/mem_access" }
+jelly-lib        = { path = "../../../../../jelly/rust/lib" }
+jelly-pac        = { path = "../../../../../jelly/rust/pac" }
 #jelly-pac = { git="https://github.com/ryuz/jelly-pac.git", rev="613c7ab680b29189dd3189bd3bf9c354b1a05999"}
+# TODO: OpenCV dependency temporarily disabled for cross-compilation
+#opencv = { version = "0.96.0", features = ["clang-runtime"], default-features = false }
+
+opencv = "0.93.5"
+
