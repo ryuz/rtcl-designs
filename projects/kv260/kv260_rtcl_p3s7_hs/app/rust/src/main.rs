@@ -9,10 +9,7 @@ use jelly_lib::{i2c_access::I2cAccess, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
 use jelly_pac::video_dma_control::VideoDmaControl;
 
-use opencv::{
-    core::*,
-    highgui::*,
-};
+use opencv::{core::*, highgui::*};
 
 const CAMREG_CORE_ID: u16 = 0x0000;
 const CAMREG_CORE_VERSION: u16 = 0x0001;
@@ -60,15 +57,39 @@ const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
 const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
+//const BIT_STREAM: &'static [u8] = include_bytes!("../kv260_rtcl_p3s7_hs.bit");
+
+use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::RtclP3s7I2c;
+
+fn usleep(us: u64) {
+    std::thread::sleep(std::time::Duration::from_micros(us));
+}
+
+fn wait_1us() {
+    std::thread::sleep(std::time::Duration::from_micros(1));
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     println!("start kv260_rtcl_p3s7_hs");
 
+    /*
+    jelly_fpgautil::set_allow_sudo(true);
+    let slot = jelly_fpgautil::load("k26-starter-kits")?;
+    println!("load");
+    jelly_fpgautil::unload(slot)?;
+    println!("unload");
+
+    jelly_fpgautil::unload(slot)?;
+    */
+
+    /*
     // TODO: OpenCV test code - currently disabled for cross-compilation
     let img : Mat = Mat::zeros(480, 640, opencv::core::CV_8UC3)?.to_mat()?;
     println!("img = {:?}", img);
     imshow("test", &img)?;
     wait_key(0)?;
     return Ok(());
+    */
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -104,7 +125,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
-    let mut cam = RtclP3s7Cmd::new("/dev/i2c-6")?;
+    let i2c = LinuxI2c::new("/dev/i2c-6", 0x10).unwrap();
+    let mut cam = RtclP3s7I2c::new(i2c, usleep);
+
+    //  let mut cam = RtclP3s7I2c::new_with_linux("/dev/i2c-6")?;
 
     println!(
         "Spartan-7 CORE_ID      : {:08x}",
@@ -220,7 +244,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 動作開始
     cam.write_p3_spi(192, 0x1)?;
 
-    let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(usleep)).unwrap();
+    let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
     // video input start
     unsafe {
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
@@ -251,12 +275,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // PGM形式で保存
-    let pgm_header = format!(
-        "P2\n{} {}\n1023\n",
-        width, height
-    );
-    let mut pgm_file = std::fs::File::create("output.pgm")
-        .expect("Failed to create output.pgm");
+    let pgm_header = format!("P2\n{} {}\n1023\n", width, height);
+    let mut pgm_file = std::fs::File::create("output.pgm").expect("Failed to create output.pgm");
     pgm_file
         .write_all(pgm_header.as_bytes())
         .expect("Failed to write PGM header");
@@ -269,13 +289,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // カメラOFF
     unsafe { reg_sys.write_reg(SYSREG_CAM_ENABLE, 0) };
     std::thread::sleep(std::time::Duration::from_millis(10));
+
+    println!("done");
     Ok(())
 }
 
-fn usleep() {
-    std::thread::sleep(std::time::Duration::from_micros(1));
-}
-
+/*
 struct RtclP3s7Cmd {
     i2c: LinuxI2c,
 }
@@ -322,3 +341,5 @@ impl RtclP3s7Cmd {
         self.read_s7_reg(addr)
     }
 }
+
+*/
