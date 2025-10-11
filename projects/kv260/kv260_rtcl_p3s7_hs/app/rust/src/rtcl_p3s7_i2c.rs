@@ -28,6 +28,7 @@ const REG_P3S7_MMCM_DRP: u16 = 0x1000;
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum RtclP3s7I2cError<E> {
     I2c(E),
+    ReceiverCalibrationFailed,
     MyError,
 }
 
@@ -41,6 +42,7 @@ impl<E: core::fmt::Display> core::fmt::Display for RtclP3s7I2cError<E> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             RtclP3s7I2cError::I2c(e) => write!(f, "I2C operation failed: {}", e),
+            RtclP3s7I2cError::ReceiverCalibrationFailed => write!(f, "Receiver calibration failed"),
             RtclP3s7I2cError::MyError => write!(f, "MyError occurred"),
         }
     }
@@ -151,6 +153,111 @@ where
         Ok(())
     }
 
+    /// シーケンサ有効/無効
+    pub fn set_sequencer_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.general_configuration |= 0x1;
+        } else {
+            self.general_configuration &= !0x1;
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// ZROTモード有効/無効
+    pub fn set_zero_rot_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.general_configuration |= 1 << 2;
+        } else {
+            self.general_configuration &= !(1 << 2);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// トリガーモード有効/無効
+    pub fn set_triggered_mode(&mut self, triggered_mode: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if triggered_mode {
+            self.general_configuration |= 1 << 4;
+        } else {
+            self.general_configuration &= !(1 << 4);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// スレーブモード有効/無効
+    pub fn set_slave_mode(&mut self, slave_mode: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if slave_mode {
+            self.general_configuration |= 1 << 5;
+        } else {
+            self.general_configuration &= !(1 << 5);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// NZROT XSM Delay 有効/無効
+    pub fn set_nzrot_xsm_delay_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.general_configuration |= 1 << 6;
+        } else {
+            self.general_configuration &= !(1 << 6);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// サブサンプリング有効/無効
+    pub fn set_subsampling(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.general_configuration |= 1 << 7;
+        } else {
+            self.general_configuration &= !(1 << 7);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// ビニング有効/無効
+    pub fn set_binning(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.general_configuration |= 1 << 8;
+        } else {
+            self.general_configuration &= !(1 << 8);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// ROI AEC 有効/無効
+    pub fn set_roi_aec_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.general_configuration |= 1 << 10;
+        } else {
+            self.general_configuration &= !(1 << 10);
+        }
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// モニタセレクト設定
+    pub fn set_monitor_select(&mut self, mode: u16) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        let mode = mode & 0x7;
+        self.general_configuration &= !(0x7 << 11);
+        self.general_configuration |= mode << 11;
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    /// XSM Delay 設定
+    pub fn set_xsm_delay(&mut self, delay: u16) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        let delay = delay & 0xff;
+        self.write_p3_spi(193, delay << 8)?;
+        Ok(())
+    }
+
+    /// ROI0 設定
     pub fn set_roi0(&mut self, width : u16, height : u16, x : Option<u16>, y : Option<u16>) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         // 正規化
         let width  = width.max(16).min(672) & !0x0f;  // 16の倍数
@@ -174,12 +281,39 @@ where
         self.write_p3_spi(256, (x_end << 8) | x_start)?;
         self.write_p3_spi(257, y_start)?;
         self.write_p3_spi(258, y_end)?;
-        
+
+        Ok(())
+    }
+
+pub fn set_sensor_receiver_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            // シーケンサ停止(トレーニングパターン出力状態へ)
+            self.set_sequencer_enable(false)?;
+
+            self.usleep(1000);
+            self.write_s7_reg(REG_P3S7_RECEIVER_RESET,  1)?;
+            self.write_s7_reg(REG_P3S7_RECEIVER_CLK_DLY, 8)?;
+            self.write_s7_reg(REG_P3S7_ALIGN_RESET, 1)?;
+            self.usleep(1000);
+            self.write_s7_reg(REG_P3S7_RECEIVER_RESET,  0)?;
+            self.usleep(1000);
+            self.write_s7_reg(REG_P3S7_ALIGN_RESET, 0)?;
+            self.usleep(1000);
+
+            let cam_calib_status = self.read_s7_reg(REG_P3S7_ALIGN_STATUS)?;
+            if cam_calib_status != 0x01 {
+                return Err(RtclP3s7I2cError::ReceiverCalibrationFailed);
+            }
+        }
+        else {
+            self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 1)?;
+            self.write_s7_reg(REG_P3S7_ALIGN_RESET, 1)?;
+        }
         Ok(())
     }
 
 
-
+    /// usleep
     fn usleep(&self, usec: u64) {
         (self.usleep)(usec);
     }
@@ -248,7 +382,7 @@ where
 
         // MMCM release reset
         self.write_s7_reg(REG_P3S7_MMCM_CONTROL, 0)?;
-        (self.usleep)(100);
+        self.usleep(100);
 
         Ok(())
     }

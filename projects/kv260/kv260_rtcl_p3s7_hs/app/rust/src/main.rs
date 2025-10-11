@@ -202,9 +202,66 @@ fn main() -> Result<(), Box<dyn Error>> {
     // センサー起動
     cam.setup();
 
+    // ROI 設定
     cam.set_roi0(width as u16, height as u16, None, None)?;
 
+    // 受信側キャリブレーション
+    cam.set_sensor_receiver_enable(true)?;
 
+    // 動作開始
+    cam.set_sensor_power_enable(true)?;
+
+    let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
+    // video input start
+    unsafe {
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 10000000);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, width);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, height);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x000);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
+    }
+    std::thread::sleep(std::time::Duration::from_micros(1000));
+
+    // 1frame キャプチャ
+    vdmaw.oneshot(
+        udmabuf_acc.phys_addr(),
+        width as i32,
+        height as i32,
+        1,
+        0,
+        0,
+        0,
+        0,
+        Some(100000),
+    )?;
+    let mut buf = vec![0u16; (width * height) as usize];
+    unsafe {
+        udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
+    }
+
+
+    // PGM形式で保存
+    let pgm_header = format!("P2\n{} {}\n1023\n", width, height);
+    let mut pgm_file = std::fs::File::create("output.pgm").expect("Failed to create output.pgm");
+    pgm_file
+        .write_all(pgm_header.as_bytes())
+        .expect("Failed to write PGM header");
+    for pixel in buf {
+        pgm_file
+            .write_all(format!("{}\n", pixel).as_bytes())
+            .expect("Failed to write pixel data");
+    }
+
+    // カメラOFF
+    unsafe { reg_sys.write_reg(SYSREG_CAM_ENABLE, 0) };
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    println!("done");
+
+
+    return Ok(());
     ///////////////
     cam.write_s7_reg(CAMREG_DPHY_CORE_RESET, 1); // 受信側 DPHY リセット
     cam.write_s7_reg(CAMREG_DPHY_SYS_RESET, 1); // 受信側 DPHY リセット
