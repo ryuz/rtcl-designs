@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-
 use jelly_lib::i2c_access::I2cAccess;
 
 #[cfg(feature = "std")]
@@ -57,12 +56,19 @@ impl<E: std::error::Error + 'static> std::error::Error for RtclP3s7I2cError<E> {
     }
 }
 
+pub enum CameraMode {
+    HighSpeed = 0,
+    Csi2 = 1,
+}
+
 pub struct RtclP3s7I2c<I2C: I2cAccess, F>
 where
     F: Fn(u64),
 {
     i2c: I2C,
     usleep: F,
+
+    general_configuration : u16,
 }
 
 impl<I2C: I2cAccess, F> RtclP3s7I2c<I2C, F>
@@ -70,7 +76,7 @@ where
     F: Fn(u64),
 {
     pub fn new(i2c: I2C, usleep: F) -> Self {
-        Self { i2c, usleep }
+        Self { i2c, usleep, general_configuration: 0x0000 }
     }
 
     #[cfg(feature = "std")]
@@ -80,6 +86,102 @@ where
         let i2c = LinuxI2c::new(devname, 0x10)?;
         let sleep_fn: fn(u64) = |t| std::thread::sleep(std::time::Duration::from_micros(t));
         Ok(RtclP3s7I2c::new(i2c, sleep_fn))
+    }
+
+    pub fn module_id(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
+        self.read_s7_reg(REG_P3S7_MODULE_ID)
+    }
+
+    pub fn module_version(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
+        self.read_s7_reg(REG_P3S7_MODULE_VERSION)
+    }
+
+    pub fn sensor_id(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
+        self.read_p3_spi(0)
+    }
+
+    pub fn set_sensor_power_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        // センサー電源ON/OFF
+        self.write_s7_reg(REG_P3S7_SENSOR_ENABLE, if enable { 1 } else { 0 })?;
+        self.usleep(50000);
+        Ok(())
+    }
+
+    pub fn set_dphy_reset(&mut self, reset: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if reset {
+            self.write_s7_reg(REG_P3S7_DPHY_SYS_RESET, 1)?;
+            self.write_s7_reg(REG_P3S7_DPHY_CORE_RESET, 1)?;
+        } else {
+            self.write_s7_reg(REG_P3S7_DPHY_CORE_RESET, 0)?;
+            self.write_s7_reg(REG_P3S7_DPHY_SYS_RESET, 0)?;
+        }
+        self.usleep(100);
+        Ok(())
+    }
+
+    pub fn dphy_init_done(&mut self) -> Result<bool, RtclP3s7I2cError<I2C::Error>> {
+        Ok(self.read_s7_reg(REG_P3S7_DPHY_INIT_DONE)? != 0)
+    }
+
+    pub fn set_camera_mode(
+        &mut self,
+        mode: CameraMode,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.write_s7_reg(REG_P3S7_CSI_MODE, mode as u16)?;
+        Ok(())
+    }
+
+    pub fn setup(&mut self) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        // SPI 初期設定
+        self.write_p3_spi(16, 0x0003)?;    // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_p3_spi(32, 0x0007)?;    // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_p3_spi( 8, 0x0000)?;    // pll_soft_reset, pll_lock_soft_reset
+        self.write_p3_spi( 9, 0x0000)?;    // cgen_soft_reset
+        self.write_p3_spi(34, 0x1)?;       // config0 Logic General Enable Configuration
+        self.write_p3_spi(40, 0x7)?;       // image_core_config0 
+        self.write_p3_spi(48, 0x1)?;       // AFE Power down for AFE’s
+        self.write_p3_spi(64, 0x1)?;       // Bias Bias Power Down Configuration
+        self.write_p3_spi(72, 0x2227)?;    // Charge Pump
+        self.write_p3_spi(112, 0x7)?;      // Serializers/LVDS/IO 
+        self.write_p3_spi(10, 0x0000)?;    // soft_reset_analog
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+
+    pub fn set_roi0(&mut self, width : u16, height : u16, x : Option<u16>, y : Option<u16>) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        // 正規化
+        let width  = width.max(16).min(672) & !0x0f;  // 16の倍数
+        let height = height.max(2).min(512) & !0x01; // 2の倍数
+
+        // x, y が None なら中央に配置
+        let roi_x = match x {
+            Some(val) => val,
+            None => (672 - width) / 2,
+        } & !0x0f; // 16の倍数
+        let roi_y = match y {
+            Some(val) => val,
+            None => (512 - height) / 2,
+        } & !0x01; // 2の倍数
+
+        let x_start = roi_x / 8;
+        let x_end   = x_start + width/8 - 1 ;
+        let y_start = roi_y;
+        let y_end   = y_start + height - 1;
+
+        self.write_p3_spi(256, (x_end << 8) | x_start)?;
+        self.write_p3_spi(257, y_start)?;
+        self.write_p3_spi(258, y_end)?;
+        
+        Ok(())
+    }
+
+
+
+    fn usleep(&self, usec: u64) {
+        (self.usleep)(usec);
     }
 
     /// Write a 16-bit register on the Spartan-7
@@ -125,14 +227,8 @@ where
         self.read_s7_reg(addr)
     }
 
-
-
-
-
-
     // DPHY スピード設定
-    pub fn set_dphy_speed(&mut self, speed: f64) -> Result<(), RtclP3s7I2cError<I2C::Error>>
-    {
+    pub fn set_dphy_speed(&mut self, speed: f64) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         // MMCM set reset
         self.write_s7_reg(REG_P3S7_MMCM_CONTROL, 1)?;
 
@@ -141,14 +237,12 @@ where
             for i in 0..MMCM_TBL_1250.len() {
                 self.write_s7_reg(REG_P3S7_MMCM_DRP + MMCM_TBL_1250[i].0, MMCM_TBL_1250[i].1)?;
             }
-        }
-        else if speed >= 950000000.0 {
+        } else if speed >= 950000000.0 {
             // D-PHY 950Mbps用設定
             for i in 0..MMCM_TBL_1250.len() {
                 self.write_s7_reg(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
             }
-        }
-        else {
+        } else {
             return Err(RtclP3s7I2cError::MyError);
         }
 
@@ -158,7 +252,6 @@ where
 
         Ok(())
     }
-
 }
 
 const MMCM_TBL_1250: [(u16, u16); 24] = [

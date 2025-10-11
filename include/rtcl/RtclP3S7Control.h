@@ -328,8 +328,8 @@ public:
         width  = std::max(width,   16);
         width  = std::min(width,  672);
         width &= ~0x0f;  // 16の倍数 
-        height = std::max(width,    2);
-        height = std::min(width,  512);
+        height = std::max(height,    2);
+        height = std::min(height,  512);
         height &= ~0x01; // 2の倍数
 
         int roi_x = (x & ~0x0f); // 16の倍数

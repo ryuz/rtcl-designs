@@ -59,7 +59,8 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
 //const BIT_STREAM: &'static [u8] = include_bytes!("../kv260_rtcl_p3s7_hs.bit");
 
-use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::RtclP3s7I2c;
+//use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::RtclP3s7I2c;
+use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::*;
 
 fn usleep(us: u64) {
     std::thread::sleep(std::time::Duration::from_micros(us));
@@ -90,6 +91,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     wait_key(0)?;
     return Ok(());
     */
+
+    let width  = 256 ;
+    let height = 256 ;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -130,24 +134,78 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     //  let mut cam = RtclP3s7I2c::new_with_linux("/dev/i2c-6")?;
 
+    println!("Camera Module ID       : {:08x}", cam.module_id()?);
     println!(
-        "Spartan-7 CORE_ID      : {:08x}",
-        cam.read_s7_reg(CAMREG_CORE_ID)?
-    );
-    println!(
-        "Spartan-7 CORE_VERSION : {:08x}",
+        "Camera Module Version  : {:08x}",
         cam.read_s7_reg(CAMREG_CORE_VERSION)?
     );
+
+    // カメラモジュールリセット
+    unsafe {
+        reg_sys.write_reg(SYSREG_CAM_ENABLE, 0);
+    } // センサー電源OFF
+    std::thread::sleep(std::time::Duration::from_millis(10));
+    unsafe {
+        reg_sys.write_reg(SYSREG_CAM_ENABLE, 1);
+    } // センサー電源OFF
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    // MMCM 設定
+    cam.set_dphy_speed(1250000000.0)?; // 1250Mbps
 
     // 受信側 DPHY リセット
     unsafe {
         reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 1);
     }
 
-    // カメラ板初期化
+    // カメラ基板初期化
+    println!("Init Camera");
+    cam.set_sensor_power_enable(false)?;
+    cam.set_dphy_reset(true);
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    // 受信側 DPHY 解除 (必ずこちらを先に解除)
     unsafe {
-        reg_sys.write_reg(SYSREG_CAM_ENABLE, 0);
-    } // センサー電源OFF
+        reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 0);
+    }
+    // 高速モード設定
+    cam.set_camera_mode(CameraMode::HighSpeed);
+
+
+    // センサー電源ON
+    println!("Sensor Power On");
+    cam.set_sensor_power_enable(true);
+    println!("Sensor ID : {}", cam.sensor_id()?);
+    
+    // センサー基板 DPHY-TX リセット解除
+    cam.set_dphy_reset(false);
+    if !cam.dphy_init_done()? {
+        println!("!!ERROR!! CAM DPHY TX init_done = 0");
+        return Err("CAM DPHY TX init_done = 0".into());
+    }
+
+    // ここで RX 側も init_done が来る
+    let dphy_rx_init_done = unsafe{reg_sys.read_reg(SYSREG_DPHY_INIT_DONE)};
+    if dphy_rx_init_done == 0 {
+        println!("!!ERROR!! KV260 DPHY RX init_done = 0");
+        return Err("KV260 DPHY RX init_done = 0".into());
+    }
+
+    // 受信画像サイズ設定
+    unsafe {
+        reg_sys.write_reg(SYSREG_IMAGE_WIDTH,  width);
+        reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, height);
+        reg_sys.write_reg(SYSREG_BLACK_WIDTH,  1280);
+        reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
+    }
+
+    // センサー起動
+    cam.setup();
+
+    cam.set_roi0(width as u16, height as u16, None, None)?;
+
+
+    ///////////////
     cam.write_s7_reg(CAMREG_DPHY_CORE_RESET, 1); // 受信側 DPHY リセット
     cam.write_s7_reg(CAMREG_DPHY_SYS_RESET, 1); // 受信側 DPHY リセット
     std::thread::sleep(std::time::Duration::from_millis(10));
