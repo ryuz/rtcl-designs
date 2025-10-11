@@ -70,7 +70,7 @@ where
     i2c: I2C,
     usleep: F,
 
-    general_configuration : u16,
+    general_configuration: u16,
 }
 
 impl<I2C: I2cAccess, F> RtclP3s7I2c<I2C, F>
@@ -78,7 +78,11 @@ where
     F: Fn(u64),
 {
     pub fn new(i2c: I2C, usleep: F) -> Self {
-        Self { i2c, usleep, general_configuration: 0x0000 }
+        Self {
+            i2c,
+            usleep,
+            general_configuration: 0x0000,
+        }
     }
 
     #[cfg(feature = "std")]
@@ -136,25 +140,75 @@ where
         Ok(())
     }
 
+    /*
     pub fn setup(&mut self) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         // SPI 初期設定
-        self.write_p3_spi(16, 0x0003)?;    // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-        self.write_p3_spi(32, 0x0007)?;    // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        self.write_p3_spi( 8, 0x0000)?;    // pll_soft_reset, pll_lock_soft_reset
-        self.write_p3_spi( 9, 0x0000)?;    // cgen_soft_reset
-        self.write_p3_spi(34, 0x1)?;       // config0 Logic General Enable Configuration
-        self.write_p3_spi(40, 0x7)?;       // image_core_config0 
-        self.write_p3_spi(48, 0x1)?;       // AFE Power down for AFE’s
-        self.write_p3_spi(64, 0x1)?;       // Bias Bias Power Down Configuration
-        self.write_p3_spi(72, 0x2227)?;    // Charge Pump
-        self.write_p3_spi(112, 0x7)?;      // Serializers/LVDS/IO 
-        self.write_p3_spi(10, 0x0000)?;    // soft_reset_analog
+        self.write_p3_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_p3_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_p3_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_p3_spi(9, 0x0000)?; // cgen_soft_reset
+        self.write_p3_spi(34, 0x1)?; // config0 Logic General Enable Configuration
+        self.write_p3_spi(40, 0x7)?; // image_core_config0
+        self.write_p3_spi(48, 0x1)?; // AFE Power down for AFE’s
+        self.write_p3_spi(64, 0x1)?; // Bias Bias Power Down Configuration
+        self.write_p3_spi(72, 0x2227)?; // Charge Pump
+        self.write_p3_spi(112, 0x7)?; // Serializers/LVDS/IO
+        self.write_p3_spi(10, 0x0000)?; // soft_reset_analog
+        self.write_p3_spi(192, self.general_configuration)?;
+        Ok(())
+    }
+    */
+
+    pub fn set_sensor_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        if enable {
+            self.sensor_boot()?;
+            self.usleep(50000);
+            self.set_sensor_receiver_enable(true)?;
+        }
+        else {
+            self.set_sensor_receiver_enable(false)?;
+            self.sensor_shutdown()?;
+        }
+        Ok(())
+    }
+
+    fn sensor_boot(&mut self) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.write_p3_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_p3_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_p3_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_p3_spi(9, 0x0000)?; // cgen_soft_reset
+        self.write_p3_spi(34, 0x1)?; // config0 Logic General Enable Configuration
+        self.write_p3_spi(40, 0x7)?; // image_core_config0
+        self.write_p3_spi(48, 0x1)?; // AFE Power down for AFE’s
+        self.write_p3_spi(64, 0x1)?; // Bias Bias Power Down Configuration
+        self.write_p3_spi(72, 0x2227)?; // Charge Pump
+        self.write_p3_spi(112, 0x7)?; // Serializers/LVDS/IO
+        self.write_p3_spi(10, 0x0000)?; // soft_reset_analog
         self.write_p3_spi(192, self.general_configuration)?;
         Ok(())
     }
 
+    fn sensor_shutdown(&mut self) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.write_p3_spi(192, 0x0000)?;
+        self.write_p3_spi(10, 0x0999)?; // soft_reset_analog
+        self.write_p3_spi(112, 0x0000)?; // Serializers/LVDS/IO
+        self.write_p3_spi(72, 0x2220)?; // Charge Pump
+        self.write_p3_spi(64, 0x0000)?; // Bias Bias Power Down Configuration
+        self.write_p3_spi(48, 0x0000)?; // AFE Power down for AFE’s
+        self.write_p3_spi(40, 0x0000)?; // image_core_config0
+        self.write_p3_spi(34, 0x0000)?; // config0 Logic General Enable Configuration
+        self.write_p3_spi(9, 0x0009)?; // cgen_soft_reset
+        self.write_p3_spi(8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_p3_spi(32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_p3_spi(16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        Ok(())
+    }
+
     /// シーケンサ有効/無効
-    pub fn set_sequencer_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+    pub fn set_sequencer_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         if enable {
             self.general_configuration |= 0x1;
         } else {
@@ -165,7 +219,10 @@ where
     }
 
     /// ZROTモード有効/無効
-    pub fn set_zero_rot_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+    pub fn set_zero_rot_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         if enable {
             self.general_configuration |= 1 << 2;
         } else {
@@ -176,7 +233,10 @@ where
     }
 
     /// トリガーモード有効/無効
-    pub fn set_triggered_mode(&mut self, triggered_mode: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+    pub fn set_triggered_mode(
+        &mut self,
+        triggered_mode: bool,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         if triggered_mode {
             self.general_configuration |= 1 << 4;
         } else {
@@ -198,7 +258,10 @@ where
     }
 
     /// NZROT XSM Delay 有効/無効
-    pub fn set_nzrot_xsm_delay_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+    pub fn set_nzrot_xsm_delay_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         if enable {
             self.general_configuration |= 1 << 6;
         } else {
@@ -258,9 +321,15 @@ where
     }
 
     /// ROI0 設定
-    pub fn set_roi0(&mut self, width : u16, height : u16, x : Option<u16>, y : Option<u16>) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+    pub fn set_roi0(
+        &mut self,
+        width: u16,
+        height: u16,
+        x: Option<u16>,
+        y: Option<u16>,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         // 正規化
-        let width  = width.max(16).min(672) & !0x0f;  // 16の倍数
+        let width = width.max(16).min(672) & !0x0f; // 16の倍数
         let height = height.max(2).min(512) & !0x01; // 2の倍数
 
         // x, y が None なら中央に配置
@@ -274,9 +343,9 @@ where
         } & !0x01; // 2の倍数
 
         let x_start = roi_x / 8;
-        let x_end   = x_start + width/8 - 1 ;
+        let x_end = x_start + width / 8 - 1;
         let y_start = roi_y;
-        let y_end   = y_start + height - 1;
+        let y_end = y_start + height - 1;
 
         self.write_p3_spi(256, (x_end << 8) | x_start)?;
         self.write_p3_spi(257, y_start)?;
@@ -285,17 +354,20 @@ where
         Ok(())
     }
 
-pub fn set_sensor_receiver_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+    pub fn set_sensor_receiver_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         if enable {
             // シーケンサ停止(トレーニングパターン出力状態へ)
             self.set_sequencer_enable(false)?;
 
             self.usleep(1000);
-            self.write_s7_reg(REG_P3S7_RECEIVER_RESET,  1)?;
+            self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 1)?;
             self.write_s7_reg(REG_P3S7_RECEIVER_CLK_DLY, 8)?;
             self.write_s7_reg(REG_P3S7_ALIGN_RESET, 1)?;
             self.usleep(1000);
-            self.write_s7_reg(REG_P3S7_RECEIVER_RESET,  0)?;
+            self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 0)?;
             self.usleep(1000);
             self.write_s7_reg(REG_P3S7_ALIGN_RESET, 0)?;
             self.usleep(1000);
@@ -304,14 +376,12 @@ pub fn set_sensor_receiver_enable(&mut self, enable: bool) -> Result<(), RtclP3s
             if cam_calib_status != 0x01 {
                 return Err(RtclP3s7I2cError::ReceiverCalibrationFailed);
             }
-        }
-        else {
+        } else {
             self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 1)?;
             self.write_s7_reg(REG_P3S7_ALIGN_RESET, 1)?;
         }
         Ok(())
     }
-
 
     /// usleep
     fn usleep(&self, usec: u64) {

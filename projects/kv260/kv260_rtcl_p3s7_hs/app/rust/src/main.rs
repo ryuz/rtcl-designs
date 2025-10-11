@@ -92,8 +92,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     return Ok(());
     */
 
-    let width  = 256 ;
-    let height = 256 ;
+    let width = 256;
+    let height = 256;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -142,13 +142,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // カメラモジュールリセット
     unsafe {
-        reg_sys.write_reg(SYSREG_CAM_ENABLE, 0);
-    } // センサー電源OFF
-    std::thread::sleep(std::time::Duration::from_millis(10));
-    unsafe {
-        reg_sys.write_reg(SYSREG_CAM_ENABLE, 1);
-    } // センサー電源OFF
-    std::thread::sleep(std::time::Duration::from_millis(10));
+        reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // センサー電源OFF
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // センサー電源OFF
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
 
     // MMCM 設定
     cam.set_dphy_speed(1250000000.0)?; // 1250Mbps
@@ -171,12 +169,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 高速モード設定
     cam.set_camera_mode(CameraMode::HighSpeed);
 
-
     // センサー電源ON
     println!("Sensor Power On");
     cam.set_sensor_power_enable(true);
-    println!("Sensor ID : {}", cam.sensor_id()?);
-    
+    println!("Sensor ID : 0x{:04x}", cam.sensor_id()?);
+
     // センサー基板 DPHY-TX リセット解除
     cam.set_dphy_reset(false);
     if !cam.dphy_init_done()? {
@@ -185,7 +182,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // ここで RX 側も init_done が来る
-    let dphy_rx_init_done = unsafe{reg_sys.read_reg(SYSREG_DPHY_INIT_DONE)};
+    let dphy_rx_init_done = unsafe { reg_sys.read_reg(SYSREG_DPHY_INIT_DONE) };
     if dphy_rx_init_done == 0 {
         println!("!!ERROR!! KV260 DPHY RX init_done = 0");
         return Err("KV260 DPHY RX init_done = 0".into());
@@ -193,54 +190,76 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 受信画像サイズ設定
     unsafe {
-        reg_sys.write_reg(SYSREG_IMAGE_WIDTH,  width);
+        reg_sys.write_reg(SYSREG_IMAGE_WIDTH, width);
         reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, height);
-        reg_sys.write_reg(SYSREG_BLACK_WIDTH,  1280);
+        reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
         reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
     }
 
     // センサー起動
-    cam.setup();
+//  cam.setup();
+    cam.set_sensor_enable(true)?;
 
     // ROI 設定
     cam.set_roi0(width as u16, height as u16, None, None)?;
 
     // 受信側キャリブレーション
-    cam.set_sensor_receiver_enable(true)?;
+    //  cam.set_sensor_receiver_enable(true)?;
 
     // 動作開始
-    cam.set_sensor_power_enable(true)?;
+    cam.set_sequencer_enable(true)?;
 
     let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
     // video input start
     unsafe {
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 10000000);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 20000000);
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, width);
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, height);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x000);
+        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
     }
     std::thread::sleep(std::time::Duration::from_micros(1000));
 
-    // 1frame キャプチャ
-    vdmaw.oneshot(
-        udmabuf_acc.phys_addr(),
-        width as i32,
-        height as i32,
-        1,
-        0,
-        0,
-        0,
-        0,
-        Some(100000),
-    )?;
+    //  cam.write_p3_spi(144, 0x3)?;  // test pattern
+
+    loop {
+        let key = wait_key(10).unwrap();
+        if key == 0x1b {
+            break;
+        }
+
+        // 1frame キャプチャ
+        vdmaw.oneshot(
+            udmabuf_acc.phys_addr(),
+            width as i32,
+            height as i32,
+            1,
+            0,
+            0,
+            0,
+            0,
+            Some(100000),
+        )?;
+
+        let mut buf = vec![0u16; (width * height) as usize];
+        unsafe {
+            udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
+            for i in 0..buf.len() {
+                buf[i] = (buf[i] as u32 * 64) as u16; // 10bit -> 16bit
+            }
+            let img = Mat::new_rows_cols_with_data(height as i32, width as i32, &buf)?;
+            // 10bit の img を 64倍して 16bit に拡張
+            //          let mut img = img * 64;
+            imshow("img", &img)?;
+        }
+    }
+
     let mut buf = vec![0u16; (width * height) as usize];
     unsafe {
         udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
     }
-
 
     // PGM形式で保存
     let pgm_header = format!("P2\n{} {}\n1023\n", width, height);
@@ -254,14 +273,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             .expect("Failed to write pixel data");
     }
 
+    cam.set_sensor_enable(false)?;
+
     // カメラOFF
     unsafe { reg_sys.write_reg(SYSREG_CAM_ENABLE, 0) };
     std::thread::sleep(std::time::Duration::from_millis(10));
 
     println!("done");
 
-
     return Ok(());
+
+
     ///////////////
     cam.write_s7_reg(CAMREG_DPHY_CORE_RESET, 1); // 受信側 DPHY リセット
     cam.write_s7_reg(CAMREG_DPHY_SYS_RESET, 1); // 受信側 DPHY リセット

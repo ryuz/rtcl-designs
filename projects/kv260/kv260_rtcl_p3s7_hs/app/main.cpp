@@ -346,6 +346,8 @@ int main(int argc, char *argv[])
     cv::createTrackbar("te",   "img", nullptr,  99999);
     cv::setTrackbarPos("te",   "img", trig0_end);
 
+//  spi_change(i2c, 144, 0x3);  // test pattern
+
     int     swap = 0;
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
