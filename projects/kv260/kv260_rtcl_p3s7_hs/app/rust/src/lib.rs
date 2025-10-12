@@ -1,2 +1,2 @@
 
-pub mod rtcl_p3s7_control;
+pub mod camera_control;

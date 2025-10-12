@@ -3,11 +3,10 @@
 use std::error::Error;
 use std::result::Result;
 
+use jelly_lib::i2c_access::I2cAccess;
 use rtcl_lib::rtcl_p3s7_i2c::*;
 use jelly_lib::linux_i2c::LinuxI2c;
-//use jelly_lib::{i2c_access::I2cAccess, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
-use jelly_pac::video_dma_control::VideoDmaControl;
 
 
 const SYSREG_ID: usize = 0x0000;
@@ -21,16 +20,6 @@ const SYSREG_IMAGE_WIDTH: usize = 0x0008;
 const SYSREG_IMAGE_HEIGHT: usize = 0x0009;
 const SYSREG_BLACK_WIDTH: usize = 0x000a;
 const SYSREG_BLACK_HEIGHT: usize = 0x000b;
-
-const TIMGENREG_CORE_ID: usize = 0x0000;
-const TIMGENREG_CORE_VERSION: usize = 0x0001;
-const TIMGENREG_CTL_CONTROL: usize = 0x0004;
-const TIMGENREG_CTL_STATUS: usize = 0x0005;
-const TIMGENREG_CTL_TIMER: usize = 0x0008;
-const TIMGENREG_PARAM_PERIOD: usize = 0x0010;
-const TIMGENREG_PARAM_TRIG0_START: usize = 0x0020;
-const TIMGENREG_PARAM_TRIG0_END: usize = 0x0021;
-const TIMGENREG_PARAM_TRIG0_POL: usize = 0x0022;
 
 // Video format regularizer
 const REG_VIDEO_FMTREG_CORE_ID: usize = 0x00;
@@ -48,61 +37,50 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
 
 type RtclP3s7I2cLinux = RtclP3s7I2c<LinuxI2c>;
+type RegAccess        = UdmabufAccessor::<usize>;
 
-pub struct RtclP3s7Control
+pub struct CameraControl<I2C, U>
+where
+    I2C: I2cAccess,
+    U: Copy + Clone,
 {
-    cam_i2c: RtclP3s7I2cLinux,
-    udmabuf0 : UdmabufAccessor::<usize>,
-    udmabuf1 : UdmabufAccessor::<usize>,
-    reg_sys : UioAccessor::<usize>,
-    reg_timgen : UioAccessor::<usize>,
-    reg_fmtr : UioAccessor::<usize>,
-    wdma_img: VideoDmaControl<UioAccessor<usize>>,
-    wdma_blk: VideoDmaControl<UioAccessor<usize>>,
+    cam_i2c: RtclP3s7I2c<I2C>,
+    reg_sys: UioAccessor<U>,
+    reg_fmtr: UioAccessor<U>,
 
     opend: bool,
     width: usize,
     height: usize,
 }
 
-fn wait_1us() {
-    std::thread::sleep(std::time::Duration::from_micros(1));
-}
-
-
-impl RtclP3s7Control {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
-        let cam_i2c  = RtclP3s7I2cLinux::new_with_linux("/dev/i2c-6")?;
-        let udmabuf0 = UdmabufAccessor::<usize>::new("udmabuf-jelly-vram0", false)?;
-        let udmabuf1 = UdmabufAccessor::<usize>::new("udmabuf-jelly-vram1", false)?;
-        let uio_acc = UioAccessor::<usize>::new_with_name("uio_pl_peri")?;
-        let reg_sys = uio_acc.subclone(0x00000000, 0x400);
-        let reg_timgen = uio_acc.subclone(0x00010000, 0x400);
-        let reg_fmtr = uio_acc.subclone(0x00100000, 0x400);
-        let reg_wdma_img = uio_acc.subclone(0x00210000, 0x400);
-        let reg_wdma_blk = uio_acc.subclone(0x00220000, 0x400);
-        let wdma_img = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
-        let wdma_blk = VideoDmaControl::new(reg_wdma_blk, 2, 2, Some(wait_1us)).unwrap();
-        Ok(Self {
-            cam_i2c ,
-            udmabuf0,
-            udmabuf1,
-            reg_sys    ,
-            reg_timgen ,
-            reg_fmtr   ,
-            wdma_img   ,
-            wdma_blk   ,
+impl<I2C, U> CameraControl<I2C, U>
+where
+    I2C: I2cAccess,
+    U: Copy + Clone,
+{
+    pub fn new(
+        i2c: I2C,
+        reg_sys: UioAccessor<U>,
+        reg_fmtr: UioAccessor<U>,
+    ) -> Self {
+        Self {
+            cam_i2c: RtclP3s7I2c::new(i2c),
+            reg_sys,
+            reg_fmtr,
             opend: false,
             width: 640,
             height: 480,
-        })
+        }
     }
 
     pub fn opend(&self) -> bool {
         self.opend
     }
 
-    pub fn open(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn open(&mut self) -> Result<(), Box<dyn Error>> 
+    where 
+        <I2C as I2cAccess>::Error: std::error::Error + 'static,
+    {
         if self.opend {
             return Ok(());
         }
@@ -111,7 +89,7 @@ impl RtclP3s7Control {
         unsafe {
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // センサー電源OFF
             std::thread::sleep(std::time::Duration::from_millis(10));
-            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // センサー電源OFF
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // センサー電源ON
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
 
@@ -154,37 +132,19 @@ impl RtclP3s7Control {
         unsafe {
             self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
             self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
-            self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
-            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
         }
 
         // センサー起動
         self.cam_i2c.set_sensor_enable(true)?;
 
-        // ROI 設定
-        self.cam_i2c.set_roi0(self.width as u16, self.height as u16, None, None)?;
-
-        // 動作開始
-        self.cam_i2c.set_sequencer_enable(true)?;
-
-        // video input start
-        unsafe {
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 20000000);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
-        }
-        std::thread::sleep(std::time::Duration::from_micros(1000));
-
         self.opend = true;
-
         Ok(())
     }
 
-    fn close(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn close(&mut self) -> Result<(), Box<dyn Error>> 
+    where 
+        <I2C as I2cAccess>::Error: std::error::Error + 'static,
+    {
         if !self.opend {
             return Ok(());
         }
@@ -208,7 +168,4 @@ impl RtclP3s7Control {
 
         Ok(())
     }
-
-
-
 }
