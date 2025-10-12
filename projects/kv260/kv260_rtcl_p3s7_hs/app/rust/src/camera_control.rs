@@ -4,10 +4,9 @@ use std::error::Error;
 use std::result::Result;
 
 use jelly_lib::i2c_access::I2cAccess;
-use rtcl_lib::rtcl_p3s7_i2c::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
-
+use rtcl_lib::rtcl_p3s7_i2c::*;
 
 const SYSREG_ID: usize = 0x0000;
 const SYSREG_DPHY_SW_RESET: usize = 0x0001;
@@ -35,9 +34,8 @@ const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
 const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
-
 type RtclP3s7I2cLinux = RtclP3s7I2c<LinuxI2c>;
-type RegAccess        = UdmabufAccessor::<usize>;
+type RegAccess = UdmabufAccessor<usize>;
 
 pub struct CameraControl<I2C, U>
 where
@@ -51,18 +49,16 @@ where
     opend: bool,
     width: usize,
     height: usize,
+    gain: f32,
 }
 
 impl<I2C, U> CameraControl<I2C, U>
 where
     I2C: I2cAccess,
+    <I2C as I2cAccess>::Error: std::error::Error + 'static,
     U: Copy + Clone,
 {
-    pub fn new(
-        i2c: I2C,
-        reg_sys: UioAccessor<U>,
-        reg_fmtr: UioAccessor<U>,
-    ) -> Self {
+    pub fn new(i2c: I2C, reg_sys: UioAccessor<U>, reg_fmtr: UioAccessor<U>) -> Self {
         Self {
             cam_i2c: RtclP3s7I2c::new(i2c),
             reg_sys,
@@ -70,6 +66,7 @@ where
             opend: false,
             width: 640,
             height: 480,
+            gain: 1.0,
         }
     }
 
@@ -77,8 +74,8 @@ where
         self.opend
     }
 
-    pub fn open(&mut self) -> Result<(), Box<dyn Error>> 
-    where 
+    pub fn open(&mut self) -> Result<(), Box<dyn Error>>
+    where
         <I2C as I2cAccess>::Error: std::error::Error + 'static,
     {
         if self.opend {
@@ -102,7 +99,6 @@ where
         }
 
         // カメラ基板初期化
-        println!("Init Camera");
         self.cam_i2c.set_sensor_power_enable(false)?;
         self.cam_i2c.set_dphy_reset(true)?;
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -116,6 +112,7 @@ where
 
         // センサー電源ON
         self.cam_i2c.set_sensor_power_enable(true)?;
+        std::thread::sleep(std::time::Duration::from_millis(10));
 
         // センサー基板 DPHY-TX リセット解除
         self.cam_i2c.set_dphy_reset(false)?;
@@ -124,7 +121,7 @@ where
         }
 
         // ここで RX 側も init_done が来る
-        if unsafe { self.reg_sys.read_reg(SYSREG_DPHY_INIT_DONE)} == 0 {
+        if unsafe { self.reg_sys.read_reg(SYSREG_DPHY_INIT_DONE) } == 0 {
             return Err("KV260 DPHY RX init_done = 0".into());
         }
 
@@ -132,17 +129,44 @@ where
         unsafe {
             self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
             self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
+            self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
+            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
         }
 
         // センサー起動
         self.cam_i2c.set_sensor_enable(true)?;
 
+        // ROI 設定
+        self.cam_i2c
+            .set_roi0(self.width as u16, self.height as u16, None, None)?;
+        self.cam_i2c.set_gain_db(self.gain)?;
+
+        // video input start
+        unsafe {
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 20000000);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x0);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
+        }
+        std::thread::sleep(std::time::Duration::from_micros(1000));
+
+        // 動作開始
+        self.cam_i2c.set_sequencer_enable(true)?;
+
         self.opend = true;
         Ok(())
     }
 
-    pub fn close(&mut self) -> Result<(), Box<dyn Error>> 
-    where 
+    pub fn close(&mut self) -> Result<(), Box<dyn Error>>
+    where
         <I2C as I2cAccess>::Error: std::error::Error + 'static,
     {
         if !self.opend {
@@ -167,5 +191,53 @@ where
         self.opend = false;
 
         Ok(())
+    }
+
+    pub fn set_image_size(&mut self, width: usize, height: usize) -> Result<(), Box<dyn Error>> {
+        if self.opend() {
+            unsafe {
+                self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x00);
+            }
+            self.cam_i2c.set_sequencer_enable(false)?;
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            self.width = width;
+            self.height = height;
+            self.cam_i2c
+                .set_roi0(self.width as u16, self.height as u16, None, None)?;
+            unsafe {
+                self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
+                self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
+                self.reg_fmtr
+                    .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
+                self.reg_fmtr
+                    .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
+                self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
+            }
+            self.cam_i2c.set_sequencer_enable(true)?;
+        } else {
+            self.width = width;
+            self.height = height;
+        }
+        Ok(())
+    }
+
+    pub fn image_width(&self) -> usize {
+        self.width
+    }
+    pub fn image_height(&self) -> usize {
+        self.height
+    }
+
+    pub fn set_gain(&mut self, db: f32) -> Result<(), Box<dyn Error>> {
+        if self.opend {
+            self.cam_i2c.set_gain_db(db)?;
+            self.gain = self.cam_i2c.gain_db();
+        } else {
+            self.gain = db;
+        }
+        Ok(())
+    }
+    pub fn gain(&self) -> f32 {
+        self.gain
     }
 }

@@ -11,7 +11,6 @@ use jelly_pac::video_dma_control::VideoDmaControl;
 
 use rtcl_lib::rtcl_p3s7_i2c::*;
 
-
 use opencv::{core::*, highgui::*};
 
 const CAMREG_CORE_ID: u16 = 0x0000;
@@ -67,7 +66,6 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
 use kv260_rtcl_p3s7_hs::camera_control::CameraControl;
 
-
 fn usleep(us: u64) {
     std::thread::sleep(std::time::Duration::from_micros(us));
 }
@@ -100,6 +98,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let width = 256;
     let height = 256;
+    //    let width = 640;
+    //    let height = 480;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -136,11 +136,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
+
+    let mut cam = CameraControl::new(i2c, reg_sys, reg_fmtr);
+    cam.open()?;
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+    cam.set_image_size(width, height);
+
+    /*
     let mut cam = RtclP3s7I2c::new(i2c);
-
-//  let mut cam = CameraControl::new(i2c, reg_sys, reg_fmtr);
-//  cam.open()?;
-
 
     println!("Camera Module ID       : {:08x}", cam.module_id()?);
     println!(
@@ -205,20 +208,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // センサー起動
-//  cam.setup();
     cam.set_sensor_enable(true)?;
 
     // ROI 設定
     cam.set_roi0(width as u16, height as u16, None, None)?;
 
-    // 受信側キャリブレーション
-    //  cam.set_sensor_receiver_enable(true)?;
-
     // 動作開始
     cam.set_sequencer_enable(true)?;
-
-//  let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
-    let mut vdmaw = jelly_lib::video_dma_driver::VideoDmaDriver::new(reg_wdma_img, 2, 2, None).unwrap();
 
     // video input start
     unsafe {
@@ -231,8 +227,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
     }
     std::thread::sleep(std::time::Duration::from_micros(1000));
+    */
 
     //  cam.write_p3_spi(144, 0x3)?;  // test pattern
+
+    let mut vdmaw =
+        jelly_lib::video_dma_driver::VideoDmaDriver::new(reg_wdma_img, 2, 2, None).unwrap();
 
     loop {
         let key = wait_key(10).unwrap();
@@ -283,16 +283,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             .expect("Failed to write pixel data");
     }
 
-//  cam.close();
+    cam.close();
 
+    /*
     cam.set_sensor_enable(false)?;
 
     // カメラOFF
     unsafe { reg_sys.write_reg(SYSREG_CAM_ENABLE, 0) };
     std::thread::sleep(std::time::Duration::from_millis(10));
+    */
 
     println!("done");
 
     return Ok(());
 }
-

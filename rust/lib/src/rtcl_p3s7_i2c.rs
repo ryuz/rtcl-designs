@@ -68,6 +68,8 @@ pub struct RtclP3s7I2c<I2C: I2cAccess>
     i2c: I2C,
     usleep: fn(u64),
     general_configuration: u16,
+    analog_gain : f32,
+    digital_gain : f32,
 }
 
 fn usleep(us : u64) {
@@ -79,11 +81,7 @@ fn usleep(us : u64) {
 impl<I2C: I2cAccess> RtclP3s7I2c<I2C>
 {
     pub fn new(i2c: I2C) -> Self {
-        Self {
-            i2c : i2c,
-            usleep : usleep,
-            general_configuration: 0x0000,
-        }
+        Self::new_with_usleep(i2c, usleep)
     }
 
     pub fn new_with_usleep(i2c: I2C, usleep: fn(u64)) -> Self {
@@ -91,6 +89,8 @@ impl<I2C: I2cAccess> RtclP3s7I2c<I2C>
             i2c,
             usleep,
             general_configuration: 0x0000,
+            analog_gain : 1.0,
+            digital_gain : 1.0,
         }
     }
 
@@ -147,25 +147,6 @@ impl<I2C: I2cAccess> RtclP3s7I2c<I2C>
         self.write_s7_reg(REG_P3S7_CSI_MODE, mode as u16)?;
         Ok(())
     }
-
-    /*
-    pub fn setup(&mut self) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
-        // SPI 初期設定
-        self.write_p3_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-        self.write_p3_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        self.write_p3_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
-        self.write_p3_spi(9, 0x0000)?; // cgen_soft_reset
-        self.write_p3_spi(34, 0x1)?; // config0 Logic General Enable Configuration
-        self.write_p3_spi(40, 0x7)?; // image_core_config0
-        self.write_p3_spi(48, 0x1)?; // AFE Power down for AFE’s
-        self.write_p3_spi(64, 0x1)?; // Bias Bias Power Down Configuration
-        self.write_p3_spi(72, 0x2227)?; // Charge Pump
-        self.write_p3_spi(112, 0x7)?; // Serializers/LVDS/IO
-        self.write_p3_spi(10, 0x0000)?; // soft_reset_analog
-        self.write_p3_spi(192, self.general_configuration)?;
-        Ok(())
-    }
-    */
 
     pub fn set_sensor_enable(&mut self, enable: bool) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
         if enable {
@@ -390,6 +371,67 @@ impl<I2C: I2cAccess> RtclP3s7I2c<I2C>
         }
         Ok(())
     }
+
+
+    /// Set the analog gain (linear scale)
+    pub fn set_analog_gain_linear(&mut self, linear_gain: f32) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        let (reg_val, gain) = if linear_gain >= 14.0 {
+            (0x01e8, 14.0)
+        } else if linear_gain >= 3.5 {
+            (0x01e4, 3.5)
+        } else if linear_gain >= 1.9 {
+            (0x01e1, 1.9)
+        } else {
+            (0x01e3, 1.0)
+        };
+        self.write_p3_spi(204, reg_val)?;
+        self.analog_gain = gain;
+        Ok(())
+    }
+
+    /// Get the analog gain (linear scale)
+    pub fn analog_gain_linear(&self) -> f32 {
+        self.analog_gain
+    }
+
+    /// Set the digital gain (linear scale)
+    pub fn set_digital_gain_linear(&mut self, linear_gain: f32) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        let reg_val = (linear_gain * 128.0).round() as u16;
+        self.write_p3_spi(205, reg_val)?;
+        self.digital_gain = reg_val as f32 / 128.0;
+        Ok(())
+    }
+
+    /// Get the digital gain (linear scale)
+    pub fn digital_gain_linear(&self) -> f32 {
+        self.digital_gain
+    }
+
+    /// Set both analog and digital gain (linear scale)
+    pub fn set_gain_linear(&mut self, mut linear_gain: f32) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.set_analog_gain_linear(linear_gain)?;
+        linear_gain /= self.analog_gain_linear();
+        self.set_digital_gain_linear(linear_gain)?;
+        Ok(())
+    }
+
+    /// Get the total gain (linear scale)
+    pub fn gain_linear(&self) -> f32 {
+        self.analog_gain_linear() * self.digital_gain_linear()
+    }
+
+    /// Set gain in dB
+    pub fn set_gain_db(&mut self, db_gain: f32) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        let linear_gain = 10f32.powf(db_gain / 20.0);
+        self.set_gain_linear(linear_gain)
+    }
+
+    /// Get gain in dB
+    pub fn gain_db(&self) -> f32 {
+        let linear_gain = self.gain_linear();
+        20.0 * linear_gain.log10()
+    }
+
 
     /// usleep
     fn usleep(&self, usec: u64) {
