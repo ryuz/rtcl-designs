@@ -63,21 +63,30 @@ pub enum CameraMode {
     Csi2 = 1,
 }
 
-pub struct RtclP3s7I2c<I2C: I2cAccess, F>
-where
-    F: Fn(u64),
+pub struct RtclP3s7I2c<I2C: I2cAccess>
 {
     i2c: I2C,
-    usleep: F,
-
+    usleep: fn(u64),
     general_configuration: u16,
 }
 
-impl<I2C: I2cAccess, F> RtclP3s7I2c<I2C, F>
-where
-    F: Fn(u64),
+fn usleep(us : u64) {
+    let duration = core::time::Duration::from_micros(us);
+    jelly_lib::portable_delay(duration);
+}
+
+
+impl<I2C: I2cAccess> RtclP3s7I2c<I2C>
 {
-    pub fn new(i2c: I2C, usleep: F) -> Self {
+    pub fn new(i2c: I2C) -> Self {
+        Self {
+            i2c : i2c,
+            usleep : usleep,
+            general_configuration: 0x0000,
+        }
+    }
+
+    pub fn new_with_usleep(i2c: I2C, usleep: fn(u64)) -> Self {
         Self {
             i2c,
             usleep,
@@ -88,10 +97,9 @@ where
     #[cfg(feature = "std")]
     pub fn new_with_linux(
         devname: &str,
-    ) -> Result<RtclP3s7I2c<LinuxI2c, fn(u64)>, Box<dyn std::error::Error>> {
+    ) -> Result<RtclP3s7I2c<LinuxI2c>, Box<dyn std::error::Error>> {
         let i2c = LinuxI2c::new(devname, 0x10)?;
-        let sleep_fn: fn(u64) = |t| std::thread::sleep(std::time::Duration::from_micros(t));
-        Ok(RtclP3s7I2c::new(i2c, sleep_fn))
+        Ok(RtclP3s7I2c::new(i2c))
     }
 
     pub fn module_id(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
@@ -457,6 +465,7 @@ where
         Ok(())
     }
 }
+
 
 const MMCM_TBL_1250: [(u16, u16); 24] = [
     (0x06, 0x0041),

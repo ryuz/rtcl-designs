@@ -9,6 +9,9 @@ use jelly_lib::{i2c_access::I2cAccess, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
 use jelly_pac::video_dma_control::VideoDmaControl;
 
+use rtcl_lib::rtcl_p3s7_i2c::*;
+
+
 use opencv::{core::*, highgui::*};
 
 const CAMREG_CORE_ID: u16 = 0x0000;
@@ -60,7 +63,7 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 //const BIT_STREAM: &'static [u8] = include_bytes!("../kv260_rtcl_p3s7_hs.bit");
 
 //use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::RtclP3s7I2c;
-use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::*;
+//use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::*;
 
 fn usleep(us: u64) {
     std::thread::sleep(std::time::Duration::from_micros(us));
@@ -130,7 +133,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10).unwrap();
-    let mut cam = RtclP3s7I2c::new(i2c, usleep);
+    let mut cam = RtclP3s7I2c::new(i2c);
 
     //  let mut cam = RtclP3s7I2c::new_with_linux("/dev/i2c-6")?;
 
@@ -209,7 +212,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 動作開始
     cam.set_sequencer_enable(true)?;
 
-    let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
+//  let mut vdmaw = VideoDmaControl::new(reg_wdma_img, 2, 2, Some(wait_1us)).unwrap();
+    let mut vdmaw = jelly_lib::video_dma_driver::VideoDmaDriver::new(reg_wdma_img, 2, 2, None).unwrap();
     // video input start
     unsafe {
         reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
