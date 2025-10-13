@@ -64,7 +64,8 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 //use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::RtclP3s7I2c;
 //use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::*;
 
-use kv260_rtcl_p3s7_hs::camera_control::CameraControl;
+use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
+use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
 
 fn usleep(us: u64) {
     std::thread::sleep(std::time::Duration::from_micros(us));
@@ -146,10 +147,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
 
-    let mut cam = CameraControl::new(i2c, reg_sys, reg_fmtr);
+    let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
     cam.set_image_size(width, height);
+
+    let mut video_capture = CaptureDriver::new(reg_wdma_img.clone(), udmabuf_acc.clone())?;
 
     /*
     let mut cam = RtclP3s7I2c::new(i2c);
@@ -250,6 +253,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // 1frame キャプチャ
+        /*
         vdmaw.oneshot(
             udmabuf_acc.phys_addr(),
             width as i32,
@@ -273,6 +277,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             //          let mut img = img * 64;
             imshow("img", &img)?;
         }
+        */
+
+        // CaptureDriver で 1frame キャプチャ
+        video_capture.record(width, height, 1)?;
+        let img = video_capture.read_image(0)?;
+
+        // 10bit の img を 64倍して 16bit に拡張して表示
+         let mut view = Mat::default();
+        img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
+        imshow("img", &view)?;
+
+
+
+
+        
+
+//      imshow("img", &img)?;
 
         if key == 'p' as i32 {
             println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());

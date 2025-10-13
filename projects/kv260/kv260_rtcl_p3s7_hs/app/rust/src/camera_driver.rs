@@ -37,9 +37,10 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 type RtclP3s7ModuleDriverLinux = RtclP3s7ModuleDriver<LinuxI2c>;
 type RegAccess = UdmabufAccessor<usize>;
 
-pub struct CameraControl<I2C, U>
+pub struct CameraDriver<I2C, U>
 where
     I2C: I2cHal,
+    <I2C as I2cHal>::Error: std::error::Error + 'static,
     U: Copy + Clone,
 {
     cam_i2c: RtclP3s7ModuleDriver<I2C>,
@@ -55,7 +56,7 @@ where
     exposure: u16,
 }
 
-impl<I2C, U> CameraControl<I2C, U>
+impl<I2C, U> CameraDriver<I2C, U>
 where
     I2C: I2cHal,
     <I2C as I2cHal>::Error: std::error::Error + 'static,
@@ -81,8 +82,6 @@ where
     }
 
     pub fn open(&mut self) -> Result<(), Box<dyn Error>>
-    where
-        <I2C as I2cHal>::Error: std::error::Error + 'static,
     {
         if self.opend {
             return Ok(());
@@ -175,9 +174,8 @@ where
         Ok(())
     }
 
+    // カメラ停止
     pub fn close(&mut self) -> Result<(), Box<dyn Error>>
-    where
-        <I2C as I2cHal>::Error: std::error::Error + 'static,
     {
         if !self.opend {
             return Ok(());
@@ -312,5 +310,18 @@ where
             let calc_ns = (mult_timer_status as f32 * (exposure_status as f32 + reset_length_status as f32)) as f32 * 13.888888;
             println!("diff : {} ns", measure_ns - calc_ns);
         }
+    }
+}
+
+
+// オブジェクト解放時にクローズ
+impl<I2C, U> Drop for CameraDriver<I2C, U>
+where
+    I2C: I2cHal,
+    <I2C as I2cHal>::Error: std::error::Error + 'static,
+    U: Copy + Clone,
+{
+    fn drop(&mut self) {
+        let _ = self.close();
     }
 }

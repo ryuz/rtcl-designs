@@ -1,1 +1,3 @@
-pub mod camera_control;
+pub mod camera_driver;
+pub mod capture_driver;
+
