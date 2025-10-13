@@ -9,6 +9,7 @@ use jelly_lib::{i2c_hal::I2cHal, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
 use jelly_pac::video_dma_control::VideoDmaControl;
 
+use opencv::*;
 use opencv::imgcodecs::imwrite;
 use rtcl_lib::rtcl_p3s7_module_driver::*;
 
@@ -149,11 +150,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
-    let timgen = TimingGeneratorDriver::new(reg_timgen);
+    let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_image_size(width, height);
+    cam.set_slave_mode(true);
+    cam.set_trigger_mode(true);
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
@@ -166,6 +169,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         jelly_lib::video_dma_pac::VideoDmaPac::new(reg_wdma_img, 2, 2, None).unwrap();
 
 
+    // ウィンドウ作成
+    highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
+
+    // トラックバー生成
+    create_cv_trackbar("gain",       0,  200,  10)?;
+    create_cv_trackbar("fps",       10, 1000,  60)?;
+    create_cv_trackbar("exposure",  10,  900, 900)?;
+
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         // ESC キーで終了
@@ -173,6 +184,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         if key == 0x1b {
             break;
         }
+
+        // トラックバー値取得
+        let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
+        let fps = get_cv_trackbar_pos("fps")? as f32;
+        let exposure = get_cv_trackbar_pos("exposure")? as u16;
+
+        // us 単位に変換
+        let period_us = 1000000.0 / fps;
+        let exposure_us = period_us * (exposure as f32 / 1000.0);
+        timgen.set_timing(period_us, exposure_us)?;
 
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
@@ -229,4 +250,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("done");
 
     return Ok(());
+}
+
+
+fn create_cv_trackbar(trackbarname: &str, minval: i32, maxval: i32, inival: i32) -> opencv::Result<()> {
+    let winname = "img";
+    highgui::create_trackbar(trackbarname, &winname, None, maxval, None)?;
+    highgui::set_trackbar_min(trackbarname, &winname, minval)?;
+    highgui::set_trackbar_max(trackbarname, &winname, maxval)?;
+    highgui::set_trackbar_pos(trackbarname, &winname, inival)?;
+    Ok(())
+}
+
+fn get_cv_trackbar_pos(trackbarname: &str) -> opencv::Result<i32> {
+    let winname = "img";
+    let val = highgui::get_trackbar_pos(trackbarname, &winname)?;
+    Ok(val)
 }

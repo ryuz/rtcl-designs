@@ -50,6 +50,8 @@ where
     opend: bool,
     width: usize,
     height: usize,
+    slave_mode: bool,
+    trigger_mode: bool,
     gain: f32,
     mult_timer: u16,
     fr_length: u16,
@@ -70,6 +72,8 @@ where
             opend: false,
             width: 640,
             height: 480,
+            slave_mode: false,
+            trigger_mode: false,
             gain: 1.0,
             mult_timer: 72,
             fr_length: 0,
@@ -167,6 +171,10 @@ where
         }
         std::thread::sleep(std::time::Duration::from_micros(1000));
 
+        // スレーブモード、トリガーモード設定
+        self.cam_i2c.set_slave_mode(self.slave_mode)?;
+        self.cam_i2c.set_triggered_mode(self.trigger_mode)?;
+
         // 動作開始
         self.cam_i2c.set_sequencer_enable(true)?;
 
@@ -198,6 +206,24 @@ where
 
         self.opend = false;
 
+        Ok(())
+    }
+
+    /// スレーブモード設定
+    pub fn set_slave_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
+        self.slave_mode = enable;
+        if self.opend {
+            self.cam_i2c.set_slave_mode(enable)?;
+        }
+        Ok(())
+    }
+    
+    /// トリガーモード設定
+    pub fn set_trigger_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
+        self.trigger_mode = enable;
+        if self.opend {
+            self.cam_i2c.set_triggered_mode(enable)?;
+        }
         Ok(())
     }
 
