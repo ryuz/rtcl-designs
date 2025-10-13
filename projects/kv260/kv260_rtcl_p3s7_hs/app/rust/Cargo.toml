@@ -22,6 +22,7 @@ rtcl-lib = { path = "../../../../../rust/lib" }
 ctrlc = "3.5.0"
 opencv = "0.93.5"
 #opencv = "0.96.0"
+chrono = { version = "0.4", features = ["clock", "std"] }
 
 [features]
 default = ["std"]

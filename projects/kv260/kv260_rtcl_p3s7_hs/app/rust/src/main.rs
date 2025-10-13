@@ -207,6 +207,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // キーボード操作
         let ch = key as u8 as char;
         match ch {
+            'q' => { break; },
             'p' => {
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
@@ -214,8 +215,27 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("write : dump.png");
                 imwrite("dump.png", &view, &Vector::<i32>::new())?;
             },
+            'r' => {  // 動画記録
+                // 日時のディレクトリを生成
+                let now = chrono::Local::now();
+                let _ = std::fs::create_dir("record");
+                let dir_name = format!("record/{}", now.format("%Y%m%d-%H%M%S"));
+                std::fs::create_dir(&dir_name).expect("Failed to create directory");
+                println!("record to {}", dir_name);
+                
+                // 100フレーム録画
+                let frames = 100;
+                video_capture.record(width, height, frames)?;
+                for f in 0..frames {
+                   let img = video_capture.read_image(f)?;
+                    let mut view = Mat::default();
+                    img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
+                    let file_name = format!("{}/img{:04}.png", dir_name, f);
+                    imwrite(&file_name, &view, &Vector::<i32>::new())?;
+                }
+                println!("record done");
+            },
             _ => {
-                //println!("key = {}", key);
             }
         }
     }
