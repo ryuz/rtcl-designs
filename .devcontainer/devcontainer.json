@@ -1,0 +1,37 @@
+{
+	"name": "KV260 Cross Development",
+//  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04"
+    "dockerFile": "Dockerfile",
+
+	"mounts": [
+		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+		"source=/tools/Xilinx,target=/tools/Xilinx,type=bind,consistency=cached"
+	],
+
+	"features": {
+	    "ghcr.io/devcontainers/features/rust:1": {"version": "latest"},
+        "ghcr.io/devcontainers/features/python:1": {"version": "3.12"}
+  	},
+
+ 	"customizations": {
+		"vscode": {
+			"extensions": [
+				"rust-lang.rust-analyzer",
+				"vadimcn.vscode-lldb",
+				"mshr-h.veriloghdl",
+				"tamasfe.even-better-toml",
+				"serayuzgur.crates",
+				"dustypomerleau.rust-syntax",
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.autopep8",
+				"ms-toolsai.jupyter"
+			]
+		}
+	},
+
+	"postCreateCommand": ".devcontainer/postCreateCommand.sh"
+	
+//	"postCreateCommand": "pip3 install -r .devcontainer/requirements.txt"
+//	"postStartCommand": "bash -lc 'if [ -d /tools/Xilinx ]; then for s in Vivado Vitis Vitis_HLS; do if [ -d /tools/Xilinx/$s ]; then LATEST=$(ls -1 /tools/Xilinx/$s | sort -V | tail -1); if [ -f /tools/Xilinx/$s/$LATEST/settings64.sh ]; then LINE=\"source /tools/Xilinx/$s/$LATEST/settings64.sh\"; grep -qxF \"$LINE\" ~/.bashrc || echo \"$LINE\" >> ~/.bashrc; fi; fi; done; fi'"
+}
