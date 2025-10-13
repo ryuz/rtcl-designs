@@ -1,84 +1,24 @@
-#![allow(unused)]
+
+//#![allow(unused)]
 
 use std::error::Error;
 use std::io::Write;
-//use std::thread;
-//use std::time::Duration;
-
-use jelly_lib::{i2c_hal::I2cHal, linux_i2c::LinuxI2c};
-use jelly_mem_access::*;
-use jelly_pac::video_dma_control::VideoDmaControl;
 
 use opencv::*;
-use opencv::imgcodecs::imwrite;
-use rtcl_lib::rtcl_p3s7_module_driver::*;
+use opencv::core::*;
+//use opencv::imgcodecs::imwrite;
+//use opencv::{core::*, highgui::*, imgproc::*};
+//use opencv::{core::*, highgui::*};
 
-use opencv::{core::*, highgui::*, imgproc::*};
+use jelly_lib::linux_i2c::LinuxI2c;
+use jelly_mem_access::*;
+//use jelly_pac::video_dma_control::VideoDmaControl;
 
-/*
-const CAMREG_CORE_ID: u16 = 0x0000;
-const CAMREG_CORE_VERSION: u16 = 0x0001;
-const CAMREG_RECV_RESET: u16 = 0x0010;
-const CAMREG_ALIGN_RESET: u16 = 0x0020;
-const CAMREG_ALIGN_PATTERN: u16 = 0x0022;
-const CAMREG_ALIGN_STATUS: u16 = 0x0028;
-const CAMREG_DPHY_CORE_RESET: u16 = 0x0080;
-const CAMREG_DPHY_SYS_RESET: u16 = 0x0081;
-const CAMREG_DPHY_INIT_DONE: u16 = 0x0088;
-
-const SYSREG_ID: usize = 0x0000;
-const SYSREG_DPHY_SW_RESET: usize = 0x0001;
-const SYSREG_CAM_ENABLE: usize = 0x0002;
-const SYSREG_CSI_DATA_TYPE: usize = 0x0003;
-const SYSREG_DPHY_INIT_DONE: usize = 0x0004;
-const SYSREG_FPS_COUNT: usize = 0x0006;
-const SYSREG_FRAME_COUNT: usize = 0x0007;
-const SYSREG_IMAGE_WIDTH: usize = 0x0008;
-const SYSREG_IMAGE_HEIGHT: usize = 0x0009;
-const SYSREG_BLACK_WIDTH: usize = 0x000a;
-const SYSREG_BLACK_HEIGHT: usize = 0x000b;
-
-const TIMGENREG_CORE_ID: usize = 0x0000;
-const TIMGENREG_CORE_VERSION: usize = 0x0001;
-const TIMGENREG_CTL_CONTROL: usize = 0x0004;
-const TIMGENREG_CTL_STATUS: usize = 0x0005;
-const TIMGENREG_CTL_TIMER: usize = 0x0008;
-const TIMGENREG_PARAM_PERIOD: usize = 0x0010;
-const TIMGENREG_PARAM_TRIG0_START: usize = 0x0020;
-const TIMGENREG_PARAM_TRIG0_END: usize = 0x0021;
-const TIMGENREG_PARAM_TRIG0_POL: usize = 0x0022;
-
-// Video format regularizer
-const REG_VIDEO_FMTREG_CORE_ID: usize = 0x00;
-const REG_VIDEO_FMTREG_CORE_VERSION: usize = 0x01;
-const REG_VIDEO_FMTREG_CTL_CONTROL: usize = 0x04;
-const REG_VIDEO_FMTREG_CTL_STATUS: usize = 0x05;
-const REG_VIDEO_FMTREG_CTL_INDEX: usize = 0x07;
-const REG_VIDEO_FMTREG_CTL_SKIP: usize = 0x08;
-const REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN: usize = 0x0a;
-const REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT: usize = 0x0b;
-const REG_VIDEO_FMTREG_PARAM_WIDTH: usize = 0x10;
-const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
-const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
-const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
-*/
-
-//const BIT_STREAM: &'static [u8] = include_bytes!("../kv260_rtcl_p3s7_hs.bit");
-
-//use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::RtclP3s7I2c;
-//use kv260_rtcl_p3s7_hs::rtcl_p3s7_i2c::*;
-
+//use rtcl_lib::rtcl_p3s7_module_driver::*;
 use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
 use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
-fn usleep(us: u64) {
-    std::thread::sleep(std::time::Duration::from_micros(us));
-}
-
-fn wait_1us() {
-    std::thread::sleep(std::time::Duration::from_micros(1));
-}
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("start kv260_rtcl_p3s7_hs");
@@ -109,8 +49,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     return Ok(());
     */
 
-    let width = 256;
-    let height = 256;
+//    let width = 256;
+//    let height = 256;
         let width = 640;
         let height = 480;
 //    let width = 64;
@@ -142,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_timgen = uio_acc.subclone(0x00010000, 0x400);
     let reg_fmtr = uio_acc.subclone(0x00100000, 0x400);
     let reg_wdma_img = uio_acc.subclone(0x00210000, 0x400);
-    let reg_wdma_blk = uio_acc.subclone(0x00220000, 0x400);
+//  let reg_wdma_blk = uio_acc.subclone(0x00220000, 0x400);
 
     println!("CORE ID");
     println!("reg_sys      : {:08x}", unsafe { reg_sys.read_reg(0) });
@@ -154,19 +94,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
-    cam.set_image_size(width, height);
-    cam.set_slave_mode(true);
-    cam.set_trigger_mode(true);
+    cam.set_image_size(width, height)?;
+    cam.set_slave_mode(true)?;
+    cam.set_trigger_mode(true)?;
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
-    let mut video_capture = CaptureDriver::new(reg_wdma_img.clone(), udmabuf_acc.clone())?;
+    let mut video_capture = CaptureDriver::new(reg_wdma_img, udmabuf_acc.clone())?;
 
 
     //  cam.write_p3_spi(144, 0x3)?;  // test pattern
 
-    let mut vdmaw =
-        jelly_lib::video_dma_pac::VideoDmaPac::new(reg_wdma_img, 2, 2, None).unwrap();
+//    let mut vdmaw =
+//        jelly_lib::video_dma_pac::VideoDmaPac::new(reg_wdma_img, 2, 2, None).unwrap();
 
 
     // ウィンドウ作成
@@ -180,7 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         // ESC キーで終了
-        let key = wait_key(10).unwrap();
+        let key = highgui::wait_key(10).unwrap();
         if key == 0x1b {
             break;
         }
@@ -189,6 +129,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
+
+        cam.set_gain(gain)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
@@ -202,7 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-        imshow("img", &view)?;
+        highgui::imshow("img", &view)?;
 
         // キーボード操作
         let ch = key as u8 as char;
@@ -213,7 +155,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             'd' => {
                 println!("write : dump.png");
-                imwrite("dump.png", &view, &Vector::<i32>::new())?;
+                imgcodecs::imwrite("dump.png", &view, &Vector::<i32>::new())?;
             },
             'r' => {  // 動画記録
                 // 日時のディレクトリを生成
@@ -231,7 +173,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let mut view = Mat::default();
                     img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
                     let file_name = format!("{}/img{:04}.png", dir_name, f);
-                    imwrite(&file_name, &view, &Vector::<i32>::new())?;
+                    imgcodecs::imwrite(&file_name, &view, &Vector::<i32>::new())?;
                 }
                 println!("record done");
             },
@@ -257,7 +199,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .expect("Failed to write pixel data");
     }
 
-    cam.close();
+    cam.close()?;
 
     /*
     cam.set_sensor_enable(false)?;
