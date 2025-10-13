@@ -3,10 +3,10 @@
 use std::error::Error;
 use std::result::Result;
 
-use jelly_lib::i2c_access::I2cAccess;
+use jelly_lib::i2c_hal::I2cHal;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
-use rtcl_lib::rtcl_p3s7_i2c::*;
+use rtcl_lib::rtcl_p3s7_module_driver::*;
 
 const SYSREG_ID: usize = 0x0000;
 const SYSREG_DPHY_SW_RESET: usize = 0x0001;
@@ -34,15 +34,15 @@ const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
 const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
-type RtclP3s7I2cLinux = RtclP3s7I2c<LinuxI2c>;
+type RtclP3s7ModuleDriverLinux = RtclP3s7ModuleDriver<LinuxI2c>;
 type RegAccess = UdmabufAccessor<usize>;
 
 pub struct CameraControl<I2C, U>
 where
-    I2C: I2cAccess,
+    I2C: I2cHal,
     U: Copy + Clone,
 {
-    cam_i2c: RtclP3s7I2c<I2C>,
+    cam_i2c: RtclP3s7ModuleDriver<I2C>,
     reg_sys: UioAccessor<U>,
     reg_fmtr: UioAccessor<U>,
 
@@ -57,13 +57,13 @@ where
 
 impl<I2C, U> CameraControl<I2C, U>
 where
-    I2C: I2cAccess,
-    <I2C as I2cAccess>::Error: std::error::Error + 'static,
+    I2C: I2cHal,
+    <I2C as I2cHal>::Error: std::error::Error + 'static,
     U: Copy + Clone,
 {
     pub fn new(i2c: I2C, reg_sys: UioAccessor<U>, reg_fmtr: UioAccessor<U>) -> Self {
         Self {
-            cam_i2c: RtclP3s7I2c::new(i2c),
+            cam_i2c: RtclP3s7ModuleDriver::new(i2c),
             reg_sys,
             reg_fmtr,
             opend: false,
@@ -82,7 +82,7 @@ where
 
     pub fn open(&mut self) -> Result<(), Box<dyn Error>>
     where
-        <I2C as I2cAccess>::Error: std::error::Error + 'static,
+        <I2C as I2cHal>::Error: std::error::Error + 'static,
     {
         if self.opend {
             return Ok(());
@@ -177,7 +177,7 @@ where
 
     pub fn close(&mut self) -> Result<(), Box<dyn Error>>
     where
-        <I2C as I2cAccess>::Error: std::error::Error + 'static,
+        <I2C as I2cHal>::Error: std::error::Error + 'static,
     {
         if !self.opend {
             return Ok(());

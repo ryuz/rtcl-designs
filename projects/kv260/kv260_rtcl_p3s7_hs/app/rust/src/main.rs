@@ -5,11 +5,11 @@ use std::io::Write;
 //use std::thread;
 //use std::time::Duration;
 
-use jelly_lib::{i2c_access::I2cAccess, linux_i2c::LinuxI2c};
+use jelly_lib::{i2c_hal::I2cHal, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
 use jelly_pac::video_dma_control::VideoDmaControl;
 
-use rtcl_lib::rtcl_p3s7_i2c::*;
+use rtcl_lib::rtcl_p3s7_module_driver::*;
 
 use opencv::{core::*, highgui::*};
 
@@ -241,7 +241,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //  cam.write_p3_spi(144, 0x3)?;  // test pattern
 
     let mut vdmaw =
-        jelly_lib::video_dma_driver::VideoDmaDriver::new(reg_wdma_img, 2, 2, None).unwrap();
+        jelly_lib::video_dma_pac::VideoDmaPac::new(reg_wdma_img, 2, 2, None).unwrap();
 
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         let key = wait_key(10).unwrap();
