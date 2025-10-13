@@ -74,7 +74,7 @@ impl<T0: MemAccess, T1: MemAccess> CaptureDriver<T0, T1>
             let mut img = Mat::new_rows_cols(height as i32, width as i32, CV_16UC1)?;
             debug_assert!(img.is_continuous());
             let buf: &mut [u16] = img.data_typed_mut::<u16>()?;
-            let offset = index * pixels;
+            let offset = index * pixels * 2;
             self.dmabuf.copy_to_u16(offset, buf.as_mut_ptr(), pixels);
             Ok(img)
         }
