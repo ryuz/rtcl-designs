@@ -9,10 +9,12 @@ use jelly_lib::{i2c_hal::I2cHal, linux_i2c::LinuxI2c};
 use jelly_mem_access::*;
 use jelly_pac::video_dma_control::VideoDmaControl;
 
+use opencv::imgcodecs::imwrite;
 use rtcl_lib::rtcl_p3s7_module_driver::*;
 
-use opencv::{core::*, highgui::*};
+use opencv::{core::*, highgui::*, imgproc::*};
 
+/*
 const CAMREG_CORE_ID: u16 = 0x0000;
 const CAMREG_CORE_VERSION: u16 = 0x0001;
 const CAMREG_RECV_RESET: u16 = 0x0010;
@@ -58,6 +60,7 @@ const REG_VIDEO_FMTREG_PARAM_WIDTH: usize = 0x10;
 const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
 const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
+*/
 
 //const BIT_STREAM: &'static [u8] = include_bytes!("../kv260_rtcl_p3s7_hs.bit");
 
@@ -146,165 +149,50 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
-
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    cam.set_image_size(width, height);
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
-    cam.set_image_size(width, height);
 
     let mut video_capture = CaptureDriver::new(reg_wdma_img.clone(), udmabuf_acc.clone())?;
-
-    /*
-    let mut cam = RtclP3s7I2c::new(i2c);
-
-    println!("Camera Module ID       : {:08x}", cam.module_id()?);
-    println!(
-        "Camera Module Version  : {:08x}",
-        cam.read_s7_reg(CAMREG_CORE_VERSION)?
-    );
-
-    // カメラモジュールリセット
-    unsafe {
-        reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // センサー電源OFF
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // センサー電源OFF
-        std::thread::sleep(std::time::Duration::from_millis(10));
-    }
-
-    // MMCM 設定
-    cam.set_dphy_speed(1250000000.0)?; // 1250Mbps
-
-    // 受信側 DPHY リセット
-    unsafe {
-        reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 1);
-    }
-
-    // カメラ基板初期化
-    println!("Init Camera");
-    cam.set_sensor_power_enable(false)?;
-    cam.set_dphy_reset(true);
-    std::thread::sleep(std::time::Duration::from_millis(10));
-
-    // 受信側 DPHY 解除 (必ずこちらを先に解除)
-    unsafe {
-        reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 0);
-    }
-    // 高速モード設定
-    cam.set_camera_mode(CameraMode::HighSpeed);
-
-    // センサー電源ON
-    println!("Sensor Power On");
-    cam.set_sensor_power_enable(true);
-    println!("Sensor ID : 0x{:04x}", cam.sensor_id()?);
-
-    // センサー基板 DPHY-TX リセット解除
-    cam.set_dphy_reset(false);
-    if !cam.dphy_init_done()? {
-        println!("!!ERROR!! CAM DPHY TX init_done = 0");
-        return Err("CAM DPHY TX init_done = 0".into());
-    }
-
-    // ここで RX 側も init_done が来る
-    let dphy_rx_init_done = unsafe { reg_sys.read_reg(SYSREG_DPHY_INIT_DONE) };
-    if dphy_rx_init_done == 0 {
-        println!("!!ERROR!! KV260 DPHY RX init_done = 0");
-        return Err("KV260 DPHY RX init_done = 0".into());
-    }
-
-    // 受信画像サイズ設定
-    unsafe {
-        reg_sys.write_reg(SYSREG_IMAGE_WIDTH, width);
-        reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, height);
-        reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
-        reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
-    }
-
-    // センサー起動
-    cam.set_sensor_enable(true)?;
-
-    // ROI 設定
-    cam.set_roi0(width as u16, height as u16, None, None)?;
-
-    // 動作開始
-    cam.set_sequencer_enable(true)?;
-
-    // video input start
-    unsafe {
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 20000000);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, width);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, height);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
-        reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
-    }
-    std::thread::sleep(std::time::Duration::from_micros(1000));
-    */
 
     //  cam.write_p3_spi(144, 0x3)?;  // test pattern
 
     let mut vdmaw =
         jelly_lib::video_dma_pac::VideoDmaPac::new(reg_wdma_img, 2, 2, None).unwrap();
 
+
+    // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
+        // ESC キーで終了
         let key = wait_key(10).unwrap();
         if key == 0x1b {
             break;
         }
 
-        // 1frame キャプチャ
-        /*
-        vdmaw.oneshot(
-            udmabuf_acc.phys_addr(),
-            width as i32,
-            height as i32,
-            1,
-            0,
-            0,
-            0,
-            0,
-            Some(100000),
-        )?;
-
-        let mut buf = vec![0u16; (width * height) as usize];
-        unsafe {
-            udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
-            for i in 0..buf.len() {
-                buf[i] = (buf[i] as u32 * 64) as u16; // 10bit -> 16bit
-            }
-            let img = Mat::new_rows_cols_with_data(height as i32, width as i32, &buf)?;
-            // 10bit の img を 64倍して 16bit に拡張
-            //          let mut img = img * 64;
-            imshow("img", &img)?;
-        }
-        */
-
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
         let img = video_capture.read_image(0)?;
 
-        // 10bit の img を 64倍して 16bit に拡張して表示
-         let mut view = Mat::default();
+        // 10bit 画像なので加工して表示
+        let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
         imshow("img", &view)?;
 
-
-
-
-        
-
-//      imshow("img", &img)?;
-
-        if key == 'p' as i32 {
-            println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
-//            let fps_count   = unsafe{reg_sys.read_reg(SYSREG_FPS_COUNT)};
-//            let frame_count = unsafe{reg_sys.read_reg(SYSREG_FRAME_COUNT)};
-
+        // キーボード操作
+        let ch = key as u8 as char;
+        match ch {
+            'p' => {
+                println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
+            },
+            'd' => {
+                println!("write : dump.png");
+                imwrite("dump.png", &view, &Vector::<i32>::new())?;
+            },
+            _ => {
+                //println!("key = {}", key);
+            }
         }
-
-//        cam.print_timing_status();
-//        break;
-
     }
 
     let mut buf = vec![0u16; (width * height) as usize];
