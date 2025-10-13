@@ -69,6 +69,7 @@ const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
 use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
 use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
+use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
 fn usleep(us: u64) {
     std::thread::sleep(std::time::Duration::from_micros(us));
@@ -148,6 +149,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
+    let timgen = TimingGeneratorDriver::new(reg_timgen);
+
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_image_size(width, height);
@@ -155,6 +158,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     let mut video_capture = CaptureDriver::new(reg_wdma_img.clone(), udmabuf_acc.clone())?;
+
 
     //  cam.write_p3_spi(144, 0x3)?;  // test pattern
 

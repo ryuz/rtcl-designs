@@ -305,7 +305,8 @@ int main(int argc, char *argv[])
     }
 
     // 動作開始
-    spi_change(i2c, 192, 0x1);
+    std::cout << "Start Camera (tiger mode)" << std::endl;
+    spi_change(i2c, 192, 0x1 | (1<<4) | (1<<5));
     
 
 //    cam.SetAnalogGain(3.5);
@@ -339,11 +340,11 @@ int main(int argc, char *argv[])
     cv::setTrackbarPos("sg",   "img", soft_gain);
     cv::createTrackbar("gain", "img", nullptr, 100);
     cv::setTrackbarPos("gain", "img", gain);
-    cv::createTrackbar("peri", "img", nullptr, 100000);
+    cv::createTrackbar("peri", "img", nullptr, 1000000);
     cv::setTrackbarPos("peri", "img", timgen_period);
-    cv::createTrackbar("ts",   "img", nullptr,  99999);
+    cv::createTrackbar("ts",   "img", nullptr,  999999);
     cv::setTrackbarPos("ts",   "img", trig0_start);
-    cv::createTrackbar("te",   "img", nullptr,  99999);
+    cv::createTrackbar("te",   "img", nullptr,  999999);
     cv::setTrackbarPos("te",   "img", trig0_end);
 
 //  spi_change(i2c, 144, 0x3);  // test pattern
@@ -365,6 +366,7 @@ int main(int argc, char *argv[])
         reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      timgen_period);
         reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, trig0_start);
         reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig0_end);
+        reg_timgen.WriteReg(TIMGENREG_CTL_CONTROL, 3);
 
         // 画像読み込み
         vdmaw0.Oneshot(dmabuf0_phys_adr, width, height, 1);
