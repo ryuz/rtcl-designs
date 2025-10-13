@@ -20,6 +20,10 @@ use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
 
+const BIT_STREAM: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.bit");
+const DTBO: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.dtbo");
+
+
 fn main() -> Result<(), Box<dyn Error>> {
     println!("start kv260_rtcl_p3s7_hs");
 
@@ -31,23 +35,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     })?;
 
     /*
-    jelly_fpgautil::set_allow_sudo(true);
-    let slot = jelly_fpgautil::load("k26-starter-kits")?;
+//  jelly_fpgautil::set_allow_sudo(true);
+    jelly_fpgautil::register_accel_with_vec("kv260_rtcl_p3s7_hs", "kv260_rtcl_p3s7_hs.bit", BIT_STREAM, "kv260_rtcl_p3s7_hs.dtbo", &DTBO, None, true)?;
     println!("load");
-    jelly_fpgautil::unload(slot)?;
-    println!("unload");
-
-    jelly_fpgautil::unload(slot)?;
+    let slot = jelly_fpgautil::load("kv260_rtcl_p3s7_hs")?;
     */
 
-    /*
-    // TODO: OpenCV test code - currently disabled for cross-compilation
-    let img : Mat = Mat::zeros(480, 640, opencv::core::CV_8UC3)?.to_mat()?;
-    println!("img = {:?}", img);
-    imshow("test", &img)?;
-    wait_key(0)?;
-    return Ok(());
-    */
 
 //    let width = 256;
 //    let height = 256;
@@ -210,6 +203,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     */
 
     println!("done");
+
+//    println!("unload");
+//    jelly_fpgautil::unload(slot)?;
 
     return Ok(());
 }
