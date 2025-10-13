@@ -50,6 +50,9 @@ where
     width: usize,
     height: usize,
     gain: f32,
+    mult_timer: u16,
+    fr_length: u16,
+    exposure: u16,
 }
 
 impl<I2C, U> CameraControl<I2C, U>
@@ -67,6 +70,9 @@ where
             width: 640,
             height: 480,
             gain: 1.0,
+            mult_timer: 72,
+            fr_length: 0,
+            exposure: 10000,
         }
     }
 
@@ -140,6 +146,10 @@ where
         self.cam_i2c
             .set_roi0(self.width as u16, self.height as u16, None, None)?;
         self.cam_i2c.set_gain_db(self.gain)?;
+
+        self.cam_i2c.set_mult_timer0(self.mult_timer)?;  // 68MHz
+        self.cam_i2c.set_fr_length0(self.fr_length)?;
+        self.cam_i2c.set_exposure0(self.exposure)?;
 
         // video input start
         unsafe {
@@ -237,7 +247,70 @@ where
         }
         Ok(())
     }
+
     pub fn gain(&self) -> f32 {
         self.gain
+    }
+
+    pub fn set_exposure(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) / 72.0;
+        self.exposure = (us / unit) as u16;
+        if self.opend {
+            self.cam_i2c.set_exposure0(self.exposure)?;
+        }
+        Ok(())
+    }
+
+    pub fn exposure(&self) -> Result<f32, Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) / 72.0;
+        Ok(self.exposure as f32 * unit)
+    }
+    
+    pub fn set_fr_length(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        let unit =  72.0 / (self.mult_timer as f32);
+        self.fr_length = (us / unit) as u16;
+        if self.opend {
+            self.cam_i2c.set_fr_length0(self.exposure)?;
+        }
+        Ok(())
+    }
+
+    /// fps 計測
+    pub fn measure_fps(&self) -> f32 {
+        let fps_count   = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
+        250_000_000.0f32 / fps_count as f32
+    }
+
+    pub fn measure_frame_period(&self) -> f32 {
+        let fps_count = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
+        fps_count as f32 * 4.0
+    }
+
+
+    // debug用
+    pub fn print_timing_status(&mut self) {
+        for i in 1..5 {
+            let mult = 10*i;
+            let fr_length = 1000;
+            let exposure  = 1000-i;
+            self.cam_i2c.set_mult_timer0(mult).unwrap();
+            self.cam_i2c.set_fr_length0(fr_length).unwrap();
+            self.cam_i2c.set_exposure0(exposure).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            println!("-----------");
+            println!("mult={} fr_length={} exposure={}", mult, fr_length, exposure);
+            println!("fps: {}  {}[ns]", self.measure_fps(), self.measure_frame_period());
+
+            let mult_timer_status   =  self.cam_i2c.mult_timer_status().unwrap();
+            let reset_length_status =  self.cam_i2c.reset_length_status().unwrap();
+            let exposure_status     =  self.cam_i2c.exposure_status().unwrap();
+            println!("mult_timer   : {}", self.cam_i2c.mult_timer_status().unwrap());
+            println!("reset_length : {}", self.cam_i2c.reset_length_status().unwrap());
+            println!("exposure     : {}", self.cam_i2c.exposure_status().unwrap());
+            println!("time : {}", (mult_timer_status as f32 * (exposure_status as f32 + reset_length_status as f32)) as f32 * 13.888888);
+            let measure_ns = self.measure_frame_period() as f32;
+            let calc_ns = (mult_timer_status as f32 * (exposure_status as f32 + reset_length_status as f32)) as f32 * 13.888888;
+            println!("diff : {} ns", measure_ns - calc_ns);
+        }
     }
 }

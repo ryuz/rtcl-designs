@@ -19,6 +19,7 @@ jelly-fpgautil = {git="https://github.com/ryuz/jelly-fpgautil-rs.git", tag="v0.0
 
 rtcl-lib = { path = "../../../../../rust/lib" }
 
+ctrlc = "3.5.0"
 opencv = "0.93.5"
 #opencv = "0.96.0"
 

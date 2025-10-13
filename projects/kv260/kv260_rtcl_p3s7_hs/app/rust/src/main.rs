@@ -77,6 +77,13 @@ fn wait_1us() {
 fn main() -> Result<(), Box<dyn Error>> {
     println!("start kv260_rtcl_p3s7_hs");
 
+    // Ctrl+C の設定
+    let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let r = running.clone();
+    ctrlc::set_handler(move || {
+        r.store(false, std::sync::atomic::Ordering::SeqCst);
+    })?;
+
     /*
     jelly_fpgautil::set_allow_sudo(true);
     let slot = jelly_fpgautil::load("k26-starter-kits")?;
@@ -98,8 +105,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let width = 256;
     let height = 256;
-    //    let width = 640;
-    //    let height = 480;
+        let width = 640;
+        let height = 480;
+//    let width = 64;
+//    let height = 64;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -234,7 +243,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut vdmaw =
         jelly_lib::video_dma_driver::VideoDmaDriver::new(reg_wdma_img, 2, 2, None).unwrap();
 
-    loop {
+    while running.load(std::sync::atomic::Ordering::SeqCst) {
         let key = wait_key(10).unwrap();
         if key == 0x1b {
             break;
@@ -264,6 +273,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             //          let mut img = img * 64;
             imshow("img", &img)?;
         }
+
+        if key == 'p' as i32 {
+            println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
+//            let fps_count   = unsafe{reg_sys.read_reg(SYSREG_FPS_COUNT)};
+//            let frame_count = unsafe{reg_sys.read_reg(SYSREG_FRAME_COUNT)};
+
+        }
+
+//        cam.print_timing_status();
+//        break;
+
     }
 
     let mut buf = vec![0u16; (width * height) as usize];

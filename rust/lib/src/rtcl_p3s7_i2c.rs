@@ -432,6 +432,36 @@ impl<I2C: I2cAccess> RtclP3s7I2c<I2C>
         20.0 * linear_gain.log10()
     }
 
+    
+    pub fn set_mult_timer0(&mut self, timer: u16) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.write_p3_spi(199, timer)?;  //68MHz
+        Ok(())
+    }
+
+    pub fn set_fr_length0(&mut self, fr_length: u16) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.write_p3_spi(200, fr_length)?;
+        Ok(())
+    }
+
+    pub fn set_exposure0(&mut self, exposure: u16) -> Result<(), RtclP3s7I2cError<I2C::Error>> {
+        self.write_p3_spi(201, exposure)?;
+        Ok(())
+    }
+
+    pub fn mult_timer_status(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
+        self.read_p3_spi(242)
+    }
+
+    pub fn reset_length_status(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
+        self.read_p3_spi(243)
+    }
+
+    pub fn exposure_status(&mut self) -> Result<u16, RtclP3s7I2cError<I2C::Error>> {
+        self.read_p3_spi(244)
+    }
+
+
+    /////////////////////////////////////
 
     /// usleep
     fn usleep(&self, usec: u64) {
