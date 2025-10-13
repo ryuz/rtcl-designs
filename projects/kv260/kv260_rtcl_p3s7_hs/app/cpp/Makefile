@@ -36,7 +36,7 @@ clean:
 	rm -rf $(TARGET) $(OBJS)
 
 .PHONY: run
-run: $(TARGET) load
+run: $(TARGET)
 	mkdir -p rec
 	./$(TARGET) $(RUN_OPT)
 
