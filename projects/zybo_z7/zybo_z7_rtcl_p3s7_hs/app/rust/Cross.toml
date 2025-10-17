@@ -1,2 +1,4 @@
 [target.arm-unknown-linux-gnueabihf]
-dockerfile = { file = "Dockerfile" }
+#dockerfile = { file = "Dockerfile" }
+image = "ghcr.io/ryuz/jelly/jelly-cross-armhf-debian12-opencv:latest"
+

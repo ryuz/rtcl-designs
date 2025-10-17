@@ -2,6 +2,7 @@
 	"name": "KV260 Cross Development",
 //  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04"
     "dockerFile": "Dockerfile",
+//  "image": "ghcr.io/ryuz/jelly/jelly-devcontainer-ubuntu22:latest",
 
 	"mounts": [
 		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
