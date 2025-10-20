@@ -84,8 +84,8 @@ module mipi_dphy_clk_gen
                 .O                  (txclkesc       )
             );
 
-    jelly3_reset
-        u_reset_core
+    jelly3_reset_sync
+        u_reset_sync_core
             (
                 .clk                (core_clk               ),
                 .cke                (1'b1                   ),
@@ -184,11 +184,11 @@ module mipi_dphy_clk_gen
     //  Serial clock
     // -----------------------------
 
-    jelly3_reset
+    jelly3_reset_sync
             #(
                 .ADDITIONAL_CYCLE   (64                                     )
             )
-        u_reset_system
+        u_reset_sync_system
             (
                 .clk                (core_clk                               ),
                 .cke                (1'b1                                   ),
@@ -197,8 +197,8 @@ module mipi_dphy_clk_gen
             );
 
     /*
-    jelly3_reset
-        u_reset_dphy
+    jelly3_reset_sync
+        u_reset_sync_dphy
             (
                 .clk                (dphy_clk               ),
                 .cke                (1'b1                   ),

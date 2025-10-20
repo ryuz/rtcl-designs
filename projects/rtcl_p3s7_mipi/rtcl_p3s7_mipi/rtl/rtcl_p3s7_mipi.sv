@@ -712,7 +712,7 @@ module rtcl_p3s7_mipi
     assign ctl_dphy_init_done = dphy_init_done;
     
     logic   dphy_reset;
-    jelly3_reset
+    jelly3_reset_sync
         u_reset_core
             (
                 .clk                (dphy_clk                   ),
