@@ -1,10 +1,13 @@
 
 BASE_NAME = kv260_rtcl_p3s7_hs
 
+ELF_NAME   = $(BASE_NAME)
 ACCEL_NAME = $(BASE_NAME)
 BIT_FILE   = ../$(BASE_NAME).bit
 BIN_FILE   = $(BIT_FILE).bin
 DTBO_FILE  = ../$(BASE_NAME).dtbo
+
+TARGET_ARCH = aarch64-unknown-linux-gnu
 
 KV260_SERVER_ADDRESS ?= 127.0.0.1:8051
 KV260_SSH_ADDRESS    ?= kria
@@ -26,10 +29,9 @@ load:
 
 .PHONY: cross_build
 cross_build:
-	cross build --target=aarch64-unknown-linux-gnu --release
+	cross build --target=$(TARGET_ARCH) --release
 
 .PHONY: remote_run
 remote_run: cross_build load
-	scp target/aarch64-unknown-linux-gnu/release/kv260_rtcl_p3s7_hs $(KV260_BOARD_ADDRESS):/tmp/
-	ssh -Y -t $(KV260_BOARD_ADDRESS) /tmp/kv260_rtcl_p3s7_hs
-
+	scp target/$(TARGET_ARCH)/release/$(ELF_NAME) $(KV260_SSH_ADDRESS):/tmp/
+	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(ELF_NAME)

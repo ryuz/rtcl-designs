@@ -13,14 +13,15 @@ BIN_FILE  = $(BIT_FILE).bin
 FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
 
-CFLAGS  += -Wall -g -O0 `pkg-config --cflags opencv4` -I../../../../include
+CFLAGS  += -Wall -g -O0 `pkg-config --cflags opencv4` -I../../../../jelly/include
 LDFLAGS += `pkg-config --libs opencv4`
 
 OBJS = main.o
 
 
 .PHONY: all
-all: $(TARGET) $(DTBO_FILE) $(BIN_FILE)
+all: $(DTBO_FILE) $(BIN_FILE)
+#all: $(TARGET) $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: clean
 clean:
