@@ -755,7 +755,6 @@ module kv260_rtcl_p3s7_mipi
         end
     end
     
-    logic   [7:0]   reg_frame_count;
     always_ff @(posedge axi4s_cam_aclk) begin
         if ( axi4s_csi2.tuser && axi4s_csi2.tvalid ) begin
             reg_frame_count <= reg_frame_count + 1;

@@ -43,6 +43,17 @@ $(DTBO_FILE): $(DTS_FILE)
 $(BIN_FILE): $(BIF_FILE) $(BIT_FILE)
 	bootgen -w -image $(BIF_FILE) -arch zynq -process_bitstream bin
 
+$(BIT_FILE):
+	@if [ -f $@ ]; then \
+	    echo "$@ exists, skipping build"; \
+	elif command -v vivado >/dev/null 2>&1; then \
+	    echo "vivado found — building $@"; \
+	    make bit_cp -C ../syn/tcl; \
+	else \
+	    echo "vivado not found — cannot build $@"; \
+	    exit 1; \
+	fi
+
 $(DEVTREE_PATH):
 	sudo mkdir -p /configfs
 	sudo mount -t configfs configfs /configfs
