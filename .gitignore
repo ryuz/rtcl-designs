@@ -74,6 +74,7 @@ Untitled.*
 *.json
 *.pickle
 !devcontainer.json
+!shell.json
 
 # archive
 *.tar

@@ -1,6 +1,7 @@
 
 DT_NAME   = kv260_rtcl_p3s7_hs
 BIT_NAME  = kv260_rtcl_p3s7_hs
+ACCEL_NAME  = kv260_rtcl_p3s7_hs
 
 DTS_FILE  = $(DT_NAME).dts
 DTBO_FILE = $(DT_NAME).dtbo
@@ -9,8 +10,9 @@ BIT_FILE  = $(BIT_NAME).bit
 BIF_FILE  = $(BIT_NAME).bif
 BIN_FILE  = $(BIT_FILE).bin
 
-FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
+FIRMWARE_PATH = /lib/firmware
+ACCEL_PATH   = $(FIRMWARE_PATH)/xilinx/$(ACCEL_NAME)
 
 
 .PHONY: all
@@ -65,6 +67,26 @@ umount: unload
 		echo umount configfs ; \
 		sudo umount /configfs ; \
 	fi
+
+.PHONY: load_dfx
+load_dfx: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload_dfx
+	sudo mkdir -p $(ACCEL_PATH)
+	sudo cp $(BIN_FILE) $(ACCEL_PATH)
+	sudo cp $(DTBO_FILE) $(ACCEL_PATH)
+	sudo cp shell.json $(ACCEL_PATH)
+	sudo xmutil loadapp $(ACCEL_NAME)
+
+.PHONY: unload_dfx
+unload_dfx:
+	-sudo xmutil unloadapp
+
+.PHONY: unregister_accel
+unregister_accel:
+	sudo rm -f $(ACCEL_PATH)/$(BIT_FILE)
+	sudo rm -f $(ACCEL_PATH)/$(BIN_FILE)
+	sudo rm -f $(ACCEL_PATH)/$(DTBO_FILE)
+	sudo rm -f $(ACCEL_PATH)/shell.json
+	sudo rm -fd $(ACCEL_PATH)
 
 .PHONY: load
 load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
