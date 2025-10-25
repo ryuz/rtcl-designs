@@ -77,11 +77,9 @@ bit_scp: $(BIT_FILE)
 bit_cp: $(BIT_FILE)
 	cp $(BIT_FILE) ../../app
 
-$(PRJ_NAME).xpr: $(SOURCES) $(CONSTRAINS) $(IP_CORES) $(BD_SCRIPTS)
+$(BIT_FILE): $(SOURCES) $(CONSTRAINS) $(IP_CORES) $(BD_SCRIPTS)
 	rm -f $(PRJ_NAME).xpr
 	vivado -m64 -mode batch -source $(JELLY_TOP_DIR)/scripts/vivado_create_project.tcl | tee vivado_create_project.log
-
-$(BIT_FILE): $(PRJ_NAME).xpr
 	vivado -m64 -mode batch -source $(JELLY_TOP_DIR)/scripts/vivado_implementation.tcl | tee vivado_implementation.log
 
 .PHONY : check_log
