@@ -1,7 +1,7 @@
 use std::error::Error;
 //use std::io::Write;
 
-use jelly_mem_access::*;
+//use jelly_mem_access::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
@@ -65,20 +65,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_timgen   = uio_acc.subclone(0x00010000, 0x400);
     let reg_fmtr     = uio_acc.subclone(0x00100000, 0x400);
     let reg_wdma_img = uio_acc.subclone(0x00210000, 0x400);
-//  let reg_wdma_blk = uio_acc.subclone(0x00220000, 0x400);
+    let reg_wdma_blk = uio_acc.subclone(0x00220000, 0x400);
 
     println!("CORE ID");
     println!("reg_sys      : {:08x}", unsafe { reg_sys.read_reg(0) });
     println!("reg_timgen   : {:08x}", unsafe { reg_timgen.read_reg(0) });
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
+    println!("reg_wdma_blk : {:08x}", unsafe { reg_wdma_blk.read_reg(0) });
 
     let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 
     let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_image_size(width, height)?;
-    cam.set_slave_mode(true)?;
+//  cam.set_slave_mode(true)?;
 //  cam.set_trigger_mode(true)?;
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
