@@ -175,6 +175,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    /*
     let mut buf = vec![0u16; (width * height) as usize];
     unsafe {
         udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
@@ -191,7 +192,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             .write_all(format!("{}\n", pixel).as_bytes())
             .expect("Failed to write pixel data");
     }
-
+    */
+    
     cam.close()?;
 
     /*
