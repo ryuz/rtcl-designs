@@ -7,7 +7,10 @@ LDFLAGS += `pkg-config --libs opencv4`
 OBJS = main.o
 
 .PHONY: all
-all: $(TARGET)
+all: build
+
+.PHONY: build
+build: $(TARGET)
 
 .PHONY: clean
 clean:
