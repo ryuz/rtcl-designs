@@ -1,7 +1,7 @@
 
-DT_NAME   = kv260_rtcl_p3s7_hs
-BIT_NAME  = kv260_rtcl_p3s7_hs
-ACCEL_NAME  = kv260_rtcl_p3s7_hs
+DT_NAME    = kv260_rtcl_p3s7_hs
+BIT_NAME   = kv260_rtcl_p3s7_hs
+ACCEL_NAME = kv260_rtcl_p3s7_hs
 
 DTS_FILE  = $(DT_NAME).dts
 DTBO_FILE = $(DT_NAME).dtbo
@@ -39,13 +39,6 @@ server: load
 	cd grpc/server; cargo run
 
 
-$(TARGET): $(OBJS)
-	$(CXX) -o $(TARGET) $(OBJS) $(LDFLAGS)
-
-%.o : %.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-main.o: main.cpp ../../../../include/rtcl/RtclP3S7Control.h
 
 $(DTBO_FILE): $(DTS_FILE)
 	dtc -I dts -O dtb -o $(DTBO_FILE) $(DTS_FILE)
@@ -57,16 +50,15 @@ $(DEVTREE_PATH):
 	sudo mkdir -p /configfs
 	sudo mount -t configfs configfs /configfs
 
+.PHONY: load
+load: load_dfx
 
-.PHONY: mount
-mount: $(DEVTREE_PATH)
+.PHONY: unload
+unload: unload_dfx
 
-.PHONY: umount
-umount: unload
-	@if [ -d $(DEVTREE_PATH) ] ; then \
-		echo umount configfs ; \
-		sudo umount /configfs ; \
-	fi
+
+
+### DFX Management
 
 .PHONY: load_dfx
 load_dfx: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload_dfx
@@ -88,8 +80,21 @@ unregister_accel:
 	sudo rm -f $(ACCEL_PATH)/shell.json
 	sudo rm -fd $(ACCEL_PATH)
 
-.PHONY: load
-load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
+
+### Device Tree Overlay Management
+
+.PHONY: mount
+mount: $(DEVTREE_PATH)
+
+.PHONY: umount
+umount: unload
+	@if [ -d $(DEVTREE_PATH) ] ; then \
+		echo umount configfs ; \
+		sudo umount /configfs ; \
+	fi
+
+.PHONY: load_dt
+load_dt: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
 	-sudo xmutil unloadapp
 	@if [ -e /configfs/device-tree/overlays/k26-starter-kits_image_1 ] ; then \
 		sudo rmdir /configfs/device-tree/overlays/k26-starter-kits_image_1 ; \
@@ -108,19 +113,10 @@ load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
 	sudo chmod 666 /dev/udmabuf*
 	sudo chmod 666 /dev/i2c-6
 
-.PHONY: unload
-unload:
+.PHONY: unload_dt
+unload_dt:
 	@if [ -e $(DEVTREE_PATH)/overlays/full ] ; then \
-		echo unload ; \
+		echo unload device tree overlay; \
 		sudo rmdir $(DEVTREE_PATH)/overlays/full ; \
 	fi
-
-.PHONY: load2
-load2: $(DTBO_FILE) $(BIN_FILE)
-	sudo fpgautil -R
-	sudo fpgautil -b $(BIT_FILE) -o $(DTBO_FILE)
-
-.PHONY: unload2
-unload2:
-	sudo fpgautil -R
 
