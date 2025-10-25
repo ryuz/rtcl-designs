@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+jelly-mem_access = "0.2.5"
 opencv = "0.93.5"

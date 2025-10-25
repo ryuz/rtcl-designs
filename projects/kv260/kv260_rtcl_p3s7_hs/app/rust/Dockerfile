@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -25,24 +25,8 @@ RUN release=$(. /etc/os-release && echo "$UBUNTU_CODENAME") \
         clang \
         libclang-dev \
         llvm-dev \
+        protobuf-compiler \
+ && apt-get install -y \
         libopencv-dev:arm64 \
-        libopencv-contrib-dev:arm64 \
-        libopencv-stitching-dev:arm64 \
-        libopencv-calib3d-dev:arm64 \
-        libopencv-dnn-dev:arm64 \
-        libopencv-features2d-dev:arm64 \
-        libopencv-flann-dev:arm64 \
-        libopencv-highgui-dev:arm64 \
-        libopencv-imgcodecs-dev:arm64 \
-        libopencv-imgproc-dev:arm64 \
-        libopencv-ml-dev:arm64 \
-        libopencv-objdetect-dev:arm64 \
-        libopencv-photo-dev:arm64 \
-        libopencv-shape-dev:arm64 \
-        libopencv-video-dev:arm64 \
-        libopencv-videoio-dev:arm64 \
-        libopencv-viz-dev:arm64 \
-        libblas-dev:arm64 \
-        liblapack-dev:arm64 \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*

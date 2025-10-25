@@ -20,8 +20,8 @@ use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
 
-const BIT_STREAM: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.bit");
-const DTBO: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.dtbo");
+//const BIT_STREAM: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.bit");
+//const DTBO: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.dtbo");
 
 
 fn main() -> Result<(), Box<dyn Error>> {

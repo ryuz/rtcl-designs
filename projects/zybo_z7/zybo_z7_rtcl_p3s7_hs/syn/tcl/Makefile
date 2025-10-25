@@ -15,7 +15,7 @@ export BOARD_PART   = digilentinc.com:zybo-z7-20*
 export DEVICE_PART  = xc7z020clg400-1
 
 BOARD_ADDRESS  ?= debian-zybo-z7
-BOARD_WORK_DIR ?= git-work/jelly
+BOARD_WORK_DIR ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
 
