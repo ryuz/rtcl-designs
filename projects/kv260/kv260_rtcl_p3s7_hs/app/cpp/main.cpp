@@ -16,44 +16,6 @@
 #include "rtcl/RtclP3S7Control.h"
 
 
-static  volatile    bool    g_signal = false;
-void signal_handler(int signo) {
-    g_signal = true;
-}
-
-/*
-void          i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-std::uint16_t i2c_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
-void          spi_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-std::uint16_t spi_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
-void          spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-*/
-
-void          sensor_reg_dump(rtcl::RtclP3S7ControlI2c  &cam, const char *fname);
-void          load_setting(rtcl::RtclP3S7ControlI2c  &cam);
-//void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
-
-/*
-#define CAMREG_CORE_ID              0x0000
-#define CAMREG_CORE_VERSION         0x0001
-#define CAMREG_SENSOR_ENABLE        0x0004
-#define CAMREG_SENSOR_READY         0x0008
-#define CAMREG_RECEIVER_RESET       0x0010
-#define CAMREG_RECEIVER_CLK_DLY     0x0012
-#define CAMREG_ALIGN_RESET          0x0020
-#define CAMREG_ALIGN_PATTERN        0x0022
-#define CAMREG_ALIGN_STATUS         0x0028
-#define CAMREG_CLIP_ENABLE          0x0040
-#define CAMREG_CSI_MODE             0x0050
-#define CAMREG_CSI_DT               0x0052
-#define CAMREG_CSI_WC               0x0053
-#define CAMREG_DPHY_CORE_RESET      0x0080
-#define CAMREG_DPHY_SYS_RESET       0x0081
-#define CAMREG_DPHY_INIT_DONE       0x0088
-#define CAMREG_MMCM_CONTROL         0x00a0
-#define CAMREG_PLL_CONTROL          0x00a1
-*/
-
 #define SYSREG_ID                   0x0000
 #define SYSREG_DPHY_SW_RESET        0x0001
 #define SYSREG_CAM_ENABLE           0x0002
@@ -76,36 +38,16 @@ void          load_setting(rtcl::RtclP3S7ControlI2c  &cam);
 #define TIMGENREG_PARAM_TRIG0_END   0x21
 #define TIMGENREG_PARAM_TRIG0_POL   0x22
 
-/*
-// D-PHY 1250Mbps用設定
-std::uint16_t  mmcm_tbl[][2] = {
-    {0x06, 0x0041},
-    {0x07, 0x0040},
-    {0x08, 0x1041},
-    {0x09, 0x0000},
-    {0x0a, 0x9041},
-    {0x0b, 0x0000},
-    {0x0c, 0x0041},
-    {0x0d, 0x0040},
-    {0x0e, 0x0041},
-    {0x0f, 0x0040},
-    {0x10, 0x0041},
-    {0x11, 0x0040},
-    {0x12, 0x0041},
-    {0x13, 0x0040},
-    {0x14, 0x130d},
-    {0x15, 0x0080},
-    {0x16, 0x1041},
-    {0x18, 0x0190},
-    {0x19, 0x7c01},
-    {0x1a, 0xffe9},
-    {0x27, 0x0000},
-    {0x28, 0x0100},
-    {0x4e, 0x1108},
-    {0x4f, 0x9000}
-};
-*/
+void          sensor_reg_dump(rtcl::RtclP3S7ControlI2c  &cam, const char *fname);
+void          load_setting(rtcl::RtclP3S7ControlI2c  &cam);
 
+static  volatile    bool    g_signal = false;
+void signal_handler(int signo) {
+    g_signal = true;
+}
+
+
+// メイン関数
 int main(int argc, char *argv[])
 {
     int width  = 256 ;
@@ -168,7 +110,6 @@ int main(int argc, char *argv[])
     int rec_frames = dmabuf0_mem_size / (width * height * 2);
     std::cout << "udmabuf0 rec_frames : " << rec_frames << std::endl;
 
-
     // mmap udmabuf1
     jelly::UdmabufAccessor udmabuf1_acc("udmabuf-jelly-vram1");
     if ( !udmabuf1_acc.IsMapped() ) {
@@ -180,16 +121,10 @@ int main(int argc, char *argv[])
     std::cout << "udmabuf1 phys addr : 0x" << std::hex << dmabuf1_phys_adr << std::endl;
     std::cout << "udmabuf1 size      : " << std::dec << dmabuf1_mem_size << std::endl;
 
-
-//    jelly::I2cAccessor i2c;
-//    i2c.Open("/dev/i2c-6", 0x10);
-
     rtcl::RtclP3S7ControlI2c cam;
     cam.Open("/dev/i2c-6", 0x10);
 
     // カメラ基板ID確認
-//  std::cout << "CORE_ID      : " << std::hex << i2c_read(i2c, CAMREG_CORE_ID        ) << std::endl;
-//  std::cout << "CORE_VERSION : " << std::hex << i2c_read(i2c, CAMREG_CORE_VERSION   ) << std::endl;
     std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
     std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
 
@@ -209,9 +144,6 @@ int main(int argc, char *argv[])
     std::cout << "Init Camera" << std::endl;
     cam.SetSensorPowerEnable(false);
     cam.SetDphyReset(true);
-//  i2c_write(i2c, CAMREG_SENSOR_ENABLE  , 0);  // センサー電源OFF
-//  i2c_write(i2c, CAMREG_DPHY_CORE_RESET, 1);  // 受信側 DPHY リセット
-//  i2c_write(i2c, CAMREG_DPHY_SYS_RESET , 1);  // 受信側 DPHY リセット
     usleep(100000);
 
     // 受信側 DPHY 解除 (必ずこちらを先に解除)
@@ -222,20 +154,13 @@ int main(int argc, char *argv[])
 
     // センサー電源ON
     std::cout << "Sensor Power On" << std::endl;
-//    i2c_write(i2c, CAMREG_SENSOR_ENABLE, 1);     // センサー電源ON
-//    usleep(500000);
     cam.SetSensorPowerEnable(true);
 
 
     std::cout << "Sensor ID : " << cam.GetSensorId() << std::endl;
 
     // センサー基板 DPHY-TX リセット解除
-//  i2c_write(i2c, CAMREG_DPHY_CORE_RESET, 0);
-//  i2c_write(i2c, CAMREG_DPHY_SYS_RESET , 0);
-//  usleep(1000);
     cam.SetDphyReset(false);
-//  auto dphy_tx_init_done = i2c_read(i2c, CAMREG_DPHY_INIT_DONE);
-//  if ( dphy_tx_init_done == 0 ) {
     if ( !cam.GetDphyInitDone() ) {
         std::cout << "!!ERROR!! CAM DPHY TX init_done = 0" << std::endl;
         return 1;
@@ -255,66 +180,16 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_BLACK_HEIGHT, 1);
 
     // センサー起動
-    /*
-    spi_change(i2c, 16, 0x0003);    // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-    spi_change(i2c, 32, 0x0007);    // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-    spi_change(i2c,  8, 0x0000);    // pll_soft_reset, pll_lock_soft_reset
-    spi_change(i2c,  9, 0x0000);    // cgen_soft_reset
-    spi_change(i2c, 34, 0x1);       // config0 Logic General Enable Configuration
-    spi_change(i2c, 40, 0x7);       // image_core_config0 
-    spi_change(i2c, 48, 0x1);       // AFE Power down for AFE’s
-    spi_change(i2c, 64, 0x1);       // Bias Bias Power Down Configuration
-    spi_change(i2c, 72, 0x2227);    // Charge Pump
-    spi_change(i2c, 112, 0x7);      // Serializers/LVDS/IO 
-    spi_change(i2c, 10, 0x0000);    // soft_reset_analog
-    */
-//  cam.Setup();
-
     cam.SetSensorEnable(true);
 
-    /*
-    int roi_x = ((672 -  width) / 2) & ~0x0f; // 16の倍数
-    int roi_y = ((512 - height) / 2) & ~0x01; // 2の倍数
-    int x_start = roi_x / 8;
-    int x_end   = x_start + width/8 - 1 ;
-    int y_start = roi_y;
-    int y_end   = y_start + height - 1;
-    spi_change(i2c, 256, (x_end << 8) | x_start);    // y_end
-    spi_change(i2c, 257, y_start);    // y_start
-    spi_change(i2c, 258, y_end);      // y_end
-    */
-
-    /*
-    spi_change(i2c, 192, 0x0);  // 動作停止(トレーニングパターン出力状態へ)
-
-    usleep(1000);
-    i2c_write(i2c,  CAMREG_RECEIVER_RESET,  1);
-    i2c_write(i2c,  CAMREG_RECEIVER_CLK_DLY, 8);
-    i2c_write(i2c,  CAMREG_ALIGN_RESET, 1);
-    usleep(1000);
-    i2c_write(i2c,  CAMREG_RECEIVER_RESET,  0);
-    usleep(1000);
-    i2c_write(i2c,  CAMREG_ALIGN_RESET, 0);
-    usleep(1000);
-
-    auto cam_calib_status = i2c_read(i2c,  CAMREG_ALIGN_STATUS);
-    if ( cam_calib_status != 0x01 ) {
-        std::cout << "!!ERROR!! CAM calibration is not done.  status =" << cam_calib_status << std::endl;
-        getchar();
-        reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
-        return 1;
-    }
-    */
+    // 画像サイズ設定
+    cam.SetRoi0(width, height);
 
     // 動作開始
     std::cout << "Start Camera (tiger mode)" << std::endl;
-//  spi_change(i2c, 192, 0x1 | (1<<4) | (1<<5));
-
-    cam.SetRoi0(width, height);
     cam.SetTriggeredMode(true);
     cam.SetSlaveMode(true);
     cam.SetSequencerEnable(true);
-
 
 //    cam.SetAnalogGain(3.5);
 //    cam.SetDigitalGain(0.2);
@@ -355,8 +230,6 @@ int main(int argc, char *argv[])
     cv::setTrackbarPos("ts",   "img", trig0_start);
     cv::createTrackbar("te",   "img", nullptr,  999999);
     cv::setTrackbarPos("te",   "img", trig0_end);
-
-//  spi_change(i2c, 144, 0x3);  // test pattern
 
     int     swap = 0;
     int     key;
@@ -431,7 +304,7 @@ int main(int argc, char *argv[])
         
         case 'l':
             printf("load setting\n");
-//          load_setting(i2c);
+            load_setting(cam);
             break;
             
         case 'd':   // image dump
@@ -476,53 +349,8 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/*
-// カメラ側 の Spartan-7 へ I2C 経由で書き込み
-void i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
-    addr <<= 1;
-    addr |= 1;
-    unsigned char buf[4] = {0x00, 0x00, 0x00, 0x00};
-    buf[0] = ((addr >> 8) & 0xff);
-    buf[1] = ((addr >> 0) & 0xff);
-    buf[2] = ((data >> 8) & 0xff);
-    buf[3] = ((data >> 0) & 0xff);
-    i2c.Write(buf, 4);
-}
 
-// カメラ側 の Spartan-7 から I2C 経由で読み込み
-std::uint16_t i2c_read(jelly::I2cAccessor &i2c, std::uint16_t addr) {
-    addr <<= 1;
-    unsigned char buf[4] = {0x00, 0x00, 0x00, 0x00};
-    buf[0] = ((addr >> 8) & 0xff);
-    buf[1] = ((addr >> 0) & 0xff);
-    i2c.Write(buf, 4);
-    i2c.Read(buf, 2);
-    return (std::uint16_t)buf[0] | (std::uint16_t)(buf[1] << 8);
-}
-
-// PYTHONイメージセンサーの SPI へ I2C 経由で書き込み
-void spi_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
-    addr |= (1 << 14);
-    i2c_write(i2c, addr, data);
-}
-
-
-// PYTHONイメージセンサーの SPI から I2C 経由で読み込み
-std::uint16_t spi_read(jelly::I2cAccessor &i2c, std::uint16_t addr) {
-    addr |= (1 << 14);
-    return i2c_read(i2c, addr);
-}
-
-// PYTHONイメージセンサーの SPI を 読み出し確認しながら書き換え
-void spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
-    auto pre = spi_read(i2c, addr);
-    spi_write(i2c, addr, data);
-    auto post = spi_read(i2c, addr);
-    printf("write %3d <= 0x%04x (%04x -> %04x)\n", addr, data, pre, post);
-}
-*/
-
-// レジスタダンプ
+// センサーのレジスタダンプ
 void sensor_reg_dump(rtcl::RtclP3S7ControlI2c &cam, const char *fname) {
     FILE* fp = fopen(fname, "w");
     for ( int i = 0; i < 512; i++ ) {
@@ -531,7 +359,6 @@ void sensor_reg_dump(rtcl::RtclP3S7ControlI2c &cam, const char *fname) {
     }
     fclose(fp);
 }
-
 
 // 設定ファイルを読み込む
 void load_setting(rtcl::RtclP3S7ControlI2c &cam) {
@@ -556,7 +383,5 @@ void load_setting(rtcl::RtclP3S7ControlI2c &cam) {
     }
     fclose(fp);
 }
-
-
 
 // end of file
