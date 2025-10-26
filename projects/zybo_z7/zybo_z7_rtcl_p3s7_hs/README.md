@@ -1,26 +1,34 @@
-# Kria KV260 用 RTCL-P3S7-MIPI グローバルシャッター高速度カメラ動作サンプル
+# ZYBO Z7-20 用 RTCL-P3S7-MIPI グローバルシャッター高速度カメラ動作サンプル
 
 ## 概要
 
-Kria KV260 で [グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)(設計は[こちら](https://github.com/ryuz/rtcl-p3s7-mipi-pcb))を動かすサンプルです。
+ZYBO Z7-20 で [グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)(設計は[こちら](https://github.com/ryuz/rtcl-p3s7-mipi-pcb))を動かすサンプルです。
 
-このプロジェクトは、PYTHON300 センサー + Spartan-7 FPGA を搭載したカメラモジュールを KV260 に接続し、D-PHY 上で独自プロトコルを用いた高速画像伝送を行います。MIPI-CSI規格を使わずに独自プロトコルで伝送することで、画像1フレームを1パケットとして転送し、伝送帯域を有効活用して高速度撮影を実現しています。
+このプロジェクトは、PYTHON300 センサー + Spartan-7 FPGA を搭載したカメラモジュールを ZYBO Z7 に接続し、D-PHY 上で独自プロトコルを用いた高速画像伝送を行います。MIPI-CSI規格を使わずに独自プロトコルで伝送することで、画像1フレームを1パケットとして転送し、伝送帯域を有効活用して高速度撮影を実現しています。
 
 PYTHON300 センサーは 640×480 で 815fps、画像サイズを小さくすれば 1000fps を超える撮影が可能な高性能グローバルシャッターセンサーです。
-v
+
 ## 環境
 
 ### PC環境
 
 Vivado 2024.2 を用いております。
 
-### KV260環境
+Digilent の ZYBO Z7-20 ボード定義ファイルが必要です。以下のコマンドでインストールしてください。
 
-[認定Ubuntu](https://japan.xilinx.com/products/design-tools/embedded-software/ubuntu.html) 環境にて試しております。
+```bash
+git clone  https://github.com/Digilent/vivado-boards.git
+sudo cp -r vivado-boards/new/board_files/ /tools/Xilinx/Vivado/2024.2/data/boards/
+```
+
+
+### ZYBO環境
+
+ikwzm氏公開の [Debian12](https://github.com/ikwzm/FPGA-SoC-Debian12) 環境にて試しております。
 
 ```
-Description : Ubuntu 24.04 LTS  
-kernel      : 6.8.0-1017-xilinx
+Description : Debian-12
+kernel      : 6.1.108-armv7-fpga
 ```
 
 ### OpenCV
@@ -53,7 +61,7 @@ source /tools/Xilinx/Vivado/2024.2/settings64.sh
 したのちに
 
 ```bash
-cd projects/kv260/kv260_rtcl_p3s7_hs/syn/tcl
+cd projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/syn/tcl
 make
 ```
 
@@ -61,7 +69,7 @@ make
 
 #### GUI 版
 
-`projects/kv260/kv260_rtcl_p3s7_hs/syn/vivado2024.2/kv260_rtcl_p3s7_hs.xpr`
+`projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/syn/vivado2024.2/zybo_z7_rtcl_p3s7_hs.xpr`
 
 に Vivado GUI 用のプロジェクトがあるので、Vivado の GUI から開いてご利用ください。
 
@@ -73,15 +81,15 @@ Vivado メニューの「Tools」→「Run Tcl Script」で、プロジェクト
 
 design_1 が生成されたら「Flow」→「Run Implementation」で合成を行います。正常に合成できれば
 
-`kv260_rtcl_p3s7_hs.runs/impl_1/kv260_rtcl_p3s7_hs.bit`
+`zybo_z7_rtcl_p3s7_hs.runs/impl_1/zybo_z7_rtcl_p3s7_hs.bit`
 
 が出来上がります。
 
-### KV260 でPSソフトをコンパイルして実行
+### ZYBO でPSソフトをコンパイルして実行
 
-`projects/kv260/kv260_rtcl_p3s7_hs/app` の内容一式と先ほど合成した `kv260_rtcl_p3s7_hs.bit` を、KV260 の Ubuntu で作業できる適当なディレクトリにコピーします。bitファイルも同じ app ディレクトリに入れてください。
+`projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/app` の内容一式と先ほど合成した `zybo_z7_rtcl_p3s7_hs.bit` を、 ZYBO Z7 の Linux で作業できる適当なディレクトリにコピーします。bitファイルも同じ app ディレクトリに入れてください。
 
-KV260 側では Ubuntu が起動済みで ssh などで接続ができている前提ですので scp や samba などでコピーすると良いでしょう。app に関しては KV260 から git で clone することも可能です。
+ZYBO 側では Linux が起動済みで ssh などで接続ができている前提ですので scp や samba などでコピーすると良いでしょう。app に関しては ZYBO Z7 から git で clone することも可能です。
 
 この時、以下の下準備が必要です：
 
@@ -98,7 +106,7 @@ KV260 側では Ubuntu が起動済みで ssh などで接続ができている�
 make
 ```
 
-と実行すれば `kv260_rtcl_p3s7_hs.out` という実行ファイルが生成されます。
+と実行すれば `zybo_z7_rtcl_p3s7_hs.out` という実行ファイルが生成されます。
 
 ここで
 
@@ -113,7 +121,7 @@ make run
 実行ファイルは以下のオプションを受け付けます：
 
 ```bash
-./kv260_rtcl_p3s7_hs.out -width 256 -height 256
+./zybo_z7_rtcl_p3s7_hs.out -width 256 -height 256
 ```
 
 - `-width <値>` : 画像幅を指定（16の倍数、最小16）
@@ -146,7 +154,7 @@ make server
 
 ## シミュレーション
 
-`projects/kv260/kv260_rtcl_p3s7_hs/sim` 以下にシミュレーション環境を作っています。
+`projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/sim` 以下にシミュレーション環境を作っています。
 
 該当ディレクトリに移動して make と実行することで、シミュレーションが動きます。
 
@@ -207,7 +215,7 @@ I2C経由で 16bitアドレス 16bit データの読み書きが可能で、以�
 
 1ms級の低遅延での非接触画像認識により、以下のような応用が可能です：
 - 非接触での振動計測による故障検知／予知
-- 振動環境下での画像認識  
+- 振動環境下での画像認識 
 - 振動フィードバックによる制振制御
 - ランダムに動くものの把持
 - 遅延なく人間の動きに追従するアシストロボ
@@ -221,5 +229,4 @@ FPGAから生成したパルスで同期撮影が可能です。超高速での�
 - [作者ブログ記事](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)
 - [PYTHON300 データシート](https://www.onsemi.jp/products/sensors/image-sensors/python300)
 - [カメラモジュール設計リポジトリ](https://github.com/ryuz/rtcl-p3s7-mipi)
-- [Kria KV260 ビジョン AI スターター キット](https://www.amd.com/ja/products/system-on-modules/kria/k26/kv260-vision-starter-kit.html)
 

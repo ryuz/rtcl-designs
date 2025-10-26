@@ -540,24 +540,6 @@ module kv260_rtcl_p3s7_hs
         reg_dphy_init_done <= init_done;
     end
 
-    /*
-    (* mark_debug=DEBUG *)  logic   dbg_sys_reset       ;
-    (* mark_debug=DEBUG *)  logic   dbg_reg_sw_reset    ;
-    (* mark_debug=DEBUG *)  logic   dbg_pll_lock_out    ;
-    (* mark_debug=DEBUG *)  logic   dbg_system_rst_out  ;
-    (* mark_debug=DEBUG *)  logic   dbg_init_done       ;
-
-    always_ff @(posedge axi4l_dec[DEC_SYS].aclk) begin
-        dbg_sys_reset      <= sys_reset     ;
-        dbg_reg_sw_reset   <= reg_sw_reset  ;
-        dbg_pll_lock_out   <= pll_lock_out  ;
-        dbg_system_rst_out <= system_rst_out;
-        dbg_init_done      <= init_done     ;
-    end
-    */
-
-    
-
     wire logic  dphy_clk   = rxbyteclkhs;
     wire logic  dphy_reset = system_rst_out;
 
@@ -673,106 +655,76 @@ module kv260_rtcl_p3s7_hs
                 .out_param_width        (fmtr_param_width       ),
                 .out_param_height       (fmtr_param_height      )
             );
-    
-
-    // FIFO
-    jelly3_axi4s_if
-            #(
-                .DATA_BITS  (10               )
-            )
-        axi4s_fifo
-            (
-                .aresetn    (axi4s_cam_aresetn),
-                .aclk       (axi4s_cam_aclk   ),
-                .aclken     (1'b1             )
-            );
-    
-    jelly3_axi4s_fifo
-            #(
-                .ASYNC          (0          ),
-                .PTR_BITS       (9          ),
-                .RAM_TYPE       ("block"    ),
-                .DOUT_REG       (1          ),
-                .S_REG          (1          ),
-                .M_REG          (1          )
-            )
-        u_axi4s_fifo
-            (
-                .s_axi4s        (axi4s_fmtr.s   ),
-                .m_axi4s        (axi4s_fifo.m   ),
-                .s_free_size    (               ),
-                .m_data_size    (               )
-            );
 
     // DMA write
     jelly3_axi4s_if
             #(
-                .DATA_BITS  (16     ),
-                .DEBUG      ("true" )
+                .DATA_BITS  (16                 ),
+                .DEBUG      ("true"             )
             )
         axi4s_wdma_img
             (
-                .aresetn    (axi4s_cam_aresetn),
-                .aclk       (axi4s_cam_aclk   ),
-                .aclken     (1'b1             )
+                .aresetn    (axi4s_cam_aresetn  ),
+                .aclk       (axi4s_cam_aclk     ),
+                .aclken     (1'b1               )
             );
 
-    assign axi4s_wdma_img.tuser  = axi4s_fifo.tuser ;
-    assign axi4s_wdma_img.tlast  = axi4s_fifo.tlast ;
-    assign axi4s_wdma_img.tdata  = 16'(axi4s_fifo.tdata) ;
-    assign axi4s_wdma_img.tvalid = axi4s_fifo.tvalid;
-    assign axi4s_fifo.tready = axi4s_wdma_img.tready;
+    assign axi4s_wdma_img.tuser  = axi4s_fmtr.tuser ;
+    assign axi4s_wdma_img.tlast  = axi4s_fmtr.tlast ;
+    assign axi4s_wdma_img.tdata  = 16'(axi4s_fmtr.tdata) ;
+    assign axi4s_wdma_img.tvalid = axi4s_fmtr.tvalid;
+    assign axi4s_fmtr.tready = axi4s_wdma_img.tready;
 
     jelly3_dma_video_write
             #(
-                .AXI4L_ASYNC            (1                      ),
-                .AXI4S_ASYNC            (1                      ),
-                .ADDR_BITS              (AXI4_MEM_ADDR_BITS     ),
-                .INDEX_BITS             (1                      ),
-                .SIZE_OFFSET            (1'b1                   ),
-                .H_SIZE_BITS            (14                     ),
-                .V_SIZE_BITS            (14                     ),
-                .F_SIZE_BITS            (14                     ),
-                .LINE_STEP_BITS         (16                     ),
-                .FRAME_STEP_BITS        (32                     ),
+                .AXI4L_ASYNC            (1                          ),
+                .AXI4S_ASYNC            (1                          ),
+                .ADDR_BITS              (AXI4_MEM_ADDR_BITS         ),
+                .INDEX_BITS             (1                          ),
+                .SIZE_OFFSET            (1'b1                       ),
+                .H_SIZE_BITS            (14                         ),
+                .V_SIZE_BITS            (14                         ),
+                .F_SIZE_BITS            (14                         ),
+                .LINE_STEP_BITS         (16                         ),
+                .FRAME_STEP_BITS        (32                         ),
                 
-                .INIT_CTL_CONTROL       (4'b0000                ),
-                .INIT_IRQ_ENABLE        (1'b0                   ),
-                .INIT_PARAM_ADDR        (0                      ),
-                .INIT_PARAM_AWLEN_MAX   (8'd255                 ),
-                .INIT_PARAM_H_SIZE      (14'(IMG_WIDTH-1)       ),
-                .INIT_PARAM_V_SIZE      (14'(IMG_HEIGHT-1)      ),
-                .INIT_PARAM_LINE_STEP   (16'd8192               ),
-                .INIT_PARAM_F_SIZE      (14'd0                  ),
-                .INIT_PARAM_FRAME_STEP  (32'(IMG_HEIGHT*8192)   ),
-                .INIT_SKIP_EN           (1'b1                   ),
-                .INIT_DETECT_FIRST      (3'b010                 ),
-                .INIT_DETECT_LAST       (3'b001                 ),
-                .INIT_PADDING_EN        (1'b1                   ),
-                .INIT_PADDING_DATA      (10'd0                  ),
+                .INIT_CTL_CONTROL       (4'b0000                    ),
+                .INIT_IRQ_ENABLE        (1'b0                       ),
+                .INIT_PARAM_ADDR        (0                          ),
+                .INIT_PARAM_AWLEN_MAX   (8'd255                     ),
+                .INIT_PARAM_H_SIZE      (14'(IMG_WIDTH-1)           ),
+                .INIT_PARAM_V_SIZE      (14'(IMG_HEIGHT-1)          ),
+                .INIT_PARAM_LINE_STEP   (16'd8192                   ),
+                .INIT_PARAM_F_SIZE      (14'd0                      ),
+                .INIT_PARAM_FRAME_STEP  (32'(IMG_HEIGHT*8192)       ),
+                .INIT_SKIP_EN           (1'b1                       ),
+                .INIT_DETECT_FIRST      (3'b010                     ),
+                .INIT_DETECT_LAST       (3'b001                     ),
+                .INIT_PADDING_EN        (1'b1                       ),
+                .INIT_PADDING_DATA      (10'd0                      ),
                 
-                .BYPASS_GATE            (0                      ),
-                .BYPASS_ALIGN           (0                      ),
-                .DETECTOR_ENABLE        (1                      ),
-                .ALLOW_UNALIGNED        (1                      ), // (0),
-                .CAPACITY_BITS          (32                     ),
+                .BYPASS_GATE            (0                          ),
+                .BYPASS_ALIGN           (0                          ),
+                .DETECTOR_ENABLE        (1                          ),
+                .ALLOW_UNALIGNED        (0                          ),
+                .CAPACITY_BITS          (32                         ),
                 
-                .WFIFO_PTR_BITS         (9                      ),
-                .WFIFO_RAM_TYPE         ("block"                )
+                .WFIFO_PTR_BITS         (9                          ),
+                .WFIFO_RAM_TYPE         ("block"                    )
             )
         u_dma_video_write_img
             (
-                .endian                 (1'b0                   ),
+                .endian                 (1'b0                       ),
 
-                .s_axi4s                (axi4s_wdma_img.s       ),
-                .m_axi4                 (axi4_mem0.mw           ),
+                .s_axi4s                (axi4s_wdma_img.s           ),
+                .m_axi4                 (axi4_mem0.mw               ),
 
-                .s_axi4l                (axi4l_dec[DEC_WDMA_IMG].s),
-                .out_irq                (                       ),
+                .s_axi4l                (axi4l_dec[DEC_WDMA_IMG].s  ),
+                .out_irq                (                           ),
                 
-                .buffer_request         (                       ),
-                .buffer_release         (                       ),
-                .buffer_addr            ('0                     )
+                .buffer_request         (                           ),
+                .buffer_release         (                           ),
+                .buffer_addr            ('0                         )
             );
 
     // DMA write black
@@ -789,63 +741,63 @@ module kv260_rtcl_p3s7_hs
             );
 
 
-    assign axi4s_wdma_blk.tuser  = axi4s_blk.tuser        ;
-    assign axi4s_wdma_blk.tlast  = axi4s_blk.tlast        ;
-    assign axi4s_wdma_blk.tdata  = 16'(axi4s_blk.tdata)   ;
-    assign axi4s_wdma_blk.tstrb = '1;
-    assign axi4s_wdma_blk.tvalid = axi4s_blk.tvalid       ;
-    assign axi4s_blk.tready = axi4s_wdma_blk.tready;
+    assign axi4s_wdma_blk.tuser  = axi4s_blk.tuser      ;
+    assign axi4s_wdma_blk.tlast  = axi4s_blk.tlast      ;
+    assign axi4s_wdma_blk.tdata  = 16'(axi4s_blk.tdata) ;
+    assign axi4s_wdma_blk.tstrb = '1                    ;
+    assign axi4s_wdma_blk.tvalid = axi4s_blk.tvalid     ;
+    assign axi4s_blk.tready = axi4s_wdma_blk.tready     ;
 
     jelly3_dma_video_write
             #(
-                .AXI4L_ASYNC            (1                      ),
-                .AXI4S_ASYNC            (1                      ),
-                .ADDR_BITS              (AXI4_MEM_ADDR_BITS     ),
-                .INDEX_BITS             (1                      ),
-                .SIZE_OFFSET            (1'b1                   ),
-                .H_SIZE_BITS            (14                     ),
-                .V_SIZE_BITS            (14                     ),
-                .F_SIZE_BITS            (14                     ),
-                .LINE_STEP_BITS         (16                     ),
-                .FRAME_STEP_BITS        (32                     ),
+                .AXI4L_ASYNC            (1                          ),
+                .AXI4S_ASYNC            (1                          ),
+                .ADDR_BITS              (AXI4_MEM_ADDR_BITS         ),
+                .INDEX_BITS             (1                          ),
+                .SIZE_OFFSET            (1'b1                       ),
+                .H_SIZE_BITS            (14                         ),
+                .V_SIZE_BITS            (14                         ),
+                .F_SIZE_BITS            (14                         ),
+                .LINE_STEP_BITS         (16                         ),
+                .FRAME_STEP_BITS        (32                         ),
                 
-                .INIT_CTL_CONTROL       (4'b0000                ),
-                .INIT_IRQ_ENABLE        (1'b0                   ),
-                .INIT_PARAM_ADDR        (0                      ),
-                .INIT_PARAM_AWLEN_MAX   (8'd255                 ),
-                .INIT_PARAM_H_SIZE      (14'(1280-1)            ),
-                .INIT_PARAM_V_SIZE      (14'(1-1)               ),
-                .INIT_PARAM_LINE_STEP   (16'd8192               ),
-                .INIT_PARAM_F_SIZE      (14'd0                  ),
-                .INIT_PARAM_FRAME_STEP  (32'(1*8192)            ),
-                .INIT_SKIP_EN           (1'b1                   ),
-                .INIT_DETECT_FIRST      (3'b010                 ),
-                .INIT_DETECT_LAST       (3'b001                 ),
-                .INIT_PADDING_EN        (1'b1                   ),
-                .INIT_PADDING_DATA      (10'd0                  ),
+                .INIT_CTL_CONTROL       (4'b0000                    ),
+                .INIT_IRQ_ENABLE        (1'b0                       ),
+                .INIT_PARAM_ADDR        (0                          ),
+                .INIT_PARAM_AWLEN_MAX   (8'd255                     ),
+                .INIT_PARAM_H_SIZE      (14'(1280-1)                ),
+                .INIT_PARAM_V_SIZE      (14'(1-1)                   ),
+                .INIT_PARAM_LINE_STEP   (16'd8192                   ),
+                .INIT_PARAM_F_SIZE      (14'd0                      ),
+                .INIT_PARAM_FRAME_STEP  (32'(1*8192)                ),
+                .INIT_SKIP_EN           (1'b1                       ),
+                .INIT_DETECT_FIRST      (3'b010                     ),
+                .INIT_DETECT_LAST       (3'b001                     ),
+                .INIT_PADDING_EN        (1'b1                       ),
+                .INIT_PADDING_DATA      (10'd0                      ),
                 
-                .BYPASS_GATE            (0                      ),
-                .BYPASS_ALIGN           (0                      ),
-                .DETECTOR_ENABLE        (1                      ),
-                .ALLOW_UNALIGNED        (1                      ), // (0),
-                .CAPACITY_BITS          (32                     ),
+                .BYPASS_GATE            (0                          ),
+                .BYPASS_ALIGN           (0                          ),
+                .DETECTOR_ENABLE        (1                          ),
+                .ALLOW_UNALIGNED        (0                          ),
+                .CAPACITY_BITS          (32                         ),
                 
-                .WFIFO_PTR_BITS         (9                      ),
-                .WFIFO_RAM_TYPE         ("block"                )
+                .WFIFO_PTR_BITS         (9                          ),
+                .WFIFO_RAM_TYPE         ("block"                    )
             )
         u_dma_video_write_blk
             (
-                .endian                 (1'b0                   ),
+                .endian                 (1'b0                       ),
 
-                .s_axi4s                (axi4s_wdma_blk.s       ),
-                .m_axi4                 (axi4_mem1.mw           ),
+                .s_axi4s                (axi4s_wdma_blk.s           ),
+                .m_axi4                 (axi4_mem1.mw               ),
 
-                .s_axi4l                (axi4l_dec[DEC_WDMA_BLK].s),
-                .out_irq                (                       ),
+                .s_axi4l                (axi4l_dec[DEC_WDMA_BLK].s  ),
+                .out_irq                (                           ),
                 
-                .buffer_request         (                       ),
-                .buffer_release         (                       ),
-                .buffer_addr            ('0                     )
+                .buffer_request         (                           ),
+                .buffer_release         (                           ),
+                .buffer_addr            ('0                         )
             );
 
 
