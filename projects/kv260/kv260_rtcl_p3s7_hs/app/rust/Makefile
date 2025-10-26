@@ -20,6 +20,10 @@ all: build
 build:
 	cargo build --release
 
+.PHONY: clean
+clean:
+	cargo clean
+
 .PHONY: load
 load:
 	make -C ..

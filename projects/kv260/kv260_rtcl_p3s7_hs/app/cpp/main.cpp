@@ -24,7 +24,6 @@ void signal_handler(int signo) {
     g_signal = true;
 }
 
-
 void          i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
 std::uint16_t i2c_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
 void          spi_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
@@ -33,8 +32,6 @@ void          spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint1
 void          reg_dump(jelly::I2cAccessor &i2c, const char *fname);
 void          load_setting(jelly::I2cAccessor &i2c);
 void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
-
-
 
 #define CAMREG_CORE_ID              0x0000
 #define CAMREG_CORE_VERSION         0x0001
@@ -268,7 +265,9 @@ int main(int argc, char *argv[])
     spi_change(i2c, 112, 0x7);      // Serializers/LVDS/IO 
     spi_change(i2c, 10, 0x0000);    // soft_reset_analog
     */
-    cam.Setup();
+//  cam.Setup();
+
+    cam.SetSensorEnable(true);
 
     cam.SetRoi0(width, height);
 

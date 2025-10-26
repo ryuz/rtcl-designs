@@ -1,5 +1,14 @@
 
-TARGET    = kv260_rtcl_p3s7_hs.out
+BASE_NAME = kv260_rtcl_p3s7_hs
+
+TARGET     = $(BASE_NAME).out
+ACCEL_NAME = $(BASE_NAME)
+BIT_FILE   = ../$(BASE_NAME).bit
+BIN_FILE   = $(BIT_FILE).bin
+DTBO_FILE  = ../$(BASE_NAME).dtbo
+
+KV260_SERVER_ADDRESS ?= 127.0.0.1:8051
+KV260_SSH_ADDRESS    ?= kria
 
 # 実行環境のネイティブアーキテクチャを取得
 HOST_ARCH := $(shell uname -m)
@@ -31,6 +40,9 @@ OBJS = main.o
 .PHONY: all
 all: $(TARGET)
 
+.PHONY: build
+build: $(TARGET)
+
 .PHONY: clean
 clean:
 	rm -rf $(TARGET) $(OBJS)
@@ -47,3 +59,16 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 main.o: main.cpp ../../../../../include/rtcl/RtclP3S7Control.h
+
+
+.PHONY: load
+load:
+	make -C ..
+	jelly-fpga-loader unload --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader register-accel $(ACCEL_NAME) $(DTBO_FILE) $(BIN_FILE) --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader load $(ACCEL_NAME) --ip $(KV260_SERVER_ADDRESS)
+
+.PHONY: remote_run
+remote_run: $(TARGET) load
+	scp $(TARGET) $(KV260_SSH_ADDRESS):/tmp/
+	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(TARGET)
