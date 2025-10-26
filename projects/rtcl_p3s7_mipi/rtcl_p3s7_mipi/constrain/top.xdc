@@ -12,7 +12,7 @@ create_clock -period 2.777 -name python_clk_p -waveform {0.000 1.388} [get_ports
 # MIPI  1250Mbps : 8bit@156.25MHz 6.400ns
 # MIPI   950Mbps : 8bit@118.75MHz 8.421ns
 
-# in_clk72               :  50.00MHz 20.000ns
+# in_clk50               :  50.00MHz 20.000ns
 # in_clk72               :  72.00MHz 13.888ns
 # python_clk_p           : 360.00MHz  2.777ns
 # python_clk             :  72.00MHz 13.888ns

@@ -109,11 +109,11 @@ module python_receiver_10bit
     // reset
     logic   reset;
     assign reset = in_reset || sw_reset;
-    jelly3_reset
+    jelly3_reset_sync
             #(
                 .ADDITIONAL_CYCLE   (16         )
             )
-        u_reset
+        u_reset_sync
             (
                 .clk                (out_clk    ),
                 .cke                (1'b1       ),

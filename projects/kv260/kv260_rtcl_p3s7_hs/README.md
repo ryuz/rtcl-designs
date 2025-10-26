@@ -15,15 +15,15 @@ v
 
 ### PC環境
 
-Vivado 2023.2 を用いております。
+Vivado 2024.2 を用いております。
 
 ### KV260環境
 
 [認定Ubuntu](https://japan.xilinx.com/products/design-tools/embedded-software/ubuntu.html) 環境にて試しております。
 
 ```
-Description : Ubuntu 22.04 LTS  
-kernel      : xilinx-zynqmp  
+Description : Ubuntu 24.04 LTS  
+kernel      : xilinx-zynqmp
 ```
 
 ### OpenCV
@@ -50,7 +50,7 @@ git clone https://github.com/ryuz/rtcl-designs.git --recurse-submodules
 Vivado が使えるように
 
 ```bash
-source /tools/Xilinx/Vivado/2023.2/settings64.sh
+source /tools/Xilinx/Vivado/2024.2/settings64.sh
 ```
 
 したのちに
@@ -64,7 +64,7 @@ make
 
 #### GUI 版
 
-`projects/kv260/kv260_rtcl_p3s7_hs/syn/vivado2023.2/kv260_rtcl_p3s7_hs.xpr`
+`projects/kv260/kv260_rtcl_p3s7_hs/syn/vivado2024.2/kv260_rtcl_p3s7_hs.xpr`
 
 に Vivado GUI 用のプロジェクトがあるので、Vivado の GUI から開いてご利用ください。
 
@@ -98,7 +98,7 @@ KV260 側では Ubuntu が起動済みで ssh などで接続ができている�
 問題なければ、app をコピーしたディレクトリで
 
 ```bash
-make all
+make
 ```
 
 と実行すれば `kv260_rtcl_p3s7_hs.out` という実行ファイルが生成されます。

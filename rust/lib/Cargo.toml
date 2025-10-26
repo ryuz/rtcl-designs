@@ -1,0 +1,13 @@
+[package]
+name = "rtcl-lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+#jelly-lib = { git = "https://github.com/ryuz/jelly-lib-rs.git", rev = "a719c9b" }
+jelly-lib = { path = "../../jelly/rust/lib" }
+nix = { version ="0.30.1", features = ["fs", "ioctl"], optional = true }
+
+[features]
+default = ["std"]
+std = ["nix"]
