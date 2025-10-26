@@ -10,7 +10,6 @@ TARGET_ARCH = arm-unknown-linux-gnueabihf
 ZYBO_Z7_SERVER_ADDRESS ?= 127.0.0.1:8051
 ZYBO_Z7_SSH_ADDRESS    ?= zybo-z7
 
-
 .PHONY: all
 all: build
 
@@ -34,5 +33,5 @@ cross_build:
 .PHONY: remote_run
 remote_run: cross_build load
 	scp target/$(TARGET_ARCH)/release/$(BASE_NAME) $(ZYBO_Z7_SSH_ADDRESS):/tmp/
-	ssh -Y -t $(ZYBO_Z7_SSH_ADDRESS) /tmp/$(BASE_NAME)
+	ssh -Y -t $(ZYBO_Z7_SSH_ADDRESS) /tmp/$(BASE_NAME) $(RUN_OPT)
 
