@@ -83,8 +83,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000,  60)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
-//  create_cv_trackbar("dly",       10,  255, 255)?;
-    create_cv_trackbar("dly",       10,  255, 146)?;
 
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
@@ -98,9 +96,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
-
-        let dly = get_cv_trackbar_pos("dly")? as u16;
-//      cam.set_xsm_delay(dly)?;
 
         cam.set_gain(gain)?;
 

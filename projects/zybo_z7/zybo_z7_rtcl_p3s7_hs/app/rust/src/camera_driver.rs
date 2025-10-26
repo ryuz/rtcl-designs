@@ -248,13 +248,6 @@ where
         Ok(())
     }
 
-    pub fn set_xsm_delay(&mut self, dly : u16) -> Result<(), Box<dyn Error>> {
-          self.cam_i2c.set_xsm_delay(dly)?;
-          self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
-//        self.cam_i2c.set_zero_rot_enable(true)?;
-        Ok(())
-    }
-
     pub fn set_image_size(&mut self, width: usize, height: usize) -> Result<(), Box<dyn Error>> {
         let mergin = 0.000_000_100; // 100ns
         let min_line_time = (width as f32) * (10.0 / (2.0 * 950_000_000.0));              // 2lane 10bit 950Mbps
@@ -262,9 +255,9 @@ where
         self.xsm_delay = if sensor_line_time > min_line_time {0} else {
             (((min_line_time - sensor_line_time) * 720_000_000.0) / 4.0).ceil() as u16
         };
-        println!("min_line_time:    {}", min_line_time);
-        println!("sensor_line_time: {}", sensor_line_time);
-        println!("set_xsm_delay:    {}", self.xsm_delay);
+//      println!("min_line_time:    {}", min_line_time);
+//      println!("sensor_line_time: {}", sensor_line_time);
+//      println!("set_xsm_delay:    {}", self.xsm_delay);
 
         if self.opend() {
             unsafe {
