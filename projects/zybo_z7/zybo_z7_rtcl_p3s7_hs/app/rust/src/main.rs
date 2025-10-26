@@ -13,16 +13,16 @@ use opencv::core::*;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("start zybo_z7_rtcl_p3s7_hs");
 
+    let width = 640;
+    let height = 480;
+    let color = true;
+
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
     let r = running.clone();
     ctrlc::set_handler(move || {
         r.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
-
-
-    let width = 640;
-    let height = 480;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -63,6 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    cam.set_color(color)?;
     cam.set_image_size(width, height)?;
 //  cam.set_slave_mode(true)?;
 //  cam.set_trigger_mode(true)?;

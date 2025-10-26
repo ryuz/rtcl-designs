@@ -224,7 +224,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// 
     /// Returns an error if I2C communication fails
     pub fn module_id(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.read_s7_reg(REG_P3S7_MODULE_ID)
+        self.read_i2c(REG_P3S7_MODULE_ID)
     }
 
     /// Get the module version
@@ -237,7 +237,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// 
     /// Returns an error if I2C communication fails
     pub fn module_version(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.read_s7_reg(REG_P3S7_MODULE_VERSION)
+        self.read_i2c(REG_P3S7_MODULE_VERSION)
     }
 
     /// Get the sensor ID from PYTHON300
@@ -250,8 +250,15 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// 
     /// Returns an error if I2C communication fails
     pub fn sensor_id(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.read_p3_spi(0)
+        self.read_sensor_spi(0)
     }
+
+    pub fn set_color(&mut self, color: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        // chip_configuration
+        self.write_sensor_spi(2, if color { 1 } else { 0 })?;
+        Ok(())
+    }
+
 
     /// Enable or disable sensor power
     /// 
@@ -267,7 +274,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         enable: bool,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         // センサー電源ON/OFF
-        self.write_s7_reg(REG_P3S7_SENSOR_ENABLE, if enable { 1 } else { 0 })?;
+        self.write_i2c(REG_P3S7_SENSOR_ENABLE, if enable { 1 } else { 0 })?;
         self.usleep(50000);
         Ok(())
     }
@@ -283,11 +290,11 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// Returns an error if I2C communication fails
     pub fn set_dphy_reset(&mut self, reset: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         if reset {
-            self.write_s7_reg(REG_P3S7_DPHY_SYS_RESET, 1)?;
-            self.write_s7_reg(REG_P3S7_DPHY_CORE_RESET, 1)?;
+            self.write_i2c(REG_P3S7_DPHY_SYS_RESET, 1)?;
+            self.write_i2c(REG_P3S7_DPHY_CORE_RESET, 1)?;
         } else {
-            self.write_s7_reg(REG_P3S7_DPHY_CORE_RESET, 0)?;
-            self.write_s7_reg(REG_P3S7_DPHY_SYS_RESET, 0)?;
+            self.write_i2c(REG_P3S7_DPHY_CORE_RESET, 0)?;
+            self.write_i2c(REG_P3S7_DPHY_SYS_RESET, 0)?;
         }
         self.usleep(100);
         Ok(())
@@ -303,7 +310,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// 
     /// Returns an error if I2C communication fails
     pub fn dphy_init_done(&mut self) -> Result<bool, RtclP3s7ModuleDriverError<I2C::Error>> {
-        Ok(self.read_s7_reg(REG_P3S7_DPHY_INIT_DONE)? != 0)
+        Ok(self.read_i2c(REG_P3S7_DPHY_INIT_DONE)? != 0)
     }
 
     /// Set the camera operation mode
@@ -319,7 +326,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         &mut self,
         mode: CameraMode,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_s7_reg(REG_P3S7_CSI_MODE, mode as u16)?;
+        self.write_i2c(REG_P3S7_CSI_MODE, mode as u16)?;
         Ok(())
     }
 
@@ -346,34 +353,34 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     }
 
     fn sensor_boot(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_p3_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-        self.write_p3_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        self.write_p3_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
-        self.write_p3_spi(9, 0x0000)?; // cgen_soft_reset
-        self.write_p3_spi(34, 0x1)?; // config0 Logic General Enable Configuration
-        self.write_p3_spi(40, 0x7)?; // image_core_config0
-        self.write_p3_spi(48, 0x1)?; // AFE Power down for AFE’s
-        self.write_p3_spi(64, 0x1)?; // Bias Bias Power Down Configuration
-        self.write_p3_spi(72, 0x2227)?; // Charge Pump
-        self.write_p3_spi(112, 0x7)?; // Serializers/LVDS/IO
-        self.write_p3_spi(10, 0x0000)?; // soft_reset_analog
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_sensor_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_sensor_spi(9, 0x0000)?; // cgen_soft_reset
+        self.write_sensor_spi(34, 0x1)?; // config0 Logic General Enable Configuration
+        self.write_sensor_spi(40, 0x7)?; // image_core_config0
+        self.write_sensor_spi(48, 0x1)?; // AFE Power down for AFE’s
+        self.write_sensor_spi(64, 0x1)?; // Bias Bias Power Down Configuration
+        self.write_sensor_spi(72, 0x2227)?; // Charge Pump
+        self.write_sensor_spi(112, 0x7)?; // Serializers/LVDS/IO
+        self.write_sensor_spi(10, 0x0000)?; // soft_reset_analog
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
     fn sensor_shutdown(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_p3_spi(192, 0x0000)?;
-        self.write_p3_spi(10, 0x0999)?; // soft_reset_analog
-        self.write_p3_spi(112, 0x0000)?; // Serializers/LVDS/IO
-        self.write_p3_spi(72, 0x2220)?; // Charge Pump
-        self.write_p3_spi(64, 0x0000)?; // Bias Bias Power Down Configuration
-        self.write_p3_spi(48, 0x0000)?; // AFE Power down for AFE’s
-        self.write_p3_spi(40, 0x0000)?; // image_core_config0
-        self.write_p3_spi(34, 0x0000)?; // config0 Logic General Enable Configuration
-        self.write_p3_spi(9, 0x0009)?; // cgen_soft_reset
-        self.write_p3_spi(8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
-        self.write_p3_spi(32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        self.write_p3_spi(16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_sensor_spi(192, 0x0000)?;
+        self.write_sensor_spi(10, 0x0999)?; // soft_reset_analog
+        self.write_sensor_spi(112, 0x0000)?; // Serializers/LVDS/IO
+        self.write_sensor_spi(72, 0x2220)?; // Charge Pump
+        self.write_sensor_spi(64, 0x0000)?; // Bias Bias Power Down Configuration
+        self.write_sensor_spi(48, 0x0000)?; // AFE Power down for AFE’s
+        self.write_sensor_spi(40, 0x0000)?; // image_core_config0
+        self.write_sensor_spi(34, 0x0000)?; // config0 Logic General Enable Configuration
+        self.write_sensor_spi(9, 0x0009)?; // cgen_soft_reset
+        self.write_sensor_spi(8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_sensor_spi(32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi(16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
         Ok(())
     }
 
@@ -397,7 +404,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !0x1;
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -421,7 +428,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 2);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -445,7 +452,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 4);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -466,7 +473,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 5);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -490,7 +497,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 6);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -511,7 +518,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 7);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -532,7 +539,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 8);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -543,7 +550,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             self.general_configuration &= !(1 << 10);
         }
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
@@ -552,14 +559,14 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         let mode = mode & 0x7;
         self.general_configuration &= !(0x7 << 11);
         self.general_configuration |= mode << 11;
-        self.write_p3_spi(192, self.general_configuration)?;
+        self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
 
     /// XSM Delay 設定
     pub fn set_xsm_delay(&mut self, delay: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let delay = delay & 0xff;
-        self.write_p3_spi(193, delay << 8)?;
+        self.write_sensor_spi(193, delay << 8)?;
         Ok(())
     }
 
@@ -605,9 +612,9 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         let y_start = roi_y;
         let y_end = y_start + height - 1;
 
-        self.write_p3_spi(256, (x_end << 8) | x_start)?;
-        self.write_p3_spi(257, y_start)?;
-        self.write_p3_spi(258, y_end)?;
+        self.write_sensor_spi(256, (x_end << 8) | x_start)?;
+        self.write_sensor_spi(257, y_start)?;
+        self.write_sensor_spi(258, y_end)?;
 
         Ok(())
     }
@@ -621,22 +628,22 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.set_sequencer_enable(false)?;
 
             self.usleep(1000);
-            self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 1)?;
-            self.write_s7_reg(REG_P3S7_RECEIVER_CLK_DLY, 8)?;
-            self.write_s7_reg(REG_P3S7_ALIGN_RESET, 1)?;
+            self.write_i2c(REG_P3S7_RECEIVER_RESET, 1)?;
+            self.write_i2c(REG_P3S7_RECEIVER_CLK_DLY, 8)?;
+            self.write_i2c(REG_P3S7_ALIGN_RESET, 1)?;
             self.usleep(1000);
-            self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 0)?;
+            self.write_i2c(REG_P3S7_RECEIVER_RESET, 0)?;
             self.usleep(1000);
-            self.write_s7_reg(REG_P3S7_ALIGN_RESET, 0)?;
+            self.write_i2c(REG_P3S7_ALIGN_RESET, 0)?;
             self.usleep(1000);
 
-            let cam_calib_status = self.read_s7_reg(REG_P3S7_ALIGN_STATUS)?;
+            let cam_calib_status = self.read_i2c(REG_P3S7_ALIGN_STATUS)?;
             if cam_calib_status != 0x01 {
                 return Err(RtclP3s7ModuleDriverError::ReceiverCalibrationFailed);
             }
         } else {
-            self.write_s7_reg(REG_P3S7_RECEIVER_RESET, 1)?;
-            self.write_s7_reg(REG_P3S7_ALIGN_RESET, 1)?;
+            self.write_i2c(REG_P3S7_RECEIVER_RESET, 1)?;
+            self.write_i2c(REG_P3S7_ALIGN_RESET, 1)?;
         }
         Ok(())
     }
@@ -667,7 +674,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         } else {
             (0x01e3, 1.0)
         };
-        self.write_p3_spi(204, reg_val)?;
+        self.write_sensor_spi(204, reg_val)?;
         self.analog_gain = gain;
         Ok(())
     }
@@ -694,7 +701,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// Returns an error if I2C communication fails
     pub fn set_digital_gain_linear(&mut self, linear_gain: f32) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let reg_val = (linear_gain * 128.0).round() as u16;
-        self.write_p3_spi(205, reg_val)?;
+        self.write_sensor_spi(205, reg_val)?;
         self.digital_gain = reg_val as f32 / 128.0;
         Ok(())
     }
@@ -765,30 +772,30 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
     
     pub fn set_mult_timer0(&mut self, timer: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_p3_spi(199, timer)?;
+        self.write_sensor_spi(199, timer)?;
         Ok(())
     }
 
     pub fn set_fr_length0(&mut self, fr_length: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_p3_spi(200, fr_length)?;
+        self.write_sensor_spi(200, fr_length)?;
         Ok(())
     }
 
     pub fn set_exposure0(&mut self, exposure: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_p3_spi(201, exposure)?;
+        self.write_sensor_spi(201, exposure)?;
         Ok(())
     }
 
     pub fn mult_timer_status(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.read_p3_spi(242)
+        self.read_sensor_spi(242)
     }
 
     pub fn reset_length_status(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.read_p3_spi(243)
+        self.read_sensor_spi(243)
     }
 
     pub fn exposure_status(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.read_p3_spi(244)
+        self.read_sensor_spi(244)
     }
 
 
@@ -811,7 +818,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// # Errors
     /// 
     /// Returns an error if I2C communication fails
-    pub fn write_s7_reg(
+    pub fn write_i2c(
         &mut self,
         addr: u16,
         data: u16,
@@ -842,7 +849,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// # Errors
     /// 
     /// Returns an error if I2C communication fails
-    pub fn read_s7_reg(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
+    pub fn read_i2c(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         let addr = addr << 1;
         let wbuf: [u8; 4] = [((addr >> 8) & 0xff) as u8, ((addr >> 0) & 0xff) as u8, 0, 0];
         self.i2c.write(&wbuf)?;
@@ -863,13 +870,13 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// # Errors
     /// 
     /// Returns an error if I2C communication fails
-    pub fn write_p3_spi(
+    pub fn write_sensor_spi(
         &mut self,
         addr: u16,
         data: u16,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let addr = addr | (1 << 14);
-        self.write_s7_reg(addr, data)
+        self.write_i2c(addr, data)
     }
 
     /// Read a 16-bit register from the PYTHON300 sensor via SPI bridge
@@ -887,9 +894,9 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// # Errors
     /// 
     /// Returns an error if I2C communication fails
-    pub fn read_p3_spi(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
+    pub fn read_sensor_spi(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         let addr = addr | (1 << 14);
-        self.read_s7_reg(addr)
+        self.read_i2c(addr)
     }
 
     /// Set D-PHY speed configuration
@@ -911,24 +918,24 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// - Speed is below 950 Mbps (unsupported)
     pub fn set_dphy_speed(&mut self, speed: f64) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         // MMCM set reset
-        self.write_s7_reg(REG_P3S7_MMCM_CONTROL, 1)?;
+        self.write_i2c(REG_P3S7_MMCM_CONTROL, 1)?;
 
         if speed >= 1250000000.0 {
             // D-PHY 1250Mbps用設定
             for i in 0..MMCM_TBL_1250.len() {
-                self.write_s7_reg(REG_P3S7_MMCM_DRP + MMCM_TBL_1250[i].0, MMCM_TBL_1250[i].1)?;
+                self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_1250[i].0, MMCM_TBL_1250[i].1)?;
             }
         } else if speed >= 950000000.0 {
             // D-PHY 950Mbps用設定
             for i in 0..MMCM_TBL_1250.len() {
-                self.write_s7_reg(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
+                self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
             }
         } else {
             return Err(RtclP3s7ModuleDriverError::MyError);
         }
 
         // MMCM release reset
-        self.write_s7_reg(REG_P3S7_MMCM_CONTROL, 0)?;
+        self.write_i2c(REG_P3S7_MMCM_CONTROL, 0)?;
         self.usleep(100);
 
         Ok(())

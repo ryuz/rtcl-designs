@@ -230,6 +230,11 @@ where
         Ok(self.cam_i2c.sensor_id()?)
     }
 
+    pub fn set_color(&mut self, color: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.cam_i2c.set_color(color)?;
+        Ok(())
+    }
+
     /// スレーブモード設定
     pub fn set_slave_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
         self.slave_mode = enable;
