@@ -14,7 +14,7 @@ PYTHON300のデータシートはオンセミ社より[こちら](https://www.on
 
 ## 環境
 
-FPGAは Linux 版の Vivado 2023.2 で開発しておりますが、おそらく新しいバージョンでも大丈夫です。
+FPGAは Linux 版の Vivado 2024.2 で開発しておりますが、おそらく新しいバージョンでも大丈夫です。
 
 JTAGダウンロードケーブルは、Digilent社の[JTAG-HS3](https://digilent.com/shop/jtag-hs3-programming-cable/)で確認していますが、おそらく他のものでも大丈夫です。
 
@@ -24,28 +24,28 @@ JTAGダウンロードケーブルは、Digilent社の[JTAG-HS3](https://digilen
 Vivado が使えるように
 
 ```bash
-source /tools/Xilinx/Vivado/2023.2/settings64.sh
+source /tools/Xilinx/Vivado/2024.2/settings64.sh
 ```
 
 したのちに
 
 ```bash
-cd projects/rtcl_p3s7/rtcl_p3s7_hs/syn/tcl
+cd projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl
 make
 ```
 
 とすると
 
-`projects/rtcl_p3s7/rtcl_p3s7_hs/syn/tcl/
+`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl/
 
 もしくは
 
-`projects/rtcl_p3s7/rtcl_p3s7_hs/syn/vivado2023.2/rtcl_p3s7_hs.xpr` に GUI 用のプロジェクトがあるので、Vivado の GUI から開いてご利用ください。
+`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/vivado2024.2/rtcl_p3s7_mipi.xpr` に GUI 用のプロジェクトがあるので、Vivado の GUI から開いてご利用ください。
 
 GUI 版では、bitファイル作成後にコンフィギュレーションROM用の mcs ファイルを作成するために、tcl から
 
 ```tcl
-write_cfgmem -format mcs -size 2 -interface spix4 -loadbit "up 0x0 rtcl_p3s7_hs.runs/impl_1/rtcl_p3s7_hs.bit" -file rtcl_p3s7_hs.runs/impl_1/rtcl_p3s7_hs.mcs
+write_cfgmem -format mcs -size 2 -interface spix4 -loadbit "up 0x0 rtcl_p3s7_mipi.runs/impl_1/rtcl_p3s7_mipi.bit" -file rtcl_p3s7_mipi.runs/impl_1/rtcl_p3s7_mipi.mcs -force
 ```
 
 と実行するか、GUI のツールから mcs を生成する必要がりますのでご注意ください。
