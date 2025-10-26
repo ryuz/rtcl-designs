@@ -293,7 +293,7 @@ module rtcl_p3s7_mipi
     system_control
             #(
                 .MODULE_ID              (16'h527a               ),
-                .MODULE_VERSION         (16'h0100               ),
+                .MODULE_VERSION         (16'h0101               ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
@@ -838,6 +838,8 @@ module rtcl_p3s7_mipi
             );
 
     // High-Speed TX
+    logic   [15:0]      hs_header_data;
+    logic               hs_header_update;
     rtcl_hs_tx
             #(
                 .CHANNELS       (4                  ),
@@ -849,12 +851,47 @@ module rtcl_p3s7_mipi
             )
         u_rtcl_hs_tx
             (
-                .header_data    (16'h1234           ),
-                .header_update  (                   ),
+                .header_data    (hs_header_data     ),
+                .header_update  (hs_header_update   ),
 
                 .s_axi4s        (axi4s_sw_in [0]    ),
                 .m_axi4s        (axi4s_sw_out[0]    )
             );
+    
+    // 将来の照明制御などの為に、撮影時状態をヘッダに付与できるようにしておく
+    (* ASYNC_REG = "true" *)    logic   [7:0]   pmod_ff0,    pmod_ff1   ;
+    (* ASYNC_REG = "true" *)    logic   [1:0]   monitor_ff0, monitor_ff1;
+                                logic   [1:0]   monitor_ff2             ;
+    always_ff @(posedge dphy_clk) begin
+        pmod_ff0 <= pmod;
+        pmod_ff1 <= pmod_ff0;
+        monitor_ff0 <= python_monitor;
+        monitor_ff1 <= monitor_ff0;
+        monitor_ff2 <= monitor_ff1;
+    end
+    
+    logic   [7:0]   hs_header_pmod  ;
+    logic   [7:0]   hs_header_count ;
+    always_ff @(posedge dphy_clk) begin
+        if ( dphy_reset ) begin
+            hs_header_pmod  <= '0;
+            hs_header_count <= '0;
+        end
+        else begin
+            // 露光完了時のPMODの状態をラッチ
+            if ( {monitor_ff2[0], monitor_ff1[0]} == 2'b01 ) begin
+                hs_header_pmod <= pmod_ff1;
+            end
+
+            // フレームカウント
+            if ( hs_header_update ) begin
+                hs_header_count <= hs_header_count + 1;
+            end
+        end
+    end
+    assign hs_header_data[7:0]  = hs_header_count;
+    assign hs_header_data[15:8] = hs_header_pmod;
+
 
     // MIPI-CSI2 TX
     logic   dphy_frame_start;

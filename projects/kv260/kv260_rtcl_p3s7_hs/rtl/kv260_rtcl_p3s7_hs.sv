@@ -360,7 +360,7 @@ module kv260_rtcl_p3s7_hs
             end
             if ( axi4l_dec[DEC_SYS].arvalid && axi4l_dec[DEC_SYS].arready ) begin
                 case ( axi4l_dec[DEC_SYS].araddr[6:3] )
-                SYSREG_ID            :  axi4l_dec[DEC_SYS].rdata  <= axi4l_dec[DEC_SYS].DATA_BITS'(32'h01234567)      ;
+                SYSREG_ID            :  axi4l_dec[DEC_SYS].rdata  <= axi4l_dec[DEC_SYS].DATA_BITS'(32'haa550101)      ;
                 SYSREG_SW_RESET      :  axi4l_dec[DEC_SYS].rdata  <= axi4l_dec[DEC_SYS].DATA_BITS'(reg_sw_reset)      ;
                 SYSREG_CAM_ENABLE    :  axi4l_dec[DEC_SYS].rdata  <= axi4l_dec[DEC_SYS].DATA_BITS'(reg_cam_enable)    ;
                 SYSREG_CSI_DATA_TYPE :  axi4l_dec[DEC_SYS].rdata  <= axi4l_dec[DEC_SYS].DATA_BITS'(reg_csi_data_type) ;
