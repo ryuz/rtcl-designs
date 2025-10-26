@@ -84,6 +84,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
+    println!("camera module id      : {:04x}", cam.module_id()?);
+    println!("camera module version : {:04x}", cam.module_version()?);
+    println!("camera sensor id      : {:04x}", cam.sensor_id()?);
+
+
     let mut video_capture = CaptureDriver::new(reg_wdma_img, udmabuf_acc.clone())?;
 
     // ウィンドウ作成

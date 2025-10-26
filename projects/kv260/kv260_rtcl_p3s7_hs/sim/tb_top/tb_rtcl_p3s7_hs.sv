@@ -59,8 +59,8 @@ module tb_rtcl_p3s7_hs();
     logic           python_sync_p       ;
     logic           python_sync_n       ;
     
-    logic           mipi_reset_n        ;
-    logic           mipi_gpio           ;
+    logic           mipi_gpio0          ;
+    logic           mipi_gpio1          ;
     wire            mipi_scl            ;
     wire            mipi_sda            ;
     logic           mipi_clk_lp_p       ;
@@ -75,7 +75,7 @@ module tb_rtcl_p3s7_hs();
     pullup(mipi_scl);
     pullup(mipi_sda);
 
-    rtcl_p3s7_hs
+    rtcl_p3s7_mipi
             #(
                 .I2C_DIVIDER            (1          ),
                 .DEBUG                  ("true"     )
@@ -107,8 +107,8 @@ module tb_rtcl_p3s7_hs();
                 .python_sync_p          ,
                 .python_sync_n          ,
 
-                .mipi_reset_n           ,
-                .mipi_gpio              ,
+                .mipi_gpio0             ,
+                .mipi_gpio1             ,
                 .mipi_scl               ,
                 .mipi_sda               ,
                 .mipi_clk_lp_p          ,

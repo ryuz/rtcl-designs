@@ -33,7 +33,10 @@ module rtcl_p3s7_hs_dphy_recv
             input   var logic                           dphy_valid          ,
 
             jelly3_axi4s_if.m                           m_axi4s_black       ,
-            jelly3_axi4s_if.m                           m_axi4s_image        
+            jelly3_axi4s_if.m                           m_axi4s_image       ,
+
+            output  var logic   [DPHY_LANES-1:0][7:0]   header_data         ,
+            output  var logic                           header_valid        
         );
 
     logic       aresetn     ;
@@ -106,17 +109,47 @@ module rtcl_p3s7_hs_dphy_recv
                 .m_data_count   (                   )
             );
 
-    logic   [31:0]          fifo_count    ;
+    // header detect
+    logic                           hdr_header   ;
+    logic                           hdr_first    ;
+    logic                           hdr_last     ;
+    logic   [DPHY_LANES-1:0][7:0]   hdr_data     ;
+    logic                           hdr_valid    ;
+    logic                           hdr_ready    ;
     always_ff @(posedge aclk) begin
-        if ( fifo_valid && fifo_ready ) begin
-            if ( fifo_first ) begin
-                fifo_count <= 0;
-            end
-            else begin
-                fifo_count <= fifo_count + 1;
+        if ( ~aresetn ) begin
+            hdr_first <= 'x     ;
+            hdr_last  <= 'x     ;
+            hdr_data  <= 'x     ;
+            hdr_valid <= 1'b0   ;
+
+            header_data  <= '0      ;
+            header_valid <= 1'b0    ;
+        end
+        else if ( aclken ) begin
+            header_valid <= 1'b0;
+            if ( fifo_ready ) begin
+                if ( fifo_valid && fifo_first ) begin
+                    hdr_first <= 1'b1       ;
+                    hdr_last  <= 'x         ;
+                    hdr_data  <= 'x         ;
+                    hdr_valid <= 1'b0       ;
+
+                    header_data  <= fifo_data   ;
+                    header_valid <= 1'b1        ;
+                end
+                else begin
+                    hdr_last  <= fifo_last ;
+                    hdr_data  <= fifo_data ;
+                    hdr_valid <= fifo_valid;
+                end
+                if ( hdr_valid ) begin
+                    hdr_first <= 1'b0;
+                end
             end
         end
     end
+    assign fifo_ready = !hdr_valid || hdr_ready;
 
 
     // width convert
@@ -157,15 +190,15 @@ module rtcl_p3s7_hs_dphy_recv
                 
                 .s_align_s          ('0                     ),
                 .s_align_m          ('0                     ),
-                .s_first            (fifo_first             ),
-                .s_last             (fifo_last              ),
-                .s_data             (fifo_data              ),
+                .s_first            (hdr_first              ),
+                .s_last             (hdr_last               ),
+                .s_data             (hdr_data               ),
                 .s_strb             ('1                     ),
                 .s_keep             ('1                     ),
                 .s_user_f           ('0                     ),
                 .s_user_l           ('0                     ),
-                .s_valid            (fifo_valid             ),
-                .s_ready            (fifo_ready             ),
+                .s_valid            (hdr_valid              ),
+                .s_ready            (hdr_ready              ),
 
                 .m_first            (conv_first             ),
                 .m_last             (conv_last              ),

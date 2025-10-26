@@ -11,7 +11,7 @@
 `default_nettype none
 
 
-module kv260_rtcl_p3s7_mipi
+module kv260_rtcl_p3s7_csi2
         #(
             parameter   int         WIDTH_BITS  = 11                        ,
             parameter   type        width_t     = logic [WIDTH_BITS-1:0]    ,

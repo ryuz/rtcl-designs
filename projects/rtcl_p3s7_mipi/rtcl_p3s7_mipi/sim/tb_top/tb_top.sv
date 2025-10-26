@@ -491,7 +491,8 @@ module tb_top();
         cmd_write(REGADR_MMCM_CONTROL, 0);
         */
 
-        cmd_write(REGADR_CSI_MODE, 1);
+//      cmd_write(REGADR_CSI_MODE, 1);
+        cmd_write(REGADR_CSI_MODE, 0);
 
         cmd_write(REGADR_SENSOR_ENABLE  , 16'h0001);
 

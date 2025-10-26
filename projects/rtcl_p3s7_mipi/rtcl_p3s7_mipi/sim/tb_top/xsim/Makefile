@@ -8,7 +8,7 @@ VIVADO_VERSION  := $(word 1,$(VIVADO_VERSIONS)).$(word 2,$(VIVADO_VERSIONS))
 # setting
 TOP_MODULE = tb_top
 
-JELLY_TOP_DIR = ../../../../../..
+JELLY_TOP_DIR = ../../../../../../jelly
 
 -include $(JELLY_TOP_DIR)/include/make/def_simulation.inc
 
