@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use clap::Parser;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
@@ -10,12 +11,35 @@ use zybo_z7_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 use opencv::*;
 use opencv::core::*;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    println!("start zybo_z7_rtcl_p3s7_hs");
+/// ZYBO Z7 RTCL P3S7 High Speed Camera Application
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Image width in pixels
+    #[arg(short = 'w', long, default_value_t = 640)]
+    width: usize,
 
-    let width = 640;
-    let height = 480;
-    let color = true;
+    /// Image height in pixels
+    #[arg(short = 'h', long, default_value_t = 480)]
+    height: usize,
+
+    /// Enable color mode (default: monochrome)
+    #[arg(short = 'c', long)]
+    color: bool,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
+    
+    println!("start zybo_z7_rtcl_p3s7_hs");
+    println!("Configuration:");
+    println!("  width:  {}", args.width);
+    println!("  height: {}", args.height);
+    println!("  color:  {}", args.color);
+
+    let width = args.width;
+    let height = args.height;
+    let color = args.color;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -113,10 +137,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
 
-        let mut view_rgb = Mat::default();
-        imgproc::cvt_color(&view, &mut view_rgb, imgproc::COLOR_BayerBG2BGR, 0)?;
-
-        highgui::imshow("img", &view_rgb)?;
+        if color {
+            let mut view_rgb = Mat::default();
+            imgproc::cvt_color(&view, &mut view_rgb, imgproc::COLOR_BayerBG2BGR, 0)?;
+            highgui::imshow("img", &view_rgb)?;
+        } else {
+            highgui::imshow("img", &view)?;
+        }
 
         // キーボード操作
         let ch = key as u8 as char;
