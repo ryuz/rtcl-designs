@@ -45,20 +45,20 @@ class RtclP3S7ControlI2c
 protected:
     jelly::I2cAccessor m_i2c;
 
-    int             m_aoi_x    = 0;
-    int             m_aoi_y    = 0;
-    int             m_width    = 640;
-    int             m_height   = 480;
+//    int             m_aoi_x    = 0;
+//    int             m_aoi_y    = 0;
+//    int             m_width    = 640;
+//    int             m_height   = 480;
 
-    float           m_framerate = 1000;
-    float           m_exposure  = 1;
+//  float           m_framerate = 1000;
+//  float           m_exposure  = 1;
 
     float           m_analog_gain  = 1.0;
     float           m_digital_gain = 1.0;
     std::uint16_t   m_general_configuration = 0;
 
-    bool        m_flip_h = false;
-    bool        m_flip_v = false;
+//  bool            m_flip_h = false;
+//  bool            m_flip_v = false;
 
 public:
     RtclP3S7ControlI2c() {}

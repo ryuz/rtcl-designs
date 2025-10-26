@@ -8,6 +8,8 @@
 # in_clk125
 create_clock -period 8.000 -name in_clk125 -waveform {0.000 4.000} [get_ports in_clk125]
 
+# 950Mbps(475MHz)
+create_clock -period 2.105 -name cam_clk_p -waveform {0.000 1.052} [get_ports cam_clk_p]
 
 # clk_fpga_0                     100MHz  10.000ns
 # clk_fpga_1                     133MHz   7.500ns
@@ -15,24 +17,6 @@ create_clock -period 8.000 -name in_clk125 -waveform {0.000 4.000} [get_ports in
 # clk_out2_design_1_clk_wiz_0_0  200MHz   5.000ns
 # clk_out3_design_1_clk_wiz_0_0  250MHz   4.000ns
 # dphy_clk                       114MHz   8.771ns
-
-# set_max_delay -datapath_only -from [get_clocks clk_fpga_0]                    -to [get_clocks clk_fpga_1]                    7.500
-# set_max_delay -datapath_only -from [get_clocks clk_fpga_0]                    -to [get_clocks clk_out2_design_1_clk_wiz_0_0] 5.000
-# set_max_delay -datapath_only -from [get_clocks clk_fpga_1]                    -to [get_clocks clk_fpga_0]                    7.500
-# set_max_delay -datapath_only -from [get_clocks clk_fpga_1]                    -to [get_clocks clk_out2_design_1_clk_wiz_0_0] 5.000
-# set_max_delay -datapath_only -from [get_clocks clk_out1_design_1_clk_wiz_0_0] -to [get_clocks clk_out2_design_1_clk_wiz_0_0] 5.000
-# set_max_delay -datapath_only -from [get_clocks clk_out1_design_1_clk_wiz_0_0] -to [get_clocks clk_out3_design_1_clk_wiz_0_0] 4.000
-# set_max_delay -datapath_only -from [get_clocks clk_out2_design_1_clk_wiz_0_0] -to [get_clocks clk_fpga_1]                    5.000
-# set_max_delay -datapath_only -from [get_clocks clk_out2_design_1_clk_wiz_0_0] -to [get_clocks clk_fpga_0]                    5.000
-# set_max_delay -datapath_only -from [get_clocks clk_out2_design_1_clk_wiz_0_0] -to [get_clocks clk_out3_design_1_clk_wiz_0_0] 4.000
-# set_max_delay -datapath_only -from [get_clocks clk_out2_design_1_clk_wiz_0_0] -to [get_clocks dphy_clk]                      5.000
-# set_max_delay -datapath_only -from [get_clocks clk_out2_design_1_clk_wiz_0_0] -to [get_clocks dphy_clk]                      5.000
-# set_max_delay -datapath_only -from [get_clocks clk_out3_design_1_clk_wiz_0_0] -to [get_clocks clk_out2_design_1_clk_wiz_0_0] 4.000
-# set_max_delay -datapath_only -from [get_clocks clk_out3_design_1_clk_wiz_0_0] -to [get_clocks dphy_clk]                      4.000
-# set_max_delay -datapath_only -from [get_clocks dphy_clk]                      -to [get_clocks clk_out3_design_1_clk_wiz_0_0] 4.000
-
-# 950Mbps(475MHz)
-create_clock -period 2.105 -name cam_clk_p -waveform {0.000 1.052} [get_ports cam_clk_p]
 
 set_clock_groups -asynchronous -group in_clk125 \
                                -group cam_clk_hs_p \
@@ -68,8 +52,8 @@ set_property PACKAGE_PIN L19 [get_ports {cam_data_lp_p[0]}]
 set_property PACKAGE_PIN M18 [get_ports {cam_data_lp_n[0]}]
 set_property PACKAGE_PIN J20 [get_ports {cam_data_lp_p[1]}]
 set_property PACKAGE_PIN L20 [get_ports {cam_data_lp_n[1]}]
-set_property PACKAGE_PIN G19 [get_ports cam_clk]
-set_property PACKAGE_PIN G20 [get_ports cam_gpio]
+set_property PACKAGE_PIN G20 [get_ports cam_gpio0]
+set_property PACKAGE_PIN G19 [get_ports cam_gpio1]
 set_property PACKAGE_PIN F20 [get_ports cam_scl]
 set_property PACKAGE_PIN F19 [get_ports cam_sda]
 
@@ -85,8 +69,8 @@ set_property IOSTANDARD HSUL_12 [get_ports {cam_data_lp_p[0]}]
 set_property IOSTANDARD HSUL_12 [get_ports {cam_data_lp_n[0]}]
 set_property IOSTANDARD HSUL_12 [get_ports {cam_data_lp_p[1]}]
 set_property IOSTANDARD HSUL_12 [get_ports {cam_data_lp_n[1]}]
-set_property IOSTANDARD LVCMOS33 [get_ports cam_clk]
-set_property IOSTANDARD LVCMOS33 [get_ports cam_gpio]
+set_property IOSTANDARD LVCMOS33 [get_ports cam_gpio0]
+set_property IOSTANDARD LVCMOS33 [get_ports cam_gpio1]
 set_property IOSTANDARD LVCMOS33 [get_ports cam_scl]
 set_property IOSTANDARD LVCMOS33 [get_ports cam_sda]
 
