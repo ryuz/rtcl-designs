@@ -178,8 +178,8 @@ int main(int argc, char *argv[])
     std::cout << "udmabuf1 size      : " << std::dec << dmabuf1_mem_size << std::endl;
 
 
-    jelly::I2cAccessor i2c;
-    i2c.Open("/dev/i2c-6", 0x10);
+//    jelly::I2cAccessor i2c;
+//    i2c.Open("/dev/i2c-6", 0x10);
 
     rtcl::RtclP3S7ControlI2c cam;
     cam.Open("/dev/i2c-6", 0x10);
@@ -269,8 +269,6 @@ int main(int argc, char *argv[])
 
     cam.SetSensorEnable(true);
 
-    cam.SetRoi0(width, height);
-
     /*
     int roi_x = ((672 -  width) / 2) & ~0x0f; // 16の倍数
     int roi_y = ((512 - height) / 2) & ~0x01; // 2の倍数
@@ -283,6 +281,7 @@ int main(int argc, char *argv[])
     spi_change(i2c, 258, y_end);      // y_end
     */
 
+    /*
     spi_change(i2c, 192, 0x0);  // 動作停止(トレーニングパターン出力状態へ)
 
     usleep(1000);
@@ -302,11 +301,17 @@ int main(int argc, char *argv[])
         reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
         return 1;
     }
+    */
 
     // 動作開始
     std::cout << "Start Camera (tiger mode)" << std::endl;
-    spi_change(i2c, 192, 0x1 | (1<<4) | (1<<5));
-    
+//  spi_change(i2c, 192, 0x1 | (1<<4) | (1<<5));
+
+    cam.SetRoi0(width, height);
+    cam.SetTriggeredMode(true);
+    cam.SetSlaveMode(true);
+    cam.SetSequencerEnable(true);
+
 
 //    cam.SetAnalogGain(3.5);
 //    cam.SetDigitalGain(0.2);
@@ -332,6 +337,8 @@ int main(int argc, char *argv[])
     int trig0_end     = 90000;
     int gain          = 0;
 
+    cv::namedWindow("img", cv::WINDOW_NORMAL);
+    cv::resizeWindow("img", 800, 600);
     cv::imshow("img", cv::Mat::zeros(480, 640, CV_8UC3));
     cv::createTrackbar("bl",   "img", nullptr, 1024);
     cv::setTrackbarPos("bl",   "img", black_level);
@@ -421,7 +428,7 @@ int main(int argc, char *argv[])
         
         case 'l':
             printf("load setting\n");
-            load_setting(i2c);
+//          load_setting(i2c);
             break;
             
         case 'd':   // image dump
