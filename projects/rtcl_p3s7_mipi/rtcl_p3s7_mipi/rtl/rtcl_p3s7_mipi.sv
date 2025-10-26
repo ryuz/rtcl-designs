@@ -849,6 +849,9 @@ module rtcl_p3s7_mipi
             )
         u_rtcl_hs_tx
             (
+                .header_data    (16'h1234           ),
+                .header_update  (                   ),
+
                 .s_axi4s        (axi4s_sw_in [0]    ),
                 .m_axi4s        (axi4s_sw_out[0]    )
             );

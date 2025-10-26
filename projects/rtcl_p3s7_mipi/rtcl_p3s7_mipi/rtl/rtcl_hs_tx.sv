@@ -21,8 +21,11 @@ module rtcl_hs_tx
             parameter           DEBUG      = "false"    
         )
         (
-            jelly3_axi4s_if.s       s_axi4s             ,
-            jelly3_axi4s_if.m       m_axi4s             
+            input   var logic   [DPHY_LANES*8-1:0]  header_data     ,
+            output  var logic                       header_update   ,
+
+            jelly3_axi4s_if.s                       s_axi4s         ,
+            jelly3_axi4s_if.m                       m_axi4s         
         );
 
     localparam  type    raw_t  = logic [RAW_BITS-1:0];
@@ -42,7 +45,7 @@ module rtcl_hs_tx
             stuff_data  <= 'x   ;
             stuff_valid <= 1'b0 ;
         end
-        else begin
+        else if ( s_axi4s.aclken ) begin
             if ( stuff_ready ) begin
                 stuff_valid <= 1'b0;
             end
@@ -74,6 +77,12 @@ module rtcl_hs_tx
 
 
     // width convert
+    logic                           byte_first  ;
+    logic                           byte_last   ;
+    logic   [DPHY_LANES-1:0][7:0]   byte_data   ;
+    logic                           byte_valid  ;
+    logic                           byte_ready  ;
+
     jelly2_stream_width_convert
             #(
                 .UNIT_WIDTH         (2                      ),
@@ -115,17 +124,72 @@ module rtcl_hs_tx
                 .s_valid            (stuff_valid            ),
                 .s_ready            (stuff_ready            ),
 
-                .m_first            (m_axi4s.tuser[0]       ),
-                .m_last             (m_axi4s.tlast          ),
-                .m_data             (m_axi4s.tdata          ),
+                .m_first            (byte_first             ),
+                .m_last             (byte_last              ),
+                .m_data             (byte_data              ),
                 .m_strb             (                       ),
                 .m_keep             (                       ),
                 .m_user_f           (                       ),
                 .m_user_l           (                       ),
-                .m_valid            (m_axi4s.tvalid         ),
-                .m_ready            (m_axi4s.tready         )
+                .m_valid            (byte_valid             ),
+                .m_ready            (byte_ready             )
             );
 
+    // Insert Header
+    logic                           inshdr_header   ;
+    logic                           inshdr_first    ;
+    logic                           inshdr_last     ;
+    logic   [DPHY_LANES-1:0][7:0]   inshdr_data     ;
+    logic                           inshdr_valid    ;
+    logic                           inshdr_ready    ;
+    always_ff @(posedge s_axi4s.aclk) begin
+        if ( ~s_axi4s.aresetn ) begin
+            inshdr_header <= 1'b1;
+            inshdr_first  <= 1'b1;
+            inshdr_last   <= 'x;
+            inshdr_data   <= 'x;
+            inshdr_valid  <= 1'b0;
+            header_update <= 1'b0;
+        end
+        else if ( s_axi4s.aclken ) begin
+            header_update <= 1'b0;
+            if ( !inshdr_valid || inshdr_ready ) begin
+                if ( inshdr_header ) begin
+                    if ( byte_valid && byte_first ) begin
+                        // header insert
+                        inshdr_header <= 1'b0       ;
+                        inshdr_first  <= 1'b1       ;
+                        inshdr_last   <= 1'b0       ;
+                        inshdr_data   <= header_data;
+                        inshdr_valid  <= 1'b1       ;
+                        header_update <= 1'b1       ;
+                    end
+                    else begin
+                        inshdr_first  <= 1'bx       ;
+                        inshdr_last   <= 1'bx       ;
+                        inshdr_data   <= 'x         ;
+                        inshdr_valid  <= 1'b0       ;
+                    end
+                end
+                else begin
+                    inshdr_header <= byte_last      ;
+                    inshdr_first  <= 1'b0           ;
+                    inshdr_last   <= byte_last      ;
+                    inshdr_data   <= byte_data      ;
+                    inshdr_valid  <= byte_valid     ;
+                end
+            end
+        end
+    end
+
+    assign byte_ready = (!inshdr_valid || inshdr_ready) && !inshdr_header;
+
+    // output
+    assign m_axi4s.tuser[0] = inshdr_first  ;
+    assign m_axi4s.tlast    = inshdr_last   ;
+    assign m_axi4s.tdata    = inshdr_data   ;
+    assign m_axi4s.tvalid   = inshdr_valid  ;
+    assign inshdr_ready = m_axi4s.tready;
 
 endmodule
 
