@@ -93,9 +93,9 @@ where
 
         // カメラモジュールリセット
         unsafe {
-            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // センサー電源OFF
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセットON
             std::thread::sleep(std::time::Duration::from_millis(10));
-            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // センサー電源ON
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
 
@@ -204,9 +204,26 @@ where
         self.cam_i2c.set_sensor_power_enable(false)?;
         std::thread::sleep(std::time::Duration::from_millis(10));
 
+        // モジュールリセットON
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0);
+        }
+
         self.opend = false;
 
         Ok(())
+    }
+
+    pub fn module_id(&mut self) -> Result<u16, Box<dyn Error>> {
+        Ok(self.cam_i2c.module_id()?)
+    }
+
+    pub fn module_version(&mut self) -> Result<u16, Box<dyn Error>> {
+        Ok(self.cam_i2c.module_version()?)
+    }
+
+    pub fn sensor_id(&mut self) -> Result<u16, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_id()?)
     }
 
     /// スレーブモード設定
