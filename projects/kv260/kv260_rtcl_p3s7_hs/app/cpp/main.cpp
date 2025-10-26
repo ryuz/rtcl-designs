@@ -6,9 +6,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
-
 #include <opencv2/opencv.hpp>
-
 #include "jelly/UioAccessor.h"
 #include "jelly/UdmabufAccessor.h"
 #include "jelly/JellyRegs.h"
@@ -17,22 +15,25 @@
 #include "jelly/VideoDmaControl.h"
 #include "rtcl/RtclP3S7Control.h"
 
-void write_pgm(const char* filename, cv::Mat img, int depth=4095);
 
 static  volatile    bool    g_signal = false;
 void signal_handler(int signo) {
     g_signal = true;
 }
 
+/*
 void          i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
 std::uint16_t i2c_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
 void          spi_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
 std::uint16_t spi_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
 void          spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-void          reg_dump(jelly::I2cAccessor &i2c, const char *fname);
-void          load_setting(jelly::I2cAccessor &i2c);
-void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
+*/
 
+void          sensor_reg_dump(rtcl::RtclP3S7ControlI2c  &cam, const char *fname);
+void          load_setting(rtcl::RtclP3S7ControlI2c  &cam);
+//void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
+
+/*
 #define CAMREG_CORE_ID              0x0000
 #define CAMREG_CORE_VERSION         0x0001
 #define CAMREG_SENSOR_ENABLE        0x0004
@@ -51,6 +52,7 @@ void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
 #define CAMREG_DPHY_INIT_DONE       0x0088
 #define CAMREG_MMCM_CONTROL         0x00a0
 #define CAMREG_PLL_CONTROL          0x00a1
+*/
 
 #define SYSREG_ID                   0x0000
 #define SYSREG_DPHY_SW_RESET        0x0001
@@ -74,6 +76,7 @@ void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
 #define TIMGENREG_PARAM_TRIG0_END   0x21
 #define TIMGENREG_PARAM_TRIG0_POL   0x22
 
+/*
 // D-PHY 1250Mbps用設定
 std::uint16_t  mmcm_tbl[][2] = {
     {0x06, 0x0041},
@@ -101,7 +104,7 @@ std::uint16_t  mmcm_tbl[][2] = {
     {0x4e, 0x1108},
     {0x4f, 0x9000}
 };
-
+*/
 
 int main(int argc, char *argv[])
 {
@@ -473,6 +476,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/*
 // カメラ側 の Spartan-7 へ I2C 経由で書き込み
 void i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
     addr <<= 1;
@@ -516,12 +520,13 @@ void spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data)
     auto post = spi_read(i2c, addr);
     printf("write %3d <= 0x%04x (%04x -> %04x)\n", addr, data, pre, post);
 }
+*/
 
 // レジスタダンプ
-void reg_dump(jelly::I2cAccessor &i2c, const char *fname) {
+void sensor_reg_dump(rtcl::RtclP3S7ControlI2c &cam, const char *fname) {
     FILE* fp = fopen(fname, "w");
     for ( int i = 0; i < 512; i++ ) {
-        auto v = spi_read(i2c, i);
+        auto v = cam.spi_read(i);
         fprintf(fp, "%3d : 0x%04x (%d)\n", i, v, v);
     }
     fclose(fp);
@@ -529,7 +534,7 @@ void reg_dump(jelly::I2cAccessor &i2c, const char *fname) {
 
 
 // 設定ファイルを読み込む
-void load_setting(jelly::I2cAccessor &i2c) {
+void load_setting(rtcl::RtclP3S7ControlI2c &cam) {
     FILE* fp = fopen("reg_list.txt", "r");
     if ( fp == nullptr ) {
         std::cout << "reg_list.txt open error" << std::endl;
@@ -544,7 +549,7 @@ void load_setting(jelly::I2cAccessor &i2c) {
         unsigned int addr, data;
         int n = sscanf(p, "%i %i", &addr, &data);
         if (n == 2) {
-            spi_change(i2c, (std::uint16_t)addr, (std::uint16_t)data);
+            cam.spi_write((std::uint16_t)addr, (std::uint16_t)data);
         } else {
             std::cout << "parse error: " << line;
         }

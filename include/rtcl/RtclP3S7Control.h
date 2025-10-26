@@ -498,8 +498,6 @@ public:
     }
 
 
-
-protected:
     void i2c_write(std::uint16_t addr, std::uint16_t data) {
         addr <<= 1;
         addr |= 1;
@@ -531,6 +529,7 @@ protected:
         return i2c_read(addr);
     }
 
+protected:
     // D-PHY 1250Mbps用設定
     static constexpr std::uint16_t m_mmcm_tbl_1250[][2] = {
         {0x06, 0x0041},
