@@ -40,8 +40,8 @@ module zybo_z7_rtcl_p3s7_hs
             input   var logic   [1:0]   cam_data_hs_n       ,
             input   var logic   [1:0]   cam_data_lp_p       ,
             input   var logic   [1:0]   cam_data_lp_n       ,
-            input   var logic           cam_clk             ,
-            output  var logic           cam_gpio            ,
+            output  var logic           cam_gpio0           ,
+            output  var logic           cam_gpio1           ,
             inout   tri logic           cam_scl             ,
             inout   tri logic           cam_sda             ,
             
@@ -432,7 +432,7 @@ module zybo_z7_rtcl_p3s7_hs
     assign axi4l_dec[DEC_SYS].arready = !axi4l_dec[DEC_SYS].rvalid;
     assign axi4l_dec[DEC_SYS].rresp   = '0;
 
-    assign cam_gpio = reg_cam_enable;
+    assign cam_gpio0 = reg_cam_enable;
 
 
     // ----------------------------------------
@@ -454,7 +454,7 @@ module zybo_z7_rtcl_p3s7_hs
         u_timing_generator
             (
                 .s_axi4l                (axi4l_dec[DEC_TGEN].s  ),
-                .out_trig0              (cam_clk                ),
+                .out_trig0              (cam_gpio1              ),
                 .out_frames             (timegen_frames         )
             );
 
@@ -956,7 +956,7 @@ module zybo_z7_rtcl_p3s7_hs
     assign led[0] = reg_counter_rxbyteclkhs[24];
     assign led[1] = reg_counter_peri_aclk[24]; // reg_counter_clk200[24];
     assign led[2] = reg_counter_mem_aclk[24];  // reg_counter_clk100[24];
-    assign led[3] = cam_gpio;
+    assign led[3] = cam_gpio0;
     
     assign pmod_a[0]   = frame_toggle;
     assign pmod_a[1]   = reg_counter_rxbyteclkhs[5];

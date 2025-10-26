@@ -45,20 +45,20 @@ class RtclP3S7ControlI2c
 protected:
     jelly::I2cAccessor m_i2c;
 
-    int             m_aoi_x    = 0;
-    int             m_aoi_y    = 0;
-    int             m_width    = 640;
-    int             m_height   = 480;
+//    int             m_aoi_x    = 0;
+//    int             m_aoi_y    = 0;
+//    int             m_width    = 640;
+//    int             m_height   = 480;
 
-    float           m_framerate = 1000;
-    float           m_exposure  = 1;
+//  float           m_framerate = 1000;
+//  float           m_exposure  = 1;
 
+    std::uint16_t   m_general_configuration = 0;
     float           m_analog_gain  = 1.0;
     float           m_digital_gain = 1.0;
-    std::uint16_t   m_general_configuration = 0;
 
-    bool        m_flip_h = false;
-    bool        m_flip_v = false;
+//  bool            m_flip_h = false;
+//  bool            m_flip_v = false;
 
 public:
     RtclP3S7ControlI2c() {}
@@ -105,6 +105,36 @@ public:
         return spi_read(0);
     }
 
+    bool SetSensorPowerEnable(bool enable) {
+        if ( !IsOpend() ) { return false; }
+        // センサー電源ON/OFF
+        i2c_write(RTCL_P3S7_SENSOR_ENABLE, enable ? 1 : 0);
+        usleep(50000);
+        return true;
+    }
+
+    bool SetDphyReset(bool reset) {
+        if ( !IsOpend() ) {
+            return false;
+        }
+        if ( reset ) {
+            i2c_write(RTCL_P3S7_DPHY_SYS_RESET , 1);
+            i2c_write(RTCL_P3S7_DPHY_CORE_RESET, 1);
+        }
+        else {
+            i2c_write(RTCL_P3S7_DPHY_CORE_RESET, 0);
+            i2c_write(RTCL_P3S7_DPHY_SYS_RESET , 0);
+        }
+        usleep(100);
+        return true;
+    }
+
+    bool GetDphyInitDone(void) {
+        if ( !IsOpend() ) { return false; }
+        auto dphy_init_done = i2c_read(RTCL_P3S7_DPHY_INIT_DONE);
+        return (dphy_init_done != 0);
+    }
+
     // DPHY スピード設定
     bool SetDphySpeed(double speed)
     {
@@ -138,36 +168,6 @@ public:
         return true;
     }
 
-    bool SetDphyReset(bool reset) {
-        if ( !IsOpend() ) {
-            return false;
-        }
-        if ( reset ) {
-            i2c_write(RTCL_P3S7_DPHY_SYS_RESET , 1);
-            i2c_write(RTCL_P3S7_DPHY_CORE_RESET, 1);
-        }
-        else {
-            i2c_write(RTCL_P3S7_DPHY_CORE_RESET, 0);
-            i2c_write(RTCL_P3S7_DPHY_SYS_RESET , 0);
-        }
-        usleep(100);
-        return true;
-    }
-
-    bool GetDphyInitDone(void) {
-        if ( !IsOpend() ) { return false; }
-        auto dphy_init_done = i2c_read(RTCL_P3S7_DPHY_INIT_DONE);
-        return (dphy_init_done != 0);
-    }
-
-    bool SetSensorPowerEnable(bool enable) {
-        if ( !IsOpend() ) { return false; }
-        // センサー電源ON/OFF
-        i2c_write(RTCL_P3S7_SENSOR_ENABLE, enable ? 1 : 0);
-        usleep(50000);
-        return true;
-    }
-
     enum CameraMode {
         MODE_HIGH_SPEED = 0,
         MODE_CSI2 = 1,
@@ -179,9 +179,22 @@ public:
         return true;
     }
 
-    bool Setup() {
+    bool SetSensorEnable(bool enable) {
         if ( !IsOpend() ) { return false; }
+        if ( enable ) {
+            SensorBoot();
+            usleep(50000);
+            SetSensorReceiverEnable(true);
+        }
+        else {
+            SetSensorReceiverEnable(false);
+            SensorShutdown();
+        }
+        return true;
+    }
 
+protected:
+    bool SensorBoot() {
         // SPI 初期設定
         spi_write(16, 0x0003);    // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
         spi_write(32, 0x0007);    // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
@@ -194,12 +207,53 @@ public:
         spi_write(72, 0x2227);    // Charge Pump
         spi_write(112, 0x7);      // Serializers/LVDS/IO 
         spi_write(10, 0x0000);    // soft_reset_analog
-
         spi_write(192, m_general_configuration); 
-
         return true;
     }
 
+    bool SensorShutdown(void) {
+        spi_write(192, 0x0000);
+        spi_write(10,  0x0999); // soft_reset_analog
+        spi_write(112, 0x0000); // Serializers/LVDS/IO
+        spi_write(72,  0x2220); // Charge Pump
+        spi_write(64,  0x0000); // Bias Bias Power Down Configuration
+        spi_write(48,  0x0000); // AFE Power down for AFE’s
+        spi_write(40,  0x0000); // image_core_config0
+        spi_write(34,  0x0000); // config0 Logic General Enable Configuration
+        spi_write(9,   0x0009); // cgen_soft_reset
+        spi_write(8,   0x0099); // pll_soft_reset, pll_lock_soft_reset
+        spi_write(32,  0x0004); // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        spi_write(16,  0x0004); // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        return true;
+    }
+
+    bool SetSensorReceiverEnable(bool enable) {
+        if ( enable ) {
+            // シーケンサ停止(トレーニングパターン出力状態へ)
+            SetSequencerEnable(false);
+
+            usleep(1000);
+            i2c_write(RTCL_P3S7_RECEIVER_RESET, 1);
+            i2c_write(RTCL_P3S7_RECEIVER_CLK_DLY, 8);
+            i2c_write(RTCL_P3S7_ALIGN_RESET, 1);
+            usleep(1000);
+            i2c_write(RTCL_P3S7_RECEIVER_RESET, 0);
+            usleep(1000);
+            i2c_write(RTCL_P3S7_ALIGN_RESET, 0);
+            usleep(1000);
+
+            auto cam_calib_status = i2c_read(RTCL_P3S7_ALIGN_STATUS);
+            if ( cam_calib_status != 0x01 ) {
+                return false;
+            }
+        } else {
+            i2c_write(RTCL_P3S7_RECEIVER_RESET, 1);
+            i2c_write(RTCL_P3S7_ALIGN_RESET, 1);
+        }
+        return true;
+    }
+
+public:
     // シーケンサ有効/無効
     bool SetSequencerEnable(bool enable) {
         if ( !IsOpend() ) { return false; }
@@ -328,8 +382,8 @@ public:
         width  = std::max(width,   16);
         width  = std::min(width,  672);
         width &= ~0x0f;  // 16の倍数 
-        height = std::max(width,    2);
-        height = std::min(width,  512);
+        height = std::max(height,    2);
+        height = std::min(height,  512);
         height &= ~0x01; // 2の倍数
 
         int roi_x = (x & ~0x0f); // 16の倍数
@@ -369,7 +423,6 @@ public:
             spi_write(204, 0x01e3);
             m_analog_gain = 1.0;
         }
-
         return true;
     }
 
@@ -417,7 +470,34 @@ public:
     }
 
 
-protected:
+    bool SetMultTimer0(std::uint16_t timer) {
+        spi_write(199, timer);
+        return true;
+    }
+
+    bool SetFrLength0(std::uint16_t fr_length) {
+        spi_write(200, fr_length);
+        return true;
+    }
+
+    bool SetExposure0(std::uint16_t exposure) {
+        spi_write(201, exposure);
+        return true;
+    }
+
+    std::uint16_t mult_timer_status(void) {
+        return spi_read(242);
+    }
+
+    std::uint16_t get_reset_length_status(void) {
+        return spi_read(243);
+    }
+
+    std::uint16_t get_exposure_status(void) {
+        return spi_read(244);
+    }
+
+
     void i2c_write(std::uint16_t addr, std::uint16_t data) {
         addr <<= 1;
         addr |= 1;
@@ -449,6 +529,7 @@ protected:
         return i2c_read(addr);
     }
 
+protected:
     // D-PHY 1250Mbps用設定
     static constexpr std::uint16_t m_mmcm_tbl_1250[][2] = {
         {0x06, 0x0041},

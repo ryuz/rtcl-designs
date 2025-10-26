@@ -1,7 +1,7 @@
 
-TARGET    = kv260_rtcl_p3s7_hs.out
-DT_NAME   = kv260_rtcl_p3s7_hs
-BIT_NAME  = kv260_rtcl_p3s7_hs
+DT_NAME    = kv260_rtcl_p3s7_hs
+BIT_NAME   = kv260_rtcl_p3s7_hs
+ACCEL_NAME = kv260_rtcl_p3s7_hs
 
 DTS_FILE  = $(DT_NAME).dts
 DTBO_FILE = $(DT_NAME).dtbo
@@ -10,28 +10,21 @@ BIT_FILE  = $(BIT_NAME).bit
 BIF_FILE  = $(BIT_NAME).bif
 BIN_FILE  = $(BIT_FILE).bin
 
-FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
-
-CFLAGS  += -Wall -g -O2 `pkg-config --cflags opencv4` -I../../../../jelly/include
-LDFLAGS += -g  `pkg-config --libs opencv4`
-
-RUN_OPT ?=
-
-OBJS = main.o
+FIRMWARE_PATH = /lib/firmware
+ACCEL_PATH   = $(FIRMWARE_PATH)/xilinx/$(ACCEL_NAME)
 
 
 .PHONY: all
-all: $(TARGET) $(DTBO_FILE) $(BIN_FILE)
+all: $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) $(OBJS) $(DTBO_FILE) $(BIN_FILE)
+	rm -rf $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: run
 run: $(TARGET) load
-	mkdir -p rec
-	./$(TARGET) $(RUN_OPT)
+	make -C cpp run
 
 .PHONY: run_rust
 run_rust: load
@@ -46,11 +39,6 @@ server: load
 	cd grpc/server; cargo run
 
 
-$(TARGET): $(OBJS)
-	g++ -o $(TARGET) $(OBJS) $(LDFLAGS)
-
-%.o : %.cpp
-	g++ $(CFLAGS) -c $< -o $@
 
 $(DTBO_FILE): $(DTS_FILE)
 	dtc -I dts -O dtb -o $(DTBO_FILE) $(DTS_FILE)
@@ -62,6 +50,38 @@ $(DEVTREE_PATH):
 	sudo mkdir -p /configfs
 	sudo mount -t configfs configfs /configfs
 
+.PHONY: load
+load: load_dfx
+
+.PHONY: unload
+unload: unload_dfx
+
+
+
+### DFX Management
+
+.PHONY: load_dfx
+load_dfx: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload_dfx
+	sudo mkdir -p $(ACCEL_PATH)
+	sudo cp $(BIN_FILE) $(ACCEL_PATH)
+	sudo cp $(DTBO_FILE) $(ACCEL_PATH)
+	sudo cp shell.json $(ACCEL_PATH)
+	sudo xmutil loadapp $(ACCEL_NAME)
+
+.PHONY: unload_dfx
+unload_dfx:
+	-sudo xmutil unloadapp
+
+.PHONY: unregister_accel
+unregister_accel:
+	sudo rm -f $(ACCEL_PATH)/$(BIT_FILE)
+	sudo rm -f $(ACCEL_PATH)/$(BIN_FILE)
+	sudo rm -f $(ACCEL_PATH)/$(DTBO_FILE)
+	sudo rm -f $(ACCEL_PATH)/shell.json
+	sudo rm -fd $(ACCEL_PATH)
+
+
+### Device Tree Overlay Management
 
 .PHONY: mount
 mount: $(DEVTREE_PATH)
@@ -73,8 +93,8 @@ umount: unload
 		sudo umount /configfs ; \
 	fi
 
-.PHONY: load
-load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
+.PHONY: load_dt
+load_dt: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
 	-sudo xmutil unloadapp
 	@if [ -e /configfs/device-tree/overlays/k26-starter-kits_image_1 ] ; then \
 		sudo rmdir /configfs/device-tree/overlays/k26-starter-kits_image_1 ; \
@@ -93,19 +113,10 @@ load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
 	sudo chmod 666 /dev/udmabuf*
 	sudo chmod 666 /dev/i2c-6
 
-.PHONY: unload
-unload:
+.PHONY: unload_dt
+unload_dt:
 	@if [ -e $(DEVTREE_PATH)/overlays/full ] ; then \
-		echo unload ; \
+		echo unload device tree overlay; \
 		sudo rmdir $(DEVTREE_PATH)/overlays/full ; \
 	fi
-
-.PHONY: load2
-load2: $(DTBO_FILE) $(BIN_FILE)
-	sudo fpgautil -R
-	sudo fpgautil -b $(BIT_FILE) -o $(DTBO_FILE)
-
-.PHONY: unload2
-unload2:
-	sudo fpgautil -R
 

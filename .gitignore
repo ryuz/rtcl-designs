@@ -3,6 +3,7 @@
 .*
 !.gitignore
 !.gitmodules
+#!.devcontainer
 !.python-version
 !.vitis-version
 !.cargo
@@ -72,6 +73,8 @@ Untitled.*
 *.csv
 *.json
 *.pickle
+!devcontainer.json
+!shell.json
 
 # archive
 *.tar
