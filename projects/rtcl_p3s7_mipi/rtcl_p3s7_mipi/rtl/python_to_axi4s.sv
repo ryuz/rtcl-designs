@@ -22,7 +22,7 @@
 // 10'h059  CRC
 // BL       320 cycle (1280pix)
 // IMG      168 cycle (672)
-// H-blank  67 cycle (10'h3a6)
+// H-blank  (67 + xsm_delay) cycle (10'h3a6)
 
 // sync[9:7] 3'b101 (0x5 Frame Start)
 // sync[9:7] 3'b110 (0x6 Frame End)

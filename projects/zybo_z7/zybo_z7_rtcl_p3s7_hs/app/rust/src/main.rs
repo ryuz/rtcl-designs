@@ -1,7 +1,5 @@
 use std::error::Error;
-//use std::io::Write;
 
-//use jelly_mem_access::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
@@ -11,12 +9,6 @@ use zybo_z7_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
 use opencv::*;
 use opencv::core::*;
-
-/*
-use opencv::{
-    core::*,
-    highgui::*,
-};*/
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("start zybo_z7_rtcl_p3s7_hs");
@@ -28,16 +20,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         r.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
 
-    /*
-    let img : Mat = Mat::zeros(480, 640, opencv::core::CV_8UC3).unwrap().to_mat().unwrap();
-    println!("img = {:?}", img);
-    imshow("test", &img).unwrap();
-    wait_key(0).unwrap();
-    */
 
-    let width = 256;
-    let height = 256;
-
+    let width = 640;
+    let height = 480;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -98,6 +83,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000,  60)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
+//  create_cv_trackbar("dly",       10,  255, 255)?;
+    create_cv_trackbar("dly",       10,  255, 146)?;
 
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
@@ -111,6 +98,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
+
+        let dly = get_cv_trackbar_pos("dly")? as u16;
+//      cam.set_xsm_delay(dly)?;
 
         cam.set_gain(gain)?;
 
@@ -126,7 +116,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-        highgui::imshow("img", &view)?;
+
+        let mut view_rgb = Mat::default();
+        imgproc::cvt_color(&view, &mut view_rgb, imgproc::COLOR_BayerBG2BGR, 0)?;
+
+        highgui::imshow("img", &view_rgb)?;
 
         // キーボード操作
         let ch = key as u8 as char;
