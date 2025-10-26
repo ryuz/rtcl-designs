@@ -1,34 +1,98 @@
 #![allow(dead_code)]
 
+//! RTCL P3S7 Module Driver
+//!
+//! This module provides a comprehensive driver for the RTCL P3S7 camera module, which combines
+//! a Spartan-7 FPGA with a PYTHON300 image sensor. The driver supports various camera operations
+//! including sensor configuration, gain control, ROI settings, D-PHY speed configuration, and
+//! low-level register access.
+//!
+//! # Features
+//!
+//! - Sensor power management and initialization
+//! - Camera mode configuration (High Speed / CSI-2)
+//! - Analog and digital gain control
+//! - ROI (Region of Interest) configuration
+//! - D-PHY speed settings for different data rates
+//! - Exposure and timing control
+//! - Sequencer and trigger mode support
+//!
+//! # Example
+//!
+//! ```no_run
+//! # use rtcl_p3s7_module_driver::RtclP3s7ModuleDriver;
+//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! #[cfg(feature = "std")]
+//! let mut driver = RtclP3s7ModuleDriver::new_with_linux("/dev/i2c-1")?;
+//! 
+//! // Initialize the camera
+//! driver.set_sensor_power_enable(true)?;
+//! driver.set_camera_mode(rtcl_p3s7_module_driver::CameraMode::Csi2)?;
+//! driver.set_sensor_enable(true)?;
+//! 
+//! // Configure gain
+//! driver.set_gain_db(6.0)?;
+//! 
+//! // Set ROI
+//! driver.set_roi0(320, 240, None, None)?;
+//! # Ok(())
+//! # }
+//! ```
+
 use jelly_lib::i2c_hal::I2cHal;
 
 #[cfg(feature = "std")]
 use jelly_lib::linux_i2c::LinuxI2c;
 
+// Spartan-7 FPGA register addresses
+
+/// Module identification register
 const REG_P3S7_MODULE_ID: u16 = 0x0000;
+/// Module version register
 const REG_P3S7_MODULE_VERSION: u16 = 0x0001;
+/// Sensor enable control register
 const REG_P3S7_SENSOR_ENABLE: u16 = 0x0004;
+/// Sensor ready status register
 const REG_P3S7_SENSOR_READY: u16 = 0x0008;
+/// Receiver reset control register
 const REG_P3S7_RECEIVER_RESET: u16 = 0x0010;
+/// Receiver clock delay control register
 const REG_P3S7_RECEIVER_CLK_DLY: u16 = 0x0012;
+/// Alignment reset control register
 const REG_P3S7_ALIGN_RESET: u16 = 0x0020;
+/// Alignment pattern register
 const REG_P3S7_ALIGN_PATTERN: u16 = 0x0022;
+/// Alignment status register
 const REG_P3S7_ALIGN_STATUS: u16 = 0x0028;
+/// Clip enable control register
 const REG_P3S7_CLIP_ENABLE: u16 = 0x0040;
+/// CSI mode control register
 const REG_P3S7_CSI_MODE: u16 = 0x0050;
+/// CSI data type register
 const REG_P3S7_CSI_DT: u16 = 0x0052;
+/// CSI word count register
 const REG_P3S7_CSI_WC: u16 = 0x0053;
+/// D-PHY core reset control register
 const REG_P3S7_DPHY_CORE_RESET: u16 = 0x0080;
+/// D-PHY system reset control register
 const REG_P3S7_DPHY_SYS_RESET: u16 = 0x0081;
+/// D-PHY initialization done status register
 const REG_P3S7_DPHY_INIT_DONE: u16 = 0x0088;
+/// MMCM control register
 const REG_P3S7_MMCM_CONTROL: u16 = 0x00a0;
+/// PLL control register
 const REG_P3S7_PLL_CONTROL: u16 = 0x00a1;
+/// MMCM DRP base register
 const REG_P3S7_MMCM_DRP: u16 = 0x1000;
 
+/// Error types for RTCL P3S7 Module Driver operations
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum RtclP3s7ModuleDriverError<E> {
+    /// I2C communication error
     I2c(E),
+    /// Receiver calibration failed during initialization
     ReceiverCalibrationFailed,
+    /// Generic module error
     MyError,
 }
 
@@ -58,20 +122,34 @@ impl<E: std::error::Error + 'static> std::error::Error for RtclP3s7ModuleDriverE
     }
 }
 
+/// Camera operation modes
 pub enum CameraMode {
+    /// High Speed mode
     HighSpeed = 0,
+    /// CSI-2 mode for MIPI compatibility
     Csi2 = 1,
 }
 
+/// RTCL P3S7 Module Driver
+/// 
+/// Main driver struct for controlling the RTCL P3S7 camera module.
+/// Provides high-level and low-level access to camera functions including
+/// sensor configuration, gain control, timing settings, and D-PHY configuration.
 pub struct RtclP3s7ModuleDriver<I2C: I2cHal>
 {
+    /// I2C interface for communication with the module
     i2c: I2C,
+    /// Sleep function for timing delays
     usleep: fn(u64),
+    /// General configuration register cache
     general_configuration: u16,
+    /// Current analog gain setting (linear scale)
     analog_gain : f32,
+    /// Current digital gain setting (linear scale)
     digital_gain : f32,
 }
 
+/// Default sleep function using portable delay
 fn usleep(us : u64) {
     let duration = core::time::Duration::from_micros(us);
     jelly_lib::portable_delay(duration);
@@ -80,10 +158,29 @@ fn usleep(us : u64) {
 
 impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 {
+    /// Create a new driver instance with default sleep function
+    /// 
+    /// # Arguments
+    /// 
+    /// * `i2c` - I2C interface implementation
+    /// 
+    /// # Returns
+    /// 
+    /// A new `RtclP3s7ModuleDriver` instance
     pub fn new(i2c: I2C) -> Self {
         Self::new_with_usleep(i2c, usleep)
     }
 
+    /// Create a new driver instance with custom sleep function
+    /// 
+    /// # Arguments
+    /// 
+    /// * `i2c` - I2C interface implementation
+    /// * `usleep` - Custom microsecond sleep function
+    /// 
+    /// # Returns
+    /// 
+    /// A new `RtclP3s7ModuleDriver` instance
     pub fn new_with_usleep(i2c: I2C, usleep: fn(u64)) -> Self {
         Self {
             i2c,
@@ -94,6 +191,21 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         }
     }
 
+    /// Create a new driver instance using Linux I2C device
+    /// 
+    /// This method is only available when the `std` feature is enabled.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `devname` - Path to the I2C device (e.g., "/dev/i2c-1")
+    /// 
+    /// # Returns
+    /// 
+    /// A new `RtclP3s7ModuleDriver` instance configured for Linux I2C
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the I2C device cannot be opened or configured
     #[cfg(feature = "std")]
     pub fn new_with_linux(
         devname: &str,
@@ -102,18 +214,54 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(RtclP3s7ModuleDriver::new(i2c))
     }
 
+    /// Get the module ID
+    /// 
+    /// # Returns
+    /// 
+    /// The module identification value
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn module_id(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         self.read_s7_reg(REG_P3S7_MODULE_ID)
     }
 
+    /// Get the module version
+    /// 
+    /// # Returns
+    /// 
+    /// The module version value
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn module_version(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         self.read_s7_reg(REG_P3S7_MODULE_VERSION)
     }
 
+    /// Get the sensor ID from PYTHON300
+    /// 
+    /// # Returns
+    /// 
+    /// The sensor identification value
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn sensor_id(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         self.read_p3_spi(0)
     }
 
+    /// Enable or disable sensor power
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable power, false to disable
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_sensor_power_enable(
         &mut self,
         enable: bool,
@@ -124,6 +272,15 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
+    /// Reset or release D-PHY
+    /// 
+    /// # Arguments
+    /// 
+    /// * `reset` - True to reset, false to release
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_dphy_reset(&mut self, reset: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         if reset {
             self.write_s7_reg(REG_P3S7_DPHY_SYS_RESET, 1)?;
@@ -136,10 +293,28 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
+    /// Check if D-PHY initialization is complete
+    /// 
+    /// # Returns
+    /// 
+    /// True if D-PHY initialization is done, false otherwise
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn dphy_init_done(&mut self) -> Result<bool, RtclP3s7ModuleDriverError<I2C::Error>> {
         Ok(self.read_s7_reg(REG_P3S7_DPHY_INIT_DONE)? != 0)
     }
 
+    /// Set the camera operation mode
+    /// 
+    /// # Arguments
+    /// 
+    /// * `mode` - Camera mode (HighSpeed or Csi2)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_camera_mode(
         &mut self,
         mode: CameraMode,
@@ -148,6 +323,15 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
+    /// Enable or disable the sensor
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable sensor, false to disable
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails or receiver calibration fails
     pub fn set_sensor_enable(&mut self, enable: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         if enable {
             self.sensor_boot()?;
@@ -193,7 +377,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// シーケンサ有効/無効
+    /// Enable or disable the sensor sequencer
+    /// 
+    /// The sequencer controls the sensor's automatic exposure and timing operations.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable sequencer, false to disable
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_sequencer_enable(
         &mut self,
         enable: bool,
@@ -207,7 +401,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// ZROTモード有効/無効
+    /// Enable or disable Zero ROT (Read Out Time) mode
+    /// 
+    /// Zero ROT mode minimizes the readout time for high-speed operation.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable Zero ROT mode, false to disable
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_zero_rot_enable(
         &mut self,
         enable: bool,
@@ -221,7 +425,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// トリガーモード有効/無効
+    /// Enable or disable triggered capture mode
+    /// 
+    /// In triggered mode, image capture is synchronized to an external trigger signal.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `triggered_mode` - True to enable triggered mode, false for free-running
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_triggered_mode(
         &mut self,
         triggered_mode: bool,
@@ -235,7 +449,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// スレーブモード有効/無効
+    /// Enable or disable slave mode operation
+    /// 
+    /// In slave mode, the sensor synchronizes to an external clock source.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `slave_mode` - True to enable slave mode, false for master mode
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_slave_mode(&mut self, slave_mode: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         if slave_mode {
             self.general_configuration |= 1 << 5;
@@ -246,7 +470,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// NZROT XSM Delay 有効/無効
+    /// Enable or disable Non-Zero ROT XSM delay
+    /// 
+    /// Controls additional delay timing for Non-Zero Read Out Time operations.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable NZROT XSM delay, false to disable
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_nzrot_xsm_delay_enable(
         &mut self,
         enable: bool,
@@ -260,7 +494,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// サブサンプリング有効/無効
+    /// Enable or disable subsampling mode
+    /// 
+    /// Subsampling reduces the effective resolution by skipping pixels during readout.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable subsampling, false for full resolution
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_subsampling(&mut self, enable: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         if enable {
             self.general_configuration |= 1 << 7;
@@ -271,7 +515,17 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// ビニング有効/無効
+    /// Enable or disable pixel binning mode
+    /// 
+    /// Binning combines adjacent pixels to increase sensitivity at the cost of resolution.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `enable` - True to enable binning, false for normal operation
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_binning(&mut self, enable: bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         if enable {
             self.general_configuration |= 1 << 8;
@@ -309,7 +563,22 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// ROI0 設定
+    /// Set Region of Interest 0 (ROI0) configuration
+    /// 
+    /// Configures the primary region of interest for image capture.
+    /// Width is automatically aligned to 16-pixel boundaries and height to 2-pixel boundaries.
+    /// If x and y coordinates are not specified, the ROI will be centered.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `width` - ROI width (16-672 pixels, must be multiple of 16)
+    /// * `height` - ROI height (2-512 pixels, must be multiple of 2)
+    /// * `x` - Optional X offset (if None, centers horizontally)
+    /// * `y` - Optional Y offset (if None, centers vertically)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_roi0(
         &mut self,
         width: u16,
@@ -374,6 +643,20 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
 
     /// Set the analog gain (linear scale)
+    /// 
+    /// Configures the sensor's analog gain stage with predefined steps.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `linear_gain` - Desired analog gain in linear scale
+    ///   - >= 14.0: Sets to 14.0x gain
+    ///   - >= 3.5: Sets to 3.5x gain  
+    ///   - >= 1.9: Sets to 1.9x gain
+    ///   - < 1.9: Sets to 1.0x gain (unity)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_analog_gain_linear(&mut self, linear_gain: f32) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let (reg_val, gain) = if linear_gain >= 14.0 {
             (0x01e8, 14.0)
@@ -389,12 +672,26 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// Get the analog gain (linear scale)
+    /// Get the current analog gain (linear scale)
+    /// 
+    /// # Returns
+    /// 
+    /// Current analog gain value in linear scale
     pub fn analog_gain_linear(&self) -> f32 {
         self.analog_gain
     }
 
     /// Set the digital gain (linear scale)
+    /// 
+    /// Configures the sensor's digital gain with fine-grained control.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `linear_gain` - Digital gain in linear scale (quantized to 1/128 steps)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_digital_gain_linear(&mut self, linear_gain: f32) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let reg_val = (linear_gain * 128.0).round() as u16;
         self.write_p3_spi(205, reg_val)?;
@@ -402,12 +699,27 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// Get the digital gain (linear scale)
+    /// Get the current digital gain (linear scale)
+    /// 
+    /// # Returns
+    /// 
+    /// Current digital gain value in linear scale
     pub fn digital_gain_linear(&self) -> f32 {
         self.digital_gain
     }
 
-    /// Set both analog and digital gain (linear scale)
+    /// Set the total gain by optimally distributing between analog and digital stages
+    /// 
+    /// This method automatically selects the best analog gain setting and uses
+    /// digital gain for the remainder to achieve the target total gain.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `linear_gain` - Target total gain in linear scale
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_gain_linear(&mut self, mut linear_gain: f32) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         self.set_analog_gain_linear(linear_gain)?;
         linear_gain /= self.analog_gain_linear();
@@ -416,17 +728,36 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     }
 
     /// Get the total gain (linear scale)
+    /// 
+    /// # Returns
+    /// 
+    /// Combined analog and digital gain in linear scale
     pub fn gain_linear(&self) -> f32 {
         self.analog_gain_linear() * self.digital_gain_linear()
     }
 
     /// Set gain in dB
+    /// 
+    /// This method automatically distributes the gain between analog and digital
+    /// components for optimal performance.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `db_gain` - Total gain in decibels
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn set_gain_db(&mut self, db_gain: f32) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let linear_gain = 10f32.powf(db_gain / 20.0);
         self.set_gain_linear(linear_gain)
     }
 
     /// Get gain in dB
+    /// 
+    /// # Returns
+    /// 
+    /// Current total gain in decibels
     pub fn gain_db(&self) -> f32 {
         let linear_gain = self.gain_linear();
         20.0 * linear_gain.log10()
@@ -434,7 +765,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
     
     pub fn set_mult_timer0(&mut self, timer: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        self.write_p3_spi(199, timer)?;  //68MHz
+        self.write_p3_spi(199, timer)?;
         Ok(())
     }
 
@@ -468,7 +799,18 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         (self.usleep)(usec);
     }
 
-    /// Write a 16-bit register on the Spartan-7
+    /// Write a 16-bit register on the Spartan-7 FPGA
+    /// 
+    /// Low-level register write operation for direct FPGA register access.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `addr` - Register address
+    /// * `data` - 16-bit data value to write
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn write_s7_reg(
         &mut self,
         addr: u16,
@@ -485,7 +827,21 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    /// Read a 16-bit register on the Spartan-7
+    /// Read a 16-bit register from the Spartan-7 FPGA
+    /// 
+    /// Low-level register read operation for direct FPGA register access.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `addr` - Register address
+    /// 
+    /// # Returns
+    /// 
+    /// The 16-bit register value
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn read_s7_reg(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         let addr = addr << 1;
         let wbuf: [u8; 4] = [((addr >> 8) & 0xff) as u8, ((addr >> 0) & 0xff) as u8, 0, 0];
@@ -495,7 +851,18 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(rbuf[0] as u16 | ((rbuf[1] as u16) << 8))
     }
 
-    /// Write a 16-bit register on the PYTHON300 SPI
+    /// Write a 16-bit register on the PYTHON300 sensor via SPI bridge
+    /// 
+    /// Low-level sensor register write operation using the FPGA SPI bridge.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `addr` - Sensor register address
+    /// * `data` - 16-bit data value to write
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn write_p3_spi(
         &mut self,
         addr: u16,
@@ -505,13 +872,43 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_s7_reg(addr, data)
     }
 
-    /// Read a 16-bit register on the PYTHON300 SPI
+    /// Read a 16-bit register from the PYTHON300 sensor via SPI bridge
+    /// 
+    /// Low-level sensor register read operation using the FPGA SPI bridge.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `addr` - Sensor register address
+    /// 
+    /// # Returns
+    /// 
+    /// The 16-bit register value
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if I2C communication fails
     pub fn read_p3_spi(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         let addr = addr | (1 << 14);
         self.read_s7_reg(addr)
     }
 
-    // DPHY スピード設定
+    /// Set D-PHY speed configuration
+    /// 
+    /// Configures the D-PHY data rate by programming the MMCM (Mixed-Mode Clock Manager).
+    /// Currently supports 950 Mbps and 1250 Mbps data rates.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `speed` - Target D-PHY speed in bits per second (bps)
+    ///   - >= 1,250,000,000.0: Uses 1250 Mbps configuration
+    ///   - >= 950,000,000.0: Uses 950 Mbps configuration
+    ///   - < 950,000,000.0: Returns error (unsupported)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if:
+    /// - I2C communication fails
+    /// - Speed is below 950 Mbps (unsupported)
     pub fn set_dphy_speed(&mut self, speed: f64) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         // MMCM set reset
         self.write_s7_reg(REG_P3S7_MMCM_CONTROL, 1)?;
@@ -538,7 +935,12 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     }
 }
 
+// MMCM (Mixed-Mode Clock Manager) configuration tables for different D-PHY speeds
 
+/// MMCM configuration table for 1250 Mbps D-PHY operation
+/// 
+/// This table contains the DRP (Dynamic Reconfiguration Port) register 
+/// address-value pairs to configure the MMCM for 1.25 Gbps data rate.
 const MMCM_TBL_1250: [(u16, u16); 24] = [
     (0x06, 0x0041),
     (0x07, 0x0040),
@@ -566,6 +968,10 @@ const MMCM_TBL_1250: [(u16, u16); 24] = [
     (0x4f, 0x9000),
 ];
 
+/// MMCM configuration table for 950 Mbps D-PHY operation
+/// 
+/// This table contains the DRP (Dynamic Reconfiguration Port) register 
+/// address-value pairs to configure the MMCM for 0.95 Gbps data rate.
 const MMCM_TBL_950: [(u16, u16); 24] = [
     (0x06, 0x0041),
     (0x07, 0x0040),

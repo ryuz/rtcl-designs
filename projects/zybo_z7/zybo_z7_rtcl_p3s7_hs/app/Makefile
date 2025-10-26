@@ -1,5 +1,4 @@
 
-TARGET    = zybo_z7_rtcl_p3s7_hs.out
 DT_NAME   = zybo_z7_rtcl_p3s7_hs
 BIT_NAME  = zybo_z7_rtcl_p3s7_hs
 
@@ -13,29 +12,22 @@ BIN_FILE  = $(BIT_FILE).bin
 FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
 
-CFLAGS  += -Wall -g -O0 `pkg-config --cflags opencv4` -I../../../../jelly/include
-LDFLAGS += `pkg-config --libs opencv4`
-
-OBJS = main.o
-
 
 .PHONY: all
 all: $(DTBO_FILE) $(BIN_FILE)
-#all: $(TARGET) $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: clean
 clean:
 	rm -rf $(TARGET) $(OBJS) $(DTBO_FILE) $(BIN_FILE)
 
+.PHONY: build
+build:
+	make -C cpp build
+
 .PHONY: run
-run: $(TARGET) load
-	./$(TARGET)
+run: load
+	make -C cpp run
 
-$(TARGET): $(OBJS)
-	g++ -o $(TARGET) $(OBJS) $(LDFLAGS)
-
-%.o : %.cpp
-	g++ $(CFLAGS) -c $< -o $@
 
 $(DTBO_FILE): $(DTS_FILE)
 	dtc -I dts -O dtb -o $(DTBO_FILE) $(DTS_FILE)

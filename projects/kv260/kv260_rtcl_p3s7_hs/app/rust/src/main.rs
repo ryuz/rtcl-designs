@@ -2,26 +2,16 @@
 //#![allow(unused)]
 
 use std::error::Error;
-use std::io::Write;
 
 use opencv::*;
 use opencv::core::*;
-//use opencv::imgcodecs::imwrite;
-//use opencv::{core::*, highgui::*, imgproc::*};
-//use opencv::{core::*, highgui::*};
 
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
-//use jelly_pac::video_dma_control::VideoDmaControl;
 
-//use rtcl_lib::rtcl_p3s7_module_driver::*;
 use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
 use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
-
-
-//const BIT_STREAM: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.bit");
-//const DTBO: &'static [u8] = include_bytes!("../../kv260_rtcl_p3s7_hs.dtbo");
 
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -34,20 +24,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         r.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
 
-    /*
-//  jelly_fpgautil::set_allow_sudo(true);
-    jelly_fpgautil::register_accel_with_vec("kv260_rtcl_p3s7_hs", "kv260_rtcl_p3s7_hs.bit", BIT_STREAM, "kv260_rtcl_p3s7_hs.dtbo", &DTBO, None, true)?;
-    println!("load");
-    let slot = jelly_fpgautil::load("kv260_rtcl_p3s7_hs")?;
-    */
-
-
-//    let width = 256;
-//    let height = 256;
-        let width = 640;
-        let height = 480;
-//    let width = 64;
-//    let height = 64;
+    let width = 640;
+    let height = 480;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -175,6 +153,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    /*
     let mut buf = vec![0u16; (width * height) as usize];
     unsafe {
         udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
@@ -191,7 +170,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             .write_all(format!("{}\n", pixel).as_bytes())
             .expect("Failed to write pixel data");
     }
-
+    */
+    
     cam.close()?;
 
     /*
