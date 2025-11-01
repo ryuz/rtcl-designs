@@ -35,6 +35,6 @@ cross_build:
 	cross build --target=$(TARGET_ARCH) --release
 
 .PHONY: remote_run
-remote_run: build load
+remote_run: cross_build load
 	scp target/$(TARGET_ARCH)/release/$(ELF_NAME) $(KV260_SSH_ADDRESS):/tmp/
 	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(ELF_NAME) $(RUN_OPT)

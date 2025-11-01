@@ -74,7 +74,7 @@ where
             height: 480,
             slave_mode: false,
             trigger_mode: false,
-            gain: 1.0,
+            gain: 0.0,
             mult_timer: 72,
             fr_length: 0,
             exposure: 10000,
