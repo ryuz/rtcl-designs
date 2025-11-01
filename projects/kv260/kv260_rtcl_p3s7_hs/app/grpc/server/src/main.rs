@@ -74,6 +74,333 @@ impl RtclP3s7Control for RtclP3s7ControlService {
         }
     }
 
+    async fn camera_is_opened(&self, _request: Request<Empty>) -> Result<Response<BoolResponse>, Status> {
+        let mng = self.mng.lock().unwrap();
+        let result = mng.camera_is_opened();
+        if self.verbose >= 1 {
+            println!("camera_is_opened() => {}", result);
+        }
+        Ok(Response::new(BoolResponse { result }))
+    }
+
+    async fn camera_get_module_id(&self, _request: Request<Empty>) -> Result<Response<U16Response>, Status> {
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_get_module_id() {
+            Ok(value) => {
+                if self.verbose >= 1 {
+                    println!("camera_get_module_id() => {}", value);
+                }
+                Ok(Response::new(U16Response { result: true, value: value as u32 }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_get_module_id failed: {}", e);
+                }
+                Ok(Response::new(U16Response { result: false, value: 0 }))
+            }
+        }
+    }
+
+    async fn camera_get_module_version(&self, _request: Request<Empty>) -> Result<Response<U16Response>, Status> {
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_get_module_version() {
+            Ok(value) => {
+                if self.verbose >= 1 {
+                    println!("camera_get_module_version() => {}", value);
+                }
+                Ok(Response::new(U16Response { result: true, value: value as u32 }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_get_module_version failed: {}", e);
+                }
+                Ok(Response::new(U16Response { result: false, value: 0 }))
+            }
+        }
+    }
+
+    async fn camera_get_sensor_id(&self, _request: Request<Empty>) -> Result<Response<U16Response>, Status> {
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_get_sensor_id() {
+            Ok(value) => {
+                if self.verbose >= 1 {
+                    println!("camera_get_sensor_id() => {}", value);
+                }
+                Ok(Response::new(U16Response { result: true, value: value as u32 }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_get_sensor_id failed: {}", e);
+                }
+                Ok(Response::new(U16Response { result: false, value: 0 }))
+            }
+        }
+    }
+
+    async fn camera_set_slave_mode(&self, request: Request<BoolRequest>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_slave_mode(req.value) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_slave_mode({})", req.value);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_slave_mode failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_set_trigger_mode(&self, request: Request<BoolRequest>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_trigger_mode(req.value) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_trigger_mode({})", req.value);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_trigger_mode failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_set_image_size(&self, request: Request<ImageSizeRequest>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_image_size(req.width as usize, req.height as usize) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_image_size({}, {})", req.width, req.height);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_image_size failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_get_image_width(&self, _request: Request<Empty>) -> Result<Response<U64Response>, Status> {
+        let mng = self.mng.lock().unwrap();
+        let value = mng.camera_get_image_width();
+        if self.verbose >= 1 {
+            println!("camera_get_image_width() => {}", value);
+        }
+        Ok(Response::new(U64Response { result: true, value: value as u64 }))
+    }
+
+    async fn camera_get_image_height(&self, _request: Request<Empty>) -> Result<Response<U64Response>, Status> {
+        let mng = self.mng.lock().unwrap();
+        let value = mng.camera_get_image_height();
+        if self.verbose >= 1 {
+            println!("camera_get_image_height() => {}", value);
+        }
+        Ok(Response::new(U64Response { result: true, value: value as u64 }))
+    }
+
+    async fn camera_set_gain(&self, request: Request<F32Request>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_gain(req.value) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_gain({})", req.value);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_gain failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_get_gain(&self, _request: Request<Empty>) -> Result<Response<F32Response>, Status> {
+        let mng = self.mng.lock().unwrap();
+        let value = mng.camera_get_gain();
+        if self.verbose >= 1 {
+            println!("camera_get_gain() => {}", value);
+        }
+        Ok(Response::new(F32Response { result: true, value }))
+    }
+
+    async fn camera_set_exposure(&self, request: Request<F32Request>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_exposure(req.value) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_exposure({})", req.value);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_exposure failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_get_exposure(&self, _request: Request<Empty>) -> Result<Response<F32Response>, Status> {
+        let mng = self.mng.lock().unwrap();
+        match mng.camera_get_exposure() {
+            Ok(value) => {
+                if self.verbose >= 1 {
+                    println!("camera_get_exposure() => {}", value);
+                }
+                Ok(Response::new(F32Response { result: true, value }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_get_exposure failed: {}", e);
+                }
+                Ok(Response::new(F32Response { result: false, value: 0.0 }))
+            }
+        }
+    }
+
+    async fn camera_measure_fps(&self, _request: Request<Empty>) -> Result<Response<F32Response>, Status> {
+        let mng = self.mng.lock().unwrap();
+        let value = mng.camera_measure_fps();
+        if self.verbose >= 1 {
+            println!("camera_measure_fps() => {}", value);
+        }
+        Ok(Response::new(F32Response { result: true, value }))
+    }
+
+    async fn camera_measure_frame_period(&self, _request: Request<Empty>) -> Result<Response<F32Response>, Status> {
+        let mng = self.mng.lock().unwrap();
+        let value = mng.camera_measure_frame_period();
+        if self.verbose >= 1 {
+            println!("camera_measure_frame_period() => {}", value);
+        }
+        Ok(Response::new(F32Response { result: true, value }))
+    }
+
+
+    // --- Capture ---
+
+    async fn record_image(&self, request: Request<RecordImageRequest>) -> Result<Response<U64Response>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.record_image(req.width as usize, req.height as usize, req.frames as usize) {
+            Ok(frames) => {
+                if self.verbose >= 1 {
+                    println!("record_image: width={} height={} frames={}", req.width, req.height, req.frames);
+                }
+                Ok(Response::new(U64Response { result: true, value: frames as u64 }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("record_image failed: {}", e);
+                }
+                Ok(Response::new(U64Response { result: false, value: 0 }))
+            }
+        }
+    }
+
+    async fn read_image(&self, request: Request<ReadImageRequest>) -> Result<Response<ReadImageResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.read_image(req.index as usize) {
+            Ok(buf) => {
+                if self.verbose >= 1 {
+                    println!("read_image: index={}", req.index);
+                }
+                Ok(Response::new(ReadImageResponse { result: true, image: buf }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("read_image failed: {}", e);
+                }
+                // On error return empty data
+                Ok(Response::new(ReadImageResponse { result: false, image: vec![] }))
+            }
+        }
+    }
+
+    async fn record_black(&self, request: Request<RecordImageRequest>) -> Result<Response<U64Response>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.record_black(req.width as usize, req.height as usize, req.frames as usize) {
+            Ok(frames) => {
+                if self.verbose >= 1 {
+                    println!("record_black: width={} height={} frames={}", req.width, req.height, req.frames);
+                }
+                Ok(Response::new(U64Response { result: true, value: frames as u64 }) )
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("record_black failed: {}", e);
+                }
+                Ok(Response::new(U64Response { result: false, value: 0 }) )
+            }
+        }
+    }
+
+    async fn read_black(&self, request: Request<ReadImageRequest>) -> Result<Response<ReadImageResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.read_black(req.index as usize) {
+            Ok(buf) => {
+                if self.verbose >= 1 {
+                    println!("read_black: index={}", req.index);
+                }
+                Ok(Response::new(ReadImageResponse { result: true, image: buf }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("read_black failed: {}", e);
+                }
+                // On error return empty data
+                Ok(Response::new(ReadImageResponse { result: false, image: vec![] }))
+            }
+        }
+    }
+
+
+    // --- Timing Generator ---
+
+    async fn set_timing_generator(&self, request: Request<SetTimingGeneratorRequest>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.set_timing_generator(req.period_us, req.exposure_us) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("set_timing_generator: period_us={} exposure_us={}", req.period_us, req.exposure_us);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("set_timing_generator failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+
+    // --- Primitive ---
+
     async fn write_sys_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();
@@ -192,83 +519,6 @@ impl RtclP3s7Control for RtclP3s7ControlService {
         }
     }
 
-    async fn record_image(&self, request: Request<RecordImageRequest>) -> Result<Response<BoolResponse>, Status> {
-        let req = request.into_inner();
-        let mut mng = self.mng.lock().unwrap();
-        match mng.record_image(req.width as usize, req.height as usize, req.frames as usize) {
-            Ok(()) => {
-                if self.verbose >= 1 {
-                    println!("record_image: width={} height={} frames={}", req.width, req.height, req.frames);
-                }
-                Ok(Response::new(BoolResponse { result: true }))
-            }
-            Err(e) => {
-                if self.verbose >= 1 {
-                    eprintln!("record_image failed: {}", e);
-                }
-                Ok(Response::new(BoolResponse { result: false }))
-            }
-        }
-    }
-
-    async fn read_image(&self, request: Request<ReadImageRequest>) -> Result<Response<ReadImageResponse>, Status> {
-        let req = request.into_inner();
-        let mut mng = self.mng.lock().unwrap();
-        match mng.read_image(req.index as usize) {
-            Ok(buf) => {
-                if self.verbose >= 1 {
-                    println!("read_image: index={}", req.index);
-                }
-                Ok(Response::new(ReadImageResponse { result: true, image: buf }))
-            }
-            Err(e) => {
-                if self.verbose >= 1 {
-                    eprintln!("read_image failed: {}", e);
-                }
-                // On error return empty data
-                Ok(Response::new(ReadImageResponse { result: false, image: vec![] }))
-            }
-        }
-    }
-
-    async fn record_black(&self, request: Request<RecordImageRequest>) -> Result<Response<BoolResponse>, Status> {
-        let req = request.into_inner();
-        let mut mng = self.mng.lock().unwrap();
-        match mng.record_black(req.width as usize, req.height as usize, req.frames as usize) {
-            Ok(()) => {
-                if self.verbose >= 1 {
-                    println!("record_black: width={} height={} frames={}", req.width, req.height, req.frames);
-                }
-                Ok(Response::new(BoolResponse { result: true }))
-            }
-            Err(e) => {
-                if self.verbose >= 1 {
-                    eprintln!("record_black failed: {}", e);
-                }
-                Ok(Response::new(BoolResponse { result: false }))
-            }
-        }
-    }
-
-    async fn read_black(&self, request: Request<ReadImageRequest>) -> Result<Response<ReadImageResponse>, Status> {
-        let req = request.into_inner();
-        let mut mng = self.mng.lock().unwrap();
-        match mng.read_black(req.index as usize) {
-            Ok(buf) => {
-                if self.verbose >= 1 {
-                    println!("read_black: index={}", req.index);
-                }
-                Ok(Response::new(ReadImageResponse { result: true, image: buf }))
-            }
-            Err(e) => {
-                if self.verbose >= 1 {
-                    eprintln!("read_black failed: {}", e);
-                }
-                // On error return empty data
-                Ok(Response::new(ReadImageResponse { result: false, image: vec![] }))
-            }
-        }
-    }
 }
 
 

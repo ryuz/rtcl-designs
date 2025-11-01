@@ -6,29 +6,75 @@ service RtclP3s7Control {
 
     rpc CameraOpen ( Empty ) returns (BoolResponse);
     rpc CameraClose ( Empty ) returns (BoolResponse);
-    
+    rpc CameraIsOpened ( Empty ) returns (BoolResponse);
+    rpc CameraGetModuleId ( Empty ) returns (U16Response);
+    rpc CameraGetModuleVersion ( Empty ) returns (U16Response);
+    rpc CameraGetSensorId ( Empty ) returns (U16Response);
+    rpc CameraSetSlaveMode ( BoolRequest ) returns (BoolResponse);
+    rpc CameraSetTriggerMode ( BoolRequest ) returns (BoolResponse);
+    rpc CameraSetImageSize ( ImageSizeRequest ) returns (BoolResponse);
+    rpc CameraGetImageWidth ( Empty ) returns (U64Response);
+    rpc CameraGetImageHeight ( Empty ) returns (U64Response);
+    rpc CameraSetGain ( F32Request ) returns (BoolResponse);
+    rpc CameraGetGain ( Empty ) returns (F32Response);
+    rpc CameraSetExposure ( F32Request ) returns (BoolResponse);
+    rpc CameraGetExposure ( Empty ) returns (F32Response);
+    rpc CameraMeasureFps ( Empty ) returns (F32Response);
+    rpc CameraMeasureFramePeriod ( Empty ) returns (F32Response);
+
+    rpc RecordImage (RecordImageRequest) returns (U64Response);
+    rpc ReadImage (ReadImageRequest) returns (ReadImageResponse);
+    rpc RecordBlack (RecordImageRequest) returns (U64Response);
+    rpc ReadBlack (ReadImageRequest) returns (ReadImageResponse);
+
+    rpc SetTimingGenerator(SetTimingGeneratorRequest) returns (BoolResponse);
+
     rpc WriteSysReg (WriteRegRequest) returns (BoolResponse);
     rpc ReadSysReg (ReadRegRequest) returns (ReadRegResponse);
     rpc WriteCamReg (WriteRegRequest) returns (BoolResponse);
     rpc ReadCamReg (ReadRegRequest) returns (ReadRegResponse);
     rpc WriteSensorReg (WriteRegRequest) returns (BoolResponse);
     rpc ReadSensorReg (ReadRegRequest) returns (ReadRegResponse);
-    rpc RecordImage (RecordImageRequest) returns (BoolResponse);
-    rpc ReadImage (ReadImageRequest) returns (ReadImageResponse);
-    rpc RecordBlack (RecordImageRequest) returns (BoolResponse);
-    rpc ReadBlack (ReadImageRequest) returns (ReadImageResponse);
 }
 
 
 message Empty {
 }
 
+message BoolRequest {
+    bool value = 1;
+}
+
 message BoolResponse {
     bool result = 1;
 }
 
+message U16Response {
+    bool result = 1;
+    uint32 value = 2;
+}
+
+message U64Response {
+    bool result = 1;
+    uint64 value = 2;
+}
+
+message F32Request {
+    float value = 1;
+}
+
+message F32Response {
+    bool result = 1;
+    float value = 2;
+}
+
 message VersionResponse {
     string version = 1;
+}
+
+message ImageSizeRequest {
+    uint64 width = 1;
+    uint64 height = 2;
 }
 
 message WriteRegRequest {
@@ -60,3 +106,7 @@ message ReadImageResponse {
     bytes image = 5;
 }
 
+message SetTimingGeneratorRequest {
+    float period_us = 1;
+    float exposure_us = 2;
+}
