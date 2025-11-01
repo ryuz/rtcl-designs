@@ -36,6 +36,44 @@ impl RtclP3s7Control for RtclP3s7ControlService {
         }))
     }
 
+    async fn camera_open(&self, request: Request<Empty>) -> Result<Response<BoolResponse>, Status> {
+        let _req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.cam_mut().open() {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_open()");
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_open failed for addr: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_close(&self, request: Request<Empty>) -> Result<Response<BoolResponse>, Status> {
+        let _req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.cam_mut().close() {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_close()");
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_close failed for addr: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
     async fn write_sys_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();

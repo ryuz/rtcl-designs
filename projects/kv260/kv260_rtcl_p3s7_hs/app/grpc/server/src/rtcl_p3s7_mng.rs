@@ -49,6 +49,10 @@ impl RtclP3s7Mng {
         })
     }
 
+    pub fn cam_mut(&mut self) -> &mut CameraDriver {
+        &mut self.cam
+    }
+
     pub fn write_sys_reg(&mut self, addr: usize, data: usize) -> Result<(), Box<dyn Error>> {
         unsafe{self.uio_acc.write_reg(addr, data)};
         Ok(())
