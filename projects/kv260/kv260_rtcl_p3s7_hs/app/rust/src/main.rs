@@ -1,7 +1,5 @@
-
-//#![allow(unused)]
-
 use std::error::Error;
+use clap::Parser;
 
 use opencv::*;
 use opencv::core::*;
@@ -13,9 +11,33 @@ use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
 use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Image width in pixels
+    #[arg(short = 'w', long, default_value_t = 640)]
+    width: usize,
+
+    /// Image height in pixels
+    #[arg(short = 'h', long, default_value_t = 480)]
+    height: usize,
+
+    /// Enable color mode (default: monochrome)
+    #[arg(short = 'c', long)]
+    color: bool,
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
     println!("start kv260_rtcl_p3s7_hs");
+    println!("Configuration:");
+    println!("  width:  {}", args.width);
+    println!("  height: {}", args.height);
+    println!("  color:  {}", args.color);
+
+    let width = args.width;
+    let height = args.height;
+    let color = args.color;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -23,9 +45,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     ctrlc::set_handler(move || {
         r.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
-
-    let width = 640;
-    let height = 480;
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -77,13 +96,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut video_capture = CaptureDriver::new(reg_wdma_img, udmabuf_acc.clone())?;
 
-
-    //  cam.write_p3_spi(144, 0x3)?;  // test pattern
-
-//    let mut vdmaw =
-//        jelly_lib::video_dma_pac::VideoDmaPac::new(reg_wdma_img, 2, 2, None).unwrap();
-
-
     // ウィンドウ作成
     highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
 
@@ -114,12 +126,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
-        let img = video_capture.read_image(0)?;
+        let img = video_capture.read_image_mat(0)?;
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-        highgui::imshow("img", &view)?;
+
+        if color {
+            let mut view_rgb = Mat::default();
+            imgproc::cvt_color(&view, &mut view_rgb, imgproc::COLOR_BayerBG2BGR, 0)?;
+            highgui::imshow("img", &view_rgb)?;
+        } else {
+            highgui::imshow("img", &view)?;
+        }
 
         // キーボード操作
         let ch = key as u8 as char;
@@ -144,7 +163,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let frames = 100;
                 video_capture.record(width, height, frames)?;
                 for f in 0..frames {
-                   let img = video_capture.read_image(f)?;
+                   let img = video_capture.read_image_mat(f)?;
                     let mut view = Mat::default();
                     img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
                     let file_name = format!("{}/img{:04}.png", dir_name, f);

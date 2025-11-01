@@ -1,7 +1,6 @@
 use std::error::Error;
-//use std::io::Write;
 
-//use jelly_mem_access::*;
+use clap::Parser;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
@@ -12,14 +11,35 @@ use zybo_z7_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 use opencv::*;
 use opencv::core::*;
 
-/*
-use opencv::{
-    core::*,
-    highgui::*,
-};*/
+/// ZYBO Z7 RTCL P3S7 High Speed Camera Application
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Image width in pixels
+    #[arg(short = 'w', long, default_value_t = 640)]
+    width: usize,
+
+    /// Image height in pixels
+    #[arg(short = 'h', long, default_value_t = 480)]
+    height: usize,
+
+    /// Enable color mode (default: monochrome)
+    #[arg(short = 'c', long)]
+    color: bool,
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
+    
     println!("start zybo_z7_rtcl_p3s7_hs");
+    println!("Configuration:");
+    println!("  width:  {}", args.width);
+    println!("  height: {}", args.height);
+    println!("  color:  {}", args.color);
+
+    let width = args.width;
+    let height = args.height;
+    let color = args.color;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -27,17 +47,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     ctrlc::set_handler(move || {
         r.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
-
-    /*
-    let img : Mat = Mat::zeros(480, 640, opencv::core::CV_8UC3).unwrap().to_mat().unwrap();
-    println!("img = {:?}", img);
-    imshow("test", &img).unwrap();
-    wait_key(0).unwrap();
-    */
-
-    let width = 256;
-    let height = 256;
-
 
     // mmap udmabuf
     let udmabuf_device_name = "udmabuf-jelly-vram0";
@@ -78,6 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    cam.set_color(color)?;
     cam.set_image_size(width, height)?;
 //  cam.set_slave_mode(true)?;
 //  cam.set_trigger_mode(true)?;
@@ -126,7 +136,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-        highgui::imshow("img", &view)?;
+
+        if color {
+            let mut view_rgb = Mat::default();
+            imgproc::cvt_color(&view, &mut view_rgb, imgproc::COLOR_BayerBG2BGR, 0)?;
+            highgui::imshow("img", &view_rgb)?;
+        } else {
+            highgui::imshow("img", &view)?;
+        }
 
         // キーボード操作
         let ch = key as u8 as char;

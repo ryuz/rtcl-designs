@@ -3,7 +3,7 @@
 .*
 !.gitignore
 !.gitmodules
-#!.devcontainer
+!.devcontainer
 !.python-version
 !.vitis-version
 !.cargo

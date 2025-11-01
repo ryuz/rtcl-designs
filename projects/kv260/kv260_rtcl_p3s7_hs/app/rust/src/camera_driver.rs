@@ -74,11 +74,15 @@ where
             height: 480,
             slave_mode: false,
             trigger_mode: false,
-            gain: 1.0,
+            gain: 0.0,
             mult_timer: 72,
             fr_length: 0,
             exposure: 10000,
         }
+    }
+
+    pub fn cam_i2c_mut(&mut self) -> &mut RtclP3s7ModuleDriver<I2C> {
+        &mut self.cam_i2c
     }
 
     pub fn opend(&self) -> bool {

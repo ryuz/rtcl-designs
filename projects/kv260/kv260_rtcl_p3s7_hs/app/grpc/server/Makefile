@@ -1,11 +1,10 @@
 
-BASE_NAME = kv260_rtcl_p3s7_hs
-
+BASE_NAME  = rtcl_p3s7_server
 ELF_NAME   = $(BASE_NAME)
-ACCEL_NAME = $(BASE_NAME)
-BIT_FILE   = ../$(BASE_NAME).bit
+ACCEL_NAME = kv260_rtcl_p3s7_hs
+BIT_FILE   = ../../$(ACCEL_NAME).bit
 BIN_FILE   = $(BIT_FILE).bin
-DTBO_FILE  = ../$(BASE_NAME).dtbo
+DTBO_FILE  = ../../$(ACCEL_NAME).dtbo
 
 TARGET_ARCH = aarch64-unknown-linux-gnu
 
@@ -26,7 +25,7 @@ clean:
 
 .PHONY: load
 load:
-	make -C ..
+	make -C ../..
 	jelly-fpga-loader unload --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader register-accel $(ACCEL_NAME) $(DTBO_FILE) $(BIN_FILE) --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader load $(ACCEL_NAME) --ip $(KV260_SERVER_ADDRESS)

@@ -1,15 +1,12 @@
 #![allow(dead_code)]
 
-//use std::error::Error;
-//use std::result::Result;
+type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
 use jelly_mem_access::*;
 use jelly_lib::video_dma_pac::VideoDmaPac;
 
-type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
-
+#[cfg(feature = "opencv")]
 use opencv::core::*;
-
 
 pub struct CaptureDriver<T0: MemAccess, T1: MemAccess>
 {
@@ -60,7 +57,8 @@ impl<T0: MemAccess, T1: MemAccess> CaptureDriver<T0, T1>
         Ok(frames)
     }
 
-    pub fn read_image(&mut self, index : usize) -> Result<Mat> {
+    #[cfg(feature = "opencv")]
+    pub fn read_image_mat(&mut self, index : usize) -> Result<Mat> {
         // 範囲チェック
         if index >= self.record_frames {
             return Err("index out of range".into());
@@ -78,6 +76,16 @@ impl<T0: MemAccess, T1: MemAccess> CaptureDriver<T0, T1>
             self.dmabuf.copy_to_u16(offset, buf.as_mut_ptr(), pixels);
             Ok(img)
         }
+    }
+
+    pub fn read_image_vec(&mut self, index : usize) -> Result<Vec::<u8>> {
+        let size = self.record_width * self.record_height * 2;
+        let mut buf = vec![0u8; size as usize];
+        let offset = index * size;
+        unsafe {
+            self.dmabuf.copy_to_u8(offset, buf.as_mut_ptr(), size);
+        }
+        Ok(buf)
     }
 
     pub fn record_frames(&self) -> usize {
