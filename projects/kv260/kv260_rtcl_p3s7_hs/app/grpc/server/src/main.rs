@@ -113,46 +113,6 @@ impl RtclP3s7Control for RtclP3s7ControlService {
         }
     }
 
-    /*
-    async fn write_timgen_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
-        let req = request.into_inner();
-        let mut mng = self.mng.lock().unwrap();
-        match mng.write_timgen_reg(req.addr as usize, req.data as usize) {
-            Ok(()) => {
-                if self.verbose >= 1 {
-                    println!("write_timgen_reg: addr={} data={}", req.addr, req.data);
-                }
-                Ok(Response::new(BoolResponse { result: true }))
-            }
-            Err(e) => {
-                if self.verbose >= 1 {
-                    eprintln!("write_timgen_reg failed for addr {}: {}", req.addr, e);
-                }
-                Ok(Response::new(BoolResponse { result: false }))
-            }
-        }
-    }
-
-    async fn read_timgen_reg(&self, request: Request<ReadRegRequest>) -> Result<Response<ReadRegResponse>, Status> {
-        let req = request.into_inner();
-        let mut mng = self.mng.lock().unwrap();
-        match mng.read_timgen_reg(req.addr as usize) {
-            Ok(data) => {
-                if self.verbose >= 1 {
-                    println!("read_timgen_reg: addr={}", req.addr);
-                }
-                Ok(Response::new(ReadRegResponse { result: true, data: data as u64 }))
-            }
-            Err(e) => {
-                if self.verbose >= 1 {
-                    eprintln!("read_timgen_reg failed for addr {}: {}", req.addr, e);
-                }
-                // On error return result=false and zero data
-                Ok(Response::new(ReadRegResponse { result: false, data: 0 }))
-            }
-        }
-    }
-    */
 
     async fn write_cam_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();

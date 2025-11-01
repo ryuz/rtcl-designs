@@ -12,7 +12,7 @@ type UioAccessor = jelly_mem_access::UioAccessor<usize>;
 type UdmabufAccessor = jelly_mem_access::UdmabufAccessor<usize>;
 type CameraDriver = camera_driver::CameraDriver<LinuxI2c, usize>;
 type CaptureDriver =  capture_driver::CaptureDriver<UioAccessor, UdmabufAccessor>;
-use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
+type TimingGeneratorDriver = kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver<UioAccessor>;
 
 pub struct RtclP3s7Mng {
     uio_acc : UioAccessor,
@@ -21,6 +21,7 @@ pub struct RtclP3s7Mng {
     cam: CameraDriver,
     cap_img : CaptureDriver,
     cap_blk : CaptureDriver,
+    timgen : TimingGeneratorDriver,
 }
 
 impl RtclP3s7Mng {
@@ -46,11 +47,24 @@ impl RtclP3s7Mng {
             cam,
             cap_img,
             cap_blk,
+            timgen,
         })
     }
 
     pub fn cam_mut(&mut self) -> &mut CameraDriver {
         &mut self.cam
+    }
+
+    pub fn timgen_mut(&mut self) -> &mut TimingGeneratorDriver {
+        &mut self.timgen
+    }
+
+    pub fn cap_img_mut(&mut self) -> &mut CaptureDriver {
+        &mut self.cap_img
+    }
+
+    pub fn cap_blk_mut(&mut self) -> &mut CaptureDriver {
+        &mut self.cap_blk
     }
 
     pub fn write_sys_reg(&mut self, addr: usize, data: usize) -> Result<(), Box<dyn Error>> {
