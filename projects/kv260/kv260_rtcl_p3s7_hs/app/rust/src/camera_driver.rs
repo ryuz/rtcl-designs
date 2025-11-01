@@ -81,6 +81,10 @@ where
         }
     }
 
+    pub fn cam_i2c_mut(&mut self) -> &mut RtclP3s7ModuleDriver<I2C> {
+        &mut self.cam_i2c
+    }
+
     pub fn opend(&self) -> bool {
         self.opend
     }

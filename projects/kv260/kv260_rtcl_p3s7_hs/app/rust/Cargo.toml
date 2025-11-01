@@ -11,11 +11,11 @@ jelly-lib = { path = "../../../../../jelly/rust/lib" }
 jelly-pac = { git = "https://github.com/ryuz/jelly-pac-rs.git", rev = "6a62e64" }
 jelly-fpgautil = {git="https://github.com/ryuz/jelly-fpgautil-rs.git", tag="v0.0.2"}
 rtcl-lib = { path = "../../../../../rust/lib" }
-opencv = "0.93.5"
+opencv = { version = "0.93.5", optional = true }
 chrono = { version = "0.4", features = ["clock", "std"] }
 ctrlc = "3.5.0"
 clap = { version = "4.0", features = ["derive"] }
 
 [features]
-default = ["std"]
+default = ["std", "opencv"]
 std = []

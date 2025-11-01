@@ -6,7 +6,7 @@ use rtcl_p3s7_control::rtcl_p3s7_control_server::{RtclP3s7Control, RtclP3s7Contr
 //use rtcl_p3s7_control::{WriteRegRequest, BoolResponse, ReadRegRequest, ReadRegResponse};
 use rtcl_p3s7_control::*;
 
-mod rtcl_p3s7_i2c;
+//mod rtcl_p3s7_i2c;
 mod rtcl_p3s7_mng;
 use rtcl_p3s7_mng::RtclP3s7Mng;
 
@@ -24,6 +24,18 @@ pub struct RtclP3s7ControlService {
 
 #[tonic::async_trait]
 impl RtclP3s7Control for RtclP3s7ControlService {
+    async fn get_version(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<VersionResponse>, Status> {
+        if self.verbose >= 1 {
+            println!("get_version");
+        }
+        Ok(Response::new(VersionResponse {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+        }))
+    }
+
     async fn write_sys_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();
@@ -63,6 +75,7 @@ impl RtclP3s7Control for RtclP3s7ControlService {
         }
     }
 
+    /*
     async fn write_timgen_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();
@@ -101,6 +114,7 @@ impl RtclP3s7Control for RtclP3s7ControlService {
             }
         }
     }
+    */
 
     async fn write_cam_reg(&self, request: Request<WriteRegRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();
@@ -202,10 +216,10 @@ impl RtclP3s7Control for RtclP3s7ControlService {
     async fn read_image(&self, request: Request<ReadImageRequest>) -> Result<Response<ReadImageResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();
-        match mng.read_image(req.addr as usize, req.size as usize) {
+        match mng.read_image(req.index as usize) {
             Ok(buf) => {
                 if self.verbose >= 1 {
-                    println!("read_image: addr={} size={}", req.addr, req.size);
+                    println!("read_image: index={}", req.index);
                 }
                 Ok(Response::new(ReadImageResponse { result: true, image: buf }))
             }
@@ -241,10 +255,10 @@ impl RtclP3s7Control for RtclP3s7ControlService {
     async fn read_black(&self, request: Request<ReadImageRequest>) -> Result<Response<ReadImageResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();
-        match mng.read_black(req.addr as usize, req.size as usize) {
+        match mng.read_black(req.index as usize) {
             Ok(buf) => {
                 if self.verbose >= 1 {
-                    println!("read_black: addr={} size={}", req.addr, req.size);
+                    println!("read_black: index={}", req.index);
                 }
                 Ok(Response::new(ReadImageResponse { result: true, image: buf }))
             }
@@ -262,11 +276,12 @@ impl RtclP3s7Control for RtclP3s7ControlService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let address = "0.0.0.0:50051".parse().unwrap();
 
     println!("Starting RTCL P3S7 Control gRPC server...");
+    println!("address : {}", address);
     let mng = Arc::new(Mutex::new(RtclP3s7Mng::new()?));
 
-    let address = "0.0.0.0:50051".parse().unwrap();
     let rtcl_p3s7_control_service = RtclP3s7ControlService{
         verbose: 0,
         mng: mng,
@@ -279,3 +294,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+

@@ -126,7 +126,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
-        let img = video_capture.read_image(0)?;
+        let img = video_capture.read_image_mat(0)?;
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
@@ -163,7 +163,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let frames = 100;
                 video_capture.record(width, height, frames)?;
                 for f in 0..frames {
-                   let img = video_capture.read_image(f)?;
+                   let img = video_capture.read_image_mat(f)?;
                     let mut view = Mat::default();
                     img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
                     let file_name = format!("{}/img{:04}.png", dir_name, f);
