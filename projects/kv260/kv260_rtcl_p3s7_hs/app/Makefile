@@ -46,9 +46,6 @@ $(DTBO_FILE): $(DTS_FILE)
 $(BIN_FILE): $(BIF_FILE) $(BIT_FILE)
 	bootgen -w -image $(BIF_FILE) -arch zynqmp -process_bitstream bin
 
-$(DEVTREE_PATH):
-	sudo mkdir -p /configfs
-	sudo mount -t configfs configfs /configfs
 
 .PHONY: load
 load: load_dfx
@@ -82,6 +79,10 @@ unregister_accel:
 
 
 ### Device Tree Overlay Management
+
+$(DEVTREE_PATH):
+	sudo mkdir -p /configfs
+	sudo mount -t configfs configfs /configfs
 
 .PHONY: mount
 mount: $(DEVTREE_PATH)

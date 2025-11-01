@@ -8,7 +8,7 @@ try:
 except Exception:
     protoc.main((
         '',
-        '-I../protos',
+        '-I../server/protos',
         '--python_out=.',
         '--grpc_python_out=.',
         'rtcl_p3s7_control.proto'
@@ -64,44 +64,126 @@ class RtclP3s7Client:
         self.channel = grpc.insecure_channel(address)
         self.stub = rtcl_p3s7_control_pb2_grpc.RtclP3s7ControlStub(self.channel)
 
+    def get_version(self):
+        res = self.stub.GetVersion(rtcl_p3s7_control_pb2.Empty())
+        return res.version
+
+    # Camera control methods
+    def camera_open(self):
+        res = self.stub.CameraOpen(rtcl_p3s7_control_pb2.Empty())
+        return res.result
+
+    def camera_close(self):
+        res = self.stub.CameraClose(rtcl_p3s7_control_pb2.Empty())
+        return res.result
+
+    def camera_is_opened(self):
+        res = self.stub.CameraIsOpened(rtcl_p3s7_control_pb2.Empty())
+        return res.result
+
+    def camera_get_module_id(self):
+        res = self.stub.CameraGetModuleId(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_get_module_version(self):
+        res = self.stub.CameraGetModuleVersion(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_get_sensor_id(self):
+        res = self.stub.CameraGetSensorId(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_set_slave_mode(self, enable):
+        res = self.stub.CameraSetSlaveMode(rtcl_p3s7_control_pb2.BoolRequest(value=enable))
+        return res.result
+
+    def camera_set_trigger_mode(self, enable):
+        res = self.stub.CameraSetTriggerMode(rtcl_p3s7_control_pb2.BoolRequest(value=enable))
+        return res.result
+
+    def camera_set_image_size(self, width, height):
+        res = self.stub.CameraSetImageSize(rtcl_p3s7_control_pb2.ImageSizeRequest(width=width, height=height))
+        return res.result
+
+    def camera_get_image_width(self):
+        res = self.stub.CameraGetImageWidth(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_get_image_height(self):
+        res = self.stub.CameraGetImageHeight(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_set_gain(self, db):
+        res = self.stub.CameraSetGain(rtcl_p3s7_control_pb2.F32Request(value=db))
+        return res.result
+
+    def camera_get_gain(self):
+        res = self.stub.CameraGetGain(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_set_exposure(self, us):
+        res = self.stub.CameraSetExposure(rtcl_p3s7_control_pb2.F32Request(value=us))
+        return res.result
+
+    def camera_get_exposure(self):
+        res = self.stub.CameraGetExposure(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_measure_fps(self):
+        res = self.stub.CameraMeasureFps(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    def camera_measure_frame_period(self):
+        res = self.stub.CameraMeasureFramePeriod(rtcl_p3s7_control_pb2.Empty())
+        return res.value if res.result else None
+
+    # Image capture methods
+    def record_image(self, width, height, frames):
+        res = self.stub.RecordImage(rtcl_p3s7_control_pb2.RecordImageRequest(width=width, height=height, frames=frames))
+        return res.value if res.result else None
+
+    def read_image(self, index):
+        res = self.stub.ReadImage(rtcl_p3s7_control_pb2.ReadImageRequest(index=index))
+        return res.image if res.result else None
+
+    def record_black(self, width, height, frames):
+        res = self.stub.RecordBlack(rtcl_p3s7_control_pb2.RecordImageRequest(width=width, height=height, frames=frames))
+        return res.value if res.result else None
+
+    def read_black(self, index):
+        res = self.stub.ReadBlack(rtcl_p3s7_control_pb2.ReadImageRequest(index=index))
+        return res.image if res.result else None
+
+    # Timing Generator methods
+    def set_timing_generator(self, period_us, exposure_us):
+        res = self.stub.SetTimingGenerator(rtcl_p3s7_control_pb2.SetTimingGeneratorRequest(period_us=period_us, exposure_us=exposure_us))
+        return res.result
+
+    # Low-level register access methods
     def write_sys_reg(self, addr, data):
-        self.stub.WriteSysReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
+        res = self.stub.WriteSysReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
+        return res.result
 
     def read_sys_reg(self, addr):
         res = self.stub.ReadSysReg(rtcl_p3s7_control_pb2.ReadRegRequest(addr=addr))
-        return res.data
+        return res.data if res.result else None
 
-    def write_timgen_reg(self, addr, data):
-        self.stub.WriteTimgenReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
-
-    def read_timgen_reg(self, addr):
-        res = self.stub.ReadTimgenReg(rtcl_p3s7_control_pb2.ReadRegRequest(addr=addr))
-        return res.data
+    def read_sys_reg(self, addr):
+        res = self.stub.ReadSysReg(rtcl_p3s7_control_pb2.ReadRegRequest(addr=addr))
+        return res.data if res.result else None
 
     def write_cam_reg(self, addr, data):
-        self.stub.WriteCamReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
+        res = self.stub.WriteCamReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
+        return res.result
 
     def read_cam_reg(self, addr):
         res = self.stub.ReadCamReg(rtcl_p3s7_control_pb2.ReadRegRequest(addr=addr))
-        return res.data
+        return res.data if res.result else None
 
     def write_sensor_reg(self, addr, data):
-        self.stub.WriteSensorReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
+        res = self.stub.WriteSensorReg(rtcl_p3s7_control_pb2.WriteRegRequest(addr=addr, data=data))
+        return res.result
 
     def read_sensor_reg(self, addr):
         res = self.stub.ReadSensorReg(rtcl_p3s7_control_pb2.ReadRegRequest(addr=addr))
-        return res.data
-
-    def record_image(self, width, height, frames):
-        self.stub.RecordImage(rtcl_p3s7_control_pb2.RecordImageRequest(width=width, height=height, frames=frames))
-
-    def read_image(self, addr, size):
-        res = self.stub.ReadImage(rtcl_p3s7_control_pb2.ReadImageRequest(addr=addr, size=size))
-        return res.image
-
-    def record_black(self, width, height, frames):
-        self.stub.RecordBlack(rtcl_p3s7_control_pb2.RecordImageRequest(width=width, height=height, frames=frames))
-
-    def read_black(self, addr, size):
-        res = self.stub.ReadBlack(rtcl_p3s7_control_pb2.ReadImageRequest(addr=addr, size=size))
-        return res.image
+        return res.data if res.result else None
