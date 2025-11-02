@@ -12,7 +12,9 @@ BIN_FILE  = $(BIT_FILE).bin
 
 DEVTREE_PATH  = /configfs/device-tree
 FIRMWARE_PATH = /lib/firmware
-ACCEL_PATH   = $(FIRMWARE_PATH)/xilinx/$(ACCEL_NAME)
+ACCEL_PATH    = $(FIRMWARE_PATH)/xilinx/$(ACCEL_NAME)
+
+KV260_SERVER_ADDRESS ?= 127.0.0.1:8051
 
 
 .PHONY: all
@@ -23,7 +25,10 @@ clean:
 	rm -rf $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: run
-run: $(TARGET) load
+run: run_cpp
+
+.PHONY: run_cpp
+run_cpp: load
 	make -C cpp run
 
 .PHONY: run_rust
@@ -34,8 +39,8 @@ run_rust: load
 build_rust:
 	cd rust; cargo build
 
-.PHONY: server
-server: load
+.PHONY: run_server
+run_server: load
 	cd grpc/server; cargo run
 
 
@@ -46,13 +51,11 @@ $(DTBO_FILE): $(DTS_FILE)
 $(BIN_FILE): $(BIF_FILE) $(BIT_FILE)
 	bootgen -w -image $(BIF_FILE) -arch zynqmp -process_bitstream bin
 
-
 .PHONY: load
 load: load_dfx
 
 .PHONY: unload
 unload: unload_dfx
-
 
 
 ### DFX Management
@@ -76,6 +79,19 @@ unregister_accel:
 	sudo rm -f $(ACCEL_PATH)/$(DTBO_FILE)
 	sudo rm -f $(ACCEL_PATH)/shell.json
 	sudo rm -fd $(ACCEL_PATH)
+
+
+### Jelly loader
+
+.PHONY: load_jelly
+load_jelly: unload_jelly
+	jelly-fpga-loader unload --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader register-accel $(ACCEL_NAME) $(DTBO_FILE) $(BIN_FILE) --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader load $(ACCEL_NAME) --ip $(KV260_SERVER_ADDRESS)
+
+.PHONY: unload_jelly
+unload_jelly:
+	-jelly-fpga-loader unload
 
 
 ### Device Tree Overlay Management

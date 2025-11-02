@@ -15,15 +15,15 @@ use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 #[command(version, about, long_about = None)]
 struct Args {
     /// Image width in pixels
-    #[arg(short = 'w', long, default_value_t = 640)]
+    #[arg(short = 'W', long, default_value_t = 640)]
     width: usize,
 
     /// Image height in pixels
-    #[arg(short = 'h', long, default_value_t = 480)]
+    #[arg(short = 'H', long, default_value_t = 480)]
     height: usize,
 
     /// Enable color mode (default: monochrome)
-    #[arg(short = 'c', long)]
+    #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
 }
 
@@ -98,6 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // ウィンドウ作成
     highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
+    highgui::resizeWindow("img", width + 128, height + 256);
 
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
@@ -175,40 +176,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-
-    /*
-    let mut buf = vec![0u16; (width * height) as usize];
-    unsafe {
-        udmabuf_acc.copy_to_::<u16>(0, buf.as_mut_ptr(), (width * height) as usize);
-    }
-
-    // PGM形式で保存
-    let pgm_header = format!("P2\n{} {}\n1023\n", width, height);
-    let mut pgm_file = std::fs::File::create("output.pgm").expect("Failed to create output.pgm");
-    pgm_file
-        .write_all(pgm_header.as_bytes())
-        .expect("Failed to write PGM header");
-    for pixel in buf {
-        pgm_file
-            .write_all(format!("{}\n", pixel).as_bytes())
-            .expect("Failed to write pixel data");
-    }
-    */
     
     cam.close()?;
 
-    /*
-    cam.set_sensor_enable(false)?;
-
-    // カメラOFF
-    unsafe { reg_sys.write_reg(SYSREG_CAM_ENABLE, 0) };
-    std::thread::sleep(std::time::Duration::from_millis(10));
-    */
-
     println!("done");
-
-//    println!("unload");
-//    jelly_fpgautil::unload(slot)?;
 
     return Ok(());
 }

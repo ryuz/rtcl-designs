@@ -50,8 +50,8 @@ void signal_handler(int signo) {
 // メイン関数
 int main(int argc, char *argv[])
 {
-    int width  = 256 ;
-    int height = 256 ;
+    int width  = 640 ;
+    int height = 480 ;
 
     for ( int i = 1; i < argc; ++i ) {
         if ( strcmp(argv[i], "-width") == 0 && i+1 < argc) {
@@ -188,8 +188,8 @@ int main(int argc, char *argv[])
     // 動作開始
     std::cout << "Start Camera (tiger mode)" << std::endl;
     cam.SetTriggeredMode(true);
-    cam.SetSlaveMode(true);
-    cam.SetSequencerEnable(true);
+//  cam.SetSlaveMode(true);
+//  cam.SetSequencerEnable(true);
 
 //    cam.SetAnalogGain(3.5);
 //    cam.SetDigitalGain(0.2);
@@ -208,16 +208,16 @@ int main(int argc, char *argv[])
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
     usleep(100000);
 
-    int black_level = 0;
-    int soft_gain   = 10;
+    int black_level   = 0;
+    int soft_gain     = 10;
     int timgen_period = 99999;
     int trig0_start   = 10;
     int trig0_end     = 90000;
     int gain          = 0;
 
     cv::namedWindow("img", cv::WINDOW_NORMAL);
-    cv::resizeWindow("img", 800, 600);
-    cv::imshow("img", cv::Mat::zeros(480, 640, CV_8UC3));
+    cv::resizeWindow("img", width + 64, height + 128);
+    cv::imshow("img", cv::Mat::zeros(height, width, CV_8UC3));
     cv::createTrackbar("bl",   "img", nullptr, 1024);
     cv::setTrackbarPos("bl",   "img", black_level);
     cv::createTrackbar("sg",   "img", nullptr, 100);
@@ -236,12 +236,12 @@ int main(int argc, char *argv[])
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
         if ( g_signal ) { break; }
 
-        black_level  = cv::getTrackbarPos("bl", "img");
-        soft_gain    = cv::getTrackbarPos("sg", "img");
-        gain         = cv::getTrackbarPos("gain", "img");
+        black_level   = cv::getTrackbarPos("bl", "img");
+        soft_gain     = cv::getTrackbarPos("sg", "img");
+        gain          = cv::getTrackbarPos("gain", "img");
         timgen_period = cv::getTrackbarPos("peri", "img");
-        trig0_start  = cv::getTrackbarPos("ts", "img");
-        trig0_end    = cv::getTrackbarPos("te", "img");
+        trig0_start   = cv::getTrackbarPos("ts", "img");
+        trig0_end     = cv::getTrackbarPos("te", "img");
 
         cam.SetGainDb((float)gain / 10.0f);
 
