@@ -4,33 +4,110 @@
 
 Kria KV260 で [グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)(設計は[こちら](https://github.com/ryuz/rtcl-p3s7-mipi-pcb))を動かすサンプルです。
 
-このプロジェクトは、PYTHON300 センサー + Spartan-7 FPGA を搭載したカメラモジュールを KV260 に接続し、D-PHY 上で独自プロトコルを用いた高速画像伝送を行います。MIPI-CSI規格を使わずに独自プロトコルで伝送することで、画像1フレームを1パケットとして転送し、伝送帯域を有効活用して高速度撮影を実現しています。
+このプロジェクトは、オンセミ社の[PYTHON300センサー](https://www.onsemi.jp/products/sensors/image-sensors/python300) + AMD社 [Spartan-7 FPGA](https://www.amd.com/ja/products/adaptive-socs-and-fpgas/fpga/spartan-7.html) を搭載したカメラモジュールを KV260 に接続し、D-PHY 上で独自プロトコルを用いた高速画像伝送を行います。
 
-PYTHON300 センサーは 640×480 で 815fps、画像サイズを小さくすれば 1000fps を超える撮影が可能な高性能グローバルシャッターセンサーです。
-v
-## 環境
+本プロジェクトでは MIPI の DPHY の物理層を利用しつつ、CSI2 規格ではない独自プロトコルで伝送することで、画像1フレームを1パケットとして転送し、伝送帯域を有効活用して高速度撮影を実現しています。
 
-### PC環境
+本ドキュメントでは、カメラモジュール側の Spartan-7 には [こちら](https://github.com/ryuz/rtcl-designs/tree/main/projects/rtcl_p3s7_mipi/rtcl_p3s7_mipi)のデザインが書き込まれている前提で、KV260 側で FPGAデザインについて説明します。
 
-Vivado 2024.2 を用いております。
+
+## 環境構築
+
+本プロジェクトでは、KV260 の FPGA部分である PL(Proglamable Logic)部 用の SystemVerilog の設計の他に、それらを制御する PS(Processing System)部 用のソフトウェアや PC 側から制御する提供しております。
+
+シンプルな動作サンプルとして C++版のサンプルも用意しておりますが、メインでは Rust 版を推奨しており、Rust のサーバーを起動することで gRPC 経由で PCからカメラ制御も可能です。
 
 ### KV260環境
+
+KV260 の環境構築基本的には[こちらの記事](https://zenn.dev/ryuz88/articles/kv260_setup_memo_ubuntu24)を参考にしてください。
+
+以下、抜粋した説明のみ記載します。
 
 [認定Ubuntu](https://japan.xilinx.com/products/design-tools/embedded-software/ubuntu.html) 環境にて試しております。
 
 ```
-Description : Ubuntu 24.04 LTS  
+Description : Ubuntu 24.04 LTS
 kernel      : 6.8.0-1017-xilinx
 ```
 
-### OpenCV
+セルフコンパイルを行う為に下記のパッケージなどをインストールしておいてください。
 
 ```bash
 sudo apt update
-sudo apt install libopencv-dev
+sudo apt install -y build-essential
+sudo apt install -y libssl-dev
+sudo apt install -y protobuf-compiler
+sudo apt install -y libopencv-dev
+sudo apt install -y llvm-dev clang libclang-dev
+sudo apt install -y xauth x11-apps
 ```
 
-## 動かし方
+また Rust のインストールも下記のように行ってください。
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+rustup default stable
+rustup update
+```
+
+コンパイル時間短縮の為バイナリインストールツールの cargo-binstall も導入しておくと便利です。
+
+```bash
+curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+```
+
+拙作の FPGA 制御サービス [jelly-fpga-server](https://github.com/ryuz/jelly-fpga-server) と FPGA ローダー [jelly-fpga-loader](https://github.com/ryuz/jelly-fpga-loader) も以下のコマンドでそれぞれインストールできます。
+
+```bash
+curl -LsSf https://raw.githubusercontent.com/ryuz/jelly-fpga-server/master/binst.sh | sudo bash
+```
+
+```bash
+cargo-binstall --git https://github.com/ryuz/jelly-fpga-loader.git jelly-fpga-loader
+```
+
+### PC環境
+
+Windows WLS2 環境を含めた Ubuntu 22.04/24.04 環境で動作確認しております。
+
+Vivado は 2024.2 を用いております。
+
+KV260 上でセルフコンパイルも可能ですが、クロスコンパイルを行う場合は Docker をインストールすると便利です。
+
+VS-Code などの Dev Container や Rust の [cross](https://github.com/cross-rs/cross) を用いたクロスコンパイルも可能です。
+
+KV260 と同様に PC 側でも Rust のインストールも下記のように行ってください。
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+rustup default stable
+rustup update
+```
+
+cargo-binstall も同様に導入できます。
+
+```bash
+curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+```
+
+クロスコンパイルツールの cross も
+
+```bash
+cargo install cross --git https://github.com/cross-rs/cross
+```
+
+とすればインストールできます。
+
+jelly-fpga-loader も以下のコマンドでインストールできます。
+
+```bash
+cargo-binstall --git https://github.com/ryuz/jelly-fpga-loader.git jelly-fpga-loader
+```
+
+
+## 本プロジェクトの使い方
 
 ### gitリポジトリ取得
 
@@ -39,6 +116,7 @@ git clone https://github.com/ryuz/rtcl-designs.git --recurse-submodules
 ```
 
 で一式取得してください。
+
 
 ### PC側の Vivado で bit ファイルを作る
 
@@ -50,14 +128,25 @@ Vivado が使えるように
 source /tools/Xilinx/Vivado/2024.2/settings64.sh
 ```
 
-したのちに
+しておいてください。
+もしくは 拙作の Vivado バージョン管理ツール [vitisenv](https://github.com/ryuz/vitisenv) を用いるとこの作業を自動化できます。
+
+
+vivado のツール群が使える状態で
 
 ```bash
 cd projects/kv260/kv260_rtcl_p3s7_hs/syn/tcl
 make
 ```
 
-とすると bit ファイルが生成されます。
+とすると bit ファイルが生成されます。続けて
+
+```bash
+make bit_cp
+```
+
+とすると app ディレクトリに bit ファイルがコピーされます。
+
 
 #### GUI 版
 
@@ -77,58 +166,54 @@ design_1 が生成されたら「Flow」→「Run Implementation」で合成を�
 
 が出来上がります。
 
-### KV260 でPSソフトをコンパイルして実行
 
-`projects/kv260/kv260_rtcl_p3s7_hs/app` の内容一式と先ほど合成した `kv260_rtcl_p3s7_hs.bit` を、KV260 の Ubuntu で作業できる適当なディレクトリにコピーします。bitファイルも同じ app ディレクトリに入れてください。
+### KV260 でPSソフトをセルフコンパイルして実行
 
-KV260 側では Ubuntu が起動済みで ssh などで接続ができている前提ですので scp や samba などでコピーすると良いでしょう。app に関しては KV260 から git で clone することも可能です。
+ssh で接続して利用する場合は X Forwarding を有効にして、PC側の X-Server も準備しておいてください。
+筆者は [VcXsrv](https://sourceforge.net/projects/vcxsrv/) を Windows 側にインストールして利用しております。
 
-この時、以下の下準備が必要です：
-
-- OpenCV や bootgen など必要なツールがインストールできていること
-- ssh ポートフォワーディングなどで、PCに X-Window が開く状態にしておくこと
-- /dev/uio や /dev/i2c-6 などのデバイスのアクセス権が得られること
-- sudo 権限のあるユーザーで実行すること
-
-などの下準備がありますので、ブログなど参考に設定ください。
-
-問題なければ、app をコピーしたディレクトリで
+KV260 側でも PC 同様に本リポジトリを clone します。
 
 ```bash
-make
+git clone https://github.com/ryuz/rtcl-designs.git --recurse-submodules
 ```
 
-と実行すれば `kv260_rtcl_p3s7_hs.out` という実行ファイルが生成されます。
+`projects/kv260/kv260_rtcl_p3s7_hs/app` ディレクトリに、先ほど PC の Vivado で作成した `kv260_rtcl_p3s7_hs.bit` をコピーしておいてください。
 
-ここで
+#### C++版の実行
 
 ```bash
-make run
+cd projects/kv260/kv260_rtcl_p3s7_hs/app
+make run_cpp
 ```
 
-とすると、Device Tree overlay によって、bit ファイルの書き込みなどを行った後にプログラムが起動し、ホストPCの方の X-Window に、カメラ画像が表示されるはずです。
+と実行すれば C++ 版のサンプルがコンパイルされ実行されます。
 
-### コマンドラインオプション
+X-Window の設定が正しくできていれば、ウィンドウが開き、カメラ画像が表示されるはずです。
 
-実行ファイルは以下のオプションを受け付けます：
+#### Rust版の実行
 
 ```bash
-./kv260_rtcl_p3s7_hs.out -width 256 -height 256
+cd projects/kv260/kv260_rtcl_p3s7_hs/app
+make run_rust
 ```
 
-- `-width <値>` : 画像幅を指定（16の倍数、最小16）
-- `-height <値>` : 画像高さを指定（最小1）
+と実行すれば Rust 版のサンプルがコンパイルされ実行されます。
 
-### Device Tree overlay のロード／アンロード
+X-Window の設定が正しくできていれば、ウィンドウが開き、カメラ画像が表示されるはずです。
 
-Device Tree overlay のロード／アンロードは
+
+#### gRPC サーバーの起動
 
 ```bash
-make load      # ロード
-make unload    # アンロード
+cd projects/kv260/kv260_rtcl_p3s7_hs/app
+make run_server
 ```
 
-といったコマンドで実施可能です。
+と実行すれば Rust 版の gRPC サーバーが起動して、リモートからカメラ制御が可能になります。
+
+PC 側で
+
 
 ### その他の実行方法
 

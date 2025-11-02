@@ -32,13 +32,13 @@ def main():
     client.camera_open()
 
     # KV260 のメモリ内に連続画像を記録
-    print(f"record images to {rec_path} ...")
+    print(f"record images ...")
     client.record_image(width, height, frames)
 
     # 画像を取得して保存
     rec_path = f"record/{datetime.now():%Y%m%d_%H%M%S}"
     os.makedirs(rec_path, exist_ok=True)
-    print("saving images ...")
+    print(f"saving images to {rec_path} ...")
     for i in range(frames):
         buf = client.read_image(i)
         img = np.frombuffer(buf, dtype=np.uint16).reshape((height, width))

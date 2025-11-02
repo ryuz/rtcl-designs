@@ -14,8 +14,8 @@ export TOP_MODULE   = $(PROJECT_NAME)
 export BOARD_PART   = xilinx.com:kv260_som*
 export DEVICE_PART  =
 
-BOARD_ADDRESS  ?= kria
-BOARD_WORK_DIR ?= git-work/rtcl-designs
+KV260_SSH_ADDRESS ?= kria
+KV260_WORK_DIR ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
 
@@ -71,7 +71,7 @@ build: $(BIT_FILE) check_log
 
 .PHONY : bit_scp
 bit_scp: $(BIT_FILE)
-	scp $(BIT_FILE) $(BOARD_ADDRESS):$(BOARD_WORK_DIR)/projects/$(BOARD_NAME)/$(PROJECT_NAME)/app
+	scp $(BIT_FILE) $(KV260_SSH_ADDRESS):$(KV260_WORK_DIR)/projects/$(BOARD_NAME)/$(PROJECT_NAME)/app
 
 .PHONY : bit_cp
 bit_cp: $(BIT_FILE)
