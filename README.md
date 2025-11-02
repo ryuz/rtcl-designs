@@ -7,13 +7,13 @@
 ## リポジトリ構成
 
 - `projects/` : 各種プロジェクトの設計データ
-  - `rtcl_p3s7_mipi/` : RTCL-P3S70MIPI カメラモジュール用FPGA設計
+  - `rtcl_p3s7_mipi/` : RTCL-P3S70-MIPI カメラモジュール用
     - `rtcl_p3s7_mipi/` : カメラモジュール用FPGA設計
   - `kv260/` : KV260 用
-    - `kv260_rtcl_p3s7_hs/` : 独自仕様ハイスピード版
-    - `kv260_rtcl_p3s7_mipi/` : MIPI-CSI2仕様 カメラ搭載版
+    - `kv260_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
+    - `kv260_rtcl_p3s7_csi2/` : RTCL-P3S70-MIPI CSI2 仕様実験版
   - `zybo_z7/` : ZYBO Z7用
-    - `zybo_z7_rtcl_p3s7_hs/` : 独自仕様ハイスピード版
+    - `zybo_z7_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
 
 
 ## ライセンス
@@ -26,13 +26,13 @@
 
 ### スモールビジネスライセンス
 
-PolyForm Small Business License 1.0.0 の下で配布しています。詳細は [LICENSE](LICENSE) をご確認ください。
+[PolyForm Small Business License 1.0.0](https://polyformproject.org/licenses/small-business/1.0.0/) の下で配布しています。詳細は [LICENSE](LICENSE) をご確認ください。
 
 個人／学術機関／非営利団体での利用、または小規模企業(従業員数100人未満もしくは総売上高100万ドル未満)での利用については、無償で利用可能です。
 
 ### 商用ライセンス（製品購入者向け）
 
-企業規模等にかかわらず、当方が販売する正規品の **カメラモジュールのPro版** を購入された方については、購入した製品の評価・検証に限り、本ソフトウェアを商用利用することを許諾します。
+企業規模等にかかわらず、当方が販売する正規品の **カメラモジュールのPro版(準備中)** を購入された方については、購入した製品の評価・検証に限り、本ソフトウェアを商用利用することを許諾します。
 Basic版（Pro版の表記のない物）にはこの権利は含まれませんのでご注意ください。
 
 商用利用を許可することを除き、免責事項などその他の条件は PolyForm License に準じます。
