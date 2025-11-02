@@ -22,7 +22,7 @@ LDFLAGS += -g
 ifeq ($(HOST_ARCH),$(TARGET_ARCH))
     CC  := gcc
     CXX := g++
-    CFLAGS  += `pkg-config --cflags opencv4`
+    CFLAGS  += `pkg-config --cflags opencv4`ls 
     LDFLAGS += `pkg-config --libs opencv4`
 else
     CC  = $(TARGET_TRIPLET)gcc

@@ -50,8 +50,8 @@ void signal_handler(int signo) {
 // メイン関数
 int main(int argc, char *argv[])
 {
-    int width  = 640 ;
-    int height = 480 ;
+    int width  = 256 ;
+    int height = 256 ;
 
     for ( int i = 1; i < argc; ++i ) {
         if ( strcmp(argv[i], "-width") == 0 && i+1 < argc) {
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
     usleep(10000);
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 1);
-    usleep(1000);
+    usleep(10000);
 
     // MMCM 設定
     cam.SetDphySpeed(1250000000);   // 1250Mbps
@@ -144,10 +144,11 @@ int main(int argc, char *argv[])
     std::cout << "Init Camera" << std::endl;
     cam.SetSensorPowerEnable(false);
     cam.SetDphyReset(true);
-    usleep(100000);
+    usleep(10000);
 
     // 受信側 DPHY 解除 (必ずこちらを先に解除)
     reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 0);
+    usleep(10000);
 
     // 高速モード設定
     cam.SetCameraMode(rtcl::RtclP3S7ControlI2c::MODE_HIGH_SPEED);
@@ -155,9 +156,7 @@ int main(int argc, char *argv[])
     // センサー電源ON
     std::cout << "Sensor Power On" << std::endl;
     cam.SetSensorPowerEnable(true);
-
-
-    std::cout << "Sensor ID : " << cam.GetSensorId() << std::endl;
+    usleep(10000);
 
     // センサー基板 DPHY-TX リセット解除
     cam.SetDphyReset(false);
@@ -173,6 +172,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // センサーID確認
+    std::cout << "Sensor ID : " << cam.GetSensorId() << std::endl;
+
     // 受信画像サイズ設定
     reg_sys.WriteReg(SYSREG_IMAGE_WIDTH,  width);
     reg_sys.WriteReg(SYSREG_IMAGE_HEIGHT, height);
@@ -186,13 +188,17 @@ int main(int argc, char *argv[])
     cam.SetRoi0(width, height);
 
     // 動作開始
-    std::cout << "Start Camera (tiger mode)" << std::endl;
-    cam.SetTriggeredMode(true);
-//  cam.SetSlaveMode(true);
-//  cam.SetSequencerEnable(true);
+    std::cout << "Start Camera" << std::endl;
 
-//    cam.SetAnalogGain(3.5);
-//    cam.SetDigitalGain(0.2);
+    cam.SetMultTimer0(72);
+    cam.SetFrLength0(0);
+    cam.SetExposure0(10000);
+
+//  cam.SetTriggeredMode(true);
+//  cam.SetSlaveMode(true);
+    cam.SetSequencerEnable(true);
+
+    cam.SetGainDb(10.0);
 
     // Video DMA ドライバ生成
     jelly::VideoDmaControl vdmaw0(reg_wdma0, 2, 2, true);
@@ -203,51 +209,45 @@ int main(int argc, char *argv[])
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT,   20000000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_WIDTH,       width);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_HEIGHT,      height);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0x000);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     1000000);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0xfff);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     100000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
     usleep(100000);
 
-    int black_level   = 0;
-    int soft_gain     = 10;
-    int timgen_period = 99999;
-    int trig0_start   = 10;
-    int trig0_end     = 90000;
-    int gain          = 0;
+    int gain     = 0;   // 0.0 db
+    int fps      = 100; // 100fps
+    int exposure = 90;  // 90%
 
     cv::namedWindow("img", cv::WINDOW_NORMAL);
     cv::resizeWindow("img", width + 64, height + 128);
     cv::imshow("img", cv::Mat::zeros(height, width, CV_8UC3));
-    cv::createTrackbar("bl",   "img", nullptr, 1024);
-    cv::setTrackbarPos("bl",   "img", black_level);
-    cv::createTrackbar("sg",   "img", nullptr, 100);
-    cv::setTrackbarPos("sg",   "img", soft_gain);
     cv::createTrackbar("gain", "img", nullptr, 100);
     cv::setTrackbarPos("gain", "img", gain);
-    cv::createTrackbar("peri", "img", nullptr, 1000000);
-    cv::setTrackbarPos("peri", "img", timgen_period);
-    cv::createTrackbar("ts",   "img", nullptr,  999999);
-    cv::setTrackbarPos("ts",   "img", trig0_start);
-    cv::createTrackbar("te",   "img", nullptr,  999999);
-    cv::setTrackbarPos("te",   "img", trig0_end);
+
+    cv::createTrackbar("fps", "img", nullptr, 100);
+    cv::setTrackbarMin("fps", "img", 5);
+    cv::setTrackbarPos("fps", "img", fps);
+
+    cv::createTrackbar("exposure", "img", nullptr, 90);
+    cv::setTrackbarMin("exposure", "img", 10);
+    cv::setTrackbarPos("exposure", "img", fps);
 
     int     swap = 0;
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
         if ( g_signal ) { break; }
 
-        black_level   = cv::getTrackbarPos("bl", "img");
-        soft_gain     = cv::getTrackbarPos("sg", "img");
-        gain          = cv::getTrackbarPos("gain", "img");
-        timgen_period = cv::getTrackbarPos("peri", "img");
-        trig0_start   = cv::getTrackbarPos("ts", "img");
-        trig0_end     = cv::getTrackbarPos("te", "img");
+        gain     = cv::getTrackbarPos("gain", "img");
+        fps      = cv::getTrackbarPos("fps", "img");
+        exposure = cv::getTrackbarPos("exposure", "img");
 
         cam.SetGainDb((float)gain / 10.0f);
 
-        reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      timgen_period);
-        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, trig0_start);
-        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig0_end);
+        int period = 100000000 / fps;   // 100MHz / fps
+        int trig_end = period * exposure / 100;
+        reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      period-1);
+        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, 1);
+        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig_end);
         reg_timgen.WriteReg(TIMGENREG_CTL_CONTROL, 3);
 
         // 画像読み込み
@@ -264,23 +264,6 @@ int main(int argc, char *argv[])
                 xx = ((xx & 0xfff8) | ((xx & 0x6) >> 1) | ((xx & 0x1) << 2));
                 if ( !swap ) { xx = x; }
                 img_u16.at<std::uint16_t>(y, x) = img.at<std::int16_t>(y, xx);
-            }
-        }
-        
-        // img_u16 の黒レベル補正
-        for ( int y = 0; y < height; y++ ) {
-            for ( int x = 0; x < width; x++ ) {
-                int val = img_u16.at<std::uint16_t>(y, x);
-                if ( val < black_level ) {
-                    val = 0;
-                } else {
-                    val -= black_level;
-                }
-                val = val * soft_gain / 10;
-                if ( val > 1023 ) {
-                    val = 1023;
-                }
-                img_u16.at<std::uint16_t>(y, x) = val;
             }
         }
 
@@ -342,8 +325,20 @@ int main(int argc, char *argv[])
 
     std::cout << "close device" << std::endl;
 
-    // カメラOFF
-    reg_sys.WriteReg(2, 0);
+    // video input stop
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x0);
+    usleep(100000);
+
+    // シーケンサ停止
+    cam.SetSequencerEnable(false);
+    usleep(10000);
+
+    // センサー電源OFF
+    cam.SetSensorPowerEnable(false);
+    usleep(10000);
+
+    // カメラモジュールOFF
+    reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
     usleep(100000);
 
     return 0;

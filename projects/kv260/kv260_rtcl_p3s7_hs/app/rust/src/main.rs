@@ -85,8 +85,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_image_size(width, height)?;
-    cam.set_slave_mode(true)?;
-    cam.set_trigger_mode(true)?;
+//    cam.set_slave_mode(true)?;
+//    cam.set_trigger_mode(true)?;
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
@@ -98,7 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // ウィンドウ作成
     highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
-    highgui::resizeWindow("img", width + 128, height + 256);
+    highgui::resize_window("img", width as i32 + 128, height as i32 + 256)?;
 
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;

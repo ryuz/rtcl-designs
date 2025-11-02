@@ -43,22 +43,10 @@ namespace rtcl {
 class RtclP3S7ControlI2c
 {
 protected:
-    jelly::I2cAccessor m_i2c;
-
-//    int             m_aoi_x    = 0;
-//    int             m_aoi_y    = 0;
-//    int             m_width    = 640;
-//    int             m_height   = 480;
-
-//  float           m_framerate = 1000;
-//  float           m_exposure  = 1;
-
-    std::uint16_t   m_general_configuration = 0;
-    float           m_analog_gain  = 1.0;
-    float           m_digital_gain = 1.0;
-
-//  bool            m_flip_h = false;
-//  bool            m_flip_v = false;
+    jelly::I2cAccessor  m_i2c;
+    std::uint16_t       m_general_configuration = 0;
+    float               m_analog_gain  = 1.0;
+    float               m_digital_gain = 1.0;
 
 public:
     RtclP3S7ControlI2c() {}
@@ -361,7 +349,7 @@ public:
     bool SetMonitorSelect(int mode) {
         mode &= 0x7;
         m_general_configuration &= ~(0x7 << 11);
-        m_general_configuration |= ~(mode << 11);
+        m_general_configuration |= (mode << 11);
         if ( IsOpend() ) {
             spi_write(192, m_general_configuration);
         }
@@ -485,15 +473,15 @@ public:
         return true;
     }
 
-    std::uint16_t mult_timer_status(void) {
+    std::uint16_t GetMultTimerStatus(void) {
         return spi_read(242);
     }
 
-    std::uint16_t get_reset_length_status(void) {
+    std::uint16_t GetResetLengthStatus(void) {
         return spi_read(243);
     }
 
-    std::uint16_t get_exposure_status(void) {
+    std::uint16_t GetExposureStatus(void) {
         return spi_read(244);
     }
 
