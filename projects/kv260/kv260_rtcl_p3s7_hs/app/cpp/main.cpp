@@ -187,6 +187,15 @@ int main(int argc, char *argv[])
     // 画像サイズ設定
     cam.SetRoi0(width, height);
 
+    // video input start
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN,  1);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT,   20000000);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_WIDTH,       width);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_HEIGHT,      height);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0xfff);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     100000);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
+
     // 動作開始
     std::cout << "Start Camera" << std::endl;
 
@@ -197,22 +206,13 @@ int main(int argc, char *argv[])
 //  cam.SetTriggeredMode(true);
 //  cam.SetSlaveMode(true);
     cam.SetSequencerEnable(true);
+    usleep(100000);
 
     cam.SetGainDb(10.0);
 
     // Video DMA ドライバ生成
     jelly::VideoDmaControl vdmaw0(reg_wdma0, 2, 2, true);
     jelly::VideoDmaControl vdmaw1(reg_wdma1, 2, 2, true);
-
-    // video input start
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN,  1);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT,   20000000);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_WIDTH,       width);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_HEIGHT,      height);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0xfff);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     100000);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
-    usleep(100000);
 
     int gain     = 0;   // 0.0 db
     int fps      = 100; // 100fps
@@ -331,6 +331,10 @@ int main(int argc, char *argv[])
 
     // シーケンサ停止
     cam.SetSequencerEnable(false);
+    usleep(10000);
+
+    // センサー停止
+    cam.SetSensorEnable(false);
     usleep(10000);
 
     // センサー電源OFF
