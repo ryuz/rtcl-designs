@@ -4,6 +4,7 @@ import os
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from datetime import datetime
 from rtcl_p3s7_client import *
 
 from rtcl_p3s7_client import *
@@ -17,6 +18,7 @@ def main():
 
     width = 640
     height = 320
+    frames = 20
 
     print(f"connecting to {address} ...")
     client = RtclP3s7Client(address=address)
@@ -29,16 +31,19 @@ def main():
     client.camera_set_image_size(width, height)
     client.camera_open()
 
-    # 1フレーム撮影
-    print("record image")
-    client.record_image(width, height, 1)
-    buf = client.read_image(0)
-    img = np.frombuffer(buf, dtype=np.uint16).reshape((height, width))
-    img = img << 6  # 10bit RAW -> 16bit
+    # KV260 のメモリ内に連続画像を記録
+    print(f"record images ...")
+    client.record_image(width, height, frames)
 
-    # 画像保存
-    print("saving capture.png ...")
-    cv2.imwrite("capture.png", img)
+    # 画像を取得して保存
+    rec_path = f"record/{datetime.now():%Y%m%d_%H%M%S}"
+    os.makedirs(rec_path, exist_ok=True)
+    print(f"saving images to {rec_path} ...")
+    for i in range(frames):
+        buf = client.read_image(i)
+        img = np.frombuffer(buf, dtype=np.uint16).reshape((height, width))
+        img = img << 6  # 10bit RAW -> 16bit
+        cv2.imwrite(os.path.join(rec_path, f"img_{i:04}.png"), img)
 
     # クローズ
     print("close camera")
