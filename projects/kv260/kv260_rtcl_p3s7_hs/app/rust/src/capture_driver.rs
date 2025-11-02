@@ -48,7 +48,7 @@ impl<T0: MemAccess, T1: MemAccess> CaptureDriver<T0, T1>
             0,
             0,
             0,
-            Some(100000 * frames),
+            Some(1000000 * frames),
         )?;
 
         // 成功したら録画情報を更新
