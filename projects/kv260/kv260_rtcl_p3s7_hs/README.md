@@ -240,14 +240,16 @@ cd projects/kv260/kv260_rtcl_p3s7_hs/app/rust
 make remote_run
 ```
 
-この際、環境変数 `KV260_SSH_ADDRESS` と `KV260_SERVER_ADDRESS` にそれぞれ KV260 の SSH アドレスと gRPC サーバーのアドレスを設定しておいてください。
+この際、環境変数 `KV260_SSH_ADDRESS` と `KV260_SERVER_ADDRESS` にそれぞれ KV260 の SSH アドレスと jelly-fpga-server サーバーのアドレスを設定しておいてください。
 
-`KV260_SERVER_ADDRESS` には jelly-fpga-server が接続できるアドレス、`KV260_SSH_ADDRESS` には SSH 接続できるアドレスを設定してください。
+例えば
 
 ```bash
 KV260_SERVER_ADDRESS="192.168.16.1:8051"
 KV260_SSH_ADDRESS="kria-kv260"
 ```
+
+といった感じです。
 
 #### gRPC サーバーの起動
 

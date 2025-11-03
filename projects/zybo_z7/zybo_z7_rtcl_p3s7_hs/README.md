@@ -15,7 +15,6 @@ ZYBO Z7-20 で [グローバルシャッターMIPI高速度カメラ](https://rt
 
 本プロジェクトでは、ZYBO Z7 の FPGA部分である PL(Proglamable Logic)部 用の SystemVerilog の設計の他に、それらを制御する PS(Processing System)部 用のソフトウェアや PC 側から制御する提供しております。
 
-シンプルな動作サンプルとして C++版のサンプルも用意しておりますが、メインでは Rust 版を推奨しており、Rust のサーバーを起動することで gRPC 経由で PCからカメラ制御も可能です。
 
 ### ZYBO Z7 環境
 
@@ -227,14 +226,16 @@ cd projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/app/rust
 make remote_run
 ```
 
-この際、環境変数 `ZYBO_Z7_SSH_ADDRESS` と `ZYBO_Z7_SERVER_ADDRESS` にそれぞれ ZYBO_Z7 の ssh アドレスと gRPC サーバーのアドレスを設定しておいてください。
+この際、環境変数 `ZYBO_Z7_SSH_ADDRESS` と `ZYBO_Z7_SERVER_ADDRESS` にそれぞれ ZYBO_Z7 の ssh アドレスと jelly-fpga-server サーバーのアドレスを設定しておいてください。
 
-`ZYBO_Z7_SERVER_ADDRESS` には jelly-fpga-server が接続できるアドレス、`ZYBO_Z7_SSH_ADDRESS` には ssh 接続できるアドレスを設定してください。
+例えば
 
 ```bash
 ZYBO_Z7_SERVER_ADDRESS="192.168.16.1:8051"
 ZYBO_Z7_SSH_ADDRESS="zybo-z7"
 ```
+
+といった感じです。
 
 
 ## 参考情報
