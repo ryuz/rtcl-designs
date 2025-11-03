@@ -201,27 +201,15 @@ make run_rust
 X-Window の設定が正しくできていれば、ウィンドウが開き、カメラ画像が表示されるはずです。
 
 
-#### gRPC サーバーの起動
 
-```bash
-cd projects/kv260/kv260_rtcl_p3s7_hs/app
-make run_server
-```
-
-と実行すれば Rust 版の gRPC サーバーが起動して、リモートからカメラ制御が可能になります。
-
-PC 側で例えば  `projects/kv260/kv260_rtcl_p3s7_hs/app/grpc/client_python/rtcl_p3s7_client_sample.py` などを使って接続して動作確認が可能です。
-
-
-
-### PCで PSソフトをクロスコンパイルして実行 
+### PCで PSソフトをクロスコンパイルして実行
 
 #### C++版の実行
 
 DevContainer が使えるなら `devcontainer/devcontainer.sample.json` を参考に DevContainer を作成し、VS-Code で開いてください。
 
 ```bash
-cd projects/kv260/kv260_rtcl_p3s7_hs/app/cpp
+cd projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/app/cpp
 make remote_run
 ```
 
@@ -233,28 +221,17 @@ make remote_run
 cross が使える環境で、下記のようにすれば仮想環境でビルドした後に、リモートで実行できます。
 
 ```bash
-cd projects/kv260/kv260_rtcl_p3s7_hs/app/rust
+cd projects/zybo_z7/zybo_z7_rtcl_p3s7_hs/app/rust
 make remote_run
 ```
 
-この際、環境変数 `KV260_SSH_ADDRESS` と `KV260_SERVER_ADDRESS` にそれぞれ KV260 の SSH アドレスと gRPC サーバーのアドレスを設定しておいてください。
+この際、環境変数 `ZYBO_Z7_SSH_ADDRESS` と `ZYBO_Z7_SERVER_ADDRESS` にそれぞれ ZYBO_Z7 の ssh アドレスと gRPC サーバーのアドレスを設定しておいてください。
 
-`KV260_SERVER_ADDRESS` には jelly-fpga-server が接続できるアドレス、`KV260_SSH_ADDRESS` には SSH 接続できるアドレスを設定してください。
-
-```bash
-KV260_SERVER_ADDRESS="192.168.16.1:8051"
-KV260_SSH_ADDRESS="kria-kv260"
-```
-
-#### gRPC サーバーの起動
-
-docker と cross が使える環境で、下記のようにすれば仮想環境で実行できます。
-
-この際、環境変数 `KV260_SSH_ADDRESS` と `KV260_SERVER_ADDRESS` にそれぞれ KV260 の SSH アドレスと gRPC サーバーのアドレスを設定しておいてください。
+`ZYBO_Z7_SERVER_ADDRESS` には jelly-fpga-server が接続できるアドレス、`ZYBO_Z7_SSH_ADDRESS` には ssh 接続できるアドレスを設定してください。
 
 ```bash
-cd projects/kv260/kv260_rtcl_p3s7_hs/app/grpc/server
-make remote_run
+ZYBO_Z7_SERVER_ADDRESS="192.168.16.1:8051"
+ZYBO_Z7_SSH_ADDRESS="zybo-z7"
 ```
 
 
@@ -263,5 +240,5 @@ make remote_run
 - [プロダクトページ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)
 - [PYTHON300 データシート](https://www.onsemi.jp/products/sensors/image-sensors/python300)
 - [カメラモジュール設計リポジトリ](https://github.com/ryuz/rtcl-p3s7-mipi)
-- [Kria KV260 ビジョン AI スターター キット](https://www.amd.com/ja/products/system-on-modules/kria/k26/kv260-vision-starter-kit.html)
+- [ZYBO Z7](https://digilent.com/reference/programmable-logic/zybo-z7/start)
 
