@@ -50,8 +50,8 @@ void signal_handler(int signo) {
 // メイン関数
 int main(int argc, char *argv[])
 {
-    int width  = 256 ;
-    int height = 256 ;
+    int width  = 640 ;
+    int height = 480 ;
 
     for ( int i = 1; i < argc; ++i ) {
         if ( strcmp(argv[i], "-width") == 0 && i+1 < argc) {
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     usleep(10000);
 
     // MMCM 設定
-    cam.SetDphySpeed(1250000000);   // 1250Mbps
+    cam.SetDphySpeed(950000000);   // 950Mbps
     
     // 受信側 DPHY リセット
     reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 1);
