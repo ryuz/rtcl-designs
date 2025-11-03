@@ -20,6 +20,9 @@ KV260_SERVER_ADDRESS ?= 127.0.0.1:8051
 .PHONY: all
 all: $(DTBO_FILE) $(BIN_FILE)
 
+.PHONY: build
+build: $(DTBO_FILE) $(BIN_FILE)
+
 .PHONY: clean
 clean:
 	rm -rf $(DTBO_FILE) $(BIN_FILE)
@@ -30,6 +33,10 @@ run: run_cpp
 .PHONY: run_cpp
 run_cpp: load
 	make -C cpp run
+
+.PHONY: build_cpp
+build_cpp:
+	make -C cpp build
 
 .PHONY: run_rust
 run_rust: load
@@ -50,6 +57,17 @@ $(DTBO_FILE): $(DTS_FILE)
 
 $(BIN_FILE): $(BIF_FILE) $(BIT_FILE)
 	bootgen -w -image $(BIF_FILE) -arch zynqmp -process_bitstream bin
+
+$(BIT_FILE):
+	@if [ -f $@ ]; then \
+	    echo "$@ exists, skipping build"; \
+	elif command -v vivado >/dev/null 2>&1; then \
+	    echo "vivado found — building $@"; \
+	    make bit_cp -C ../syn/tcl; \
+	else \
+	    echo "vivado not found — cannot build $@"; \
+	    exit 1; \
+	fi
 
 .PHONY: load
 load: load_dfx
@@ -91,7 +109,7 @@ load_jelly: unload_jelly
 
 .PHONY: unload_jelly
 unload_jelly:
-	-jelly-fpga-loader unload
+	-jelly-fpga-loader unload --ip $(ZYBO_Z7_SERVER_ADDRESS)
 
 
 ### Device Tree Overlay Management

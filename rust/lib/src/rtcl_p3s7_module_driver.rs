@@ -927,7 +927,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             }
         } else if speed >= 950000000.0 {
             // D-PHY 950Mbps用設定
-            for i in 0..MMCM_TBL_1250.len() {
+            for i in 0..MMCM_TBL_950.len() {
                 self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
             }
         } else {
@@ -938,6 +938,29 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_i2c(REG_P3S7_MMCM_CONTROL, 0)?;
         self.usleep(100);
 
+        Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    pub fn module_reg_dump(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        println!("REG_P3S7_MODULE_ID        : 0x{:04x}", self.read_i2c(REG_P3S7_MODULE_ID         )?);
+        println!("REG_P3S7_MODULE_VERSION   : 0x{:04x}", self.read_i2c(REG_P3S7_MODULE_VERSION    )?);
+        println!("REG_P3S7_SENSOR_ENABLE    : 0x{:04x}", self.read_i2c(REG_P3S7_SENSOR_ENABLE     )?);
+        println!("REG_P3S7_SENSOR_READY     : 0x{:04x}", self.read_i2c(REG_P3S7_SENSOR_READY      )?);
+        println!("REG_P3S7_RECEIVER_RESET   : 0x{:04x}", self.read_i2c(REG_P3S7_RECEIVER_RESET    )?);
+        println!("REG_P3S7_RECEIVER_CLK_DLY : 0x{:04x}", self.read_i2c(REG_P3S7_RECEIVER_CLK_DLY  )?);
+        println!("REG_P3S7_ALIGN_RESET      : 0x{:04x}", self.read_i2c(REG_P3S7_ALIGN_RESET       )?);
+        println!("REG_P3S7_ALIGN_PATTERN    : 0x{:04x}", self.read_i2c(REG_P3S7_ALIGN_PATTERN     )?);
+        println!("REG_P3S7_ALIGN_STATUS     : 0x{:04x}", self.read_i2c(REG_P3S7_ALIGN_STATUS      )?);
+        println!("REG_P3S7_CLIP_ENABLE      : 0x{:04x}", self.read_i2c(REG_P3S7_CLIP_ENABLE       )?);
+        println!("REG_P3S7_CSI_MODE         : 0x{:04x}", self.read_i2c(REG_P3S7_CSI_MODE          )?);
+        println!("REG_P3S7_CSI_DT           : 0x{:04x}", self.read_i2c(REG_P3S7_CSI_DT            )?);
+        println!("REG_P3S7_CSI_WC           : 0x{:04x}", self.read_i2c(REG_P3S7_CSI_WC            )?);
+        println!("REG_P3S7_DPHY_CORE_RESET  : 0x{:04x}", self.read_i2c(REG_P3S7_DPHY_CORE_RESET   )?);
+        println!("REG_P3S7_DPHY_SYS_RESET   : 0x{:04x}", self.read_i2c(REG_P3S7_DPHY_SYS_RESET    )?);
+        println!("REG_P3S7_DPHY_INIT_DONE   : 0x{:04x}", self.read_i2c(REG_P3S7_DPHY_INIT_DONE    )?);
+        println!("REG_P3S7_MMCM_CONTROL     : 0x{:04x}", self.read_i2c(REG_P3S7_MMCM_CONTROL      )?);
+        println!("REG_P3S7_PLL_CONTROL      : 0x{:04x}", self.read_i2c(REG_P3S7_PLL_CONTROL       )?);
         Ok(())
     }
 }

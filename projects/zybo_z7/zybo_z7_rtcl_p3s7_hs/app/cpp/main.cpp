@@ -6,51 +6,14 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
-
 #include <opencv2/opencv.hpp>
-
 #include "jelly/UioAccessor.h"
 #include "jelly/UdmabufAccessor.h"
 #include "jelly/JellyRegs.h"
 #include "jelly/I2cAccessor.h"
 #include "jelly/GpioAccessor.h"
 #include "jelly/VideoDmaControl.h"
-
-void write_pgm(const char* filename, cv::Mat img, int depth=4095);
-
-static  volatile    bool    g_signal = false;
-void signal_handler(int signo) {
-    g_signal = true;
-}
-
-void          i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-std::uint16_t i2c_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
-void          spi_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-std::uint16_t spi_read(jelly::I2cAccessor &i2c, std::uint16_t addr);
-void          spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data);
-void          reg_dump(jelly::I2cAccessor &i2c, const char *fname);
-void          load_setting(jelly::I2cAccessor &i2c);
-void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
-
-
-
-#define CAMREG_CORE_ID              0x0000
-#define CAMREG_CORE_VERSION         0x0001
-#define CAMREG_SENSOR_ENABLE        0x0004
-#define CAMREG_SENSOR_READY         0x0008
-#define CAMREG_RECV_RESET           0x0010
-#define CAMREG_ALIGN_RESET          0x0020
-#define CAMREG_ALIGN_PATTERN        0x0022
-#define CAMREG_ALIGN_STATUS         0x0028
-#define CAMREG_CLIP_ENABLE          0x0040
-#define CAMREG_CSI_MODE             0x0050
-#define CAMREG_CSI_DT               0x0052
-#define CAMREG_CSI_WC               0x0053
-#define CAMREG_DPHY_CORE_RESET      0x0080
-#define CAMREG_DPHY_SYS_RESET       0x0081
-#define CAMREG_DPHY_INIT_DONE       0x0088
-#define CAMREG_MMCM_CONTROL         0x00a0
-#define CAMREG_PLL_CONTROL          0x00a1
+#include "rtcl/RtclP3S7Control.h"
 
 #define SYSREG_ID                   0x0000
 #define SYSREG_DPHY_SW_RESET        0x0001
@@ -74,39 +37,21 @@ void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
 #define TIMGENREG_PARAM_TRIG0_END   0x21
 #define TIMGENREG_PARAM_TRIG0_POL   0x22
 
-// D-PHY 950Mbps用設定
-std::uint16_t  mmcm_tbl[][2] = {
-    {0x06, 0x0041},
-    {0x07, 0x0040},
-    {0x08, 0x1041},
-    {0x09, 0x0000},
-    {0x0a, 0x9041},
-    {0x0b, 0x0000},
-    {0x0c, 0x0041},
-    {0x0d, 0x0040},
-    {0x0e, 0x0041},
-    {0x0f, 0x0040},
-    {0x10, 0x0041},
-    {0x11, 0x0040},
-    {0x12, 0x0041},
-    {0x13, 0x0040},
-    {0x14, 0x124a},
-    {0x15, 0x0080},
-    {0x16, 0x1041},
-    {0x18, 0x020d},
-    {0x19, 0x7c01},
-    {0x1a, 0xffe9},
-    {0x27, 0x0000},
-    {0x28, 0x0100},
-    {0x4e, 0x9008},
-    {0x4f, 0x0100}
-};
+void          sensor_reg_dump(rtcl::RtclP3S7ControlI2c  &cam, const char *fname);
+void          load_setting(rtcl::RtclP3S7ControlI2c  &cam);
 
 
+static  volatile    bool    g_signal = false;
+void signal_handler(int signo) {
+    g_signal = true;
+}
+
+
+// メイン関数
 int main(int argc, char *argv[])
 {
-    int width  = 256 ;
-    int height = 256 ;
+    int width  = 640 ;
+    int height = 480 ;
 
     for ( int i = 1; i < argc; ++i ) {
         if ( strcmp(argv[i], "-width") == 0 && i+1 < argc) {
@@ -165,7 +110,6 @@ int main(int argc, char *argv[])
     int rec_frames = dmabuf0_mem_size / (width * height * 2);
     std::cout << "udmabuf0 rec_frames : " << rec_frames << std::endl;
 
-
     // mmap udmabuf1
     jelly::UdmabufAccessor udmabuf1_acc("udmabuf-jelly-vram1");
     if ( !udmabuf1_acc.IsMapped() ) {
@@ -177,66 +121,46 @@ int main(int argc, char *argv[])
     std::cout << "udmabuf1 phys addr : 0x" << std::hex << dmabuf1_phys_adr << std::endl;
     std::cout << "udmabuf1 size      : " << std::dec << dmabuf1_mem_size << std::endl;
 
-
-    jelly::I2cAccessor i2c;
-//  i2c.Open("/dev/i2c-6", 0x10);
-    i2c.Open("/dev/i2c-0", 0x10);
+    rtcl::RtclP3S7ControlI2c cam;
+    cam.Open("/dev/i2c-0", 0x10);
 
     // カメラ基板ID確認
-    std::cout << "CORE_ID      : " << std::hex << i2c_read(i2c, CAMREG_CORE_ID        ) << std::endl;
-    std::cout << "CORE_VERSION : " << std::hex << i2c_read(i2c, CAMREG_CORE_VERSION   ) << std::endl;
+    std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
+    std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
 
     // カメラモジュールリセット
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
-    usleep(1000);
+    usleep(10000);
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 1);
-    usleep(1000);
+    usleep(10000);
 
     // MMCM 設定
-    i2c_write(i2c, CAMREG_MMCM_CONTROL, 1);
-    for ( size_t i = 0; i < sizeof(mmcm_tbl) / sizeof(mmcm_tbl[0]); i++ ) {
-        i2c_write(i2c, 0x1000 + mmcm_tbl[i][0], mmcm_tbl[i][1]);
-    }
-    i2c_write(i2c, CAMREG_MMCM_CONTROL, 0);
-    usleep(1000);
-
-#if 0
-    // MMCM 読み出し
-    i2c_write(i2c, CAMREG_MMCM_CONTROL, 1);
-    for ( int i = 0; i <= 0x4F; i++ ) {
-        auto v = i2c_read(i2c, 0x1000 + i);
-//      std::cout << "MMCM[" << i << "] : 0x" << std::hex << v << std::endl;
-        printf("MMCM[0x%02x] : 0x%04x\n", i, v);
-    }
-    i2c_write(i2c, CAMREG_MMCM_CONTROL, 0);
-    usleep(1000);
-#endif
-
+    cam.SetDphySpeed(950000000);   // 950Mbps
+    
     // 受信側 DPHY リセット
     reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 1);
 
     // カメラ基板初期化
-    i2c_write(i2c, CAMREG_SENSOR_ENABLE  , 0);  // センサー電源OFF
-    i2c_write(i2c, CAMREG_DPHY_CORE_RESET, 1);  // 受信側 DPHY リセット
-    i2c_write(i2c, CAMREG_DPHY_SYS_RESET , 1);  // 受信側 DPHY リセット
-    usleep(100000);
+    std::cout << "Init Camera" << std::endl;
+    cam.SetSensorPowerEnable(false);
+    cam.SetDphyReset(true);
+    usleep(10000);
 
     // 受信側 DPHY 解除 (必ずこちらを先に解除)
     reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 0);
-
-    // センサー電源ON
-    i2c_write(i2c, CAMREG_SENSOR_ENABLE, 1);     // センサー電源ON
-    usleep(500000);
+    usleep(10000);
 
     // 高速モード設定
-    i2c_write(i2c, CAMREG_CSI_MODE, 0);
-    
+    cam.SetCameraMode(rtcl::RtclP3S7ControlI2c::MODE_HIGH_SPEED);
+
+    // センサー電源ON
+    std::cout << "Sensor Power On" << std::endl;
+    cam.SetSensorPowerEnable(true);
+    usleep(10000);
+
     // センサー基板 DPHY-TX リセット解除
-    i2c_write(i2c, CAMREG_DPHY_CORE_RESET, 0);
-    i2c_write(i2c, CAMREG_DPHY_SYS_RESET , 0);
-    usleep(1000);
-    auto dphy_tx_init_done = i2c_read(i2c, CAMREG_DPHY_INIT_DONE);
-    if ( dphy_tx_init_done == 0 ) {
+    cam.SetDphyReset(false);
+    if ( !cam.GetDphyInitDone() ) {
         std::cout << "!!ERROR!! CAM DPHY TX init_done = 0" << std::endl;
         return 1;
     }
@@ -244,9 +168,13 @@ int main(int argc, char *argv[])
     // ここで RX 側も init_done が来る
     auto dphy_rx_init_done = reg_sys.ReadReg(SYSREG_DPHY_INIT_DONE);
     if ( dphy_rx_init_done == 0 ) {
-        std::cout << "!!ERROR!! ZYBO DPHY RX init_done = 0" << std::endl;
+        std::cout << "!!ERROR!! KV260 DPHY RX init_done = 0" << std::endl;
         return 1;
     }
+
+    // センサーID確認
+    std::cout << "Sensor ID : " << cam.GetSensorId() << std::endl;
+
 
     // 受信画像サイズ設定
     reg_sys.WriteReg(SYSREG_IMAGE_WIDTH,  width);
@@ -254,51 +182,13 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_BLACK_WIDTH,  1280);
     reg_sys.WriteReg(SYSREG_BLACK_HEIGHT, 1);
 
-    // センサー起動    
-    spi_change(i2c, 16, 0x0003);    // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-    spi_change(i2c, 32, 0x0007);    // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-    spi_change(i2c,  8, 0x0000);    // pll_soft_reset, pll_lock_soft_reset
-    spi_change(i2c,  9, 0x0000);    // cgen_soft_reset
-    spi_change(i2c, 34, 0x1);       // config0 Logic General Enable Configuration
-    spi_change(i2c, 40, 0x7);       // image_core_config0 
-    spi_change(i2c, 48, 0x1);       // AFE Power down for AFE’s
-    spi_change(i2c, 64, 0x1);       // Bias Bias Power Down Configuration
-    spi_change(i2c, 72, 0x2227);    // Charge Pump
-    spi_change(i2c, 112, 0x7);      // Serializers/LVDS/IO 
-    spi_change(i2c, 10, 0x0000);    // soft_reset_analog
+    // センサー起動
+    cam.SetSensorEnable(true);
 
-    int roi_x = ((672 -  width) / 2) & ~0x0f; // 16の倍数
-    int roi_y = ((512 - height) / 2) & ~0x01; // 2の倍数
-    int x_start = roi_x / 8;
-    int x_end   = x_start + width/8 - 1 ;
-    int y_start = roi_y;
-    int y_end   = y_start + height - 1;
-    spi_change(i2c, 256, (x_end << 8) | x_start);    // y_end
-    spi_change(i2c, 257, y_start);    // y_start
-    spi_change(i2c, 258, y_end);      // y_end
+    // 画像サイズ設定
+    cam.SetRoi0(width, height);
 
-    spi_change(i2c, 192, 0x0);  // 動作停止(トレーニングパターン出力状態へ)
-    usleep(1000);
-    i2c_write(i2c,  CAMREG_RECV_RESET,  1);
-    i2c_write(i2c,  CAMREG_ALIGN_RESET, 1);
-    usleep(1000);
-    i2c_write(i2c,  CAMREG_RECV_RESET,  0);
-    usleep(1000);
-    i2c_write(i2c,  CAMREG_ALIGN_RESET, 0);
-    usleep(1000);
-    auto cam_calib_status = i2c_read(i2c,  CAMREG_ALIGN_STATUS);
-    if ( cam_calib_status != 0x01 ) {
-        std::cout << "!!ERROR!! CAM calibration is not done.  status =" << cam_calib_status << std::endl;
-        return 1;
-    }
-
-    // 動作開始
-    spi_change(i2c, 192, 0x1);
-
-    // Video DMA ドライバ生成
-    jelly::VideoDmaControl vdmaw0(reg_wdma0, 2, 2, true);
-    jelly::VideoDmaControl vdmaw1(reg_wdma1, 2, 2, true);
-
+    // video input start
     // video input start
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN,  1);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT,   20000000);
@@ -309,39 +199,73 @@ int main(int argc, char *argv[])
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
     usleep(100000);
 
-    int black_level = 0;
-    int soft_gain   = 10;
-    int timgen_period = 99999;
-    int trig0_start   = 10;
-    int trig0_end     = 90000;
+    // 動作開始
+    std::cout << "Start Camera" << std::endl;
 
-    cv::imshow("img", cv::Mat::zeros(480, 640, CV_8UC3));
-    cv::createTrackbar("bl",   "img", nullptr, 1024);
-    cv::setTrackbarPos("bl",   "img", black_level);
-    cv::createTrackbar("sg",   "img", nullptr, 100);
-    cv::setTrackbarPos("sg",   "img", soft_gain);
+    cam.SetMultTimer0(72);
+    cam.SetFrLength0(0);
+    cam.SetExposure0(10000);
 
-    cv::createTrackbar("peri", "img", nullptr, 100000);
-    cv::setTrackbarPos("peri", "img", timgen_period);
-    cv::createTrackbar("ts",   "img", nullptr,  99999);
-    cv::setTrackbarPos("ts",   "img", trig0_start);
-    cv::createTrackbar("te",   "img", nullptr,  99999);
-    cv::setTrackbarPos("te",   "img", trig0_end);
+
+    double mergin = 0.0000001; // 100ns
+    double min_line_time = width * (10.0 / (2.0 * 950000000.0));                    // 2lane 10bit 950Mbps
+    double sensor_line_time  = (width + 68) *  (10.0 / (4.0 * 720000000.0)) + mergin;   // 4lane 10bit 720Mbps
+    std::uint16_t xsm_delay = 0;
+    if ( sensor_line_time < min_line_time ) {
+        xsm_delay = std::ceil(((min_line_time - sensor_line_time) * 720000000.0) / 4.0);
+    }
+    cam.SetXsmDelay(xsm_delay);
+    cam.SetNzrotXsmDelayEnable(true);
+
+
+//  cam.SetTriggeredMode(true);
+//  cam.SetSlaveMode(true);
+    cam.SetSequencerEnable(true);
+    usleep(100000);
+
+    cam.SetGainDb(10.0);
+
+    // Video DMA ドライバ生成
+    jelly::VideoDmaControl vdmaw0(reg_wdma0, 2, 2, true);
+    jelly::VideoDmaControl vdmaw1(reg_wdma1, 2, 2, true);
+
+
+    int gain     = 0;   // 0.0 db
+    int fps      = 100; // 100fps
+    int exposure = 90;  // 90%
+
+    cv::namedWindow("img", cv::WINDOW_NORMAL);
+    cv::resizeWindow("img", width + 64, height + 128);
+    cv::imshow("img", cv::Mat::zeros(height, width, CV_8UC3));
+    cv::createTrackbar("gain", "img", nullptr, 100);
+    cv::setTrackbarPos("gain", "img", gain);
+
+    cv::createTrackbar("fps", "img", nullptr, 100);
+    cv::setTrackbarMin("fps", "img", 5);
+    cv::setTrackbarPos("fps", "img", fps);
+
+    cv::createTrackbar("exposure", "img", nullptr, 90);
+    cv::setTrackbarMin("exposure", "img", 10);
+    cv::setTrackbarPos("exposure", "img", fps);
+
 
     int     swap = 0;
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
         if ( g_signal ) { break; }
 
-        black_level  = cv::getTrackbarPos("bl", "img");
-        soft_gain    = cv::getTrackbarPos("sg", "img");
-        timgen_period = cv::getTrackbarPos("peri", "img");
-        trig0_start  = cv::getTrackbarPos("ts", "img");
-        trig0_end    = cv::getTrackbarPos("te", "img");
+        gain     = cv::getTrackbarPos("gain", "img");
+        fps      = cv::getTrackbarPos("fps", "img");
+        exposure = cv::getTrackbarPos("exposure", "img");
 
-        reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      timgen_period);
-        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, trig0_start);
-        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig0_end);
+        cam.SetGainDb((float)gain / 10.0f);
+
+        int period = 100000000 / fps;   // 100MHz / fps
+        int trig_end = period * exposure / 100;
+        reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      period-1);
+        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, 1);
+        reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig_end);
+        reg_timgen.WriteReg(TIMGENREG_CTL_CONTROL, 3);
 
         // 画像読み込み
         vdmaw0.Oneshot(dmabuf0_phys_adr, width, height, 1);
@@ -357,23 +281,6 @@ int main(int argc, char *argv[])
                 xx = ((xx & 0xfff8) | ((xx & 0x6) >> 1) | ((xx & 0x1) << 2));
                 if ( !swap ) { xx = x; }
                 img_u16.at<std::uint16_t>(y, x) = img.at<std::int16_t>(y, xx);
-            }
-        }
-        
-        // img_u16 の黒レベル補正
-        for ( int y = 0; y < height; y++ ) {
-            for ( int x = 0; x < width; x++ ) {
-                int val = img_u16.at<std::uint16_t>(y, x);
-                if ( val < black_level ) {
-                    val = 0;
-                } else {
-                    val -= black_level;
-                }
-                val = val * soft_gain / 10;
-                if ( val > 1023 ) {
-                    val = 1023;
-                }
-                img_u16.at<std::uint16_t>(y, x) = val;
             }
         }
 
@@ -397,7 +304,7 @@ int main(int argc, char *argv[])
         
         case 'l':
             printf("load setting\n");
-            load_setting(i2c);
+            load_setting(cam);
             break;
             
         case 'd':   // image dump
@@ -435,62 +342,35 @@ int main(int argc, char *argv[])
 
     std::cout << "close device" << std::endl;
 
-    // カメラOFF
-    reg_sys.WriteReg(2, 0);
+    // video input stop
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x0);
+    usleep(100000);
+
+    // シーケンサ停止
+    cam.SetSequencerEnable(false);
+    usleep(10000);
+
+    // センサー停止
+    cam.SetSensorEnable(false);
+    usleep(10000);
+
+    // センサー電源OFF
+    cam.SetSensorPowerEnable(false);
+    usleep(10000);
+
+    // カメラモジュールOFF
+    reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
     usleep(100000);
 
     return 0;
 }
 
-// カメラ側 の Spartan-7 へ I2C 経由で書き込み
-void i2c_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
-    addr <<= 1;
-    addr |= 1;
-    unsigned char buf[4] = {0x00, 0x00, 0x00, 0x00};
-    buf[0] = ((addr >> 8) & 0xff);
-    buf[1] = ((addr >> 0) & 0xff);
-    buf[2] = ((data >> 8) & 0xff);
-    buf[3] = ((data >> 0) & 0xff);
-    i2c.Write(buf, 4);
-}
-
-// カメラ側 の Spartan-7 から I2C 経由で読み込み
-std::uint16_t i2c_read(jelly::I2cAccessor &i2c, std::uint16_t addr) {
-    addr <<= 1;
-    unsigned char buf[4] = {0x00, 0x00, 0x00, 0x00};
-    buf[0] = ((addr >> 8) & 0xff);
-    buf[1] = ((addr >> 0) & 0xff);
-    i2c.Write(buf, 4);
-    i2c.Read(buf, 2);
-    return (std::uint16_t)buf[0] | (std::uint16_t)(buf[1] << 8);
-}
-
-// PYTHONイメージセンサーの SPI へ I2C 経由で書き込み
-void spi_write(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
-    addr |= (1 << 14);
-    i2c_write(i2c, addr, data);
-}
-
-
-// PYTHONイメージセンサーの SPI から I2C 経由で読み込み
-std::uint16_t spi_read(jelly::I2cAccessor &i2c, std::uint16_t addr) {
-    addr |= (1 << 14);
-    return i2c_read(i2c, addr);
-}
-
-// PYTHONイメージセンサーの SPI を 読み出し確認しながら書き換え
-void spi_change(jelly::I2cAccessor &i2c, std::uint16_t addr, std::uint16_t data) {
-    auto pre = spi_read(i2c, addr);
-    spi_write(i2c, addr, data);
-    auto post = spi_read(i2c, addr);
-    printf("write %3d <= 0x%04x (%04x -> %04x)\n", addr, data, pre, post);
-}
 
 // レジスタダンプ
-void reg_dump(jelly::I2cAccessor &i2c, const char *fname) {
+void sensor_reg_dump(rtcl::RtclP3S7ControlI2c &cam, const char *fname) {
     FILE* fp = fopen(fname, "w");
     for ( int i = 0; i < 512; i++ ) {
-        auto v = spi_read(i2c, i);
+        auto v = cam.spi_read(i);
         fprintf(fp, "%3d : 0x%04x (%d)\n", i, v, v);
     }
     fclose(fp);
@@ -498,7 +378,7 @@ void reg_dump(jelly::I2cAccessor &i2c, const char *fname) {
 
 
 // 設定ファイルを読み込む
-void load_setting(jelly::I2cAccessor &i2c) {
+void load_setting(rtcl::RtclP3S7ControlI2c &cam) {
     FILE* fp = fopen("reg_list.txt", "r");
     if ( fp == nullptr ) {
         std::cout << "reg_list.txt open error" << std::endl;
@@ -513,7 +393,7 @@ void load_setting(jelly::I2cAccessor &i2c) {
         unsigned int addr, data;
         int n = sscanf(p, "%i %i", &addr, &data);
         if (n == 2) {
-            spi_change(i2c, (std::uint16_t)addr, (std::uint16_t)data);
+            cam.spi_write((std::uint16_t)addr, (std::uint16_t)data);
         } else {
             std::cout << "parse error: " << line;
         }
