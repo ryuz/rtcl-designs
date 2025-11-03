@@ -1,4 +1,3 @@
-
 BASE_NAME = zybo_z7_rtcl_p3s7_hs
 
 TARGET     = $(BASE_NAME).out
@@ -7,8 +6,9 @@ BIT_FILE   = ../$(BASE_NAME).bit
 BIN_FILE   = $(BIT_FILE).bin
 DTBO_FILE  = ../$(BASE_NAME).dtbo
 
+
 ZYBO_Z7_SERVER_ADDRESS ?= 127.0.0.1:8051
-ZYBO_Z7_SSH_ADDRESS    ?= kria
+ZYBO_Z7_SSH_ADDRESS    ?= zybo-z7
 
 # 実行環境のネイティブアーキテクチャを取得
 HOST_ARCH := $(shell uname -m)

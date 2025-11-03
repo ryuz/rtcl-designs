@@ -12,21 +12,40 @@ BIN_FILE  = $(BIT_FILE).bin
 FIRMWARE_PATH = /lib/firmware
 DEVTREE_PATH  = /configfs/device-tree
 
+ZYBO_Z7_SERVER_ADDRESS ?= 127.0.0.1:8051
+
 
 .PHONY: all
 all: $(DTBO_FILE) $(BIN_FILE)
 
+.PHONY: build
+build: $(DTBO_FILE) $(BIN_FILE)
+
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) $(OBJS) $(DTBO_FILE) $(BIN_FILE)
-
-.PHONY: build
-build:
-	make -C cpp build
+	rm -f $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: run
-run: load
+run: run_cpp
+
+.PHONY: run_cpp
+run_cpp: load
 	make -C cpp run
+
+.PHONY: build_cpp
+build_cpp:
+	make -C cpp build
+
+.PHONY: run_rust
+run_rust: load
+	cd rust; cargo run
+
+.PHONY: build_rust
+build_rust:
+	cd rust; cargo build
+
+
+
 
 
 $(DTBO_FILE): $(DTS_FILE)
@@ -46,6 +65,27 @@ $(BIT_FILE):
 	    exit 1; \
 	fi
 
+.PHONY: load
+load: load_dt
+
+.PHONY: unload
+unload: unload_dt
+
+
+### Jelly loader
+
+.PHONY: load_jelly
+load_jelly: unload_jelly
+	jelly-fpga-loader unload --ip $(ZYBO_Z7_SERVER_ADDRESS)
+	jelly-fpga-loader overlay $(DTBO_FILE) --bin $(BIN_FILE) --ip $(ZYBO_Z7_SERVER_ADDRESS)
+
+.PHONY: unload_jelly
+unload_jelly:
+	-jelly-fpga-loader unload --ip $(ZYBO_Z7_SERVER_ADDRESS)
+
+
+### Device Tree Overlay Management
+
 $(DEVTREE_PATH):
 	sudo mkdir -p /configfs
 	sudo mount -t configfs configfs /configfs
@@ -61,8 +101,8 @@ umount: unload
 		sudo umount /configfs ; \
 	fi
 
-.PHONY: load
-load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
+.PHONY: load_dt
+load_dt: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
 	sudo mkdir -p $(FIRMWARE_PATH)
 	sudo cp $(BIN_FILE) $(FIRMWARE_PATH)
 	sudo mkdir -p $(DEVTREE_PATH)/overlays/full
@@ -74,8 +114,8 @@ load: $(DEVTREE_PATH) $(DTBO_FILE) $(BIN_FILE) unload
 	sudo chmod 666 /dev/uio0*
 	sudo chmod 666 /dev/udmabuf*
 
-.PHONY: unload
-unload:
+.PHONY: unload_dt
+unload_dt:
 	@if [ -f /config/device-tree/overlays/full/status ] ; then \
 		echo unload ; \
 		sudo sh -c "echo 0 > $(DEVTREE_PATH)/overlays/full/status" ; \
