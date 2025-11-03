@@ -46,6 +46,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 rustup default stable
 rustup update
+rustup target add arm-unknown-linux-gnueabihf
 ```
 
 コンパイル時間短縮の為バイナリインストールツールの cargo-binstall も導入しておくと便利です。
@@ -81,6 +82,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 rustup default stable
 rustup update
+rustup target add arm-unknown-linux-gnueabihf
 ```
 
 cargo-binstall も同様に導入できます。

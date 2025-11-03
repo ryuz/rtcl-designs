@@ -101,7 +101,7 @@ module rtcl_p3s7_mipi
     logic   [7:0]   reset_counter = '0;
     always_ff @(posedge clk72) begin
         if  ( ~reset_n ) begin
-            reset <= 1'b0;
+            reset <= 1'b1;
             reset_counter <= '0;
         end
         else begin
@@ -293,7 +293,7 @@ module rtcl_p3s7_mipi
     system_control
             #(
                 .MODULE_ID              (16'h527a               ),
-                .MODULE_VERSION         (16'h0101               ),
+                .MODULE_VERSION         (16'h0102               ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),

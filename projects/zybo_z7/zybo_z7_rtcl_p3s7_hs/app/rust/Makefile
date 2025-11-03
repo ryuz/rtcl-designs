@@ -24,7 +24,7 @@ load: unload
 
 .PHONY: unload
 unload:
-	jelly-fpga-loader unload --ip $(ZYBO_Z7_SERVER_ADDRESS)
+	-jelly-fpga-loader unload --ip $(ZYBO_Z7_SERVER_ADDRESS)
 
 .PHONY: cross_build
 cross_build:
