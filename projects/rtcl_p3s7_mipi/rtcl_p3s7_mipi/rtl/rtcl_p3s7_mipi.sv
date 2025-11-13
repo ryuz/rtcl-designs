@@ -283,7 +283,7 @@ module rtcl_p3s7_mipi
     system_control
             #(
                 .MODULE_ID              (16'h527a               ),
-                .MODULE_VERSION         (16'h0103               ),
+                .MODULE_VERSION         (16'h0104               ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
