@@ -11,10 +11,12 @@
 
 module rtcl_p3s7_mipi
         #(
-            parameter   int     I2C_DIVIDER = 8         ,
-            parameter           DEVICE      = "7SERIES" ,
-            parameter           SIMULATION  = "false"   ,
-            parameter           DEBUG       = "true"     
+            parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0105   ,
+            parameter   int             I2C_DIVIDER    = 8          ,
+            parameter                   DEVICE         = "7SERIES"  ,
+            parameter                   SIMULATION     = "false"    ,
+            parameter                   DEBUG          = "true"      
         )
         (
             input   var logic           in_clk50                ,
@@ -89,21 +91,22 @@ module rtcl_p3s7_mipi
         end
     end
 
-
-    // 外部リセット
-    logic in_reset_n;
-    assign in_reset_n = mipi_gpio0;
+    // external reset
+    logic ext_reset_n;
+    assign ext_reset_n = mipi_gpio0;
 
     (* ASYNC_REG = "true" *)
-    logic   [2:0]   ff_reset_n = 3'b000;
-    logic           reset;
+    logic   [2:0]   ff_ext_reset_n = 3'b000;
+    logic           ext_reset;
     always_ff @(posedge clk72) begin
-        ff_reset_n[0] <= in_reset_n;
-        ff_reset_n[1] <= ff_reset_n[0];
-        ff_reset_n[2] <= ff_reset_n[1];
-        reset <= (ff_reset_n[2:1] == 2'b00);    // ノイズ除去
+        ff_ext_reset_n[0] <= ext_reset_n;
+        ff_ext_reset_n[1] <= ff_ext_reset_n[0];
+        ff_ext_reset_n[2] <= ff_ext_reset_n[1];
+        ext_reset <= boot_reset || (ff_ext_reset_n[2:1] == 2'b00);    // ノイズ除去
     end
 
+    // system reset
+    logic           reset               ;
 
 
     // ----------------------------------------
@@ -148,7 +151,7 @@ module rtcl_p3s7_mipi
             )
         u_i2c_slave_core
             (
-                .reset          (reset              ),
+                .reset          (ext_reset          ),
                 .clk            (clk72              ),
 
                 .i2c_scl        (mipi_scl_i         ),
@@ -229,14 +232,14 @@ module rtcl_p3s7_mipi
 
     jelly3_axi4l_if
             #(
-                .ADDR_BITS      (15     ),
-                .DATA_BITS      (16     )
+                .ADDR_BITS      (15         ),
+                .DATA_BITS      (16         )
             )
         axi4l_dec [DEC_NUM]
             (
-                .aresetn        (~reset ),
-                .aclk           (clk72  ),
-                .aclken         (1'b1   )
+                .aresetn        (~reset     ),
+                .aclk           (clk72      ),
+                .aclken         (1'b1       )
             );
     
     // address map
@@ -282,8 +285,8 @@ module rtcl_p3s7_mipi
 
     system_control
             #(
-                .MODULE_ID              (16'h527a               ),
-                .MODULE_VERSION         (16'h0104               ),
+                .MODULE_ID              (MODULE_ID              ),
+                .MODULE_VERSION         (MODULE_VERSION         ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
@@ -300,6 +303,9 @@ module rtcl_p3s7_mipi
             )
         u_system_control
             (
+                .in_ext_reset           (ext_reset              ),
+                .out_sw_reset           (reset                  ),
+
                 .s_axi4l                (axi4l_dec[DEC_CTL]     ),
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
