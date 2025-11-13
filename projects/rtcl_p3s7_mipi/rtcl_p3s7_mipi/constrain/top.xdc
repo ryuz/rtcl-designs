@@ -64,6 +64,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports mipi_gpio1]
 set_property PULLTYPE PULLDOWN [get_ports mipi_gpio1]
 set_property IOSTANDARD LVCMOS33 [get_ports mipi_scl]
 set_property IOSTANDARD LVCMOS33 [get_ports mipi_sda]
+set_property PULLTYPE PULLUP [get_ports mipi_scl]
+set_property PULLTYPE PULLUP [get_ports mipi_sda]
 
 set_property PACKAGE_PIN M5 [get_ports mipi_clk_lp_p]
 set_property PACKAGE_PIN M4 [get_ports mipi_clk_lp_n]

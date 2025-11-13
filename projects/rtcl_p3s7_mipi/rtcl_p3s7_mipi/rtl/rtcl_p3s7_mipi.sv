@@ -77,41 +77,31 @@ module rtcl_p3s7_mipi
                 .O  (clk72      )
             );
 
+    // Boot reset
+    logic   [7:0]   boot_counter = '0;
+    logic           boot_reset   = 1'b1;
+    always_ff @(posedge clk72) begin
+        if ( boot_counter == '1 ) begin
+            boot_reset <= 1'b0;
+        end
+        else begin
+            boot_counter <= boot_counter + 1;
+        end
+    end
 
+
+    // 外部リセット
     logic in_reset_n;
     assign in_reset_n = mipi_gpio0;
 
-    // リセット同期化
     (* ASYNC_REG = "true" *)
-    logic    [1:0]   ff_reset_n = 2'b00;
-    logic            reset_n;
-    always_ff @(posedge clk72 or negedge in_reset_n) begin
-        if ( ~in_reset_n ) begin
-            ff_reset_n <= 2'b00;
-        end
-        else begin
-            ff_reset_n[0] <= 1'b1;
-            ff_reset_n[1] <= ff_reset_n[0];
-        end
-    end
-    assign reset_n = ff_reset_n[1];
-
-    // リセット期間
-    logic           reset = 1'b1;
-    logic   [7:0]   reset_counter = '0;
+    logic   [2:0]   ff_reset_n = 3'b000;
+    logic           reset;
     always_ff @(posedge clk72) begin
-        if  ( ~reset_n ) begin
-            reset <= 1'b1;
-            reset_counter <= '0;
-        end
-        else begin
-            if ( reset_counter == '1 ) begin
-                reset <= 1'b0;
-            end
-            else begin
-                reset_counter <= reset_counter + 1;
-            end
-        end
+        ff_reset_n[0] <= in_reset_n;
+        ff_reset_n[1] <= ff_reset_n[0];
+        ff_reset_n[2] <= ff_reset_n[1];
+        reset <= (ff_reset_n[2:1] == 2'b00);    // ノイズ除去
     end
 
 
@@ -293,7 +283,7 @@ module rtcl_p3s7_mipi
     system_control
             #(
                 .MODULE_ID              (16'h527a               ),
-                .MODULE_VERSION         (16'h0102               ),
+                .MODULE_VERSION         (16'h0103               ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
@@ -352,7 +342,7 @@ module rtcl_p3s7_mipi
     // pwr enable
     logic sensor_pwr_enable = 1'b0;
     always_ff @(posedge clk72 ) begin
-        if ( ~reset_n ) begin
+        if ( reset ) begin
             sensor_pwr_enable <= 1'b0;
         end
         else begin
@@ -365,7 +355,7 @@ module rtcl_p3s7_mipi
     sensor_pwr_mng
         u_sensor_pwr_mng
             (
-                .reset              (reset                 ),
+                .reset              (boot_reset            ),
                 .clk72              (clk72                 ),
                 
                 .enable             (sensor_pwr_enable     ),
@@ -1026,8 +1016,8 @@ module rtcl_p3s7_mipi
 //    assign led[1] = clk72_counter[24];
 
     always_ff @(posedge clk72) begin
-        led[0] <= reset_n | (clk72_counter[25] & clk72_counter[16]) ;
-        led[1] <= reset_n && sensor_pwr_enable                      ;
+        led[0] <= !reset && (clk72_counter[25] & clk72_counter[16]) ;
+        led[1] <= !reset && sensor_pwr_enable                       ;
     end
 
 //    assign led[0] = sensor_pwr_enable;

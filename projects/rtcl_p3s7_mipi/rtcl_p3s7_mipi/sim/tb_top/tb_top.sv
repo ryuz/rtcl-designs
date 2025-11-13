@@ -476,7 +476,7 @@ module tb_top();
     initial begin
         logic [15:0] rdata;
 
-        #10000; // wait for reset
+        #12000; // wait for reset
 
         /*
         cmd_write(REGADR_MMCM_CONTROL, 1);
