@@ -14,8 +14,8 @@ export TOP_MODULE   = $(PROJECT_NAME)
 export BOARD_PART   = digilentinc.com:zybo-z7-20*
 export DEVICE_PART  = xc7z020clg400-1
 
-BOARD_ADDRESS  ?= debian-zybo-z7
-BOARD_WORK_DIR ?= git-work/rtcl-designs
+ZYBO_Z7_SSH_ADDRESS ?= debian-zybo-z7
+ZYBO_Z7_WORK_DIR    ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
 
@@ -71,7 +71,7 @@ build: $(BIT_FILE) check_log
 
 .PHONY : bit_scp
 bit_scp: $(BIT_FILE)
-	scp $(BIT_FILE) $(BOARD_ADDRESS):$(BOARD_WORK_DIR)/projects/$(BOARD_NAME)/$(PROJECT_NAME)/app
+	scp $(BIT_FILE) $(ZYBO_Z7_SSH_ADDRESS):$(ZYBO_Z7_WORK_DIR)/projects/$(BOARD_NAME)/$(PROJECT_NAME)/app
 
 .PHONY : bit_cp
 bit_cp: $(BIT_FILE)

@@ -50,6 +50,8 @@ use jelly_lib::linux_i2c::LinuxI2c;
 const REG_P3S7_MODULE_ID: u16 = 0x0000;
 /// Module version register
 const REG_P3S7_MODULE_VERSION: u16 = 0x0001;
+/// Software reset
+const REG_P3S7_SW_RESET: u16 = 0x0003;
 /// Sensor enable control register
 const REG_P3S7_SENSOR_ENABLE: u16 = 0x0004;
 /// Sensor ready status register
@@ -259,6 +261,14 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
+    pub fn softeare_reset(
+        &mut self,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        // ソフトウェアリセット発行
+        self.write_i2c(REG_P3S7_SW_RESET, 1)?;
+        self.usleep(50000);
+        Ok(())
+    }
 
     /// Enable or disable sensor power
     /// 

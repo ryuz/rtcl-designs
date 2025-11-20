@@ -95,13 +95,16 @@ where
             return Ok(());
         }
 
-        // カメラモジュールリセット
+        // カメラモジュールリセット解除
         unsafe {
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセットON
             std::thread::sleep(std::time::Duration::from_millis(10));
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
+
+        // カメラモジュールソフトウェアリセット
+//      self.cam_i2c.softeare_reset()?;
 
         // MMCM 設定
         self.cam_i2c.set_dphy_speed(1250000000.0)?; // 1250Mbps

@@ -34,6 +34,9 @@ module system_control
         (
             jelly3_axi4l_if.s           s_axi4l             ,
 
+            input   var logic           in_ext_reset        ,
+            output  var logic           out_sw_reset        ,
+
             output  var logic           out_sensor_enable   ,
             input   var logic           in_sensor_ready     ,
             output  var logic           out_receiver_reset  ,
@@ -68,6 +71,7 @@ module system_control
     // register address offset
     localparam  regadr_t REGADR_MODULE_ID           = regadr_t'('h00);
     localparam  regadr_t REGADR_MODULE_VERSION      = regadr_t'('h01);
+    localparam  regadr_t REGADR_SW_RESET            = regadr_t'('h03);
     localparam  regadr_t REGADR_SENSOR_ENABLE       = regadr_t'('h04);
     localparam  regadr_t REGADR_SENSOR_READY        = regadr_t'('h08);
     localparam  regadr_t REGADR_RECEIVER_RESET      = regadr_t'('h10);
@@ -124,6 +128,31 @@ module system_control
     assign regadr_write = regadr_t'(s_axi4l.awaddr / s_axi4l.ADDR_BITS'(s_axi4l.STRB_BITS));
     assign regadr_read  = regadr_t'(s_axi4l.araddr / s_axi4l.ADDR_BITS'(s_axi4l.STRB_BITS));
 
+    // Software reset
+    logic           sw_reset        ;
+    logic   [5:0]   sw_reset_count  ;
+    always_ff @(posedge s_axi4l.aclk) begin
+        if ( in_ext_reset ) begin
+            sw_reset_count <= '0;
+            sw_reset       <= 1'b1;
+        end
+        else begin
+            if ( sw_reset_count != '1 ) begin
+                sw_reset_count <= sw_reset_count + 1;
+            end
+            else begin
+                sw_reset       <= 1'b0;
+                if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
+                    if ( regadr_write == REGADR_SW_RESET && s_axi4l.wdata[0] && s_axi4l.wstrb[0] ) begin
+                        sw_reset_count <= '0;
+                        sw_reset       <=  1'b1;
+                    end
+                end
+            end
+        end
+    end
+
+    // write
     always_ff @(posedge s_axi4l.aclk) begin
         if ( ~s_axi4l.aresetn ) begin
             reg_sensor_enable    <= INIT_SENSOR_ENABLE   ;
@@ -141,7 +170,6 @@ module system_control
             reg_pll_control      <= INIT_PLL_CONTROL     ;
         end
         else if ( s_axi4l.aclken ) begin
-            // write
             if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
                 case ( regadr_write )
                 REGADR_SENSOR_ENABLE      :   reg_sensor_enable    <=  1'(write_mask(axi4l_data_t'(reg_sensor_enable   ), s_axi4l.wdata, s_axi4l.wstrb));
@@ -184,28 +212,31 @@ module system_control
 
     // read
     always_ff @(posedge s_axi4l.aclk ) begin
-        if ( s_axi4l.arvalid && s_axi4l.arready ) begin
-            case ( regadr_read )
-            REGADR_MODULE_ID        :   s_axi4l.rdata <= axi4l_data_t'(MODULE_ID           );
-            REGADR_MODULE_VERSION   :   s_axi4l.rdata <= axi4l_data_t'(MODULE_VERSION      );
-            REGADR_SENSOR_ENABLE    :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_enable   );
-            REGADR_SENSOR_READY     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_ready    );
-            REGADR_RECEIVER_RESET   :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_reset  );
-            REGADR_RECEIVER_CLK_DLY :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_clk_dly);
-            REGADR_ALIGN_RESET      :   s_axi4l.rdata <= axi4l_data_t'(reg_align_reset     );
-            REGADR_ALIGN_PATTERN    :   s_axi4l.rdata <= axi4l_data_t'(reg_align_pattern   );
-            REGADR_ALIGN_STATUS     :   s_axi4l.rdata <= axi4l_data_t'(reg_align_status    );
-            REGADR_CLIP_ENABLE      :   s_axi4l.rdata <= axi4l_data_t'(reg_clip_enable     );
-            REGADR_CSI_MODE         :   s_axi4l.rdata <= axi4l_data_t'(reg_csi_mode        );
-            REGADR_CSI_DT           :   s_axi4l.rdata <= axi4l_data_t'(reg_csi_dt          );
-            REGADR_CSI_WC           :   s_axi4l.rdata <= axi4l_data_t'(reg_csi_wc          );
-            REGADR_DPHY_CORE_RESET  :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_core_reset );
-            REGADR_DPHY_SYS_RESET   :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_sys_reset  );
-            REGADR_DPHY_INIT_DONE   :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_init_done  );
-            REGADR_MMCM_CONTROL     :   s_axi4l.rdata <= axi4l_data_t'(reg_mmcm_control    );
-            REGADR_PLL_CONTROL      :   s_axi4l.rdata <= axi4l_data_t'(reg_pll_control     );
-            default                 :   s_axi4l.rdata <= '0;
-            endcase
+        if ( s_axi4l.aclken ) begin
+            if ( s_axi4l.arvalid && s_axi4l.arready ) begin
+                case ( regadr_read )
+                REGADR_MODULE_ID        :   s_axi4l.rdata <= axi4l_data_t'(MODULE_ID           );
+                REGADR_MODULE_VERSION   :   s_axi4l.rdata <= axi4l_data_t'(MODULE_VERSION      );
+                REGADR_SW_RESET         :   s_axi4l.rdata <= axi4l_data_t'(sw_reset            );
+                REGADR_SENSOR_ENABLE    :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_enable   );
+                REGADR_SENSOR_READY     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_ready    );
+                REGADR_RECEIVER_RESET   :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_reset  );
+                REGADR_RECEIVER_CLK_DLY :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_clk_dly);
+                REGADR_ALIGN_RESET      :   s_axi4l.rdata <= axi4l_data_t'(reg_align_reset     );
+                REGADR_ALIGN_PATTERN    :   s_axi4l.rdata <= axi4l_data_t'(reg_align_pattern   );
+                REGADR_ALIGN_STATUS     :   s_axi4l.rdata <= axi4l_data_t'(reg_align_status    );
+                REGADR_CLIP_ENABLE      :   s_axi4l.rdata <= axi4l_data_t'(reg_clip_enable     );
+                REGADR_CSI_MODE         :   s_axi4l.rdata <= axi4l_data_t'(reg_csi_mode        );
+                REGADR_CSI_DT           :   s_axi4l.rdata <= axi4l_data_t'(reg_csi_dt          );
+                REGADR_CSI_WC           :   s_axi4l.rdata <= axi4l_data_t'(reg_csi_wc          );
+                REGADR_DPHY_CORE_RESET  :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_core_reset );
+                REGADR_DPHY_SYS_RESET   :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_sys_reset  );
+                REGADR_DPHY_INIT_DONE   :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_init_done  );
+                REGADR_MMCM_CONTROL     :   s_axi4l.rdata <= axi4l_data_t'(reg_mmcm_control    );
+                REGADR_PLL_CONTROL      :   s_axi4l.rdata <= axi4l_data_t'(reg_pll_control     );
+                default                 :   s_axi4l.rdata <= '0;
+                endcase
+            end
         end
     end
 
@@ -214,7 +245,7 @@ module system_control
         if ( ~s_axi4l.aresetn ) begin
             s_axi4l.rvalid <= 1'b0;
         end
-        else begin
+        else if ( s_axi4l.aclken ) begin
             if ( s_axi4l.rready ) begin
                 s_axi4l.rvalid <= 1'b0;
             end
@@ -229,6 +260,7 @@ module system_control
 
 
     // output
+    assign  out_sw_reset         = sw_reset              ;
     assign  out_sensor_enable    = reg_sensor_enable     ;
     assign  out_receiver_reset   = reg_receiver_reset    ;
     assign  out_receiver_clk_dly = reg_receiver_clk_dly  ;

@@ -11,10 +11,12 @@
 
 module rtcl_p3s7_mipi
         #(
-            parameter   int     I2C_DIVIDER = 8         ,
-            parameter           DEVICE      = "7SERIES" ,
-            parameter           SIMULATION  = "false"   ,
-            parameter           DEBUG       = "true"     
+            parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0105   ,
+            parameter   int             I2C_DIVIDER    = 8          ,
+            parameter                   DEVICE         = "7SERIES"  ,
+            parameter                   SIMULATION     = "false"    ,
+            parameter                   DEBUG          = "true"      
         )
         (
             input   var logic           in_clk50                ,
@@ -77,43 +79,37 @@ module rtcl_p3s7_mipi
                 .O  (clk72      )
             );
 
-
-    logic in_reset_n;
-    assign in_reset_n = mipi_gpio0;
-
-    // リセット同期化
-    (* ASYNC_REG = "true" *)
-    logic    [1:0]   ff_reset_n = 2'b00;
-    logic            reset_n;
-    always_ff @(posedge clk72 or negedge in_reset_n) begin
-        if ( ~in_reset_n ) begin
-            ff_reset_n <= 2'b00;
-        end
-        else begin
-            ff_reset_n[0] <= 1'b1;
-            ff_reset_n[1] <= ff_reset_n[0];
-        end
-    end
-    assign reset_n = ff_reset_n[1];
-
-    // リセット期間
-    logic           reset = 1'b1;
-    logic   [7:0]   reset_counter = '0;
+    // Boot reset
+    logic   [7:0]   boot_counter = '0;
+    logic           boot_reset   = 1'b1;
     always_ff @(posedge clk72) begin
-        if  ( ~reset_n ) begin
-            reset <= 1'b1;
-            reset_counter <= '0;
+        if ( boot_counter == '1 ) begin
+            boot_reset <= 1'b0;
         end
         else begin
-            if ( reset_counter == '1 ) begin
-                reset <= 1'b0;
-            end
-            else begin
-                reset_counter <= reset_counter + 1;
-            end
+            boot_counter <= boot_counter + 1;
         end
     end
 
+    // external reset
+    logic ext_reset_n;
+    assign ext_reset_n = mipi_gpio0;
+
+    (* ASYNC_REG = "true" *)
+    logic   [5:0]   ff_ext_reset_n = 6'd0;
+    logic           ext_reset;
+    always_ff @(posedge clk72) begin
+        ff_ext_reset_n[0] <= ext_reset_n;
+        ff_ext_reset_n[1] <= ff_ext_reset_n[0];
+        ff_ext_reset_n[2] <= ff_ext_reset_n[1];
+        ff_ext_reset_n[3] <= ff_ext_reset_n[2];
+        ff_ext_reset_n[4] <= ff_ext_reset_n[3];
+        ff_ext_reset_n[5] <= ff_ext_reset_n[4];
+        ext_reset <= boot_reset || (ff_ext_reset_n[5:3] == '0);    // ノイズ除去
+    end
+
+    // system reset
+    logic           reset               ;
 
 
     // ----------------------------------------
@@ -158,7 +154,7 @@ module rtcl_p3s7_mipi
             )
         u_i2c_slave_core
             (
-                .reset          (reset              ),
+                .reset          (ext_reset          ),
                 .clk            (clk72              ),
 
                 .i2c_scl        (mipi_scl_i         ),
@@ -239,14 +235,14 @@ module rtcl_p3s7_mipi
 
     jelly3_axi4l_if
             #(
-                .ADDR_BITS      (15     ),
-                .DATA_BITS      (16     )
+                .ADDR_BITS      (15         ),
+                .DATA_BITS      (16         )
             )
         axi4l_dec [DEC_NUM]
             (
-                .aresetn        (~reset ),
-                .aclk           (clk72  ),
-                .aclken         (1'b1   )
+                .aresetn        (~reset     ),
+                .aclk           (clk72      ),
+                .aclken         (1'b1       )
             );
     
     // address map
@@ -292,8 +288,8 @@ module rtcl_p3s7_mipi
 
     system_control
             #(
-                .MODULE_ID              (16'h527a               ),
-                .MODULE_VERSION         (16'h0102               ),
+                .MODULE_ID              (MODULE_ID              ),
+                .MODULE_VERSION         (MODULE_VERSION         ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
@@ -310,6 +306,9 @@ module rtcl_p3s7_mipi
             )
         u_system_control
             (
+                .in_ext_reset           (ext_reset              ),
+                .out_sw_reset           (reset                  ),
+
                 .s_axi4l                (axi4l_dec[DEC_CTL]     ),
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
@@ -352,7 +351,7 @@ module rtcl_p3s7_mipi
     // pwr enable
     logic sensor_pwr_enable = 1'b0;
     always_ff @(posedge clk72 ) begin
-        if ( ~reset_n ) begin
+        if ( reset ) begin
             sensor_pwr_enable <= 1'b0;
         end
         else begin
@@ -365,7 +364,7 @@ module rtcl_p3s7_mipi
     sensor_pwr_mng
         u_sensor_pwr_mng
             (
-                .reset              (reset                 ),
+                .reset              (boot_reset            ),
                 .clk72              (clk72                 ),
                 
                 .enable             (sensor_pwr_enable     ),
@@ -1022,18 +1021,12 @@ module rtcl_p3s7_mipi
         end
     end
 
-//    assign led[0] = clk50_counter[24];
-//    assign led[1] = clk72_counter[24];
-
     always_ff @(posedge clk72) begin
-        led[0] <= reset_n | (clk72_counter[25] & clk72_counter[16]) ;
-        led[1] <= reset_n && sensor_pwr_enable                      ;
+        led[0] <= !reset || (clk72_counter[25] & clk72_counter[16]) ;
+        led[1] <= sensor_ready                                      ;
     end
-
-//    assign led[0] = sensor_pwr_enable;
-//  assign led[1] = mipi_enable;
 //  assign led[1] = sensor_pgood;
-//    assign led[1] = python_clk_counter[24] & sensor_pwr_enable;
+
 
     // --------------------------------
     //  PMOD
@@ -1048,104 +1041,6 @@ module rtcl_p3s7_mipi
     assign pmod[6] = dphy_dl0_txreadyhs     ;
     assign pmod[7] = '0;
 
-
-    // --------------------------------
-    //  Debug
-    // --------------------------------
-
-    (* MARK_DEBUG = "true" *)   logic   [3:0][9:0]  dbg_python_align_data   ;
-    (* MARK_DEBUG = "true" *)   logic        [9:0]  dbg_python_align_sync   ;
-    (* MARK_DEBUG = "true" *)   logic               dbg_python_align_valid  ;
-   jelly2_fifo_async_fwtf
-            #(
-                .DATA_WIDTH     (4*10+10                    ),
-                .PTR_WIDTH      (3                          ),
-                .DOUT_REGS      (0                          ),
-                .RAM_TYPE       ("distributed"              ),
-                .S_REGS         (0                          ),
-                .M_REGS         (1                          )
-            )
-        u_fifo_async_fwtf_dbg
-            (
-                .s_reset        (python_reset               ),
-                .s_clk          (python_clk                 ),
-                .s_cke          (1'b1                       ),
-                .s_data         ({
-                                    python_align_data,
-                                    python_align_sync
-                                }),
-                .s_valid        (python_align_valid         ),
-                .s_ready        (                           ),
-                .s_free_count   (                           ),
-                
-                .m_reset        (dphy_reset                 ),
-                .m_clk          (dphy_clk                   ),
-                .m_cke          (1'b1                       ),
-                .m_data         ({
-                                    dbg_python_align_data,
-                                    dbg_python_align_sync
-                                }),
-                .m_valid        (dbg_python_align_valid     ),
-                .m_ready        (1'b1                       ),
-                .m_data_count   (                           )
-            );
-
-
-    (* mark_debug = DEBUG *)    logic           dbg_ctl_dphy_core_reset     ;
-    (* mark_debug = DEBUG *)    logic           dbg_ctl_dphy_sys_reset      ;
-    (* mark_debug = DEBUG *)    logic           dbg_dphy_init_done          ;
-    always_ff @(posedge dphy_clk) begin
-        dbg_ctl_dphy_core_reset <= ctl_dphy_core_reset;
-        dbg_ctl_dphy_sys_reset  <= ctl_dphy_sys_reset ;
-        dbg_dphy_init_done      <= dphy_init_done     ;
-    end
-
-
-    /*
-    (* MARK_DEBUG = "true" *)   logic   [7:0]   dbg_clk72_counter;
-    always_ff @(posedge clk72) begin
-        dbg_clk72_counter <= dbg_clk72_counter + 1;
-    end
-
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_reset_n;
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_scl;
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_sda;
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_sda_t;
-    always_ff @(posedge clk72) begin
-        dbg_mipi_reset_n <= mipi_reset_n ;
-        dbg_mipi_scl     <= mipi_scl_i ;
-        dbg_mipi_sda     <= mipi_sda_i ;
-        dbg_mipi_sda_t   <= mipi_sda_t ;
-    end
-
-    (* MARK_DEBUG = "true" *)   logic   dbg_sensor_ready    ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_ss_n        ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_sck         ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_mosi        ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_miso        ;
-    always_ff @(posedge clk72) begin
-        dbg_sensor_ready <= sensor_ready ;
-        dbg_spi_ss_n <= python_ss_n ;
-        dbg_spi_sck  <= python_sck  ;
-        dbg_spi_mosi <= python_mosi ;
-        dbg_spi_miso <= python_miso ;
-    end
-    */
-
-    /*
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data0;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data1;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data2;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data3;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_sync;
-    always_ff @(posedge python_clk) begin
-        dbg_python_data0 <= python_data[0];
-        dbg_python_data1 <= python_data[1];
-        dbg_python_data2 <= python_data[2];
-        dbg_python_data3 <= python_data[3];
-        dbg_python_sync  <= python_data[4];
-    end
-    */
 
 endmodule
 

@@ -457,6 +457,7 @@ module tb_top();
 
     localparam  REGADR_CORE_ID         = 15'h0000;
     localparam  REGADR_CORE_VERSION    = 15'h0001;
+    localparam  REGADR_SW_RESET        = 15'h0003;
     localparam  REGADR_SENSOR_ENABLE   = 15'h0004;
     localparam  REGADR_SENSOR_READY    = 15'h0008;
     localparam  REGADR_RECV_RESET      = 15'h0010;
@@ -476,7 +477,7 @@ module tb_top();
     initial begin
         logic [15:0] rdata;
 
-        #10000; // wait for reset
+        #12000; // wait for reset
 
         /*
         cmd_write(REGADR_MMCM_CONTROL, 1);
@@ -514,8 +515,17 @@ module tb_top();
         cmd_read(REGADR_CORE_VERSION, rdata);
 
         #500000;
-        cmd_write(REGADR_SENSOR_ENABLE  , 16'h0000);
+//      cmd_write(REGADR_SENSOR_ENABLE  , 16'h0000);
+        cmd_write(REGADR_SW_RESET  , 16'h0001);
+        #1000;
+        cmd_write(REGADR_DPHY_CORE_RESET, 16'h0000);
+        cmd_write(REGADR_DPHY_SYS_RESET , 16'h0000);
+        cmd_write(REGADR_RECV_RESET     , 16'h0000);
+        cmd_write(REGADR_ALIGN_RESET    , 16'h0000);
+        cmd_write(REGADR_SENSOR_ENABLE  , 16'h0001);
         #100000;
+
+        
         $finish();
     end;
 

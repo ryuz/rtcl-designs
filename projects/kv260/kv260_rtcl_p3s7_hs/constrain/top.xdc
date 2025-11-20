@@ -57,8 +57,10 @@ set_property IOSTANDARD LVCMOS33 [get_ports cam_sda]
 
 set_property PACKAGE_PIN F11 [get_ports cam_enable]
 set_property IOSTANDARD LVCMOS33 [get_ports cam_enable]
+set_property DRIVE 12 [get_ports cam_enable]
 set_property PACKAGE_PIN J12 [get_ports cam_gpio]
 set_property IOSTANDARD LVCMOS33 [get_ports cam_gpio]
+set_property DRIVE 4 [get_ports cam_gpio]
 
 
 # 2  CSI0_D0_N  HPA11_N      SOM240_1 B11  som240_1_b11  D5
