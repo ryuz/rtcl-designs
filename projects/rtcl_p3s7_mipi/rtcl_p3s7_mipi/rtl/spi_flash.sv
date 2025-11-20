@@ -83,7 +83,7 @@ module spi_flash
                 len      <= s_len   ;
                 last     <= s_last  ;
                 data     <= s_wdata ;
-                spi_cs_n <= 1'b1    ;
+//              spi_cs_n <= 1'b1    ;
                 spi_sck  <= 1'b0    ;
                 spi_mosi <= 1'b0    ;
             end
@@ -111,7 +111,7 @@ module spi_flash
                         if ( spi_sck ) begin
                             count            <= count + 1'b1;   ;
                             {spi_mosi, data} <= {data, spi_miso};
-                            if ( count == (count_t'(len) + 1) * 8 ) begin
+                            if ( count == (count_t'(len) + 1) * 8 - 1 ) begin
                                 state    <= STOP0;
                                 spi_mosi <= 1'b0;
                                 m_rvalid <= 1'b1;

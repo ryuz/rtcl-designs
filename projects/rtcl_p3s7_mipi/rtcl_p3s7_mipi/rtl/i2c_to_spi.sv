@@ -127,8 +127,8 @@ module i2c_to_spi
     assign python_spi_addr  = cmd_addr[8:0]         ;
     assign python_spi_wdata = cmd_wdata             ;
 
-    assign spi_flash_len    = cmd_addr[0]           ;
-    assign spi_flash_last   = cmd_addr[1]           ;
+    assign spi_flash_len    = cmd_addr[1]           ;
+    assign spi_flash_last   = cmd_addr[0]           ;
     assign spi_flash_wdata  = cmd_wdata             ;
 
     assign m_axi4l.awaddr   = {cmd_addr[13:0], 1'b0};
