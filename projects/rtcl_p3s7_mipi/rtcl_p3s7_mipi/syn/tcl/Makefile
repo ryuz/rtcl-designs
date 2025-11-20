@@ -13,6 +13,8 @@ export TOP_MODULE   = $(PROJECT_NAME)
 #export BOARD_PART   =
 export DEVICE_PART  = xc7s6ftgb196-2
 
+export SYNTH_STRATEGY = Flow_AreaOptimized_high
+export IMPL_STRATEGY  = Power_ExploreArea
 
 BOARD_WORK_DIR ?= git-work/rtcl-designs
 

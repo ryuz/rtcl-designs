@@ -96,13 +96,16 @@ module rtcl_p3s7_mipi
     assign ext_reset_n = mipi_gpio0;
 
     (* ASYNC_REG = "true" *)
-    logic   [2:0]   ff_ext_reset_n = 3'b000;
+    logic   [5:0]   ff_ext_reset_n = 6'd0;
     logic           ext_reset;
     always_ff @(posedge clk72) begin
         ff_ext_reset_n[0] <= ext_reset_n;
         ff_ext_reset_n[1] <= ff_ext_reset_n[0];
         ff_ext_reset_n[2] <= ff_ext_reset_n[1];
-        ext_reset <= boot_reset || (ff_ext_reset_n[2:1] == 2'b00);    // ノイズ除去
+        ff_ext_reset_n[3] <= ff_ext_reset_n[2];
+        ff_ext_reset_n[4] <= ff_ext_reset_n[3];
+        ff_ext_reset_n[5] <= ff_ext_reset_n[4];
+        ext_reset <= boot_reset || (ff_ext_reset_n[5:3] == '0);    // ノイズ除去
     end
 
     // system reset
@@ -1018,18 +1021,12 @@ module rtcl_p3s7_mipi
         end
     end
 
-//    assign led[0] = clk50_counter[24];
-//    assign led[1] = clk72_counter[24];
-
     always_ff @(posedge clk72) begin
-        led[0] <= !reset && (clk72_counter[25] & clk72_counter[16]) ;
-        led[1] <= !reset && sensor_pwr_enable                       ;
+        led[0] <= !reset || (clk72_counter[25] & clk72_counter[16]) ;
+        led[1] <= sensor_ready                                      ;
     end
-
-//    assign led[0] = sensor_pwr_enable;
-//  assign led[1] = mipi_enable;
 //  assign led[1] = sensor_pgood;
-//    assign led[1] = python_clk_counter[24] & sensor_pwr_enable;
+
 
     // --------------------------------
     //  PMOD
@@ -1044,104 +1041,6 @@ module rtcl_p3s7_mipi
     assign pmod[6] = dphy_dl0_txreadyhs     ;
     assign pmod[7] = '0;
 
-
-    // --------------------------------
-    //  Debug
-    // --------------------------------
-
-    (* MARK_DEBUG = "true" *)   logic   [3:0][9:0]  dbg_python_align_data   ;
-    (* MARK_DEBUG = "true" *)   logic        [9:0]  dbg_python_align_sync   ;
-    (* MARK_DEBUG = "true" *)   logic               dbg_python_align_valid  ;
-   jelly2_fifo_async_fwtf
-            #(
-                .DATA_WIDTH     (4*10+10                    ),
-                .PTR_WIDTH      (3                          ),
-                .DOUT_REGS      (0                          ),
-                .RAM_TYPE       ("distributed"              ),
-                .S_REGS         (0                          ),
-                .M_REGS         (1                          )
-            )
-        u_fifo_async_fwtf_dbg
-            (
-                .s_reset        (python_reset               ),
-                .s_clk          (python_clk                 ),
-                .s_cke          (1'b1                       ),
-                .s_data         ({
-                                    python_align_data,
-                                    python_align_sync
-                                }),
-                .s_valid        (python_align_valid         ),
-                .s_ready        (                           ),
-                .s_free_count   (                           ),
-                
-                .m_reset        (dphy_reset                 ),
-                .m_clk          (dphy_clk                   ),
-                .m_cke          (1'b1                       ),
-                .m_data         ({
-                                    dbg_python_align_data,
-                                    dbg_python_align_sync
-                                }),
-                .m_valid        (dbg_python_align_valid     ),
-                .m_ready        (1'b1                       ),
-                .m_data_count   (                           )
-            );
-
-
-    (* mark_debug = DEBUG *)    logic           dbg_ctl_dphy_core_reset     ;
-    (* mark_debug = DEBUG *)    logic           dbg_ctl_dphy_sys_reset      ;
-    (* mark_debug = DEBUG *)    logic           dbg_dphy_init_done          ;
-    always_ff @(posedge dphy_clk) begin
-        dbg_ctl_dphy_core_reset <= ctl_dphy_core_reset;
-        dbg_ctl_dphy_sys_reset  <= ctl_dphy_sys_reset ;
-        dbg_dphy_init_done      <= dphy_init_done     ;
-    end
-
-
-    /*
-    (* MARK_DEBUG = "true" *)   logic   [7:0]   dbg_clk72_counter;
-    always_ff @(posedge clk72) begin
-        dbg_clk72_counter <= dbg_clk72_counter + 1;
-    end
-
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_reset_n;
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_scl;
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_sda;
-    (* MARK_DEBUG = "true" *)   logic   dbg_mipi_sda_t;
-    always_ff @(posedge clk72) begin
-        dbg_mipi_reset_n <= mipi_reset_n ;
-        dbg_mipi_scl     <= mipi_scl_i ;
-        dbg_mipi_sda     <= mipi_sda_i ;
-        dbg_mipi_sda_t   <= mipi_sda_t ;
-    end
-
-    (* MARK_DEBUG = "true" *)   logic   dbg_sensor_ready    ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_ss_n        ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_sck         ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_mosi        ;
-    (* MARK_DEBUG = "true" *)   logic   dbg_spi_miso        ;
-    always_ff @(posedge clk72) begin
-        dbg_sensor_ready <= sensor_ready ;
-        dbg_spi_ss_n <= python_ss_n ;
-        dbg_spi_sck  <= python_sck  ;
-        dbg_spi_mosi <= python_mosi ;
-        dbg_spi_miso <= python_miso ;
-    end
-    */
-
-    /*
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data0;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data1;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data2;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_data3;
-    (* MARK_DEBUG = "true" *)   logic   [3:0]   dbg_python_sync;
-    always_ff @(posedge python_clk) begin
-        dbg_python_data0 <= python_data[0];
-        dbg_python_data1 <= python_data[1];
-        dbg_python_data2 <= python_data[2];
-        dbg_python_data3 <= python_data[3];
-        dbg_python_sync  <= python_data[4];
-    end
-    */
 
 endmodule
 

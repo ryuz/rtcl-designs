@@ -22,6 +22,9 @@ struct Args {
     #[arg(short = 'H', long, default_value_t = 480)]
     height: usize,
 
+    #[arg(long, default_value_t = 60)]
+    fps: i32,
+
     /// Enable color mode (default: monochrome)
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
@@ -38,6 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let width = args.width;
     let height = args.height;
     let color = args.color;
+    let fps = args.fps;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -85,8 +89,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_image_size(width, height)?;
-//    cam.set_slave_mode(true)?;
-//    cam.set_trigger_mode(true)?;
+    cam.set_slave_mode(true)?;
+    cam.set_trigger_mode(true)?;
     cam.open()?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
@@ -102,7 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
-    create_cv_trackbar("fps",       10, 1000,  60)?;
+    create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
 
     // 画像表示ループ

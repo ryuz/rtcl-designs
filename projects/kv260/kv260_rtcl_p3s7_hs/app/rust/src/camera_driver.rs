@@ -104,7 +104,7 @@ where
         }
 
         // カメラモジュールソフトウェアリセット
-        self.cam_i2c.softeare_reset()?;
+//      self.cam_i2c.softeare_reset()?;
 
         // MMCM 設定
         self.cam_i2c.set_dphy_speed(1250000000.0)?; // 1250Mbps
