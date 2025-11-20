@@ -29,14 +29,26 @@ set_property IOSTANDARD LVCMOS18 [get_ports in_clk50]
 set_property PACKAGE_PIN G11 [get_ports in_clk72]
 set_property IOSTANDARD LVCMOS33 [get_ports in_clk72]
 
+
 # SPI-FLASH
 # QSPI_DQ0 MOSI B11
 # QSPI_DQ1 MISO B12
 # QSPI_DQ2 WP   D10
 # QSPI_DQ3 HOLD C10
 # QSPI_CS  CS   C11
-# QSPI_CLK SCK  A8   A10
-
+# QSPI_CLK SCK  A10 (A8)
+set_property PACKAGE_PIN D10 [get_port spi_flash_wp_n]
+set_property PACKAGE_PIN C10 [get_port spi_flash_hold_n]
+set_property PACKAGE_PIN C11 [get_port spi_flash_cs_n]
+set_property PACKAGE_PIN A10 [get_port spi_flash_sck]
+set_property PACKAGE_PIN B11 [get_port spi_flash_mosi]
+set_property PACKAGE_PIN B12 [get_port spi_flash_miso]
+set_property IOSTANDARD LVCMOS33 [get_port spi_flash_wp_n]
+set_property IOSTANDARD LVCMOS33 [get_port spi_flash_hold_n]
+set_property IOSTANDARD LVCMOS33 [get_port spi_flash_cs_n]
+set_property IOSTANDARD LVCMOS33 [get_port spi_flash_sck]
+set_property IOSTANDARD LVCMOS33 [get_port spi_flash_mosi]
+set_property IOSTANDARD LVCMOS33 [get_port spi_flash_miso]
 
 # LED
 set_property PACKAGE_PIN P12 [get_ports {led[0]}]
