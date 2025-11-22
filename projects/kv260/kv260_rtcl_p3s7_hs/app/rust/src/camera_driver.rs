@@ -48,6 +48,7 @@ where
     reg_fmtr: UioAccessor<U>,
 
     opend: bool,
+    pgood_enable: bool,
     width: usize,
     height: usize,
     slave_mode: bool,
@@ -74,6 +75,7 @@ where
             reg_sys,
             reg_fmtr,
             opend: false,
+            pgood_enable: true,
             width: 640,
             height: 480,
             slave_mode: false,
@@ -101,11 +103,10 @@ where
     }
 
     pub fn write_flash_rom(&mut self, addr: u32, data: &[u8]) -> Result<(), Box<dyn Error>> {
-        assert!(addr % 256 == 0);
+//      assert!(addr % 256 == 0);
 //      assert!(data.len() % 256 == 0);
         let mut addr = addr;
         for chunk in data.chunks(256) {
-//          println!("Writing Flash ROM addr: 0x{:08x}, {:?}", addr, chunk);
             println!("{:08x} : {}", addr, chunk.len());
             self.cam_i2c.spi_rom_write_enable()?;
             self.cam_i2c.spi_rom_write(addr, chunk)?;
@@ -122,12 +123,8 @@ where
         self.cam_i2c.spi_rom_write_enable()?;
         self.cam_i2c.spi_rom_bulk_erase()?;
         while self.cam_i2c.spi_rom_read_status_register()? != 0 {
-//          println!("Waiting for bulk erase...");
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
-//      println!("status : {}", self.cam_i2c.spi_rom_read_status_register()?);
-//      self.cam_i2c.spi_rom_write_disable()?;
-//      println!("statusx : {}", self.cam_i2c.spi_rom_read_status_register()?);
         Ok(())
     }
 
@@ -135,6 +132,17 @@ where
         Ok(self.cam_i2c.spi_rom_read_status_register()?)
     }
 
+    pub fn ensor_pgood_enable(&mut self) -> bool {
+        self.pgood_enable
+    }
+
+    pub fn set_sensor_pgood_enable(&mut self, enable: bool) {
+        self.pgood_enable = enable;
+    }
+
+    pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_pgood()?)
+    }
 
     pub fn opend(&self) -> bool {
         self.opend
@@ -159,40 +167,6 @@ where
         // カメラモジュールソフトウェアリセット
 //      self.cam_i2c.softeare_reset()?;
 
-        /*
-        println!("======= Flash ROM =========");
-        let rom_id = self.cam_i2c.spi_flash_id()?;
-        println!("Flash ROM ID: {:02x} {:02x} {:02x}", rom_id[0], rom_id[1], rom_id[2]);
-
-        for addr in (0x0000..0x0100).step_by(16) {
-            print!("{:06x} :", addr);
-            let mut data : [u8; 16] = [0; 16];
-            self.cam_i2c.read_spi_flash(addr, &mut data)?;
-            for b in data.iter() {
-                print!(" {:02x}", b);
-            }
-            println!("");
-        }
-
-        println!("======= Flash ROM =========");
-        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0300)? & 0xff) as u8;
-        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
-        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
-        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
-
-        for _ in 0..16 {
-            for _ in 0..16 {
-                let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
-                print!("{:02x}", rx);
-            }
-            println!("");
-        }
-
-        let rx = (self.cam_i2c.write_read_i2c(0x5001, 0x0000)? & 0xff) as u8;
-        println!("{:02x}", rx);
-        println!("===============");
-        */
-
         // MMCM 設定
         self.cam_i2c.set_dphy_speed(1250000000.0)?; // 1250Mbps
 
@@ -202,6 +176,7 @@ where
         }
 
         // カメラ基板初期化
+        self.cam_i2c.set_sensor_pgood_enable(self.pgood_enable)?;
         self.cam_i2c.set_sensor_power_enable(false)?;
         self.cam_i2c.set_dphy_reset(true)?;
         std::thread::sleep(std::time::Duration::from_millis(10));

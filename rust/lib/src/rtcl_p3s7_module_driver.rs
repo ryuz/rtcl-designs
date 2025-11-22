@@ -56,6 +56,10 @@ const REG_P3S7_SW_RESET: u16 = 0x0003;
 const REG_P3S7_SENSOR_ENABLE: u16 = 0x0004;
 /// Sensor ready status register
 const REG_P3S7_SENSOR_READY: u16 = 0x0008;
+/// Sensor power good status register
+const REG_P3S7_SENSOR_PGOOD    : u16 = 0x000c;
+/// Sensor power good enable register
+const REG_P3S7_SENSOR_PGOOD_EN : u16 = 0x000d;
 /// Receiver reset control register
 const REG_P3S7_RECEIVER_RESET: u16 = 0x0010;
 /// Receiver clock delay control register
@@ -267,6 +271,20 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         // ソフトウェアリセット発行
         self.write_i2c(REG_P3S7_SW_RESET, 1)?;
         self.usleep(50000);
+        Ok(())
+    }
+
+    pub fn sensor_pgood(
+        &mut self
+    ) -> Result<bool, RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.read_i2c(REG_P3S7_SENSOR_PGOOD)? != 0)
+    }
+
+    pub fn set_sensor_pgood_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REG_P3S7_SENSOR_PGOOD_EN, if enable { 1 } else { 0 })?;
         Ok(())
     }
 

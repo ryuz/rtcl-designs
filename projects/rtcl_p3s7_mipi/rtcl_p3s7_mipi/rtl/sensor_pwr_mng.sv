@@ -16,6 +16,7 @@ module sensor_pwr_mng
 
             input   var logic           enable                  ,
             output  var logic           ready                   ,
+            input   var logic           pgood_en                ,
 
             output  var logic           sensor_pwr_en_vdd18     ,
             output  var logic           sensor_pwr_en_vdd33     ,
@@ -76,7 +77,7 @@ module sensor_pwr_mng
         end
         else begin
             if ( prescl_pulse ) begin
-                if ( enable && ff1_pgood ) begin
+                if ( enable && (ff1_pgood || ~pgood_en) ) begin
                     if ( pwr_counter < 3'd7 ) begin
                         pwr_counter <= pwr_counter + 1;
                     end

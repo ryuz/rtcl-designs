@@ -315,6 +315,7 @@ module rtcl_p3s7_mipi
 
     logic           ctl_sensor_enable   ;
     logic           ctl_sensor_ready    ;
+    logic           ctl_sensor_pgood_en ;
     logic           ctl_receiver_reset  ;
     logic   [4:0]   ctl_receiver_clk_dly;
     logic           ctl_align_reset     ;
@@ -338,6 +339,7 @@ module rtcl_p3s7_mipi
                 .MODULE_ID              (MODULE_ID              ),
                 .MODULE_VERSION         (MODULE_VERSION         ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
+                .INIT_SENSOR_PGOOD_EN   (1'b1                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
                 .INIT_ALIGN_RESET       (1'b1                   ),
@@ -360,6 +362,8 @@ module rtcl_p3s7_mipi
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
                 .in_sensor_ready        (ctl_sensor_ready       ),
+                .in_sensor_pgood        (sensor_pgood           ),
+                .out_sensor_pgood_en    (ctl_sensor_pgood_en    ),
                 .out_receiver_reset     (ctl_receiver_reset     ),
                 .out_receiver_clk_dly   (ctl_receiver_clk_dly   ),
                 .out_align_reset        (ctl_align_reset        ),
@@ -416,6 +420,7 @@ module rtcl_p3s7_mipi
                 
                 .enable             (sensor_pwr_enable     ),
                 .ready              (sensor_ready          ),
+                .pgood_en           (ctl_sensor_pgood_en   ),
 
                 .sensor_pwr_en_vdd18(sensor_pwr_en_vdd18   ),
                 .sensor_pwr_en_vdd33(sensor_pwr_en_vdd33   ),
