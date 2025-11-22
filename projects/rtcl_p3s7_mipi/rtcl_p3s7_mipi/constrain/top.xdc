@@ -1,6 +1,3 @@
-# QSPI x4 用に設定
-set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
-set_property BITSTREAM.CONFIG.CONFIGRATE 16 [current_design]
 
 # Clock
 create_clock -period 20.000 -name in_clk50 -waveform {0.000 10.000} [get_ports in_clk50]

@@ -65,6 +65,10 @@ where
     U: Copy + Clone,
 {
     pub fn new(i2c: I2C, reg_sys: UioAccessor<U>, reg_fmtr: UioAccessor<U>) -> Self {
+        unsafe {
+            reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
         Self {
             cam_i2c: RtclP3s7ModuleDriver::new(i2c),
             reg_sys,
@@ -85,6 +89,53 @@ where
         &mut self.cam_i2c
     }
 
+    pub fn flash_rom_id(&mut self) -> Result<Vec::<u8>, Box<dyn Error>> {
+        let rom_id = self.cam_i2c.spi_rom_id()?;
+        Ok(rom_id.to_vec())
+    }
+
+    pub fn read_flash_rom(&mut self, addr: u32, len : usize) -> Result<Vec::<u8>, Box<dyn Error>> {
+        let mut data : Vec::<u8> = vec![0; len];
+        self.cam_i2c.spi_rom_read(addr, &mut data)?;
+        Ok(data)
+    }
+
+    pub fn write_flash_rom(&mut self, addr: u32, data: &[u8]) -> Result<(), Box<dyn Error>> {
+        assert!(addr % 256 == 0);
+//      assert!(data.len() % 256 == 0);
+        let mut addr = addr;
+        for chunk in data.chunks(256) {
+//          println!("Writing Flash ROM addr: 0x{:08x}, {:?}", addr, chunk);
+            println!("{:08x} : {}", addr, chunk.len());
+            self.cam_i2c.spi_rom_write_enable()?;
+            self.cam_i2c.spi_rom_write(addr, chunk)?;
+            addr += 256;
+            while self.cam_i2c.spi_rom_read_status_register()? != 0 {
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        }
+        self.cam_i2c.spi_rom_write_disable()?;
+        Ok(())
+    }
+
+    pub fn bulk_erase_flash_rom(&mut self) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.spi_rom_write_enable()?;
+        self.cam_i2c.spi_rom_bulk_erase()?;
+        while self.cam_i2c.spi_rom_read_status_register()? != 0 {
+//          println!("Waiting for bulk erase...");
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+//      println!("status : {}", self.cam_i2c.spi_rom_read_status_register()?);
+//      self.cam_i2c.spi_rom_write_disable()?;
+//      println!("statusx : {}", self.cam_i2c.spi_rom_read_status_register()?);
+        Ok(())
+    }
+
+    pub fn read_status_register_flash_rom(&mut self) -> Result<u8, Box<dyn Error>> {
+        Ok(self.cam_i2c.spi_rom_read_status_register()?)
+    }
+
+
     pub fn opend(&self) -> bool {
         self.opend
     }
@@ -95,16 +146,52 @@ where
             return Ok(());
         }
 
-        // カメラモジュールリセット解除
+        // カメラモジュールリセット
+        /*
         unsafe {
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセットON
             std::thread::sleep(std::time::Duration::from_millis(10));
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
+        */
 
         // カメラモジュールソフトウェアリセット
 //      self.cam_i2c.softeare_reset()?;
+
+        /*
+        println!("======= Flash ROM =========");
+        let rom_id = self.cam_i2c.spi_flash_id()?;
+        println!("Flash ROM ID: {:02x} {:02x} {:02x}", rom_id[0], rom_id[1], rom_id[2]);
+
+        for addr in (0x0000..0x0100).step_by(16) {
+            print!("{:06x} :", addr);
+            let mut data : [u8; 16] = [0; 16];
+            self.cam_i2c.read_spi_flash(addr, &mut data)?;
+            for b in data.iter() {
+                print!(" {:02x}", b);
+            }
+            println!("");
+        }
+
+        println!("======= Flash ROM =========");
+        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0300)? & 0xff) as u8;
+        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
+        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
+        let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
+
+        for _ in 0..16 {
+            for _ in 0..16 {
+                let rx = (self.cam_i2c.write_read_i2c(0x5000, 0x0000)? & 0xff) as u8;
+                print!("{:02x}", rx);
+            }
+            println!("");
+        }
+
+        let rx = (self.cam_i2c.write_read_i2c(0x5001, 0x0000)? & 0xff) as u8;
+        println!("{:02x}", rx);
+        println!("===============");
+        */
 
         // MMCM 設定
         self.cam_i2c.set_dphy_speed(1250000000.0)?; // 1250Mbps
@@ -373,5 +460,9 @@ where
 {
     fn drop(&mut self) {
         let _ = self.close();
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセット
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
     }
 }

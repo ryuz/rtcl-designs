@@ -88,6 +88,54 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+
+    println!("status : {}", cam.read_status_register_flash_rom()?);
+    
+    let rom_id = cam.flash_rom_id()?;
+    println!("\nCamera Flash ROM ID: {:?}", rom_id);
+
+    // ROMを読み出してファイルに保存
+//    let rom_data = cam.read_flash_rom(0, 2*1024*1024)?;
+//    std::fs::write("camera_flash_rom.bin", &rom_data)?;
+
+
+    // ファイル読み込み
+//  let rom_data = std::fs::read("camera_flash_rom.bin")?;
+    let rom_data = std::fs::read("rtcl_p3s7_mipi_spix1.bin")?;
+
+    if true {
+        // 消去
+        cam.bulk_erase_flash_rom();
+        
+        // 書き込み
+        cam.write_flash_rom(0, &rom_data)?;
+    }
+
+    if true {
+        // 読み出し＆比較
+        let read_data = cam.read_flash_rom(0, rom_data.len())?;
+        for (i, (&d1, &d2)) in rom_data.iter().zip(read_data.iter()).enumerate() {
+            if d1 != d2 {
+                println!("ROM MISMATCH at {:06x}: wrote {:02x}, read {:02x}", i, d1, d2);
+            }
+        }
+        println!("Flash ROM verify done");
+    }
+
+    if true {
+        println!("\nCamera Flash ROM Data:");
+        let rom_data = cam.read_flash_rom(0, 1024)?;
+        for (i, byte) in rom_data.iter().enumerate() {
+            if i % 16 == 0 {
+                print!("\n{:04x}: ", i);
+            }
+            print!("{:02x} ", byte);
+        }
+        println!("\n");
+    }
+
+//    return Ok(());
+
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -116,6 +164,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if key == 0x1b {
             break;
         }
+//      break;
 
         // トラックバー値取得
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;

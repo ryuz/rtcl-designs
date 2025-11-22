@@ -1089,6 +1089,22 @@ module rtcl_p3s7_mipi
     assign pmod[7] = '0;
 
 
+
+    (* mark_debug="true" *) logic   dbg_rom_wp_n   ;
+    (* mark_debug="true" *) logic   dbg_rom_hold_n ;
+    (* mark_debug="true" *) logic   dbg_rom_cs_n   ;
+    (* mark_debug="true" *) logic   dbg_rom_sck    ;
+    (* mark_debug="true" *) logic   dbg_rom_mosi   ;
+    (* mark_debug="true" *) logic   dbg_rom_miso   ;
+    always_ff @( clk72 ) begin
+        dbg_rom_wp_n   <= spi_flash_wp_n    ;
+        dbg_rom_hold_n <= spi_flash_hold_n  ;
+        dbg_rom_cs_n   <= spi_flash_cs_n    ;
+        dbg_rom_sck    <= spi_flash_sck     ;
+        dbg_rom_mosi   <= spi_flash_mosi    ;
+        dbg_rom_miso   <= spi_flash_miso    ;
+    end
+
 endmodule
 
 `default_nettype wire
