@@ -153,6 +153,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         match ch {
             'q' => { break; },
             'p' => {
+                println!("camera module id      : {:04x}", cam.module_id()?);
+                println!("camera module version : {:04x}", cam.module_version()?);
+                println!("camera module rom_id  : {:?}", cam.flash_rom_id()?);
+                println!("camera sensor id      : {:04x}", cam.sensor_id()?);
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
@@ -183,16 +187,62 @@ fn main() -> Result<(), Box<dyn Error>> {
             'w' => {
                 // ROM書き込み
                 let rom_data = std::fs::read("rtcl_p3s7_mipi_spix1.bin")?;
-                cam.bulk_erase_flash_rom();         // 消去
-                cam.write_flash_rom(0, &rom_data)?; // 書き込み
-                // 読み出し＆比較
-                let read_data = cam.read_flash_rom(0, rom_data.len())?;
-                for (i, (&d1, &d2)) in rom_data.iter().zip(read_data.iter()).enumerate() {
-                    if d1 != d2 {
-                        println!("ROM MISMATCH at {:06x}: wrote {:02x}, read {:02x}", i, d1, d2);
+
+                println!("status : {:02x}", cam.read_status_register_flash_rom()?);
+                cam.write_enable_flash_rom()?;
+                println!("status : {:02x}", cam.read_status_register_flash_rom()?);
+                cam.write_disable_flash_rom()?;
+                println!("status : {:02x}", cam.read_status_register_flash_rom()?);
+
+//                cam.erase_region_flash_rom(0x100000, 4096)?;
+//                println!("status : {:02x}", cam.read_status_register_flash_rom()?);
+//                println!("status : {:02x}", cam.read_status_register_flash_rom()?);
+
+                cam.erase_region_flash_rom(0x100000, 4096)?;
+
+//              cam.write_flash_rom(0x100000, &rom_data[0..256])?;
+
+                if false {
+                    // ROM書き込み
+                    let rom_data = std::fs::read("rtcl_p3s7_mipi_spix1.bin")?;
+//                  cam.bulk_erase_flash_rom()?;        // 消去
+
+                    cam.erase_region_flash_rom(0x100000, 4096)?;
+            
+
+//                  cam.write_flash_rom(0x100000, &rom_data)?; // 書き込み
+                    
+                    if false {
+                        // 読み出し＆比較
+                        let read_data = cam.read_flash_rom(0x100000, rom_data.len())?;
+                        for (i, (&d1, &d2)) in rom_data.iter().zip(read_data.iter()).enumerate() {
+                            if d1 != d2 {
+                                println!("ROM MISMATCH at {:06x}: wrote {:02x}, read {:02x}", i, d1, d2);
+                            }
+                        }
+                        println!("Flash ROM verify done");
                     }
                 }
-                println!("Flash ROM verify done");
+
+                let addr = 0x000000;
+                let read_data = cam.read_flash_rom(addr, 256)?;
+                for (i, &d) in read_data.iter().enumerate() {
+                    if i % 16 == 0 {
+                        print!("\n{:06x} :", addr + i);
+                    }
+                    print!(" {:02x}", d);
+                }
+                println!();
+
+                let addr = 0x100000;
+                let read_data = cam.read_flash_rom(addr, 256)?;
+                for (i, &d) in read_data.iter().enumerate() {
+                    if i % 16 == 0 {
+                        print!("\n{:06x} :", addr + i);
+                    }
+                    print!(" {:02x}", d);
+                }
+                println!();
             },
             _ => {
             }

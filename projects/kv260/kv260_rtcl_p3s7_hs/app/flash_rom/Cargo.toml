@@ -1,0 +1,11 @@
+[package]
+name = "rtcl_p3s7_flash_rom"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+jelly-mem_access = "0.2.5"
+kv260_rtcl_p3s7_hs = { path = "../rust", features = ["std"], default-features = false }
+rtcl-lib  = { path = "../../../../../rust/lib" }
+jelly-lib = {path = "../../../../../jelly/rust/lib" }
+jelly-pac = {path = "../../../../../jelly/rust/pac" }

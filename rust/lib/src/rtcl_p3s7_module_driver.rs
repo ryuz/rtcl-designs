@@ -96,10 +96,12 @@ const REG_P3S7_MMCM_DRP: u16 = 0x1000;
 pub enum RtclP3s7ModuleDriverError<E> {
     /// I2C communication error
     I2c(E),
+    //// Unsupported D-PHY speed setting
+    UnsupportedDphySpeed,
     /// Receiver calibration failed during initialization
     ReceiverCalibrationFailed,
-    /// Generic module error
-    MyError,
+    /// SPI Flash operation timeout
+    SpiRomOperationTimeout,
 }
 
 impl<E> From<E> for RtclP3s7ModuleDriverError<E> {
@@ -112,8 +114,9 @@ impl<E: core::fmt::Display> core::fmt::Display for RtclP3s7ModuleDriverError<E> 
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             RtclP3s7ModuleDriverError::I2c(e) => write!(f, "I2C operation failed: {}", e),
+            RtclP3s7ModuleDriverError::UnsupportedDphySpeed => write!(f, "Unsupported D-PHY speed setting"),
             RtclP3s7ModuleDriverError::ReceiverCalibrationFailed => write!(f, "Receiver calibration failed"),
-            RtclP3s7ModuleDriverError::MyError => write!(f, "MyError occurred"),
+            RtclP3s7ModuleDriverError::SpiRomOperationTimeout => write!(f, "SPI ROM operation timeout"),
         }
     }
 }
@@ -338,7 +341,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
     pub fn spi_rom_read(
         &mut self,
-        addr: u32,
+        addr: usize,
         data: &mut [u8],
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let cmd : [u8; 4] = [
@@ -354,7 +357,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
     pub fn spi_rom_write(
         &mut self,
-        addr: u32,
+        addr: usize,
         data: &[u8],
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         let cmd : [u8; 4] = [
@@ -383,12 +386,58 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
+    pub fn spi_rom_sector_erase(&mut self, addr: usize) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let cmd : [u8; 4] = [
+            0x20,
+            ((addr >> 16) & 0xff) as u8,
+            ((addr >> 8) & 0xff) as u8,
+            ((addr >> 0) & 0xff) as u8,
+        ];
+        self.spi_rom_command_write(&cmd, true)?;
+        Ok(())
+    }
+
     pub fn spi_rom_read_status_register(&mut self) -> Result<u8, RtclP3s7ModuleDriverError<I2C::Error>> {
         let mut status = [0u8; 1];
         self.spi_rom_command_write(&[0x05], false)?;
         self.spi_rom_command_read(&mut status, true)?;
         Ok(status[0])
     }
+
+    pub fn spi_rom_wait_ready(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        for _ in 0..10000 {
+            if self.spi_rom_read_status_register()? & 0x01 == 0 {
+                return Ok(());
+            }
+        }
+        println!("status : {:02x}", self.spi_rom_read_status_register()?);
+        Err(RtclP3s7ModuleDriverError::SpiRomOperationTimeout)
+    }
+
+    pub fn spi_rom_program(&mut self, addr: usize, data: &[u8]) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let mut addr = addr;
+        for chunk in data.chunks(256) {
+            self.spi_rom_write_enable()?;
+            self.spi_rom_write(addr, chunk)?;
+            addr += 256;
+            self.spi_rom_wait_ready()?;
+        }
+//      self.spi_rom_write_disable()?;
+        Ok(())
+    }
+
+    pub fn spi_rom_erase_region(&mut self, addr: usize, len: usize) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        assert!( addr % 4096 == 0 );
+        for a in (addr..(addr+len)).step_by(4096) {
+             self.spi_rom_write_enable()?;
+             self.spi_rom_sector_erase(a)?;
+             self.spi_rom_wait_ready()?;
+        }
+//      self.spi_rom_write_disable()?;
+        Ok(())
+    }
+
+
 
     /// Enable or disable sensor power
     /// 
@@ -1081,7 +1130,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
                 self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
             }
         } else {
-            return Err(RtclP3s7ModuleDriverError::MyError);
+            return Err(RtclP3s7ModuleDriverError::UnsupportedDphySpeed);
         }
 
         // MMCM release reset

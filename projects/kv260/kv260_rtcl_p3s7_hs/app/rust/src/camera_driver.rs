@@ -96,13 +96,28 @@ where
         Ok(rom_id.to_vec())
     }
 
-    pub fn read_flash_rom(&mut self, addr: u32, len : usize) -> Result<Vec::<u8>, Box<dyn Error>> {
+
+    pub fn read_status_register_flash_rom(&mut self) -> Result<u8, Box<dyn Error>> {
+        Ok(self.cam_i2c.spi_rom_read_status_register()?)
+    }
+
+    pub fn write_enable_flash_rom(&mut self) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.spi_rom_write_enable()?;
+        Ok(())
+    }
+
+    pub fn write_disable_flash_rom(&mut self) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.spi_rom_write_disable()?;
+        Ok(())
+    }
+
+    pub fn read_flash_rom(&mut self, addr: usize, len : usize) -> Result<Vec::<u8>, Box<dyn Error>> {
         let mut data : Vec::<u8> = vec![0; len];
         self.cam_i2c.spi_rom_read(addr, &mut data)?;
         Ok(data)
     }
 
-    pub fn write_flash_rom(&mut self, addr: u32, data: &[u8]) -> Result<(), Box<dyn Error>> {
+    pub fn write_flash_rom(&mut self, addr: usize, data: &[u8]) -> Result<(), Box<dyn Error>> {
 //      assert!(addr % 256 == 0);
 //      assert!(data.len() % 256 == 0);
         let mut addr = addr;
@@ -111,13 +126,21 @@ where
             self.cam_i2c.spi_rom_write_enable()?;
             self.cam_i2c.spi_rom_write(addr, chunk)?;
             addr += 256;
-            while self.cam_i2c.spi_rom_read_status_register()? != 0 {
-                std::thread::sleep(std::time::Duration::from_millis(1));
-            }
+            println!("status : {:02x}", self.cam_i2c.spi_rom_read_status_register()?);
+            self.cam_i2c.spi_rom_wait_ready()?;
+//          while self.cam_i2c.spi_rom_read_status_register()? != 0 {
+//              std::thread::sleep(std::time::Duration::from_millis(1));
+//          }
         }
         self.cam_i2c.spi_rom_write_disable()?;
         Ok(())
     }
+
+    pub fn erase_region_flash_rom(&mut self, addr: usize, len: usize) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.spi_rom_erase_region(addr, len)?;
+        Ok(())
+    }
+
 
     pub fn bulk_erase_flash_rom(&mut self) -> Result<(), Box<dyn Error>> {
         self.cam_i2c.spi_rom_write_enable()?;
@@ -126,10 +149,6 @@ where
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
         Ok(())
-    }
-
-    pub fn read_status_register_flash_rom(&mut self) -> Result<u8, Box<dyn Error>> {
-        Ok(self.cam_i2c.spi_rom_read_status_register()?)
     }
 
     pub fn ensor_pgood_enable(&mut self) -> bool {
