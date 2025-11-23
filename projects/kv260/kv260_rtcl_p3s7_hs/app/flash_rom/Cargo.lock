@@ -313,14 +313,6 @@ dependencies = [
 [[package]]
 name = "jelly-pac"
 version = "0.1.1"
-dependencies = [
- "delegate",
- "jelly-mem_access",
-]
-
-[[package]]
-name = "jelly-pac"
-version = "0.1.1"
 source = "git+https://github.com/ryuz/jelly-pac-rs.git?rev=6a62e64#6a62e6442a810ada592bf4057f469b828fac3016"
 dependencies = [
  "delegate",
@@ -355,7 +347,7 @@ dependencies = [
  "jelly-fpgautil",
  "jelly-lib",
  "jelly-mem_access",
- "jelly-pac 0.1.1 (git+https://github.com/ryuz/jelly-pac-rs.git?rev=6a62e64)",
+ "jelly-pac",
  "rtcl-lib",
 ]
 
@@ -479,9 +471,9 @@ dependencies = [
 name = "rtcl_p3s7_flash_rom"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "jelly-lib",
  "jelly-mem_access",
- "jelly-pac 0.1.1",
  "kv260_rtcl_p3s7_hs",
  "rtcl-lib",
 ]

@@ -136,6 +136,11 @@ where
         Ok(())
     }
 
+    pub fn program_flash_rom(&mut self, addr: usize, data: &[u8]) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.spi_rom_program(addr, data)?;
+        Ok(())
+    }
+
     pub fn erase_region_flash_rom(&mut self, addr: usize, len: usize) -> Result<(), Box<dyn Error>> {
         self.cam_i2c.spi_rom_erase_region(addr, len)?;
         Ok(())
