@@ -48,21 +48,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let uio_acc = UioAccessor::<usize>::new_with_name("uio_pl_peri").expect("Failed to open uio");
     unsafe { uio_acc.write_reg(0x0002, 1); } // モジュールリセットOFF
 
-    //  let reg_sys = uio_acc.subclone(0x00000000, 0x400);
-//  let reg_fmtr = uio_acc.subclone(0x00100000, 0x400);
-//  let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
-
     // ステータス表示
     println!("module id      : {:04x}", cam.module_id()?);
     println!("module version : {:04x}", cam.module_version()?);
     let rom_id = cam.spi_rom_id()?;
     println!("rom id         : {:02x} {:02x} {:02x}", rom_id[0], rom_id[1], rom_id[2]);
 
-//  let chunk = cam.spi_rom_read(args.address + offset, len)?;
-
-//  cam.spi_rom_erase_region(0x100000, 4096)?;
-
-    {
+    if false {
         println!("status : {:02x}", cam.spi_rom_read_status_register()?);
 
         let addr = 0x000000;
