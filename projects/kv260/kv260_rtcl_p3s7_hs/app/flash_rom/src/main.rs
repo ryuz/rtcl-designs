@@ -136,13 +136,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let region_size = if input_data.len() > 0 { input_data.len() } else { args.size };
 
     // addrss が 0x100000 未満の場合、ゴールデンイメージの上書きになるが問題ないか確認
-    if args.address < 0x100000 || (args.address + region_size) > 0x1ff000 {
-        println!("Warning: this will overwrite the golden image. Continue? (y/N): ");
-        std::io::stdout().flush()?;
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-        if input.trim().to_lowercase() != "y" {
-            return Ok(());
+    if args.write || args.erase {
+        if args.address < 0x100000 || (args.address + region_size) > 0x1ff000 {
+            println!("Warning: this will overwrite the golden image. Continue? (y/N): ");
+            std::io::stdout().flush()?;
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input)?;
+            if input.trim().to_lowercase() != "y" {
+                return Ok(());
+            }
         }
     }
 
