@@ -127,17 +127,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    // addrss が 0x100000 未満の場合、ゴールデンイメージの上書きになるが問題ないか確認
-    if args.address < 0x100000 {
-        println!("Warning: The specified address 0x{:x} is below 0x100000.\nThis may overwrite the golden image. Proceed? (y/N): ", args.address);
-        std::io::stdout().flush()?;
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-        if input.trim().to_lowercase() != "y" {
-            return Ok(());
-        }
-    }
-
     // 入力ファイルがあれば読み込み
     let input_data = if let Some(input_file) = args.input.as_ref() {
         std::fs::read(input_file)?
@@ -145,6 +134,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         Vec::new()
     };
     let region_size = if input_data.len() > 0 { input_data.len() } else { args.size };
+
+    // addrss が 0x100000 未満の場合、ゴールデンイメージの上書きになるが問題ないか確認
+    if args.address < 0x100000 || (args.address + region_size) > 0x1ff000 {
+        println!("Warning: this will overwrite the golden image. Continue? (y/N): ");
+        std::io::stdout().flush()?;
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if input.trim().to_lowercase() != "y" {
+            return Ok(());
+        }
+    }
 
     // ROM消去
     if args.erase {
