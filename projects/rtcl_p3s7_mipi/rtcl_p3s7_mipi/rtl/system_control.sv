@@ -15,8 +15,9 @@ module system_control
             parameter   int             REGADR_BITS              = 8                        ,
             parameter   type            regadr_t                 = logic [REGADR_BITS-1:0]  ,
   
-            parameter                   MODULE_ID                = 16'h5254                 ,
-            parameter                   MODULE_VERSION           = 16'h0100                 ,
+            parameter   bit [15:0]      MODULE_ID                = 16'h5254                 ,
+            parameter   bit [15:0]      MODULE_VERSION           = 16'h0100                 ,
+            parameter   bit [15:0]      MODULE_CONFIG            = 16'h0000                 ,
             parameter   bit             INIT_SENSOR_ENABLE       = 1'b0                     ,
             parameter   bit             INIT_SENSOR_PGOOD_EN     = 1'b1                     ,
             parameter   bit             INIT_RECEIVER_RESET      = 1'b1                     ,
@@ -74,6 +75,7 @@ module system_control
     // register address offset
     localparam  regadr_t REGADR_MODULE_ID           = regadr_t'('h00);
     localparam  regadr_t REGADR_MODULE_VERSION      = regadr_t'('h01);
+    localparam  regadr_t REGADR_MODULE_CONFIG       = regadr_t'('h02);
     localparam  regadr_t REGADR_SW_RESET            = regadr_t'('h03);
     localparam  regadr_t REGADR_SENSOR_ENABLE       = regadr_t'('h04);
     localparam  regadr_t REGADR_SENSOR_READY        = regadr_t'('h08);
@@ -227,6 +229,7 @@ module system_control
                 case ( regadr_read )
                 REGADR_MODULE_ID        :   s_axi4l.rdata <= axi4l_data_t'(MODULE_ID           );
                 REGADR_MODULE_VERSION   :   s_axi4l.rdata <= axi4l_data_t'(MODULE_VERSION      );
+                REGADR_MODULE_CONFIG    :   s_axi4l.rdata <= axi4l_data_t'(MODULE_CONFIG       );
                 REGADR_SW_RESET         :   s_axi4l.rdata <= axi4l_data_t'(sw_reset            );
                 REGADR_SENSOR_ENABLE    :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_enable   );
                 REGADR_SENSOR_READY     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_ready    );

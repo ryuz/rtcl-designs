@@ -50,6 +50,8 @@ use jelly_lib::linux_i2c::LinuxI2c;
 const REG_P3S7_MODULE_ID: u16 = 0x0000;
 /// Module version register
 const REG_P3S7_MODULE_VERSION: u16 = 0x0001;
+/// Module configuration register
+const REG_P3S7_MODULE_CONFIG: u16 = 0x0002;
 /// Software reset
 const REG_P3S7_SW_RESET: u16 = 0x0003;
 /// Sensor enable control register
@@ -247,6 +249,10 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// Returns an error if I2C communication fails
     pub fn module_version(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         self.read_i2c(REG_P3S7_MODULE_VERSION)
+    }
+
+    pub fn module_config(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.read_i2c(REG_P3S7_MODULE_CONFIG)
     }
 
     /// Get the sensor ID from PYTHON300

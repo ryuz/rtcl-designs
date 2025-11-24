@@ -313,6 +313,12 @@ module rtcl_p3s7_mipi
     //  System Controller
     // ----------------------------------------
 
+`ifdef GOLDEN_IMAGE
+    localparam  bit     [15:0]    MODULE_CONFIG = 16'h0001;
+`else
+    localparam  bit     [15:0]    MODULE_CONFIG = 16'h0000;
+`endif
+
     logic           ctl_sensor_enable   ;
     logic           ctl_sensor_ready    ;
     logic           ctl_sensor_pgood_en ;
@@ -338,6 +344,7 @@ module rtcl_p3s7_mipi
             #(
                 .MODULE_ID              (MODULE_ID              ),
                 .MODULE_VERSION         (MODULE_VERSION         ),
+                .MODULE_CONFIG          (MODULE_CONFIG          ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
                 .INIT_SENSOR_PGOOD_EN   (1'b1                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),

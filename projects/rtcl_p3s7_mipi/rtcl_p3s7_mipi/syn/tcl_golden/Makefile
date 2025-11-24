@@ -15,12 +15,13 @@ export DEVICE_PART  = xc7s6ftgb196-2
 
 export SYNTH_STRATEGY = Flow_AreaOptimized_high
 export IMPL_STRATEGY  = Power_ExploreArea
+export DEFINES        = {GOLDEN_IMAGE=1}
 
 BOARD_WORK_DIR ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
-MCS_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE)_spix1.mcs
-BIN_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE)_spix1.bin
+MCS_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE)_golden.mcs
+BIN_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE)_golden.bin
 
 # directories
 TOP_DIR = ../../../../..
@@ -83,7 +84,7 @@ rebuild: clean create build
 create: $(PRJ_NAME).xpr
 
 .PHONY : build
-build: $(BIT_FILE) $(MCS_FILE) check_log
+build: $(BIT_FILE) $(MCS_FILE) $(BIN_FILE) full_mcs check_log
 
 $(BIT_FILE): $(SOURCES) $(CONSTRAINS) $(IP_CORES) $(BD_SCRIPTS)
 	rm -f $(PRJ_NAME).xpr
@@ -93,9 +94,9 @@ $(BIT_FILE): $(SOURCES) $(CONSTRAINS) $(IP_CORES) $(BD_SCRIPTS)
 $(MCS_FILE) $(BIN_FILE): $(BIT_FILE)
 	vivado -m64 -mode batch -source make_mcs.tcl
 
-.PHONY : mcs_spix1
-mcs_spix1: $(BIT_FILE)
-	vivado -m64 -mode batch -source make_mcs_spix1.tcl
+.PHONY : full_mcs
+full_mcs: $(BIT_FILE)
+	vivado -m64 -mode batch -source make_full_mcs.tcl
 
 .PHONY : check_log
 check_log:
