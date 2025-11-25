@@ -1,0 +1,13 @@
+/dts-v1/; /plugin/;
+
+/ {
+    fragment@0 {  
+        target = <&fpga_region0>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            firmware-name = "zybo_z7_rtcl_p3s7_flash_rom.bit.bin";
+        };
+    };
+};

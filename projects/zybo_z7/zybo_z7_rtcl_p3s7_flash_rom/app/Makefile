@@ -1,6 +1,6 @@
 
-DT_NAME   = zybo_z7_rtcl_p3s7_hs
-BIT_NAME  = zybo_z7_rtcl_p3s7_hs
+DT_NAME   = zybo_z7_rtcl_p3s7_flash_rom
+BIT_NAME  = zybo_z7_rtcl_p3s7_flash_rom
 
 DTS_FILE  = $(DT_NAME).dts
 DTBO_FILE = $(DT_NAME).dtbo

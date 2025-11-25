@@ -4,30 +4,7 @@ use std::io::Write;
 use clap::Parser;
 use clap::CommandFactory;
 use jelly_lib::linux_i2c::LinuxI2c;
-use jelly_mem_access::*;
 use rtcl_lib::rtcl_p3s7_module_driver::*;
-
-
-struct CameraEnable {
-    uio_acc: UioAccessor<usize>,
-}
-
-impl CameraEnable {
-    fn new() -> Result<Self, Box<dyn Error>> {
-        // カメラ有効化
-        let uio_acc = UioAccessor::<usize>::new_with_name("uio_pl_peri")?;
-        unsafe { uio_acc.write_reg(0x0002, 1); }
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        Ok(Self {uio_acc})
-    }
-}
-
-impl Drop for CameraEnable {
-    fn drop(&mut self) {
-        // カメラ無効化
-        unsafe { self.uio_acc.write_reg(0x0002, 0); }
-    }
-}
 
 
 fn parse_number(s: &str) -> Result<usize, std::num::ParseIntError> {
@@ -83,11 +60,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let args = Args::parse();
 
-    // カメラ初期化
-    let _cam_enable = CameraEnable::new();
-
     // I2C 初期化
-    let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+    let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = RtclP3s7ModuleDriver::new(i2c);
 
     // ステータス表示
