@@ -15,9 +15,11 @@ module system_control
             parameter   int             REGADR_BITS              = 8                        ,
             parameter   type            regadr_t                 = logic [REGADR_BITS-1:0]  ,
   
-            parameter                   MODULE_ID                = 16'h5254                 ,
-            parameter                   MODULE_VERSION           = 16'h0100                 ,
+            parameter   bit [15:0]      MODULE_ID                = 16'h5254                 ,
+            parameter   bit [15:0]      MODULE_VERSION           = 16'h0100                 ,
+            parameter   bit [15:0]      MODULE_CONFIG            = 16'h0000                 ,
             parameter   bit             INIT_SENSOR_ENABLE       = 1'b0                     ,
+            parameter   bit             INIT_SENSOR_PGOOD_EN     = 1'b1                     ,
             parameter   bit             INIT_RECEIVER_RESET      = 1'b1                     ,
             parameter   bit [4:0]       INIT_RECEIVER_CLK_DLY    = 5'd8                     ,
             parameter   bit             INIT_ALIGN_RESET         = 1'b1                     ,
@@ -39,6 +41,8 @@ module system_control
 
             output  var logic           out_sensor_enable   ,
             input   var logic           in_sensor_ready     ,
+            input   var logic           in_sensor_pgood     ,
+            output  var logic           out_sensor_pgood_en ,
             output  var logic           out_receiver_reset  ,
             output  var logic   [4:0]   out_receiver_clk_dly,
             output  var logic           out_align_reset     ,
@@ -71,9 +75,12 @@ module system_control
     // register address offset
     localparam  regadr_t REGADR_MODULE_ID           = regadr_t'('h00);
     localparam  regadr_t REGADR_MODULE_VERSION      = regadr_t'('h01);
+    localparam  regadr_t REGADR_MODULE_CONFIG       = regadr_t'('h02);
     localparam  regadr_t REGADR_SW_RESET            = regadr_t'('h03);
     localparam  regadr_t REGADR_SENSOR_ENABLE       = regadr_t'('h04);
     localparam  regadr_t REGADR_SENSOR_READY        = regadr_t'('h08);
+    localparam  regadr_t REGADR_SENSOR_PGOOD        = regadr_t'('h0c);
+    localparam  regadr_t REGADR_SENSOR_PGOOD_EN     = regadr_t'('h0d);
     localparam  regadr_t REGADR_RECEIVER_RESET      = regadr_t'('h10);
     localparam  regadr_t REGADR_RECEIVER_CLK_DLY    = regadr_t'('h12);
     localparam  regadr_t REGADR_ALIGN_RESET         = regadr_t'('h20);
@@ -92,6 +99,8 @@ module system_control
     // registers
     logic           reg_sensor_enable       ;
     logic           reg_sensor_ready        ;
+    logic           reg_sensor_pgood        ;
+    logic           reg_sensor_pgood_en     ;
     logic           reg_receiver_reset      ;
     logic   [4:0]   reg_receiver_clk_dly    ;
     logic           reg_align_reset         ;
@@ -108,9 +117,10 @@ module system_control
     logic   [1:0]   reg_pll_control         ;
 
     always_ff @(posedge s_axi4l.aclk) begin
-        reg_sensor_ready   <= in_sensor_ready;
-        reg_align_status   <= {in_align_error, in_align_done};
-        reg_dphy_init_done <= in_dphy_init_done;
+        reg_sensor_ready   <= in_sensor_ready                   ;
+        reg_sensor_pgood   <= in_sensor_pgood                   ;
+        reg_align_status   <= {in_align_error, in_align_done}   ;
+        reg_dphy_init_done <= in_dphy_init_done                 ;
     end
 
     function [s_axi4l.DATA_BITS-1:0] write_mask(
@@ -156,6 +166,7 @@ module system_control
     always_ff @(posedge s_axi4l.aclk) begin
         if ( ~s_axi4l.aresetn ) begin
             reg_sensor_enable    <= INIT_SENSOR_ENABLE   ;
+            reg_sensor_pgood_en  <= INIT_SENSOR_PGOOD_EN ;
             reg_receiver_reset   <= INIT_RECEIVER_RESET  ;
             reg_receiver_clk_dly <= INIT_RECEIVER_CLK_DLY;
             reg_align_reset      <= INIT_ALIGN_RESET     ;
@@ -173,6 +184,7 @@ module system_control
             if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
                 case ( regadr_write )
                 REGADR_SENSOR_ENABLE      :   reg_sensor_enable    <=  1'(write_mask(axi4l_data_t'(reg_sensor_enable   ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_SENSOR_PGOOD_EN    :   reg_sensor_pgood_en  <=  1'(write_mask(axi4l_data_t'(reg_sensor_pgood_en ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_RECEIVER_RESET     :   reg_receiver_reset   <=  1'(write_mask(axi4l_data_t'(reg_receiver_reset  ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_RECEIVER_CLK_DLY   :   reg_receiver_clk_dly <=  5'(write_mask(axi4l_data_t'(reg_receiver_clk_dly), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_ALIGN_RESET        :   reg_align_reset      <=  1'(write_mask(axi4l_data_t'(reg_align_reset     ), s_axi4l.wdata, s_axi4l.wstrb));
@@ -217,9 +229,12 @@ module system_control
                 case ( regadr_read )
                 REGADR_MODULE_ID        :   s_axi4l.rdata <= axi4l_data_t'(MODULE_ID           );
                 REGADR_MODULE_VERSION   :   s_axi4l.rdata <= axi4l_data_t'(MODULE_VERSION      );
+                REGADR_MODULE_CONFIG    :   s_axi4l.rdata <= axi4l_data_t'(MODULE_CONFIG       );
                 REGADR_SW_RESET         :   s_axi4l.rdata <= axi4l_data_t'(sw_reset            );
                 REGADR_SENSOR_ENABLE    :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_enable   );
                 REGADR_SENSOR_READY     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_ready    );
+                REGADR_SENSOR_PGOOD     :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_pgood    );
+                REGADR_SENSOR_PGOOD_EN  :   s_axi4l.rdata <= axi4l_data_t'(reg_sensor_pgood_en );
                 REGADR_RECEIVER_RESET   :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_reset  );
                 REGADR_RECEIVER_CLK_DLY :   s_axi4l.rdata <= axi4l_data_t'(reg_receiver_clk_dly);
                 REGADR_ALIGN_RESET      :   s_axi4l.rdata <= axi4l_data_t'(reg_align_reset     );
@@ -262,6 +277,7 @@ module system_control
     // output
     assign  out_sw_reset         = sw_reset              ;
     assign  out_sensor_enable    = reg_sensor_enable     ;
+    assign  out_sensor_pgood_en  = reg_sensor_pgood_en   ;
     assign  out_receiver_reset   = reg_receiver_reset    ;
     assign  out_receiver_clk_dly = reg_receiver_clk_dly  ;
     assign  out_align_reset      = reg_align_reset       ;

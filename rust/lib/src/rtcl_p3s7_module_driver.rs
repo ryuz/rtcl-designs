@@ -50,12 +50,18 @@ use jelly_lib::linux_i2c::LinuxI2c;
 const REG_P3S7_MODULE_ID: u16 = 0x0000;
 /// Module version register
 const REG_P3S7_MODULE_VERSION: u16 = 0x0001;
+/// Module configuration register
+const REG_P3S7_MODULE_CONFIG: u16 = 0x0002;
 /// Software reset
 const REG_P3S7_SW_RESET: u16 = 0x0003;
 /// Sensor enable control register
 const REG_P3S7_SENSOR_ENABLE: u16 = 0x0004;
 /// Sensor ready status register
 const REG_P3S7_SENSOR_READY: u16 = 0x0008;
+/// Sensor power good status register
+const REG_P3S7_SENSOR_PGOOD    : u16 = 0x000c;
+/// Sensor power good enable register
+const REG_P3S7_SENSOR_PGOOD_EN : u16 = 0x000d;
 /// Receiver reset control register
 const REG_P3S7_RECEIVER_RESET: u16 = 0x0010;
 /// Receiver clock delay control register
@@ -92,10 +98,12 @@ const REG_P3S7_MMCM_DRP: u16 = 0x1000;
 pub enum RtclP3s7ModuleDriverError<E> {
     /// I2C communication error
     I2c(E),
+    //// Unsupported D-PHY speed setting
+    UnsupportedDphySpeed,
     /// Receiver calibration failed during initialization
     ReceiverCalibrationFailed,
-    /// Generic module error
-    MyError,
+    /// SPI Flash operation timeout
+    SpiRomOperationTimeout,
 }
 
 impl<E> From<E> for RtclP3s7ModuleDriverError<E> {
@@ -108,8 +116,9 @@ impl<E: core::fmt::Display> core::fmt::Display for RtclP3s7ModuleDriverError<E> 
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             RtclP3s7ModuleDriverError::I2c(e) => write!(f, "I2C operation failed: {}", e),
+            RtclP3s7ModuleDriverError::UnsupportedDphySpeed => write!(f, "Unsupported D-PHY speed setting"),
             RtclP3s7ModuleDriverError::ReceiverCalibrationFailed => write!(f, "Receiver calibration failed"),
-            RtclP3s7ModuleDriverError::MyError => write!(f, "MyError occurred"),
+            RtclP3s7ModuleDriverError::SpiRomOperationTimeout => write!(f, "SPI ROM operation timeout"),
         }
     }
 }
@@ -242,6 +251,10 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.read_i2c(REG_P3S7_MODULE_VERSION)
     }
 
+    pub fn module_config(&mut self) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.read_i2c(REG_P3S7_MODULE_CONFIG)
+    }
+
     /// Get the sensor ID from PYTHON300
     /// 
     /// # Returns
@@ -269,6 +282,168 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.usleep(50000);
         Ok(())
     }
+
+    pub fn sensor_pgood(
+        &mut self
+    ) -> Result<bool, RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.read_i2c(REG_P3S7_SENSOR_PGOOD)? != 0)
+    }
+
+    pub fn set_sensor_pgood_enable(
+        &mut self,
+        enable: bool,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REG_P3S7_SENSOR_PGOOD_EN, if enable { 1 } else { 0 })?;
+        Ok(())
+    }
+
+    pub fn spi_rom_command_write(&mut self, data: &[u8], last : bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let mut index = 0;
+        while index < data.len() {
+            if index + 1 < data.len() {
+                let addr = if index + 2 >= data.len() && last { 0x5003 } else { 0x5002 };
+                self.write_read_i2c(addr, ((data[index] as u16) << 8) | (data[index + 1] as u16))?;
+                index += 2;
+            } else {
+                let addr = if index + 1 >= data.len() && last { 0x5001} else { 0x5000 };
+                self.write_read_i2c(addr, (data[index] as u16) << 8)?;
+                index += 1;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn spi_rom_command_read(&mut self, data: &mut [u8], last : bool) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let mut index = 0;
+        while index < data.len() {
+            if index + 1 < data.len() {
+                let addr = if index + 2 >= data.len() && last { 0x5003 } else { 0x5002 };
+                let d = self.write_read_i2c(addr, 0x0000)?;
+                data[index] = ((d >> 8) & 0xff) as u8;
+                index += 1;
+                data[index] = ((d >> 0) & 0xff) as u8;
+                index += 1;
+            } else {
+                let addr = if index + 1 >= data.len() && last { 0x5001} else { 0x5000 };
+                let d = self.write_read_i2c(addr, 0x0000)?;
+                data[index] = ((d >> 0) & 0xff) as u8;
+                index += 1;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn spi_rom_id(
+        &mut self,
+    ) -> Result<[u8; 3], RtclP3s7ModuleDriverError<I2C::Error>> {
+        let cmd : [u8; 1] = [
+            0x9f,
+        ];
+        let mut data : [u8; 3] = [0; 3];
+        self.spi_rom_command_write(&cmd, false)?;
+        self.spi_rom_command_read(&mut data, true)?;
+        Ok(data)
+    }
+
+    pub fn spi_rom_read(
+        &mut self,
+        addr: usize,
+        data: &mut [u8],
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let cmd : [u8; 4] = [
+            0x03,
+            ((addr >> 16) & 0xff) as u8,
+            ((addr >> 8) & 0xff) as u8,
+            ((addr >> 0) & 0xff) as u8,
+        ];
+        self.spi_rom_command_write(&cmd, false)?;
+        self.spi_rom_command_read(data, true)?;
+        Ok(())
+    }
+
+    pub fn spi_rom_write(
+        &mut self,
+        addr: usize,
+        data: &[u8],
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let cmd : [u8; 4] = [
+            0x02,
+            ((addr >> 16) & 0xff) as u8,
+            ((addr >> 8) & 0xff) as u8,
+            ((addr >> 0) & 0xff) as u8,
+        ];
+        self.spi_rom_command_write(&cmd, false)?;
+        self.spi_rom_command_write(data, true)?;
+        Ok(())
+    }
+
+    pub fn spi_rom_write_enable(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.spi_rom_command_write(&[0x06], true)?;
+        Ok(())
+    }
+
+    pub fn spi_rom_write_disable(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.spi_rom_command_write(&[0x04], true)?;
+        Ok(())
+    }
+
+    pub fn spi_rom_bulk_erase(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.spi_rom_command_write(&[0xc7], true)?;
+        Ok(())
+    }
+
+    pub fn spi_rom_sector_erase(&mut self, addr: usize) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let cmd : [u8; 4] = [
+            0x20,
+            ((addr >> 16) & 0xff) as u8,
+            ((addr >> 8) & 0xff) as u8,
+            ((addr >> 0) & 0xff) as u8,
+        ];
+        self.spi_rom_command_write(&cmd, true)?;
+        Ok(())
+    }
+
+    pub fn spi_rom_read_status_register(&mut self) -> Result<u8, RtclP3s7ModuleDriverError<I2C::Error>> {
+        let mut status = [0u8; 1];
+        self.spi_rom_command_write(&[0x05], false)?;
+        self.spi_rom_command_read(&mut status, true)?;
+        Ok(status[0])
+    }
+
+    pub fn spi_rom_wait_ready(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        for _ in 0..10000 {
+            if self.spi_rom_read_status_register()? & 0x01 == 0 {
+                return Ok(());
+            }
+        }
+        println!("status : {:02x}", self.spi_rom_read_status_register()?);
+        Err(RtclP3s7ModuleDriverError::SpiRomOperationTimeout)
+    }
+
+    pub fn spi_rom_program(&mut self, addr: usize, data: &[u8]) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        let mut addr = addr;
+        for chunk in data.chunks(256) {
+            self.spi_rom_write_enable()?;
+            self.spi_rom_write(addr, chunk)?;
+            addr += 256;
+            self.spi_rom_wait_ready()?;
+        }
+//      self.spi_rom_write_disable()?;
+        Ok(())
+    }
+
+    pub fn spi_rom_erase_region(&mut self, addr: usize, len: usize) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        assert!( addr % 4096 == 0 );
+        for a in (addr..(addr+len)).step_by(4096) {
+             self.spi_rom_write_enable()?;
+             self.spi_rom_sector_erase(a)?;
+             self.spi_rom_wait_ready()?;
+        }
+//      self.spi_rom_write_disable()?;
+        Ok(())
+    }
+
+
 
     /// Enable or disable sensor power
     /// 
@@ -861,12 +1036,32 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// Returns an error if I2C communication fails
     pub fn read_i2c(&mut self, addr: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
         let addr = addr << 1;
-        let wbuf: [u8; 4] = [((addr >> 8) & 0xff) as u8, ((addr >> 0) & 0xff) as u8, 0, 0];
+        let wbuf: [u8; 4] = [
+            ((addr >> 8) & 0xff) as u8,
+            ((addr >> 0) & 0xff) as u8,
+            0,
+            0
+        ];
         self.i2c.write(&wbuf)?;
         let mut rbuf: [u8; 2] = [0; 2];
         self.i2c.read(&mut rbuf)?;
         Ok(rbuf[0] as u16 | ((rbuf[1] as u16) << 8))
     }
+
+    pub fn write_read_i2c(&mut self, addr: u16, data: u16) -> Result<u16, RtclP3s7ModuleDriverError<I2C::Error>> {
+        let addr = addr << 1;
+        let wbuf: [u8; 4] = [
+            ((addr >> 8) & 0xff) as u8,
+            ((addr >> 0) & 0xff) as u8,
+            ((data >> 8) & 0xff) as u8,
+            ((data >> 0) & 0xff) as u8,
+        ];
+        self.i2c.write(&wbuf)?;
+        let mut rbuf: [u8; 2] = [0; 2];
+        self.i2c.read(&mut rbuf)?;
+        Ok(rbuf[0] as u16 | ((rbuf[1] as u16) << 8))
+    }
+
 
     /// Write a 16-bit register on the PYTHON300 sensor via SPI bridge
     /// 
@@ -941,7 +1136,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
                 self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
             }
         } else {
-            return Err(RtclP3s7ModuleDriverError::MyError);
+            return Err(RtclP3s7ModuleDriverError::UnsupportedDphySpeed);
         }
 
         // MMCM release reset

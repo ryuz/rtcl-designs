@@ -1,0 +1,10 @@
+[package]
+name = "rtcl_p3s7_flash_rom"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+jelly-mem_access = "0.2.5"
+rtcl-lib  = { path = "../../../../../rust/lib" }
+jelly-lib = {path = "../../../../../jelly/rust/lib" }

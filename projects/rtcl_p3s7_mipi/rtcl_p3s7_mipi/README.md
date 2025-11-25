@@ -21,6 +21,8 @@ JTAGダウンロードケーブルは、Digilent社の[JTAG-HS3](https://digilen
 
 ## プロジェクトのビルド方法
 
+### bitstream の作成
+
 Vivado が使えるように
 
 ```bash
@@ -36,17 +38,34 @@ make
 
 とすると
 
-`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl/
+`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl/`
 
 もしくは
 
 `projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/vivado2024.2/rtcl_p3s7_mipi.xpr` に GUI 用のプロジェクトがあるので、Vivado の GUI から開いてご利用ください。
 
-GUI 版では、bitファイル作成後にコンフィギュレーションROM用の mcs ファイルを作成するために、tcl から
+GUI 版ではさらに下記で mcs ファイルを作成でき、
 
 ```tcl
 write_cfgmem -format mcs -size 2 -interface spix4 -loadbit "up 0x0 rtcl_p3s7_mipi.runs/impl_1/rtcl_p3s7_mipi.bit" -file rtcl_p3s7_mipi.runs/impl_1/rtcl_p3s7_mipi.mcs -force
 ```
+
+下記でバイナリファイルが作成できます。
+
+```tcl
+write_cfgmem -format bin -size 2 -interface spix4 -loadbit "up 0x0 rtcl_p3s7_mipi.runs/impl_1/rtcl_p3s7_mipi.bit" -file rtcl_p3s7_mipi.runs/impl_1/rtcl_p3s7_mipi.bin -force
+```
+
+### コンフィギュレーション ROM への書き込み
+
+JTAGダウンロードケーブルを保有しており、単一イメージを書き換えて使うというスタンダードな方法と、
+ゴールデンイメージとアップデートイメージの２つをROMに配置しておき、MIPIケーブルのI2C経由で
+アップデートイメージを書き換えて使う方法の２つがあります。
+
+#### 単一イメージを書き込む場合
+
+GUI 版では、bitファイル作成後にコンフィギュレーションROM用の mcs ファイルを作成するために、tcl から
+
 
 と実行するか、GUI のツールから mcs を生成する必要がりますのでご注意ください。
 
@@ -55,6 +74,28 @@ mcs ファイルは、SPIフラッシュに書き込む際に必要です。
 is25lp016d-spi-x1_x2_x4
 
 を選択して書き込んでください。
+
+#### アップデートイメージをI2C経由で更新する場合
+
+先に作った rtcl_p3s7_mipi.bin を SPI-ROM の 0x100000 から書き込むことで、アップデートを更新できます。
+
+別途 rtcl_p3s7_flash_rom コマンドをビルドして、KV260 上で
+
+```bash
+rtcl_p3s7_flash_rom -v -w rtcl_p3s7_mipi.bin
+```
+
+と実行することで、アップデートイメージを書き換えて、ベリファイするようにしております。
+
+#### ゴールデンイメージの作り方
+
+こちらは JTAGダウンロードケーブルが必須ですが、
+
+`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl/` にて make することで、`rtcl_p3s7_mipi_golden_full.mcs` を作成できます。
+
+このイメージは、ゴールデンイメージ、Timer1、アップデートイメージ、Timer2 の４つの領域を統合しております。
+詳しくは XAPP1247 のドキュメントを参照ください。
+
 
 ## シミュレーション
 

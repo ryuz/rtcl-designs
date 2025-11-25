@@ -48,6 +48,7 @@ where
     reg_fmtr: UioAccessor<U>,
 
     opend: bool,
+    pgood_enable: bool,
     width: usize,
     height: usize,
     slave_mode: bool,
@@ -65,11 +66,16 @@ where
     U: Copy + Clone,
 {
     pub fn new(i2c: I2C, reg_sys: UioAccessor<U>, reg_fmtr: UioAccessor<U>) -> Self {
+        unsafe {
+            reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
         Self {
             cam_i2c: RtclP3s7ModuleDriver::new(i2c),
             reg_sys,
             reg_fmtr,
             opend: false,
+            pgood_enable: true,
             width: 640,
             height: 480,
             slave_mode: false,
@@ -85,6 +91,18 @@ where
         &mut self.cam_i2c
     }
 
+    pub fn ensor_pgood_enable(&mut self) -> bool {
+        self.pgood_enable
+    }
+
+    pub fn set_sensor_pgood_enable(&mut self, enable: bool) {
+        self.pgood_enable = enable;
+    }
+
+    pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_pgood()?)
+    }
+
     pub fn opend(&self) -> bool {
         self.opend
     }
@@ -95,13 +113,15 @@ where
             return Ok(());
         }
 
-        // カメラモジュールリセット解除
+        // カメラモジュールリセット
+        /*
         unsafe {
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセットON
             std::thread::sleep(std::time::Duration::from_millis(10));
             self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
+        */
 
         // カメラモジュールソフトウェアリセット
 //      self.cam_i2c.softeare_reset()?;
@@ -115,6 +135,7 @@ where
         }
 
         // カメラ基板初期化
+        self.cam_i2c.set_sensor_pgood_enable(self.pgood_enable)?;
         self.cam_i2c.set_sensor_power_enable(false)?;
         self.cam_i2c.set_dphy_reset(true)?;
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -373,5 +394,9 @@ where
 {
     fn drop(&mut self) {
         let _ = self.close();
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセット
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
     }
 }

@@ -16,7 +16,7 @@ module rtcl_p3s7_mipi
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
-            parameter                   DEBUG          = "true"      
+            parameter                   DEBUG          = "false"     
         )
         (
             input   var logic           in_clk50                ,
@@ -313,8 +313,15 @@ module rtcl_p3s7_mipi
     //  System Controller
     // ----------------------------------------
 
+`ifdef GOLDEN_IMAGE
+    localparam  bit     [15:0]    MODULE_CONFIG = 16'h0001;
+`else
+    localparam  bit     [15:0]    MODULE_CONFIG = 16'h0000;
+`endif
+
     logic           ctl_sensor_enable   ;
     logic           ctl_sensor_ready    ;
+    logic           ctl_sensor_pgood_en ;
     logic           ctl_receiver_reset  ;
     logic   [4:0]   ctl_receiver_clk_dly;
     logic           ctl_align_reset     ;
@@ -337,7 +344,9 @@ module rtcl_p3s7_mipi
             #(
                 .MODULE_ID              (MODULE_ID              ),
                 .MODULE_VERSION         (MODULE_VERSION         ),
+                .MODULE_CONFIG          (MODULE_CONFIG          ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
+                .INIT_SENSOR_PGOOD_EN   (1'b1                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
                 .INIT_ALIGN_RESET       (1'b1                   ),
@@ -360,6 +369,8 @@ module rtcl_p3s7_mipi
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
                 .in_sensor_ready        (ctl_sensor_ready       ),
+                .in_sensor_pgood        (sensor_pgood           ),
+                .out_sensor_pgood_en    (ctl_sensor_pgood_en    ),
                 .out_receiver_reset     (ctl_receiver_reset     ),
                 .out_receiver_clk_dly   (ctl_receiver_clk_dly   ),
                 .out_align_reset        (ctl_align_reset        ),
@@ -416,6 +427,7 @@ module rtcl_p3s7_mipi
                 
                 .enable             (sensor_pwr_enable     ),
                 .ready              (sensor_ready          ),
+                .pgood_en           (ctl_sensor_pgood_en   ),
 
                 .sensor_pwr_en_vdd18(sensor_pwr_en_vdd18   ),
                 .sensor_pwr_en_vdd33(sensor_pwr_en_vdd33   ),
@@ -483,9 +495,9 @@ module rtcl_p3s7_mipi
             );
 
     // Alignment
-    (* MARK_DEBUG = DEBUG *)    raw10_t   [CHANNELS-1:0]    python_align_data   ;
-    (* MARK_DEBUG = DEBUG *)    sync10_t                    python_align_sync   ;
-    (* MARK_DEBUG = DEBUG *)    logic                       python_align_valid  ;
+    (* mark_debug = DEBUG *)    raw10_t   [CHANNELS-1:0]    python_align_data   ;
+    (* mark_debug = DEBUG *)    sync10_t                    python_align_sync   ;
+    (* mark_debug = DEBUG *)    logic                       python_align_valid  ;
     python_alignment
             #(
                 .CHANNELS       (CHANNELS           ),
@@ -1087,7 +1099,6 @@ module rtcl_p3s7_mipi
     assign pmod[5] = dphy_dl0_txrequesths   ;
     assign pmod[6] = dphy_dl0_txreadyhs     ;
     assign pmod[7] = '0;
-
 
 endmodule
 
