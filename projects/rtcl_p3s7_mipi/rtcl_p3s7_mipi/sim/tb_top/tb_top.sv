@@ -57,6 +57,13 @@ module tb_top();
     logic   [1:0]   led                 ;
     logic   [7:0]   pmod                ;
 
+    logic           spi_flash_wp_n      ;
+    logic           spi_flash_hold_n    ;
+    logic           spi_flash_cs_n      ;
+    logic           spi_flash_sck       ;
+    logic           spi_flash_mosi      ;
+    logic           spi_flash_miso      ;
+
     logic           sensor_pwr_en_vdd18 ;
     logic           sensor_pwr_en_vdd33 ;
     logic           sensor_pwr_en_pix   ;
@@ -105,6 +112,13 @@ module tb_top();
                 .led                    ,
                 .pmod                   ,
 
+                .spi_flash_wp_n         ,
+                .spi_flash_hold_n       ,
+                .spi_flash_cs_n         ,
+                .spi_flash_sck          ,
+                .spi_flash_mosi         ,
+                .spi_flash_miso         ,
+
                 .sensor_pwr_en_vdd18    ,
                 .sensor_pwr_en_vdd33    ,
                 .sensor_pwr_en_pix      ,
@@ -138,6 +152,8 @@ module tb_top();
                 .mipi_data_hs_n         
             );
     
+    assign spi_flash_miso = spi_flash_mosi;
+
     assign mipi_gpio0 = ~reset;
 
     // monitor
@@ -494,6 +510,13 @@ module tb_top();
 
 //      cmd_write(REGADR_CSI_MODE, 1);
         cmd_write(REGADR_CSI_MODE, 0);
+
+//      cmd_write(16'h4000 , 0);
+        cmd_write(16'h5000 , 16'h1234);
+        cmd_write(16'h5001 , 16'h5678);
+
+        cmd_write(16'h5002 , 16'h1234);
+        cmd_write(16'h5003 , 16'h5678);
 
         cmd_write(REGADR_SENSOR_ENABLE  , 16'h0001);
 

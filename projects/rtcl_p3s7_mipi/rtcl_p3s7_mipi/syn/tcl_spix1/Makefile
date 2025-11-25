@@ -19,8 +19,8 @@ export IMPL_STRATEGY  = Power_ExploreArea
 BOARD_WORK_DIR ?= git-work/rtcl-designs
 
 BIT_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bit
-MCS_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).mcs
-BIN_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE).bin
+MCS_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE)_spix1.mcs
+BIN_FILE = $(PRJ_NAME).runs/impl_1/$(TOP_MODULE)_spix1.bin
 
 # directories
 TOP_DIR = ../../../../..
@@ -67,7 +67,7 @@ export BD_SCRIPTS
 
 # constrains
 CONSTRAINS  = ../../constrain/top.xdc
-CONSTRAINS += ../../constrain/spix4.xdc
+CONSTRAINS += ../../constrain/spix1.xdc
 #CONSTRAINS += ../../constrain/debug.xdc
 export CONSTRAINS
 
@@ -92,6 +92,10 @@ $(BIT_FILE): $(SOURCES) $(CONSTRAINS) $(IP_CORES) $(BD_SCRIPTS)
 
 $(MCS_FILE) $(BIN_FILE): $(BIT_FILE)
 	vivado -m64 -mode batch -source make_mcs.tcl
+
+.PHONY : mcs_spix1
+mcs_spix1: $(BIT_FILE)
+	vivado -m64 -mode batch -source make_mcs_spix1.tcl
 
 .PHONY : check_log
 check_log:

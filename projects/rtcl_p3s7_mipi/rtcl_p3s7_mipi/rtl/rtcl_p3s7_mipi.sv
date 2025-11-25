@@ -12,17 +12,25 @@
 module rtcl_p3s7_mipi
         #(
             parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
-            parameter   bit     [15:0]  MODULE_VERSION = 16'h0105   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0106   ,
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
-            parameter                   DEBUG          = "true"      
+            parameter                   DEBUG          = "false"     
         )
         (
             input   var logic           in_clk50                ,
             input   var logic           in_clk72                ,
             output  var logic   [1:0]   led                     ,
             output  var logic   [7:0]   pmod                    ,
+
+            output  var logic           spi_flash_wp_n          ,
+            output  var logic           spi_flash_hold_n        ,
+            output  var logic           spi_flash_cs_n          ,
+            output  var logic           spi_flash_sck           ,
+            output  var logic           spi_flash_mosi          ,
+            input   var logic           spi_flash_miso          ,
+
 
             output  var logic           sensor_pwr_en_vdd18     ,
             output  var logic           sensor_pwr_en_vdd33     ,
@@ -178,50 +186,89 @@ module rtcl_p3s7_mipi
     //  I2C to SPI and AXI4-Lite
     // ----------------------------------------
 
-    logic   [8:0]   spi_addr    ;
-    logic           spi_we      ;
-    logic   [15:0]  spi_wdata   ;
-    logic           spi_valid   ;
-    logic           spi_ready   ;
-    logic   [15:0]  spi_rdata   ;
-    logic           spi_rvalid  ;
-    
+    logic   [8:0]       python_spi_addr     ;
+    logic               python_spi_we       ;
+    logic   [15:0]      python_spi_wdata    ;
+    logic               python_spi_valid    ;
+    logic               python_spi_ready    ;
+    logic   [15:0]      python_spi_rdata    ;
+    logic               python_spi_rvalid   ;
+
+    logic   [0:0]       spi_flash_len       ;
+    logic               spi_flash_last      ;
+    logic   [1:0][7:0]  spi_flash_wdata     ;
+    logic               spi_flash_valid     ;
+    logic               spi_flash_ready     ;
+    logic   [1:0][7:0]  spi_flash_rdata     ;
+    logic               spi_flash_rvalid    ;
+
     jelly3_axi4l_if
             #(
-                .ADDR_BITS      (15             ),
-                .DATA_BITS      (16             )
+                .ADDR_BITS          (15                 ),
+                .DATA_BITS          (16                 )
             )
         axi4l_host
             (
-                .aresetn        (~reset         ),
-                .aclk           (clk72          ),
-                .aclken         (1'b1           )
+                .aresetn            (~reset             ),
+                .aclk               (clk72              ),
+                .aclken             (1'b1               )
             );
 
     i2c_to_spi
         u_i2c_to_spi
             (
-                .reset          (reset          ),
-                .clk            (clk72          ),
+                .reset              (reset              ),
+                .clk                (clk72              ),
 
-                .i2c_wr_start   (i2c_wr_start   ),
-                .i2c_wr_en      (i2c_wr_en      ),
-                .i2c_wr_data    (i2c_wr_data    ),
-                .i2c_rd_start   (i2c_rd_start   ),
-                .i2c_rd_req     (i2c_rd_req     ),
-                .i2c_rd_en      (i2c_rd_en      ),
-                .i2c_rd_data    (i2c_rd_data    ),
+                .i2c_wr_start       (i2c_wr_start       ),
+                .i2c_wr_en          (i2c_wr_en          ),
+                .i2c_wr_data        (i2c_wr_data        ),
+                .i2c_rd_start       (i2c_rd_start       ),
+                .i2c_rd_req         (i2c_rd_req         ),
+                .i2c_rd_en          (i2c_rd_en          ),
+                .i2c_rd_data        (i2c_rd_data        ),
 
-                .spi_addr       (spi_addr       ),
-                .spi_we         (spi_we         ),
-                .spi_wdata      (spi_wdata      ),
-                .spi_valid      (spi_valid      ),
-                .spi_ready      (spi_ready      ),
-                .spi_rdata      (spi_rdata      ),
-                .spi_rvalid     (spi_rvalid     ),
+                .python_spi_addr    (python_spi_addr    ),
+                .python_spi_we      (python_spi_we      ),
+                .python_spi_wdata   (python_spi_wdata   ),
+                .python_spi_valid   (python_spi_valid   ),
+                .python_spi_ready   (python_spi_ready   ),
+                .python_spi_rdata   (python_spi_rdata   ),
+                .python_spi_rvalid  (python_spi_rvalid  ),
 
-                .m_axi4l        (axi4l_host     )
+                .spi_flash_len      (spi_flash_len      ),
+                .spi_flash_last     (spi_flash_last     ),
+                .spi_flash_wdata    (spi_flash_wdata    ),
+                .spi_flash_valid    (spi_flash_valid    ),
+                .spi_flash_ready    (spi_flash_ready    ),
+                .spi_flash_rdata    (spi_flash_rdata    ),
+                .spi_flash_rvalid   (spi_flash_rvalid   ),
+
+                .m_axi4l            (axi4l_host         )
             );
+
+
+    spi_flash
+        u_spi_flash
+            (
+                .reset              (reset              ),
+                .clk                (clk72              ),
+
+                .s_last             (spi_flash_last     ),
+                .s_len              (spi_flash_len      ),
+                .s_wdata            (spi_flash_wdata    ),
+                .s_valid            (spi_flash_valid    ),
+                .s_ready            (spi_flash_ready    ),
+                .m_rdata            (spi_flash_rdata    ),
+                .m_rvalid           (spi_flash_rvalid   ),
+
+                .spi_wp_n           (spi_flash_wp_n     ),
+                .spi_hold_n         (spi_flash_hold_n   ),
+                .spi_cs_n           (spi_flash_cs_n     ),
+                .spi_sck            (spi_flash_sck      ),
+                .spi_mosi           (spi_flash_mosi     ),
+                .spi_miso           (spi_flash_miso     )
+        );
 
 
     // ----------------------------------------
@@ -266,8 +313,15 @@ module rtcl_p3s7_mipi
     //  System Controller
     // ----------------------------------------
 
+`ifdef GOLDEN_IMAGE
+    localparam  bit     [15:0]    MODULE_CONFIG = 16'h0001;
+`else
+    localparam  bit     [15:0]    MODULE_CONFIG = 16'h0000;
+`endif
+
     logic           ctl_sensor_enable   ;
     logic           ctl_sensor_ready    ;
+    logic           ctl_sensor_pgood_en ;
     logic           ctl_receiver_reset  ;
     logic   [4:0]   ctl_receiver_clk_dly;
     logic           ctl_align_reset     ;
@@ -290,7 +344,9 @@ module rtcl_p3s7_mipi
             #(
                 .MODULE_ID              (MODULE_ID              ),
                 .MODULE_VERSION         (MODULE_VERSION         ),
+                .MODULE_CONFIG          (MODULE_CONFIG          ),
                 .INIT_SENSOR_ENABLE     (1'b0                   ),
+                .INIT_SENSOR_PGOOD_EN   (1'b1                   ),
                 .INIT_RECEIVER_RESET    (1'b1                   ),
                 .INIT_RECEIVER_CLK_DLY  (5'd8                   ),
                 .INIT_ALIGN_RESET       (1'b1                   ),
@@ -313,6 +369,8 @@ module rtcl_p3s7_mipi
 
                 .out_sensor_enable      (ctl_sensor_enable      ),
                 .in_sensor_ready        (ctl_sensor_ready       ),
+                .in_sensor_pgood        (sensor_pgood           ),
+                .out_sensor_pgood_en    (ctl_sensor_pgood_en    ),
                 .out_receiver_reset     (ctl_receiver_reset     ),
                 .out_receiver_clk_dly   (ctl_receiver_clk_dly   ),
                 .out_align_reset        (ctl_align_reset        ),
@@ -369,6 +427,7 @@ module rtcl_p3s7_mipi
                 
                 .enable             (sensor_pwr_enable     ),
                 .ready              (sensor_ready          ),
+                .pgood_en           (ctl_sensor_pgood_en   ),
 
                 .sensor_pwr_en_vdd18(sensor_pwr_en_vdd18   ),
                 .sensor_pwr_en_vdd33(sensor_pwr_en_vdd33   ),
@@ -384,21 +443,21 @@ module rtcl_p3s7_mipi
     python_spi
         u_python_spi
             (
-                .reset          (reset          ),
-                .clk            (clk72          ),
+                .reset          (reset              ),
+                .clk            (clk72              ),
 
-                .s_addr         (spi_addr       ),
-                .s_we           (spi_we         ),
-                .s_wdata        (spi_wdata      ),
-                .s_valid        (spi_valid      ),
-                .s_ready        (spi_ready      ),
-                .m_rdata        (spi_rdata      ),
-                .m_rvalid       (spi_rvalid     ),
+                .s_addr         (python_spi_addr    ),
+                .s_we           (python_spi_we      ),
+                .s_wdata        (python_spi_wdata   ),
+                .s_valid        (python_spi_valid   ),
+                .s_ready        (python_spi_ready   ),
+                .m_rdata        (python_spi_rdata   ),
+                .m_rvalid       (python_spi_rvalid  ),
 
-                .spi_ss_n       (python_ss_n    ),
-                .spi_sck        (python_sck     ),
-                .spi_mosi       (python_mosi    ),
-                .spi_miso       (python_miso    )
+                .spi_ss_n       (python_ss_n        ),
+                .spi_sck        (python_sck         ),
+                .spi_mosi       (python_mosi        ),
+                .spi_miso       (python_miso        )
             );
 
     // Trigger
@@ -436,9 +495,9 @@ module rtcl_p3s7_mipi
             );
 
     // Alignment
-    (* MARK_DEBUG = DEBUG *)    raw10_t   [CHANNELS-1:0]    python_align_data   ;
-    (* MARK_DEBUG = DEBUG *)    sync10_t                    python_align_sync   ;
-    (* MARK_DEBUG = DEBUG *)    logic                       python_align_valid  ;
+    (* mark_debug = DEBUG *)    raw10_t   [CHANNELS-1:0]    python_align_data   ;
+    (* mark_debug = DEBUG *)    sync10_t                    python_align_sync   ;
+    (* mark_debug = DEBUG *)    logic                       python_align_valid  ;
     python_alignment
             #(
                 .CHANNELS       (CHANNELS           ),
@@ -1040,7 +1099,6 @@ module rtcl_p3s7_mipi
     assign pmod[5] = dphy_dl0_txrequesths   ;
     assign pmod[6] = dphy_dl0_txreadyhs     ;
     assign pmod[7] = '0;
-
 
 endmodule
 

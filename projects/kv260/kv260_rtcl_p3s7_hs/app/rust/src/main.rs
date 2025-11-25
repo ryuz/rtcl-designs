@@ -88,6 +88,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+
+    cam.set_sensor_pgood_enable(false);
+
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -150,6 +153,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         match ch {
             'q' => { break; },
             'p' => {
+                println!("camera module id      : {:04x}", cam.module_id()?);
+                println!("camera module version : {:04x}", cam.module_version()?);
+                println!("camera sensor id      : {:04x}", cam.sensor_id()?);
+                println!("sensor_pgood : {}", cam.sensor_pgood()?);
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
             'd' => {

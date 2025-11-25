@@ -9,24 +9,26 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module python_spi
+module spi_flash
         (
-            input   var logic           reset       ,
-            input   var logic           clk         ,
+            input   var logic               reset       ,
+            input   var logic               clk         ,
 
-            input   var logic   [8:0]   s_addr      ,
-            input   var logic           s_we        ,
-            input   var logic   [15:0]  s_wdata     ,
-            input   var logic           s_valid     ,
-            output  var logic           s_ready     ,
+            input   var logic               s_last      ,
+            input   var logic   [0:0]       s_len       ,
+            input   var logic   [1:0][7:0]  s_wdata     ,
+            input   var logic               s_valid     ,
+            output  var logic               s_ready     ,
 
-            output  var logic   [15:0]  m_rdata     ,
-            output  var logic           m_rvalid    ,
+            output  var logic   [1:0][7:0]  m_rdata     ,
+            output  var logic               m_rvalid    ,
 
-            output  var logic           spi_ss_n    ,
-            output  var logic           spi_sck     ,
-            output  var logic           spi_mosi    ,
-            input   var logic           spi_miso    
+            output  var logic               spi_wp_n    ,
+            output  var logic               spi_hold_n  ,
+            output  var logic               spi_cs_n    ,
+            output  var logic               spi_sck     ,
+            output  var logic               spi_mosi    ,
+            input   var logic               spi_miso    
         );
     
     // 分周
@@ -53,30 +55,35 @@ module python_spi
         END1    
     } state_t;
 
+    localparam type count_t = logic [5:0];
+
     logic                   busy    ;
     state_t                 state   ;
-    logic    [5:0]          count   ;
-    logic    [9+1+16-1:0]   data    ;
+    logic    [0:0]          len     ;
+    logic                   last    ;
+    count_t                 count   ;
+    logic    [1:0][7:0]     data    ;
     always_ff @(posedge clk) begin
-        if (reset) begin
+        if ( reset ) begin
             busy     <= 1'b0    ;
             state    <= IDLE    ;
             count    <= 'x      ;
             data     <= '0      ;
             m_rvalid <= '0      ;
-            spi_ss_n <= 1'b1    ;
+            spi_cs_n <= 1'b1    ;
             spi_sck  <= 1'b0    ;
             spi_mosi <= 1'b0    ;
         end
         else begin
             m_rvalid <= 1'b0;
-
-            if (s_valid && s_ready) begin
+            if ( s_valid && s_ready ) begin
                 busy     <= 1'b1    ;
                 state    <= IDLE    ;
                 count    <= '0      ;
-                data     <= {s_addr, s_we, s_wdata};
-                spi_ss_n <= 1'b1    ;
+                len      <= s_len   ;
+                last     <= s_last  ;
+                data     <= s_wdata ;
+//              spi_cs_n <= 1'b1    ;
                 spi_sck  <= 1'b0    ;
                 spi_mosi <= 1'b0    ;
             end
@@ -85,7 +92,7 @@ module python_spi
                 IDLE:
                     begin
                         state    <= START   ;
-                        spi_ss_n <= 1'b0    ;
+                        spi_cs_n <= 1'b0    ;
                         spi_sck  <= 1'b0    ;
                     end
 
@@ -93,7 +100,7 @@ module python_spi
                     begin
                         state    <= SEND        ;
                         count    <= '0          ;
-                        spi_ss_n <= 1'b0        ;
+                        spi_cs_n <= 1'b0        ;
                         spi_sck  <= 1'b0        ;
                         {spi_mosi, data} <= {data, spi_miso};
                     end
@@ -104,7 +111,7 @@ module python_spi
                         if ( spi_sck ) begin
                             count            <= count + 1'b1;   ;
                             {spi_mosi, data} <= {data, spi_miso};
-                            if ( count == 6'd25 ) begin
+                            if ( count == (count_t'(len) + 1) * 8 - 1 ) begin
                                 state    <= STOP0;
                                 spi_mosi <= 1'b0;
                                 m_rvalid <= 1'b1;
@@ -120,7 +127,7 @@ module python_spi
                 STOP1:
                     begin
                         state    <= END0;
-                        spi_ss_n <= 1'b1;
+                        spi_cs_n <= last;
                     end
 
                 END0:
@@ -138,8 +145,11 @@ module python_spi
         end
     end
 
-    assign m_rdata = data[15:0];
+    assign m_rdata = data;
     assign s_ready = !busy;
+
+    assign spi_wp_n   = 1'b1;
+    assign spi_hold_n = 1'b1;
 
 endmodule
 
