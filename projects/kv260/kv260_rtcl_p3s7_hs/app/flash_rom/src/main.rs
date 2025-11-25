@@ -2,10 +2,33 @@
 use std::error::Error;
 use std::io::Write;
 use clap::Parser;
+use clap::CommandFactory;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 use rtcl_lib::rtcl_p3s7_module_driver::*;
-//use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
+
+
+struct CameraEnable {
+    uio_acc: UioAccessor<usize>,
+}
+
+impl CameraEnable {
+    fn new() -> Result<Self, Box<dyn Error>> {
+        // カメラ有効化
+        let uio_acc = UioAccessor::<usize>::new_with_name("uio_pl_peri")?;
+        unsafe { uio_acc.write_reg(0x0002, 1); }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        Ok(Self {uio_acc})
+    }
+}
+
+impl Drop for CameraEnable {
+    fn drop(&mut self) {
+        // カメラ無効化
+        unsafe { self.uio_acc.write_reg(0x0002, 0); }
+    }
+}
+
 
 fn parse_number(s: &str) -> Result<usize, std::num::ParseIntError> {
     if let Some(hex) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
@@ -19,6 +42,9 @@ fn parse_number(s: &str) -> Result<usize, std::num::ParseIntError> {
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    #[arg(short = 'i', long)]
+    info: bool,
+
     #[arg(short = 'r', long, requires = "output_file")]
     read: bool,
 
@@ -50,22 +76,31 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     println!("RTCL-P3S7-MIPI camera flash rom util");
 
+    if std::env::args().len() == 1 {
+        Args::command().print_help()?;
+        println!();
+        return Ok(());
+    }
     let args = Args::parse();
 
     // カメラ初期化
+    let _cam_enable = CameraEnable::new();
+
+    // I2C 初期化
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = RtclP3s7ModuleDriver::new(i2c);
 
-    let uio_acc = UioAccessor::<usize>::new_with_name("uio_pl_peri").expect("Failed to open uio");
-    unsafe { uio_acc.write_reg(0x0002, 1); }
-
     // ステータス表示
-    println!("module id      : {:04x}", cam.module_id()?);
-    println!("module version : {:04x}", cam.module_version()?);
-    println!("module config  : {:04x}", cam.module_config()?);
-    let rom_id = cam.spi_rom_id()?;
-    println!("rom id         : {:02x} {:02x} {:02x}", rom_id[0], rom_id[1], rom_id[2]);
+    if args.info {
+        println!("Camera Flash ROM Information:");
+        println!("module id      : {:04x}", cam.module_id()?);
+        println!("module version : {:04x}", cam.module_version()?);
+        println!("module config  : {:04x}", cam.module_config()?);
+        let rom_id = cam.spi_rom_id()?;
+        println!("rom id         : {:02x} {:02x} {:02x}", rom_id[0], rom_id[1], rom_id[2]);
+    }
 
+    // ROM内容簡易表示
     if let Some(addr) = args.display {
         let mut chunk = [0u8; 256];
         cam.spi_rom_read(addr, &mut chunk)?;
@@ -76,32 +111,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             print!(" {:02x}", d);
         }
         println!();
-    }
-
-    if false {
-        println!("status : {:02x}", cam.spi_rom_read_status_register()?);
-
-        let addr = 0x000000;
-        let mut chunk = [0u8; 256];
-        cam.spi_rom_read(addr, &mut chunk)?;
-        for (i, &d) in chunk.iter().enumerate() {
-            if i % 16 == 0 {
-                print!("\n{:06x} :", addr + i);
-            }
-            print!(" {:02x}", d);
-        }
-        println!();
-
-        let addr = 0x100000;
-        cam.spi_rom_read(addr, &mut chunk)?;
-        for (i, &d) in chunk.iter().enumerate() {
-            if i % 16 == 0 {
-                print!("\n{:06x} :", addr + i);
-            }
-            print!(" {:02x}", d);
-        }
-        println!();
-//      return Ok(());
     }
 
     // ROM読み出し
