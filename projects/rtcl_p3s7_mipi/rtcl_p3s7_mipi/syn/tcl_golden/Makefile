@@ -96,6 +96,7 @@ $(MCS_FILE) $(BIN_FILE): $(BIT_FILE)
 
 .PHONY : full_mcs
 full_mcs: $(BIT_FILE)
+	make -C ../tcl/
 	vivado -m64 -mode batch -source make_full_mcs.tcl
 
 .PHONY : check_log

@@ -36,7 +36,7 @@ make
 
 とすると
 
-`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl/
+`projects/rtcl_p3s7/rtcl_p3s7_mipi/syn/tcl/`
 
 もしくは
 

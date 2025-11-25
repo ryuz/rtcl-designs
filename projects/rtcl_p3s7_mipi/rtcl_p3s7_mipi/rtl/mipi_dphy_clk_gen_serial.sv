@@ -27,13 +27,13 @@ module mipi_dphy_clk_gen_serial
         );
 
 
-    (* MARK_DEBUG="true" *) logic   [6:0]   mmcm_daddr  ;
-                            logic           mmcm_dclk   ;
-    (* MARK_DEBUG="true" *) logic           mmcm_den    ;
-    (* MARK_DEBUG="true" *) logic   [15:0]  mmcm_di     ;
-    (* MARK_DEBUG="true" *) logic   [15:0]  mmcm_do     ;
-    (* MARK_DEBUG="true" *) logic           mmcm_drdy   ;
-    (* MARK_DEBUG="true" *) logic           mmcm_dwe    ;
+    logic   [6:0]   mmcm_daddr  ;
+    logic           mmcm_dclk   ;
+    logic           mmcm_den    ;
+    logic   [15:0]  mmcm_di     ;
+    logic   [15:0]  mmcm_do     ;
+    logic           mmcm_drdy   ;
+    logic           mmcm_dwe    ;
 
     MMCME2_ADV
             #(

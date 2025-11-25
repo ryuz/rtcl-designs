@@ -16,7 +16,7 @@ module rtcl_p3s7_mipi
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
-            parameter                   DEBUG          = "true"      
+            parameter                   DEBUG          = "false"     
         )
         (
             input   var logic           in_clk50                ,
@@ -495,9 +495,9 @@ module rtcl_p3s7_mipi
             );
 
     // Alignment
-    (* MARK_DEBUG = DEBUG *)    raw10_t   [CHANNELS-1:0]    python_align_data   ;
-    (* MARK_DEBUG = DEBUG *)    sync10_t                    python_align_sync   ;
-    (* MARK_DEBUG = DEBUG *)    logic                       python_align_valid  ;
+    (* mark_debug = DEBUG *)    raw10_t   [CHANNELS-1:0]    python_align_data   ;
+    (* mark_debug = DEBUG *)    sync10_t                    python_align_sync   ;
+    (* mark_debug = DEBUG *)    logic                       python_align_valid  ;
     python_alignment
             #(
                 .CHANNELS       (CHANNELS           ),
@@ -1099,23 +1099,6 @@ module rtcl_p3s7_mipi
     assign pmod[5] = dphy_dl0_txrequesths   ;
     assign pmod[6] = dphy_dl0_txreadyhs     ;
     assign pmod[7] = '0;
-
-
-
-    (* mark_debug="true" *) logic   dbg_rom_wp_n   ;
-    (* mark_debug="true" *) logic   dbg_rom_hold_n ;
-    (* mark_debug="true" *) logic   dbg_rom_cs_n   ;
-    (* mark_debug="true" *) logic   dbg_rom_sck    ;
-    (* mark_debug="true" *) logic   dbg_rom_mosi   ;
-    (* mark_debug="true" *) logic   dbg_rom_miso   ;
-    always_ff @( clk72 ) begin
-        dbg_rom_wp_n   <= spi_flash_wp_n    ;
-        dbg_rom_hold_n <= spi_flash_hold_n  ;
-        dbg_rom_cs_n   <= spi_flash_cs_n    ;
-        dbg_rom_sck    <= spi_flash_sck     ;
-        dbg_rom_mosi   <= spi_flash_mosi    ;
-        dbg_rom_miso   <= spi_flash_miso    ;
-    end
 
 endmodule
 
