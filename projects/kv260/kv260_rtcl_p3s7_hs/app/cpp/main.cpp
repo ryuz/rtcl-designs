@@ -50,8 +50,11 @@ void signal_handler(int signo) {
 // メイン関数
 int main(int argc, char *argv[])
 {
-    int width  = 256 ;
-    int height = 256 ;
+    int width  = 640 ;
+    int height = 480 ;
+    int fps    = 200 ;
+    int exposure = 90;  // 90%
+    int gain     = 0;   // 0.0 db
     bool color = false;
     bool pgood_enable = true;
 
@@ -63,6 +66,10 @@ int main(int argc, char *argv[])
         else if ( (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) && i+1 < argc) {
             ++i;
             height = strtol(argv[i], nullptr, 0);
+        }
+        else if ( (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fps") == 0) && i+1 < argc) {
+            ++i;
+            fps = strtol(argv[i], nullptr, 0);
         }
         else if ( strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--color") == 0 ) {
             color = true;
@@ -232,8 +239,8 @@ int main(int argc, char *argv[])
     cam.SetFrLength0(0);
     cam.SetExposure0(10000);
 
-//  cam.SetTriggeredMode(true);
-//  cam.SetSlaveMode(true);
+    cam.SetTriggeredMode(true);
+    cam.SetSlaveMode(true);
     cam.SetSequencerEnable(true);
     usleep(100000);
 
@@ -243,9 +250,6 @@ int main(int argc, char *argv[])
     jelly::VideoDmaControl vdmaw0(reg_wdma0, 2, 2, true);
     jelly::VideoDmaControl vdmaw1(reg_wdma1, 2, 2, true);
 
-    int gain     = 0;   // 0.0 db
-    int fps      = 100; // 100fps
-    int exposure = 90;  // 90%
 
     cv::namedWindow("img", cv::WINDOW_NORMAL);
     cv::resizeWindow("img", width + 64, height + 128);
@@ -253,13 +257,13 @@ int main(int argc, char *argv[])
     cv::createTrackbar("gain", "img", nullptr, 100);
     cv::setTrackbarPos("gain", "img", gain);
 
-    cv::createTrackbar("fps", "img", nullptr, 100);
+    cv::createTrackbar("fps", "img", nullptr, 1000);
     cv::setTrackbarMin("fps", "img", 5);
     cv::setTrackbarPos("fps", "img", fps);
 
     cv::createTrackbar("exposure", "img", nullptr, 90);
     cv::setTrackbarMin("exposure", "img", 10);
-    cv::setTrackbarPos("exposure", "img", fps);
+    cv::setTrackbarPos("exposure", "img", exposure);
 
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
