@@ -52,15 +52,26 @@ int main(int argc, char *argv[])
 {
     int width  = 640 ;
     int height = 480 ;
+    int fps    = 200 ;
+    int exposure = 90;  // 90%
+    int gain     = 0;   // 0.0 db
+    bool color = false;
 
     for ( int i = 1; i < argc; ++i ) {
-        if ( strcmp(argv[i], "-width") == 0 && i+1 < argc) {
+        if ( (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) && i+1 < argc) {
             ++i;
             width = strtol(argv[i], nullptr, 0);
         }
-        else if ( strcmp(argv[i], "-height") == 0 && i+1 < argc) {
+        else if ( (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) && i+1 < argc) {
             ++i;
             height = strtol(argv[i], nullptr, 0);
+        }
+        else if ( (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fps") == 0) && i+1 < argc) {
+            ++i;
+            fps = strtol(argv[i], nullptr, 0);
+        }
+        else if ( strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--color") == 0 ) {
+            color = true;
         }
         else {
             std::cout << "unknown option : " << argv[i] << std::endl;
@@ -230,10 +241,6 @@ int main(int argc, char *argv[])
     jelly::VideoDmaControl vdmaw1(reg_wdma1, 2, 2, true);
 
 
-    int gain     = 0;   // 0.0 db
-    int fps      = 100; // 100fps
-    int exposure = 90;  // 90%
-
     cv::namedWindow("img", cv::WINDOW_NORMAL);
     cv::resizeWindow("img", width + 64, height + 128);
     cv::imshow("img", cv::Mat::zeros(height, width, CV_8UC3));
@@ -246,10 +253,9 @@ int main(int argc, char *argv[])
 
     cv::createTrackbar("exposure", "img", nullptr, 90);
     cv::setTrackbarMin("exposure", "img", 10);
-    cv::setTrackbarPos("exposure", "img", fps);
+    cv::setTrackbarPos("exposure", "img", exposure);
 
 
-    int     swap = 0;
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
         if ( g_signal ) { break; }
@@ -271,21 +277,20 @@ int main(int argc, char *argv[])
         vdmaw0.Oneshot(dmabuf0_phys_adr, width, height, 1);
         cv::Mat img(height, width, CV_16U);
         udmabuf0_acc.MemCopyTo(img.data, 0, width * height * 2);
-        
-        // ソフトウェアで並び替えを行う場合の処理
-        cv::Mat img_u16(height, width, CV_16U);
-        for ( int y = 0; y < height; y++ ) {
-            for ( int x = 0; x < width; x++ ) {
-                int xx = x;
-                xx = (xx & 0x8) ? (xx ^ 0x7) : xx;
-                xx = ((xx & 0xfff8) | ((xx & 0x6) >> 1) | ((xx & 0x1) << 2));
-                if ( !swap ) { xx = x; }
-                img_u16.at<std::uint16_t>(y, x) = img.at<std::int16_t>(y, xx);
-            }
+        img = img * 64; // 10bit -> 16bit
+
+        // 表示画像準備
+        cv::Mat img_view;
+        if ( color ) {
+            cv::Mat img_bgr;
+            cv::cvtColor(img, img_view, cv::COLOR_BayerBG2BGR);
+        }
+        else {
+            img_view = img;
         }
 
         // 表示
-        cv::imshow("img", img_u16 * (65535.0/1023.0));
+        cv::imshow("img", img_view);
 
         // ユーザー操作
         switch ( key ) {
@@ -317,25 +322,13 @@ int main(int argc, char *argv[])
             
             for ( int i = 0; i < rec_frames; i++ ) {
                 // 画像読み込み
-                cv::Mat img(height, width, CV_32S);
-                udmabuf0_acc.MemCopyTo(img.data, width * height * 4 * i, width * height * 4);
-        
-                // 並び替えを行う
-                cv::Mat img_u16(height, width, CV_16U);
-                for ( int y = 0; y < height; y++ ) {
-                    for ( int x = 0; x < width; x++ ) {
-                        int xx = x;
-                        xx = (xx & 0x8) ? (xx ^ 0x7) : xx;
-                        xx = ((xx & 0xfff8) | ((xx & 0x6) >> 1) | ((xx & 0x1) << 2));
-                        if ( !swap ) { xx = x; }
-                        img_u16.at<std::uint16_t>(y, x) = img.at<std::int32_t>(y, xx);
-                    }
-                }
+                cv::Mat img(height, width, CV_16U);
+                udmabuf0_acc.MemCopyTo(img.data, width * height * 2 * i, width * height * 2);
 
                 // 保存
                 char fname[256];
                 sprintf(fname, "rec/img_%03d.png", i);
-                cv::imwrite(fname, img_u16 * (65535.0/1023.0));
+                cv::imwrite(fname, img * (65535.0/1023.0));
             }
         }
     }
