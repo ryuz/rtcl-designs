@@ -341,12 +341,12 @@ where
     /// fps 計測
     pub fn measure_fps(&self) -> f32 {
         let fps_count   = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
-        250_000_000.0f32 / fps_count as f32
+        200_000_000.0f32 / fps_count as f32
     }
 
     pub fn measure_frame_period(&self) -> f32 {
         let fps_count = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
-        fps_count as f32 * 4.0
+        fps_count as f32 * 5.0
     }
 
 

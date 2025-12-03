@@ -20,6 +20,10 @@ all: build
 build:
 	cargo build --release
 
+.PHONY: run
+build:
+	cargo run --release -- $(RUN_OPT)
+
 .PHONY: clean
 clean:
 	cargo clean

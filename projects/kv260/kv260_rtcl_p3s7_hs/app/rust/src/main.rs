@@ -100,7 +100,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
-//  cam.open()?;
     if let Err(err) = cam.open() {
         if err.to_string().contains("Sensor power good signal indicates failure") {
             println!("\n!! sensor power good error. !! Retry with --pgood-off option.");
