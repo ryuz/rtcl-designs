@@ -24,7 +24,7 @@ module mipi_dphy_clk_gen
         input   var logic   pll_pwrdwn          ,
 
         output  var logic   core_reset          ,
-        output  var logic   core_clk            ,
+        output  var logic   core_clk            ,   // 200MHz
         output  var logic   system_reset        ,
 //      output  var logic   dphy_reset          ,
         output  var logic   dphy_clk            ,   // BUFR  (div4 from oserdes_clk90)

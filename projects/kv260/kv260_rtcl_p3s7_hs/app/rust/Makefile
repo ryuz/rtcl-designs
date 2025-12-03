@@ -24,6 +24,10 @@ build:
 clean:
 	cargo clean
 
+.PHONY: run
+run: load
+	cargo run --release -- $(RUN_OPT)
+
 .PHONY: load
 load:
 	make -C ..

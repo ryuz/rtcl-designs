@@ -7,8 +7,8 @@ use opencv::core::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use kv260_rtcl_p3s7_hs::camera_driver::CameraDriver;
-use kv260_rtcl_p3s7_hs::capture_driver::CaptureDriver;
+use kv260_rtcl_p3s7_hs::camera_driver::*;
+use kv260_rtcl_p3s7_hs::capture_driver::*;
 use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
 
 #[derive(Parser, Debug)]
@@ -22,12 +22,16 @@ struct Args {
     #[arg(short = 'H', long, default_value_t = 480)]
     height: usize,
 
-    #[arg(long, default_value_t = 60)]
+    #[arg(short = 'f', long, default_value_t = 60)]
     fps: i32,
 
     /// Enable color mode (default: monochrome)
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
+
+    /// Enable color mode (default: monochrome)
+    #[arg(long="pgood-off", default_value_t = false)]
+    pgood_off: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -89,12 +93,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
 
-    cam.set_sensor_pgood_enable(false);
+    if args.pgood_off {
+        cam.set_sensor_pgood_enable(false);
+    }
 
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
-    cam.open()?;
+//  cam.open()?;
+    if let Err(err) = cam.open() {
+        if err.to_string().contains("Sensor power good signal indicates failure") {
+            println!("\n!! sensor power good error. !! Retry with --pgood-off option.");
+            return Ok(());
+        } else {
+            return Err(err);
+        }
+    }
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);

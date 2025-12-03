@@ -52,21 +52,33 @@ int main(int argc, char *argv[])
 {
     int width  = 256 ;
     int height = 256 ;
+    bool color = false;
+    bool pgood_enable = true;
 
     for ( int i = 1; i < argc; ++i ) {
-        if ( strcmp(argv[i], "-width") == 0 && i+1 < argc) {
+        if ( (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) && i+1 < argc) {
             ++i;
             width = strtol(argv[i], nullptr, 0);
         }
-        else if ( strcmp(argv[i], "-height") == 0 && i+1 < argc) {
+        else if ( (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) && i+1 < argc) {
             ++i;
             height = strtol(argv[i], nullptr, 0);
+        }
+        else if ( strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--color") == 0 ) {
+            color = true;
+        }
+        else if ( strcmp(argv[i], "--pgood-off") == 0 ) {
+            pgood_enable = false;
         }
         else {
             std::cout << "unknown option : " << argv[i] << std::endl;
             return 1;
         }
     }
+
+    std::cout << "width  : " << width << std::endl;
+    std::cout << "height : " << height << std::endl;
+    std::cout << "color  : " << color << std::endl;
 
     width &= ~0xf;
     width  = std::max(width, 16);
@@ -121,6 +133,7 @@ int main(int argc, char *argv[])
     std::cout << "udmabuf1 phys addr : 0x" << std::hex << dmabuf1_phys_adr << std::endl;
     std::cout << "udmabuf1 size      : " << std::dec << dmabuf1_mem_size << std::endl;
 
+    // カメラ制御生成
     rtcl::RtclP3S7ControlI2c cam;
     cam.Open("/dev/i2c-6", 0x10);
 
@@ -136,7 +149,11 @@ int main(int argc, char *argv[])
 
     // MMCM 設定
     cam.SetDphySpeed(1250000000);   // 1250Mbps
-    
+
+    // センサー電源OK監視有無設定
+    std::cout << "Sensor PGood Enable : " << (pgood_enable ? "ON" : "OFF") << std::endl;
+    cam.SetSensorPGoodEnable(pgood_enable);
+
     // 受信側 DPHY リセット
     reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 1);
 
@@ -182,7 +199,19 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_BLACK_HEIGHT, 1);
 
     // センサー起動
-    cam.SetSensorEnable(true);
+    if ( !cam.SetSensorEnable(true) ) {
+        if ( !cam.GetSensorPGood() ) {
+            std::cout << "\n!! sensor power good error. !! Retry with --pgood-off option." << std::endl;
+        }
+        else {
+            std::cout << "!!ERROR!! CAM sensor enable failed" << std::endl;
+        }
+        // カメラモジュールOFF
+        cam.SetSensorPowerEnable(false);
+        usleep(10000);
+        reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
+        return 1;
+    }
 
     // 画像サイズ設定
     cam.SetRoi0(width, height);
@@ -192,7 +221,7 @@ int main(int argc, char *argv[])
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT,   20000000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_WIDTH,       width);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_HEIGHT,      height);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0xfff);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0xffff);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     100000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
 
@@ -232,7 +261,6 @@ int main(int argc, char *argv[])
     cv::setTrackbarMin("exposure", "img", 10);
     cv::setTrackbarPos("exposure", "img", fps);
 
-    int     swap = 0;
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
         if ( g_signal ) { break; }
@@ -254,21 +282,20 @@ int main(int argc, char *argv[])
         vdmaw0.Oneshot(dmabuf0_phys_adr, width, height, 1);
         cv::Mat img(height, width, CV_16U);
         udmabuf0_acc.MemCopyTo(img.data, 0, width * height * 2);
-        
-        // ソフトウェアで並び替えを行う場合の処理
-        cv::Mat img_u16(height, width, CV_16U);
-        for ( int y = 0; y < height; y++ ) {
-            for ( int x = 0; x < width; x++ ) {
-                int xx = x;
-                xx = (xx & 0x8) ? (xx ^ 0x7) : xx;
-                xx = ((xx & 0xfff8) | ((xx & 0x6) >> 1) | ((xx & 0x1) << 2));
-                if ( !swap ) { xx = x; }
-                img_u16.at<std::uint16_t>(y, x) = img.at<std::int16_t>(y, xx);
-            }
+        img = img * 64; // 10bit -> 16bit
+
+        // 表示画像準備
+        cv::Mat img_view;
+        if ( color ) {
+            cv::Mat img_bgr;
+            cv::cvtColor(img, img_view, cv::COLOR_BayerBG2BGR);
+        }
+        else {
+            img_view = img;
         }
 
         // 表示
-        cv::imshow("img", img_u16 * (65535.0/1023.0));
+        cv::imshow("img", img_view);
 
         // ユーザー操作
         switch ( key ) {
@@ -300,25 +327,13 @@ int main(int argc, char *argv[])
             
             for ( int i = 0; i < rec_frames; i++ ) {
                 // 画像読み込み
-                cv::Mat img(height, width, CV_32S);
-                udmabuf0_acc.MemCopyTo(img.data, width * height * 4 * i, width * height * 4);
-        
-                // 並び替えを行う
-                cv::Mat img_u16(height, width, CV_16U);
-                for ( int y = 0; y < height; y++ ) {
-                    for ( int x = 0; x < width; x++ ) {
-                        int xx = x;
-                        xx = (xx & 0x8) ? (xx ^ 0x7) : xx;
-                        xx = ((xx & 0xfff8) | ((xx & 0x6) >> 1) | ((xx & 0x1) << 2));
-                        if ( !swap ) { xx = x; }
-                        img_u16.at<std::uint16_t>(y, x) = img.at<std::int32_t>(y, xx);
-                    }
-                }
+                cv::Mat img(height, width, CV_16U);
+                udmabuf0_acc.MemCopyTo(img.data, width * height * 2 * i, width * height * 2);
 
                 // 保存
                 char fname[256];
                 sprintf(fname, "rec/img_%03d.png", i);
-                cv::imwrite(fname, img_u16 * (65535.0/1023.0));
+                cv::imwrite(fname, img * (65535.0/1023.0));
             }
         }
     }

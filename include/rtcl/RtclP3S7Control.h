@@ -20,8 +20,11 @@ namespace rtcl {
 
 #define RTCL_P3S7_MODULE_ID             0x0000
 #define RTCL_P3S7_MODULE_VERSION        0x0001
+#define RTCL_P3S7_SW_RESET              0x0003
 #define RTCL_P3S7_SENSOR_ENABLE         0x0004
 #define RTCL_P3S7_SENSOR_READY          0x0008
+#define RTCL_P3S7_SENSOR_PGOOD          0x000c
+#define RTCL_P3S7_SENSOR_PGOOD_EN       0x000d
 #define RTCL_P3S7_RECEIVER_RESET        0x0010
 #define RTCL_P3S7_RECEIVER_CLK_DLY      0x0012
 #define RTCL_P3S7_ALIGN_RESET           0x0020
@@ -91,6 +94,30 @@ public:
             return 0;
         }
         return spi_read(0);
+    }
+
+    bool SofteareRreset(void) {
+        if ( !IsOpend() ) {
+            return 0;
+        }
+        i2c_write(RTCL_P3S7_SW_RESET, 1);
+        usleep(50000);
+        return true;
+    }
+
+    bool GetSensorPGood(void) {
+        if ( !IsOpend() ) {
+            return false;
+        }
+        return (i2c_read(RTCL_P3S7_SENSOR_PGOOD) != 0);
+    }
+
+    bool SetSensorPGoodEnable(bool enable) {
+        if ( !IsOpend() ) {
+            return false;
+        }
+        i2c_write(RTCL_P3S7_SENSOR_PGOOD_EN, enable ? 1 : 0);
+        return true;
     }
 
     bool SetSensorPowerEnable(bool enable) {
@@ -172,7 +199,7 @@ public:
         if ( enable ) {
             SensorBoot();
             usleep(50000);
-            SetSensorReceiverEnable(true);
+            return SetSensorReceiverEnable(true);
         }
         else {
             SetSensorReceiverEnable(false);
@@ -232,6 +259,7 @@ protected:
 
             auto cam_calib_status = i2c_read(RTCL_P3S7_ALIGN_STATUS);
             if ( cam_calib_status != 0x01 ) {
+                std::cout << "!!ERROR!! CAM ALIGN STATUS = 0x" << std::hex << cam_calib_status << std::dec << std::endl;
                 return false;
             }
         } else {
