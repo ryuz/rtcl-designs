@@ -41,7 +41,7 @@ build_cpp:
 
 .PHONY: run_rust
 run_rust: load
-	cd rust; cargo run RUN_OPT="$(RUN_OPT)"
+	cd rust; cargo run -- $(RUN_OPT)
 
 .PHONY: build_rust
 build_rust:
