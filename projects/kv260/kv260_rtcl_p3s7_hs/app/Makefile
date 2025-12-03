@@ -16,6 +16,7 @@ ACCEL_PATH    = $(FIRMWARE_PATH)/xilinx/$(ACCEL_NAME)
 
 KV260_SERVER_ADDRESS ?= 127.0.0.1:8051
 
+RUN_OPT ?=
 
 .PHONY: all
 all: $(DTBO_FILE) $(BIN_FILE)
@@ -40,7 +41,7 @@ build_cpp:
 
 .PHONY: run_rust
 run_rust: load
-	cd rust; cargo run
+	cd rust; cargo run RUN_OPT=$(RUN_OPT)
 
 .PHONY: build_rust
 build_rust:
