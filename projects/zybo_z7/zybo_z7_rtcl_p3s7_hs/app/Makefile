@@ -31,7 +31,7 @@ run: run_cpp
 
 .PHONY: run_cpp
 run_cpp: load
-	make -C cpp run RUN_OPT=$(RUN_OPT)
+	make -C cpp run RUN_OPT="$(RUN_OPT)"
 
 .PHONY: build_cpp
 build_cpp:

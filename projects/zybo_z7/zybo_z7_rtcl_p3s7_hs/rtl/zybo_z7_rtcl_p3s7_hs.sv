@@ -944,6 +944,26 @@ module zybo_z7_rtcl_p3s7_hs
     
     reg     [31:0]      reg_counter_mem_aclk;
     always @(posedge axi4_mem_aclk) reg_counter_mem_aclk <= reg_counter_mem_aclk + 1;
+   
+    
+    // frame monitor
+    (* mark_debug = "true" *) logic   [31:0]  mon_frame_rate_count;
+    (* mark_debug = "true" *) logic   [31:0]  mon_frame_rate_value;
+    (* mark_debug = "true" *) logic   [31:0]  mon_frame_count;
+    always_ff @(posedge axi4s_cam_aclk) begin
+        mon_frame_rate_count <= mon_frame_rate_count + 1;
+        if ( axi4s_img.tuser[0] && axi4s_img.tvalid ) begin
+            mon_frame_rate_value <= mon_frame_rate_count;
+            mon_frame_rate_count <= '0;
+            mon_frame_count      <= mon_frame_count + 1;
+        end
+    end
+
+    always_ff @(posedge axi4l_dec[DEC_SYS].aclk) begin
+        reg_fps_count   <= mon_frame_rate_value;
+        reg_frame_count <= mon_frame_count;
+    end
+
     
     reg     frame_toggle = 0;
     always @(posedge axi4s_cam_aclk) begin
@@ -951,7 +971,6 @@ module zybo_z7_rtcl_p3s7_hs
             frame_toggle <= ~frame_toggle;
         end
     end
-    
     
     assign led[0] = reg_counter_rxbyteclkhs[24];
     assign led[1] = reg_counter_peri_aclk[24]; // reg_counter_clk200[24];
