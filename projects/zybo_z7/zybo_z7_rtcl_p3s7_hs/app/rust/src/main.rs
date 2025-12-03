@@ -16,11 +16,11 @@ use opencv::core::*;
 #[command(version, about, long_about = None)]
 struct Args {
     /// Image width in pixels
-    #[arg(short = 'w', long, default_value_t = 640)]
+    #[arg(short = 'W', long, default_value_t = 640)]
     width: usize,
 
     /// Image height in pixels
-    #[arg(short = 'h', long, default_value_t = 480)]
+    #[arg(short = 'H', long, default_value_t = 480)]
     height: usize,
 
     /// Enable color mode (default: monochrome)

@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
                 int frame_count = reg_sys.ReadReg(SYSREG_FRAME_COUNT);
                 std::cout << "SYSREG_FPS_COUNT   : " << std::dec << fps_count << std::endl;
                 std::cout << "SYSREG_FRAME_COUNT : " << std::dec << frame_count << std::endl;
-                std::cout << "fps = " << 250000000.0 / (double)fps_count << " [fps]" << std::endl;
+                std::cout << "fps = " << 200000000.0 / (double)fps_count << " [fps]" << std::endl;
             }
             break;
         

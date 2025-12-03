@@ -12,7 +12,7 @@ use kv260_rtcl_p3s7_mnist_seg::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_mnist_seg::timing_generator_driver::TimingGeneratorDriver;
 
 const REG_BIN_PARAM_END   : usize =        0x04;
-const REG_BIN_PARAM_INV   : usize =        0x05;
+//const REG_BIN_PARAM_INV   : usize =        0x05;
 const REG_BIN_TBL0        : usize =        0x40;
 const REG_BIN_TBL1        : usize =        0x41;
 const REG_BIN_TBL2        : usize =        0x42;
@@ -28,7 +28,7 @@ const REG_BIN_TBL11       : usize =        0x4b;
 const REG_BIN_TBL12       : usize =        0x4c;
 const REG_BIN_TBL13       : usize =        0x4d;
 const REG_BIN_TBL14       : usize =        0x4e;
-const REG_BIN_TBL15       : usize =        0x4f;
+//const REG_BIN_TBL15       : usize =        0x4f;
 const REG_LPF_PARAM_ALPHA : usize =        0x08;
 
 #[derive(Parser, Debug)]
@@ -43,8 +43,8 @@ struct Args {
     height: usize,
 
     /// Enable color mode (default: monochrome)
-    #[arg(short = 'c', long, default_value_t = false)]
-    color: bool,
+    #[arg(long="pgood-off", default_value_t = false)]
+    pgood_off: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -53,11 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Configuration:");
     println!("  width:  {}", args.width);
     println!("  height: {}", args.height);
-    println!("  color:  {}", args.color);
 
     let width = args.width;
     let height = args.height;
-    let color = args.color;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -109,10 +107,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+
+    if args.pgood_off {
+        cam.set_sensor_pgood_enable(false);
+    }
+
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
-    cam.open()?;
+    if let Err(err) = cam.open() {
+        if err.to_string().contains("Sensor power good signal indicates failure") {
+            println!("\n!! sensor power good error. !! Retry with --pgood-off option.");
+            return Ok(());
+        } else {
+            return Err(err);
+        }
+    }
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -193,10 +203,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 cls_bytes[y*width+x] = src_bytes[(y*width+x)*2+1];
             }
         }
-        let mut img = Mat::from_slice(&img_bytes)?;
+        let img = Mat::from_slice(&img_bytes)?;
         let img = img.reshape(1, height as i32)?;
-        let mut class = Mat::from_slice(&cls_bytes)?;
-        let mut class = class.reshape(1, height as i32)?;
+        let class = Mat::from_slice(&cls_bytes)?;
+        let class = class.reshape(1, height as i32)?;
         let mut cls = Mat::zeros_size(Size::new(width as i32, height as i32), CV_8UC3)?.to_mat()?;
         // クラスごとに色付け
         for y in 0..height as i32 {

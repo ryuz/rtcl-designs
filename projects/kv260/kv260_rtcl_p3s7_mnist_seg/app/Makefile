@@ -25,23 +25,23 @@ clean:
 	rm -rf $(DTBO_FILE) $(BIN_FILE)
 
 .PHONY: run
-run: run_cpp
+run: run_rust
 
-.PHONY: run_cpp
-run_cpp: load
-	make -C cpp run
+#.PHONY: run_cpp
+#run_cpp: load
+#	make -C cpp run
 
 .PHONY: run_rust
 run_rust: load
-	cd rust; cargo run
+	cd rust; cargo run -- $(RUN_OPT)
 
 .PHONY: build_rust
 build_rust:
 	cd rust; cargo build
 
-.PHONY: run_server
-run_server: load
-	cd grpc/server; cargo run
+#.PHONY: run_server
+#run_server: load
+#	cd grpc/server; cargo run
 
 
 
