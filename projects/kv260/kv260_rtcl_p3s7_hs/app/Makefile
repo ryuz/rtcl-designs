@@ -33,7 +33,7 @@ run: run_cpp
 
 .PHONY: run_cpp
 run_cpp: load
-	make -C cpp run
+	make -C cpp run RUN_OPT=$(RUN_OPT)
 
 .PHONY: build_cpp
 build_cpp:
@@ -49,7 +49,7 @@ build_rust:
 
 .PHONY: run_server
 run_server: load
-	cd grpc/server; cargo run
+	cd grpc/server; cargo run RUN_OPT=$(RUN_OPT)
 
 
 
