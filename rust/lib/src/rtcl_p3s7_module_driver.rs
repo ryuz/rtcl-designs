@@ -104,6 +104,8 @@ pub enum RtclP3s7ModuleDriverError<E> {
     ReceiverCalibrationFailed,
     /// SPI Flash operation timeout
     SpiRomOperationTimeout,
+    /// Sensor power good signal indicates failure
+    SensorPowerGoodFailed,
 }
 
 impl<E> From<E> for RtclP3s7ModuleDriverError<E> {
@@ -119,6 +121,7 @@ impl<E: core::fmt::Display> core::fmt::Display for RtclP3s7ModuleDriverError<E> 
             RtclP3s7ModuleDriverError::UnsupportedDphySpeed => write!(f, "Unsupported D-PHY speed setting"),
             RtclP3s7ModuleDriverError::ReceiverCalibrationFailed => write!(f, "Receiver calibration failed"),
             RtclP3s7ModuleDriverError::SpiRomOperationTimeout => write!(f, "SPI ROM operation timeout"),
+            RtclP3s7ModuleDriverError::SensorPowerGoodFailed => write!(f, "Sensor power good signal indicates failure"),
         }
     }
 }
@@ -824,6 +827,9 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
             let cam_calib_status = self.read_i2c(REG_P3S7_ALIGN_STATUS)?;
             if cam_calib_status != 0x01 {
+                if self.read_i2c(REG_P3S7_SENSOR_PGOOD_EN)? != 0 && self.read_i2c(REG_P3S7_SENSOR_PGOOD)? == 0 {
+                    return Err(RtclP3s7ModuleDriverError::SensorPowerGoodFailed);
+                }
                 return Err(RtclP3s7ModuleDriverError::ReceiverCalibrationFailed);
             }
         } else {
