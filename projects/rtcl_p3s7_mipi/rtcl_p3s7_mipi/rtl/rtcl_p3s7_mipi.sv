@@ -12,7 +12,7 @@
 module rtcl_p3s7_mipi
         #(
             parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
-            parameter   bit     [15:0]  MODULE_VERSION = 16'h0106   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0107   ,
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
@@ -1098,7 +1098,7 @@ module rtcl_p3s7_mipi
     assign pmod[4] = python_frame_toggle    ;
     assign pmod[5] = dphy_dl0_txrequesths   ;
     assign pmod[6] = dphy_dl0_txreadyhs     ;
-    assign pmod[7] = '0;
+    assign pmod[7] = sensor_pgood           ;
 
 endmodule
 

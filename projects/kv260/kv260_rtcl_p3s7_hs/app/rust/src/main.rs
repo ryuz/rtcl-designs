@@ -169,6 +169,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("camera module id      : {:04x}", cam.module_id()?);
                 println!("camera module version : {:04x}", cam.module_version()?);
                 println!("camera sensor id      : {:04x}", cam.sensor_id()?);
+                println!("sensor_ready : {}", cam.sensor_ready()?);
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },

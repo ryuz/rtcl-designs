@@ -286,6 +286,12 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
+    pub fn sensor_ready(
+        &mut self
+    ) -> Result<bool, RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.read_i2c(REG_P3S7_SENSOR_READY)? != 0)
+    }
+
     pub fn sensor_pgood(
         &mut self
     ) -> Result<bool, RtclP3s7ModuleDriverError<I2C::Error>> {
