@@ -10,7 +10,7 @@
 `default_nettype none
 
 
-module img_bayer_lk
+module img_lk
         #(
             parameter   int     REGIONS     = 1                             ,
             parameter   int     TAPS        = 1                             ,

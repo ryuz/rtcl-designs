@@ -163,7 +163,6 @@ module img_buffer
             st0_de        <= s_mat.de           ;
             st0_data      <= s_mat.data         ;
             st0_user      <= s_mat.user         ;
-            st0_valid     <= s_mat.valid        ;
 
             // stage 1
             st1_addrl     <= st0_addrl          ;
@@ -176,7 +175,6 @@ module img_buffer
             st1_de        <= st0_de             ;
             st1_data      <= st0_data           ;
             st1_user      <= st0_user           ;
-            st1_valid     <= st0_valid          ;
 
             // stage 2
             st2_addrl     <= st1_addrl          ;
@@ -189,7 +187,6 @@ module img_buffer
             st2_de        <= st1_de             ;
             st2_data      <= st1_data           ;
             st2_user      <= st1_user           ;
-            st2_valid     <= st1_valid          ;
 
             // stage 3
             st3_rows      <= st2_rows           ;
@@ -202,7 +199,6 @@ module img_buffer
             st3_data0     <= rd_dout[st1_addrl] ;
             st3_data1     <= st2_data           ;
             st3_user      <= st2_user           ;
-            st3_valid     <= st2_valid          ;
         end
     end
 
@@ -225,7 +221,7 @@ module img_buffer
     assign m_mat.data      = {st3_data1, st3_data0} ;
     assign m_mat.user      = st3_user               ;
     assign m_mat.valid     = st3_valid              ;
-    
+
 endmodule
 
 `default_nettype wire

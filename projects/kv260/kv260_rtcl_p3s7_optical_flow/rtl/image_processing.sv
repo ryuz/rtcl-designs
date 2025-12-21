@@ -243,7 +243,7 @@ module image_processing
                 .m_mat          (img_buf    )
             );
 
-    jelly3_img_bayer_lk
+    img_lk
             #(
                 .REGIONS            (LK_REGIONS         ),
                 .TAPS               (TAPS               ),
@@ -266,7 +266,7 @@ module image_processing
                 .RAM_TYPE           (RAM_TYPE           ),
                 .BYPASS_SIZE        (BYPASS_SIZE        )
             )
-        u_img_bayer_lk
+        u_img_lk
             (
                 .reset              (img_buf.reset      ),
                 .clk                (img_buf.clk        ),
