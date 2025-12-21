@@ -214,6 +214,18 @@ module img_buffer
     assign rd_regcke = s_mat.cke                ;
     assign rd_addr   = st0_addrh                ;
 
+
+    assign m_mat.rows      = st3_rows               ;
+    assign m_mat.cols      = st3_cols               ;
+    assign m_mat.row_first = st3_row_first          ;
+    assign m_mat.row_last  = st3_row_last           ;
+    assign m_mat.col_first = st3_col_first          ;
+    assign m_mat.col_last  = st3_col_last           ;
+    assign m_mat.de        = st3_de                 ;
+    assign m_mat.data      = {st3_data1, st3_data0} ;
+    assign m_mat.user      = st3_user               ;
+    assign m_mat.valid     = st3_valid              ;
+    
 endmodule
 
 `default_nettype wire

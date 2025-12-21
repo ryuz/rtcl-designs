@@ -232,15 +232,12 @@ module image_processing
                 .cke        (cke            )
             );
 
-    jelly3_mat_buf_mem
+    img_buffer
             #(
-                .N              (2          ),
-                .BUF_SIZE       (640 * 132  ),
-                .SDP            (1          ),
-                .RAM_TYPE       ("ultra"    ),
-                .DOUT_REG       (1          )
+                .BUF_SIZE       (640 * 480  ),
+                .RAM_TYPE       ("ultra"    )
             )
-        u_mat_buf_mem
+        u_img_buf
             (
                 .s_mat          (img_gauss  ),
                 .m_mat          (img_buf    )

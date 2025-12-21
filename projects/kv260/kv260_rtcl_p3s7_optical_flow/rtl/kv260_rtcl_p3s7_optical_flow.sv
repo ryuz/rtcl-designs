@@ -46,16 +46,18 @@ module kv260_rtcl_p3s7_optical_flow
     localparam  int     AXI4_MEM_DATA_BITS   = 128;
    
 
-    logic       sys_reset           ;
-    logic       sys_clk100          ;
-    logic       sys_clk200          ;
-    logic       sys_clk250          ;
-    logic       sys_clk333          ;
+    logic           sys_reset           ;
+    logic           sys_clk100          ;
+    logic           sys_clk200          ;
+    logic           sys_clk250          ;
+    logic           sys_clk333          ;
 
-    logic       axi4l_peri_aresetn  ;
-    logic       axi4l_peri_aclk     ;
-    logic       axi4_mem_aresetn    ;
-    logic       axi4_mem_aclk       ;
+    logic           axi4l_peri_aresetn  ;
+    logic           axi4l_peri_aclk     ;
+    logic           axi4_mem_aresetn    ;
+    logic           axi4_mem_aclk       ;
+
+    logic   [7:0]   irq1                ;
 
     (* MARK_DEBUG=DEBUG *)  logic       i2c0_scl_i  ;
                             logic       i2c0_scl_o  ;
@@ -106,7 +108,9 @@ module kv260_rtcl_p3s7_optical_flow
         u_design_1
             (
                 .fan_en                 (fan_en             ),
-                
+
+                .pl_ps_irq1             (irq1               ),
+
                 .out_reset              (sys_reset          ),
                 .out_clk100             (sys_clk100         ),
                 .out_clk200             (sys_clk200         ),
@@ -257,9 +261,11 @@ module kv260_rtcl_p3s7_optical_flow
     localparam DEC_FMTR     = 2;
     localparam DEC_WDMA_IMG = 3;
     localparam DEC_WDMA_BLK = 4;
-    localparam DEC_TBLMOD   = 5;
-    localparam DEC_LPF      = 6;
-    localparam DEC_NUM      = 7;
+    localparam DEC_LOG0     = 5;
+    localparam DEC_LOG1     = 6;
+    localparam DEC_LOG2     = 7;
+    localparam DEC_IMPRC    = 8;
+    localparam DEC_NUM      = 9;
 
     jelly3_axi4l_if
             #(
@@ -277,11 +283,12 @@ module kv260_rtcl_p3s7_optical_flow
     assign {axi4l_dec[DEC_SYS     ].addr_base, axi4l_dec[DEC_SYS     ].addr_high} = {40'ha000_0000, 40'ha000_ffff};
     assign {axi4l_dec[DEC_TGEN    ].addr_base, axi4l_dec[DEC_TGEN    ].addr_high} = {40'ha001_0000, 40'ha001_ffff};
     assign {axi4l_dec[DEC_FMTR    ].addr_base, axi4l_dec[DEC_FMTR    ].addr_high} = {40'ha010_0000, 40'ha010_ffff};
-//  assign {axi4l_dec[DEC_RGB     ].addr_base, axi4l_dec[DEC_RGB     ].addr_high} = {40'ha012_0000, 40'ha012_ffff};
     assign {axi4l_dec[DEC_WDMA_IMG].addr_base, axi4l_dec[DEC_WDMA_IMG].addr_high} = {40'ha021_0000, 40'ha021_ffff};
     assign {axi4l_dec[DEC_WDMA_BLK].addr_base, axi4l_dec[DEC_WDMA_BLK].addr_high} = {40'ha022_0000, 40'ha022_ffff};
-    assign {axi4l_dec[DEC_TBLMOD  ].addr_base, axi4l_dec[DEC_TBLMOD  ].addr_high} = {40'ha030_0000, 40'ha030_ffff};
-    assign {axi4l_dec[DEC_LPF     ].addr_base, axi4l_dec[DEC_LPF     ].addr_high} = {40'ha032_0000, 40'ha032_ffff};
+    assign {axi4l_dec[DEC_LOG0    ].addr_base, axi4l_dec[DEC_LOG0    ].addr_high} = {40'ha030_0000, 40'ha030_ffff};
+    assign {axi4l_dec[DEC_LOG1    ].addr_base, axi4l_dec[DEC_LOG1    ].addr_high} = {40'ha031_0000, 40'ha031_ffff};
+    assign {axi4l_dec[DEC_LOG2    ].addr_base, axi4l_dec[DEC_LOG2    ].addr_high} = {40'ha032_0000, 40'ha032_ffff};
+    assign {axi4l_dec[DEC_IMPRC   ].addr_base, axi4l_dec[DEC_IMPRC   ].addr_high} = {40'ha040_0000, 40'ha04f_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
@@ -664,170 +671,191 @@ module kv260_rtcl_p3s7_optical_flow
             );
 
 
-    // binary modulation
-    logic   [0:0]               axi4s_bin_tuser     ;
-    logic                       axi4s_bin_tlast     ;
-    logic   [9:0]               axi4s_bin_tdata     ;
-    logic   [0:0]               axi4s_bin_tbinary   ;
-    logic                       axi4s_bin_tvalid    ;
-    logic                       axi4s_bin_tready    ;
-    
-    video_tbl_modulator
-            #(
-                .TUSER_BITS             (1                      ),
-                .TDATA_BITS             (10                     ),
-                .INIT_PARAM_END         (0                      ),
-                .INIT_PARAM_INV         (0                      )
-            )
-        u_video_tbl_modulator
-            (
-                .s_axi4l                (axi4l_dec[DEC_TBLMOD]  ),
+    // image processing
+    localparam  int     RAW_BITS    = 10                            ;
+    localparam  int     SOBEL_BITS  = RAW_BITS + 8                  ;
+    localparam  type    sobel_t     = logic signed  [SOBEL_BITS-1:0];
+    localparam  int     CALC_BITS   = $bits(sobel_t) * 2            ;
+    localparam  type    calc_t      = logic signed  [CALC_BITS-1:0] ;
+    localparam  int     ACC_BITS    = $bits(calc_t) + 20            ;
+    localparam  type    acc_t       = logic signed  [ACC_BITS-1:0]  ;
+    localparam  int     DX_BITS     = 32                            ;
+    localparam  type    dx_t        = logic signed  [DX_BITS-1:0]   ;
+    localparam  int     DY_BITS     = 32                            ;
+    localparam  type    dy_t        = logic signed  [DY_BITS-1:0]   ;
 
-                .aresetn                (axi4s_cam_aresetn      ),
-                .aclk                   (axi4s_cam_aclk         ),
-                .aclken                 (1'b1                   ),
-                
-                .s_axi4s_tuser          (axi4s_fmtr.tuser       ),
-                .s_axi4s_tlast          (axi4s_fmtr.tlast       ),
-                .s_axi4s_tdata          (axi4s_fmtr.tdata       ),
-                .s_axi4s_tvalid         (axi4s_fmtr.tvalid      ),
-                .s_axi4s_tready         (axi4s_fmtr.tready      ),
-                
-                .m_axi4s_tuser          (axi4s_bin_tuser        ),
-                .m_axi4s_tlast          (axi4s_bin_tlast        ),
-                .m_axi4s_tbinary        (axi4s_bin_tbinary      ),
-                .m_axi4s_tdata          (axi4s_bin_tdata        ),
-                .m_axi4s_tvalid         (axi4s_bin_tvalid       ),
-                .m_axi4s_tready         (axi4s_bin_tready       )
-            );
-    
-    // mnist
-    logic   [0:0]   axi4s_mnist_tuser   ;
-    logic           axi4s_mnist_tlast   ;
-    logic   [9:0]   axi4s_mnist_tdata   ;
-    logic   [10:0]  axi4s_mnist_tclass  ;
-    logic           axi4s_mnist_tvalid  ;
-    logic           axi4s_mnist_tready  ;
-
-    mnist_seg
+    jelly3_axi4s_if
             #(
-                .TUSER_WIDTH        (10 + 1     ),
-                .MAX_X_NUM          (1024       ),
-                .RAM_TYPE           ("block"    ),
-                .IMG_Y_NUM          (480        ),
-                .IMG_Y_WIDTH        (12         ),
-                .S_TDATA_WIDTH      (1          ),
-                .M_TDATA_WIDTH      (11         ),
-                .DEVICE             ("rtl"      )
+                .DATA_BITS  (16                     ),
+                .DEBUG      (DEBUG                  )
             )
-        u_mnist_seg
+        axi4s_proc
             (
-                .reset              (~axi4s_cam_aresetn ),
-                .clk                (axi4s_cam_aclk     ),
-                
-                .param_blank_num    (8'd30),
-                
-                .s_axi4s_tuser      ({
-                                        axi4s_bin_tdata,
-                                        axi4s_bin_tuser
-                                    }),
-                .s_axi4s_tlast      (axi4s_bin_tlast    ),
-                .s_axi4s_tdata      (axi4s_bin_tbinary  ),
-                .s_axi4s_tvalid     (axi4s_bin_tvalid   ),
-                .s_axi4s_tready     (axi4s_bin_tready   ),
-                
-                .m_axi4s_tuser      ({
-                                        axi4s_mnist_tdata ,
-                                        axi4s_mnist_tuser
-                                    }),
-                .m_axi4s_tlast      (axi4s_mnist_tlast  ),
-                .m_axi4s_tdata      (axi4s_mnist_tclass ),
-                .m_axi4s_tvalid     (axi4s_mnist_tvalid ),
-                .m_axi4s_tready     (axi4s_mnist_tready )
+                .aresetn    (axi4s_cam_aresetn      ),
+                .aclk       (axi4s_cam_aclk         ),
+                .aclken     (1'b1                   )
             );
-    
-    logic   [10:0][7:0]                 axi4s_mnist_tclass_u8;
-    always_comb begin
-        for ( int i = 0; i < 10; i++ ) begin
-            axi4s_mnist_tclass_u8[i] = {8{axi4s_mnist_tclass[i]}};
+
+    dx_t            of_dx     ;
+    dy_t            of_dy     ;
+    logic           of_valid  ;
+
+    acc_t           lk_gx2    ;
+    acc_t           lk_gy2    ;
+    acc_t           lk_gxy    ;
+    acc_t           lk_ex     ;
+    acc_t           lk_ey     ;
+    logic           lk_valid  ;
+
+    image_processing
+            #(
+                .WIDTH_BITS     (WIDTH_BITS             ),
+                .HEIGHT_BITS    (HEIGHT_BITS            ),
+                .TAPS           (1                      ),
+                .RAW_BITS       (RAW_BITS               ),
+                .SOBEL_BITS     (SOBEL_BITS             ),
+                .sobel_t        (sobel_t                ),
+                .CALC_BITS      (CALC_BITS              ),
+                .calc_t         (calc_t                 ),
+                .ACC_BITS       (ACC_BITS               ),
+                .acc_t          (acc_t                  ),
+                .DX_BITS        (DX_BITS                ),
+                .dx_t           (dx_t                   ),
+                .DY_BITS        (DY_BITS                ),
+                .dy_t           (dy_t                   ),
+                .MAX_COLS       (1024                   ),
+                .RAM_TYPE       ("block"                ),
+                .BYPASS_SIZE    (1'b1                   ),
+                .DEVICE         ("RTL"                  )
+            )
+        u_image_processing
+            (
+                .in_update_req  (1'b1                   ),
+                .param_width    (fmtr_param_width       ),
+                .param_height   (fmtr_param_height      ),
+                
+                .s_axi4s        (axi4s_fmtr.s           ),
+                .m_axi4s        (axi4s_proc.m           ),
+
+                .s_axi4l        (axi4l_dec[DEC_IMPRC]   ),
+                .out_irq        (irq1[0]                ),
+
+                .m_of_dx        (of_dx                  ),
+                .m_of_dy        (of_dy                  ),
+                .m_of_valid     (of_valid               ),
+
+                .m_lk_gx2       (lk_gx2                 ),
+                .m_lk_gy2       (lk_gy2                 ),
+                .m_lk_gxy       (lk_gxy                 ),
+                .m_lk_ex        (lk_ex                  ),
+                .m_lk_ey        (lk_ey                  ),
+                .m_lk_valid     (lk_valid               )
+            );
+    assign irq1[7:1] = '0;
+
+
+    // logger
+    logic  [1:0][63:0]  of_log_data;
+    assign of_log_data[0] = 64'(of_dx   );
+    assign of_log_data[1] = 64'(of_dy   );
+
+    jelly3_data_logger_fifo
+            #(
+                .NUM            (2                  ),
+                .DATA_BITS      (64                 ),
+                .TIMER_BITS     (64                 ),
+                .FIFO_ASYNC     (1                  ),
+                .FIFO_PTR_BITS  (10                 )
+            )
+        u_data_logger_fifo_of
+            (
+                .reset          (~axi4s_proc.aresetn),
+                .clk            (axi4s_proc.aclk    ),
+                .cke            (axi4s_proc.aclken  ),
+
+                .s_data         (of_log_data        ),
+                .s_valid        (of_valid           ),
+                .s_ready        (                   ),
+
+                .s_axi4l        (axi4l_dec[DEC_LOG0])
+            );
+
+
+
+    logic  [4:0][63:0]  lk_log_data;
+    assign lk_log_data[0] = 64'(lk_gx2  );
+    assign lk_log_data[1] = 64'(lk_gy2  );
+    assign lk_log_data[2] = 64'(lk_gxy  );
+    assign lk_log_data[3] = 64'(lk_ex   );
+    assign lk_log_data[4] = 64'(lk_ey   );
+
+    jelly3_data_logger_fifo
+            #(
+                .NUM            (5                  ),
+                .DATA_BITS      (64                 ),
+                .TIMER_BITS     (64                 ),
+                .FIFO_ASYNC     (1                  ),
+                .FIFO_PTR_BITS  (10                 )
+            )
+        u_data_logger_fifo_lk
+            (
+                .reset          (~axi4s_proc.aresetn),
+                .clk            (axi4s_proc.aclk    ),
+                .cke            (axi4s_proc.aclken  ),
+
+                .s_data         (lk_log_data        ),
+                .s_valid        (lk_valid           ),
+                .s_ready        (                   ),
+
+                .s_axi4l        (axi4l_dec[DEC_LOG1])
+            );
+
+
+    // logger
+    logic           axi4s_img_first;
+    logic   [15:0]  log_line_count  ;
+    logic           log_line_valid  ;
+    always_ff @(posedge axi4s_cam_aclk) begin
+        if ( ~axi4s_img.aresetn ) begin
+            axi4s_img_first  <= 1'b1;
+            log_line_count   <= '0;
+            log_line_valid   <= 1'b0;
         end
+        else begin
+            if ( axi4s_img.tvalid && axi4s_img.tready ) begin
+                axi4s_img_first <= axi4s_img.tlast;
+            end
 
-        // 背景の学習状況が悪いので補正
-        axi4s_mnist_tclass_u8[10] = {8{~|axi4s_mnist_tclass[9:0]}};
+            log_line_valid <= 1'b0;
+            if ( axi4s_img_first && axi4s_img.tvalid && axi4s_img.tready ) begin
+                log_line_valid <= 1'b1;
+                log_line_count <= log_line_count + 1;
+            end
+            if ( axi4s_img.tuser[0] && axi4s_img.tvalid && axi4s_img.tready ) begin
+                log_line_count <= '0;
+            end
+        end
     end
 
-
-    // LowPass-filter
-    logic   [0:0]               axi4s_lpf_tuser;
-    logic                       axi4s_lpf_tlast;
-    logic   [7:0]               axi4s_lpf_tdata;
-    logic   [10:0][7:0]         axi4s_lpf_tclass;
-    logic                       axi4s_lpf_tvalid;
-    logic                       axi4s_lpf_tready;
-    
-    video_lpf_ram
+    jelly3_data_logger_fifo
             #(
-                .NUM                    (11 + 1             ),
-                .DATA_BITS              (8                  ),
-                .ADDR_BITS              (16                 ),
-                .RAM_TYPE               ("ultra"            ),
-                .TUSER_BITS             (1                  ),
-                .INIT_PARAM_ALPHA       (8'h0               )
+                .NUM            (1                  ),
+                .DATA_BITS      (16                 ),
+                .TIMER_BITS     (64                 ),
+                .FIFO_ASYNC     (1                  ),
+                .FIFO_PTR_BITS  (12                 )
             )
-        u_video_lpf_ram
+        u_data_logger_fifo_line
             (
-                .s_axi4l                (axi4l_dec[DEC_LPF] ),
+                .reset          (~axi4s_img.aresetn ),
+                .clk            (axi4s_img.aclk     ),
+                .cke            (axi4s_img.aclken   ),
 
-                .aresetn                (axi4s_cam_aresetn  ),
-                .aclk                   (axi4s_cam_aclk     ),
+                .s_data         (log_line_count     ),
+                .s_valid        (log_line_valid     ),
+                .s_ready        (                   ),
 
-                .s_axi4s_tuser          (axi4s_mnist_tuser  ),
-                .s_axi4s_tlast          (axi4s_mnist_tlast  ),
-                .s_axi4s_tdata          ({axi4s_mnist_tclass_u8, axi4s_mnist_tdata[9:2]}),
-                .s_axi4s_tvalid         (axi4s_mnist_tvalid ),
-                .s_axi4s_tready         (axi4s_mnist_tready ),
-                
-                .m_axi4s_tuser          (axi4s_lpf_tuser    ),
-                .m_axi4s_tlast          (axi4s_lpf_tlast    ),
-                .m_axi4s_tdata          ({axi4s_lpf_tclass, axi4s_lpf_tdata}),
-                .m_axi4s_tvalid         (axi4s_lpf_tvalid   ),
-                .m_axi4s_tready         (axi4s_lpf_tready   )
-            );
-    
-
-    logic   [0:0]               axi4s_max_tuser     ;
-    logic                       axi4s_max_tlast     ;
-    logic   [7:0]               axi4s_max_tdata     ;
-    logic   [7:0]               axi4s_max_targmax   ;
-    logic                       axi4s_max_tvalid    ;
-    logic                       axi4s_max_tready    ;
-
-    video_argmax
-            #(
-                .CLASS_NUM              (11                 ),
-                .CLASS_WIDTH            (8                  ),
-                .ARGMAX_WIDTH           (8                  ),
-                .TDATA_WIDTH            (8                  ),
-                .TUSER_WIDTH            (1                  )
-            )
-        u_video_argmax
-            (
-                .aresetn                (axi4s_cam_aresetn  ),
-                .aclk                   (axi4s_cam_aclk     ),
-
-                .s_axi4s_tuser          (axi4s_lpf_tuser    ),
-                .s_axi4s_tlast          (axi4s_lpf_tlast    ),
-                .s_axi4s_tdata          (axi4s_lpf_tdata    ),
-                .s_axi4s_tclass         (axi4s_lpf_tclass   ),
-                .s_axi4s_tvalid         (axi4s_lpf_tvalid   ),
-                .s_axi4s_tready         (axi4s_lpf_tready   ),
-
-                .m_axi4s_tuser          (axi4s_max_tuser    ),
-                .m_axi4s_tlast          (axi4s_max_tlast    ),
-                .m_axi4s_tdata          (axi4s_max_tdata    ),
-                .m_axi4s_targmax        (axi4s_max_targmax  ),
-                .m_axi4s_tvalid         (axi4s_max_tvalid   ),
-                .m_axi4s_tready         (axi4s_max_tready   )
+                .s_axi4l        (axi4l_dec[DEC_LOG2])
             );
 
     // DMA write
@@ -843,12 +871,11 @@ module kv260_rtcl_p3s7_optical_flow
                 .aclken     (1'b1               )
             );
 
-    assign axi4s_wdma_img.tuser        = axi4s_max_tuser        ;
-    assign axi4s_wdma_img.tlast        = axi4s_max_tlast        ;
-    assign axi4s_wdma_img.tdata[7:0]   = 8'(axi4s_max_tdata)    ;
-    assign axi4s_wdma_img.tdata[15:8]  = 8'(axi4s_max_targmax)  ;
-    assign axi4s_wdma_img.tvalid       = axi4s_max_tvalid       ;
-    assign axi4s_max_tready = axi4s_wdma_img.tready;
+    assign axi4s_wdma_img.tuser  = axi4s_proc.tuser     ;
+    assign axi4s_wdma_img.tlast  = axi4s_proc.tlast     ;
+    assign axi4s_wdma_img.tdata  = axi4s_proc.tdata     ;
+    assign axi4s_wdma_img.tvalid = axi4s_proc.tvalid    ;
+    assign axi4s_proc.tready     = axi4s_wdma_img.tready;
 
     jelly3_dma_video_write
             #(
@@ -990,7 +1017,48 @@ module kv260_rtcl_p3s7_optical_flow
     assign axi4_mem1.arvalid  = 0;
     assign axi4_mem1.rready   = 0;
     
+
+
+    // ----------------------------------------
+    //  DAC
+    // ----------------------------------------
     
+    logic   dac_sync_n  ;
+    logic   dac_dina    ;
+    logic   dac_dinb    ;
+    logic   dac_sclk    ;
+    
+    output_dac
+            #(
+                .DIV_BITS       (4                  ),
+                .SHIFT          (8                  ),
+                .DX_BITS        (DX_BITS            ),
+                .dx_t           (dx_t               ),
+                .DY_BITS        (DY_BITS            ),
+                .dy_t           (dy_t               )
+            )
+        u_output_dac
+            (
+                .reset          (~axi4s_proc.aresetn),
+                .clk            (axi4s_proc.aclk    ),
+                .cke            (axi4s_proc.aclken  ),
+
+                .s_of_dx        (of_dx              ),
+                .s_of_dy        (of_dy              ),
+                .s_of_valid     (of_valid           ),
+                
+                .dac_sync_n     (dac_sync_n         ),
+                .dac_dina       (dac_dina           ),
+                .dac_dinb       (dac_dinb           ),
+                .dac_sclk       (dac_sclk           )
+            );
+
+    assign pmod[4] = dac_sync_n ;
+    assign pmod[5] = dac_dina   ;
+    assign pmod[6] = dac_dinb   ;
+    assign pmod[7] = dac_sclk   ;
+
+
     
     // ----------------------------------------
     //  Debug
@@ -1080,7 +1148,7 @@ module kv260_rtcl_p3s7_optical_flow
     assign pmod[7:6] = reg_counter_clk100[9:8];
     */
 
-    assign pmod[7:0] = timegen_frames[7:0];
+    assign pmod[3:0] = timegen_frames[3:0];
     
     
     // Debug
