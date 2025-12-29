@@ -40,20 +40,20 @@ module img_buffer
 
 
     // Simple Dualport-RAM
-    we_t            wr_en       ;
-    addr_t          wr_addr     ;
-    word_t  [3:0]   wr_din      ;
-    logic           rd_en       ;
-    logic           rd_regcke   ;
-    addr_t          rd_addr     ;
-    word_t  [3:0]   rd_dout     ;
+    we_t                wr_en       ;
+    addr_t              wr_addr     ;
+    logic   [3:0][15:0] wr_din      ;
+    logic               rd_en       ;
+    logic               rd_regcke   ;
+    addr_t              rd_addr     ;
+    logic   [3:0][15:0] rd_dout     ;
 
     jelly3_ram_simple_dualport
             #(
                 .ADDR_BITS      (ADDRH_BITS     ),
                 .WE_BITS        (4              ),
-                .DATA_BITS      ($bits(word_t)*4),
-                .WORD_BITS      ($bits(word_t)  ),
+                .DATA_BITS      (64             ),
+                .WORD_BITS      (16             ),
                 .MEM_DEPTH      (MEM_DEPTH      ),
                 .RAM_TYPE       (RAM_TYPE       ),
                 .DOUT_REG       (1              ),
@@ -143,6 +143,9 @@ module img_buffer
         end
     end
 
+    logic   [1:0]       next_addrl  ;
+    assign next_addrl = st0_addrl + 1;
+
     always_ff @(posedge s_mat.clk) begin
         if ( s_mat.cke ) begin
             // stage 0
@@ -151,9 +154,14 @@ module img_buffer
                 {st0_addrh, st0_addrl} <= '0        ;
             end
             else if ( s_mat.valid && s_mat.de ) begin
-                st0_we                 <= {st0_we[2:0], st0_we[3]}  ;
                 {st0_addrh, st0_addrl} <= {st0_addrh, st0_addrl} + 1;
+                st0_we                 <= '0    ;
+                st0_we[next_addrl]     <= 1'b1  ;
             end
+            else begin
+                st0_we                 <= 0;
+            end
+
             st0_rows      <= s_mat.rows         ;
             st0_cols      <= s_mat.cols         ;
             st0_row_first <= s_mat.row_first    ;
@@ -196,7 +204,7 @@ module img_buffer
             st3_col_first <= st2_col_first      ;
             st3_col_last  <= st2_col_last       ;
             st3_de        <= st2_de             ;
-            st3_data0     <= rd_dout[st1_addrl] ;
+            st3_data0     <= word_t'(rd_dout[st2_addrl]) ;
             st3_data1     <= st2_data           ;
             st3_user      <= st2_user           ;
         end
@@ -204,7 +212,7 @@ module img_buffer
 
     assign wr_en     = s_mat.cke ? st0_we : '0  ;
     assign wr_addr   = st0_addrh                ;
-    assign wr_din    = {4{st0_data}}            ;
+    assign wr_din    = {4{16'(st0_data)}}       ;
 
     assign rd_en     = s_mat.cke                ;
     assign rd_regcke = s_mat.cke                ;

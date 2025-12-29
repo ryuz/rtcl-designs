@@ -16,8 +16,8 @@ module kv260_rtcl_p3s7_optical_flow
             parameter   type        width_t     = logic [WIDTH_BITS-1:0]    ,
             parameter   int         HEIGHT_BITS = 10                        ,
             parameter   type        height_t    = logic [HEIGHT_BITS-1:0]   ,
-            parameter   width_t     IMG_WIDTH   = 256                       ,
-            parameter   height_t    IMG_HEIGHT  = 256                       ,
+            parameter   width_t     IMG_WIDTH   = width_t'(256)             ,
+            parameter   height_t    IMG_HEIGHT  = height_t'(256)            ,
             parameter               DEBUG       = "true"                    
         )
         (

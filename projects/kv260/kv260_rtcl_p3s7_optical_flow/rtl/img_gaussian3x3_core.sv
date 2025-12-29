@@ -46,7 +46,7 @@ module img_gaussian3x3_core
     logic                           img_blk_col_last    ;
     user_t                          img_blk_user        ;
     de_t                            img_blk_de          ;
-    s_raw_t [TAPS-1:0][1:0][1:0]    img_blk_raw         ;
+    s_raw_t [TAPS-1:0][2:0][2:0]    img_blk_raw         ;
     logic                           img_blk_valid       ;
     
     jelly3_mat_buf_blk

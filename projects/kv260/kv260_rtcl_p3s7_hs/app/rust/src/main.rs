@@ -25,6 +25,9 @@ struct Args {
     #[arg(short = 'f', long, default_value_t = 60)]
     fps: i32,
 
+    #[arg(short = 'r', long, default_value_t = 100)]
+    rec_frames: usize,
+
     /// Enable color mode (default: monochrome)
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
@@ -186,7 +189,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("record to {}", dir_name);
                 
                 // 100フレーム録画
-                let frames = 100;
+                let frames = args.rec_frames;
                 video_capture.record(width, height, frames)?;
                 for f in 0..frames {
                    let img = video_capture.read_image_mat(f)?;
