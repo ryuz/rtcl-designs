@@ -56,7 +56,7 @@ const REG_LOGGER_POL_TIMER0       : usize =  0x18;
 const REG_LOGGER_POL_TIMER1       : usize =  0x19;
 const REG_LOGGER_POL_DATA0        : usize =  0x20;
 const REG_LOGGER_POL_DATA1        : usize =  0x21;
-//const REG_LOGGER_POL_DATA(x)      : usize =  (0x20+(x));
+
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -125,9 +125,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_fmtr     = uio_acc.subclone(0x0010_0000, 0x400);
     let reg_wdma_img = uio_acc.subclone(0x0021_0000, 0x400);
 //  let reg_wdma_blk = uio_acc.subclone(0x0022_0000, 0x400);
-    let reg_log0     = uio_acc.subclone(0x0030_0000, 0x400);
-    let reg_log1     = uio_acc.subclone(0x0032_0000, 0x400);
-    let reg_log2     = uio_acc.subclone(0x0032_0000, 0x400);
+    let reg_log_of   = uio_acc.subclone(0x0030_0000, 0x400);
+    let reg_log_lk   = uio_acc.subclone(0x0032_0000, 0x400);
+    let reg_log_lin  = uio_acc.subclone(0x0032_0000, 0x400);
     let reg_gauss    = uio_acc.subclone(0x0040_1000, 0x400);
     let reg_lk       = uio_acc.subclone(0x0041_0000, 0x400);
     let reg_sel      = uio_acc.subclone(0x0040_f000, 0x400);
@@ -184,6 +184,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         reg_lk.write_reg(REG_IMG_LK_ACC_CTL_CONTROL,       3);
     }
 
+    let mut hist_dx: Vec<f64> = Vec::new();
+    let mut hist_dy: Vec<f64> = Vec::new();
+    let mut log_hist_dx: Vec<f64> = Vec::new();
+    let mut log_hist_dy: Vec<f64> = Vec::new();
+    let mut track_x: f64 = 0.0;
+    let mut track_y: f64 = 0.0;
+
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         // ESC キーで終了
@@ -213,19 +220,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
         highgui::imshow("img", &view)?;
 
-
         // LK ログ取得
-        let mut hist_dx: Vec<f64> = Vec::new();
-        let mut hist_dy: Vec<f64> = Vec::new();
-        let mut log_hist_dx: Vec<f64> = Vec::new();
-        let mut log_hist_dy: Vec<f64> = Vec::new();
-        let mut track_x: f64 = 0.0;
-        let mut track_y: f64 = 0.0;
-
         unsafe {
-            while reg_log0.read_reg(REG_LOGGER_CTL_STATUS) != 0 {
-            let dy = (reg_log1.read_reg(REG_LOGGER_POL_DATA1) as i64 as f64) / 65536.0;
-            let dx = (reg_log0.read_reg(REG_LOGGER_READ_DATA) as i64 as f64) / 65536.0;
+            while reg_log_of.read_reg(REG_LOGGER_CTL_STATUS) != 0 {
+            let dy = (reg_log_of.read_reg(REG_LOGGER_POL_DATA1) as i64 as f64) / 65536.0;
+            let dx = (reg_log_of.read_reg(REG_LOGGER_READ_DATA) as i64 as f64) / 65536.0;
+//          println!("dx: {:8.3}, dy: {:8.3}", dx, dy);
             
             hist_dx.push(dx);
             hist_dy.push(dy);

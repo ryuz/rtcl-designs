@@ -105,10 +105,9 @@ module tb_top();
     localparam  axi4l_addr_t    ADR_GPIO   = axi4l_addr_t'(40'ha000_0000);
     localparam  axi4l_addr_t    ADR_FMTR   = axi4l_addr_t'(40'ha010_0000);
     localparam  axi4l_addr_t    ADR_WDMA   = axi4l_addr_t'(40'ha021_0000);
-    localparam  axi4l_addr_t    ADR_GAUSS  = axi4l_addr_t'(40'ha012_1000);
-//    localparam  axi4l_addr_t    ADR_DEMOS  = axi4l_addr_t'(40'ha012_2000);
-//    localparam  axi4l_addr_t    ADR_COLMAT = axi4l_addr_t'(40'ha012_4000);
-    localparam  axi4l_addr_t    ADR_IMGSEL = axi4l_addr_t'(40'ha012_f000);
+    localparam  axi4l_addr_t    ADR_GAUSS  = axi4l_addr_t'(40'ha040_1000);
+    localparam  axi4l_addr_t    ADR_LK     = axi4l_addr_t'(40'ha041_0000);
+    localparam  axi4l_addr_t    ADR_IMGSEL = axi4l_addr_t'(40'ha040_f000);
 
     jelly3_axi4l_accessor
             #(
@@ -144,38 +143,19 @@ module tb_top();
         u_axi4l.read_reg(ADR_FMTR, `REG_VIDEO_FMTREG_PARAM_FILL,       rdata);
         u_axi4l.read_reg(ADR_FMTR, `REG_VIDEO_FMTREG_PARAM_TIMEOUT,    rdata);
 
-        /*
-        $display("BlackLevel");
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_PHASE  , axi4l_data_t'(bayer_phase), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_OFFSET0, axi4l_data_t'(         66), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_OFFSET1, axi4l_data_t'(         66), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_OFFSET2, axi4l_data_t'(         66), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_OFFSET3, axi4l_data_t'(         66), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF0 , axi4l_data_t'(       4620), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF1 , axi4l_data_t'(       4096), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF2 , axi4l_data_t'(       4096), 8'hff);
-        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF3 , axi4l_data_t'(      10428), 8'hff);
-        */
-
-//        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF3 , axi4l_data_t'(       4620), 8'hff);
-//        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF2 , axi4l_data_t'(       4096), 8'hff);
-//        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF1 , axi4l_data_t'(      10428), 8'hff);
-//        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF0 , axi4l_data_t'(       4096), 8'hff);
-    //  u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF0 , axi4l_data_t'(       4096), 8'hff);
-    //  u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF1 , axi4l_data_t'(       4096), 8'hff);
-    //  u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF2 , axi4l_data_t'(       4096), 8'hff);
-    //  u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_PARAM_COEFF3 , axi4l_data_t'(       4096), 8'hff);
-//        u_axi4l.write_reg(ADR_WB, `REG_IMG_BAYER_WB_CTL_CONTROL  , axi4l_data_t'(          3), 8'hff);
-
-//        $display("demos");
-//        u_axi4l.write_reg(ADR_DEMOS, `REG_IMG_DEMOSAIC_PARAM_PHASE, axi4l_data_t'(bayer_phase), 8'hff);
-//        u_axi4l.write_reg(ADR_DEMOS, `REG_IMG_DEMOSAIC_CTL_CONTROL, axi4l_data_t'(          3), 8'hff);
-
-
         $display("gauss");
-        u_axi4l.read_reg (ADR_GAUSS, `REG_IMG_GAUSS3X3_CORE_ID         , rdata);
-        u_axi4l.write_reg(ADR_GAUSS, `REG_IMG_GAUSS3X3_PARAM_ENABLE    , 7, 8'hff);
-        u_axi4l.write_reg(ADR_GAUSS, `REG_IMG_GAUSS3X3_CTL_CONTROL     , 3, 8'hff);
+        u_axi4l.read_reg (ADR_GAUSS, `REG_IMG_GAUSS3X3_CORE_ID     , rdata);
+        u_axi4l.write_reg(ADR_GAUSS, `REG_IMG_GAUSS3X3_PARAM_ENABLE, 7, 8'hff);
+        u_axi4l.write_reg(ADR_GAUSS, `REG_IMG_GAUSS3X3_CTL_CONTROL , 3, 8'hff);
+
+        $display("lk");
+        u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_CORE_ID     , rdata);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_X     , 100, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_Y     ,   2, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_WIDTH , 128, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_HEIGHT,  64, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_CTL_CONTROL ,   3, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_IRQ_ENABLE  ,   1, 8'hff);
 
         $display("imgsel");
         u_axi4l.write_reg(ADR_IMGSEL, `REG_IMG_SELECTOR_CTL_SELECT, axi4l_data_t'(1), 8'hff);
@@ -204,10 +184,27 @@ module tb_top();
         $display("start");
         u_axi4l.write_reg(ADR_WDMA, int'(`REG_VDMA_WRITE_CTL_CONTROL)     , 3                             , 8'hff);  // update & enable
         
-       
+
+        $display("wait for IRQ");
+        for ( int i = 0; i < 3; i++ ) begin
+            do begin
+               #1000;
+                u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_IRQ_STATUS, rdata);
+            end while ( rdata == 0 );
+            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GXX0, rdata);
+            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GXX1, rdata);
+            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GYY0, rdata);
+            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GYY1, rdata);
+            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_ACC_READY, 1, 8'hff);
+            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_IRQ_CLR,   1, 8'hff);
+            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_OUT_DX0,  8192 * (210+i), 8'hff);
+            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_OUT_DY0, -8192 * (123+i), 8'hff);
+            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_OUT_VALID, 1, 8'hff);
+        end
+
         #10000000
         $display("stop");
-        u_axi4l.write_reg(ADR_WDMA, int'(`REG_VDMA_WRITE_CTL_CONTROL)     , 0                             , 8'hff);  // update & enable
+        u_axi4l.write_reg(ADR_WDMA, int'(`REG_VDMA_WRITE_CTL_CONTROL)     , 0 , 8'hff);  // update & enable
         #1000
 
         $finish();

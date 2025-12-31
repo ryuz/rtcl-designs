@@ -214,6 +214,62 @@ module tb_main
                 .s_img_valid        (u_top.u_image_processing.img_gauss.valid       )
             );
 
+    jelly2_img_slave_model
+            #(
+                .COMPONENTS         (1                  ),
+                .DATA_WIDTH         (10                 ),
+                .FORMAT             ("P2"               ),
+                .FILE_NAME          ("output/buf0_"     ),
+                .FILE_EXT           (".pgm"             ),
+                .SEQUENTIAL_FILE    (1                  )
+            )
+        u_img_slave_model_buf0
+            (
+                .reset              (u_top.u_image_processing.img_buf.reset         ),
+                .clk                (u_top.u_image_processing.img_buf.clk           ),
+                .cke                (u_top.u_image_processing.img_buf.cke           ), 
+
+                .param_width        (SIM_IMG_WIDTH                                  ),
+                .param_height       (SIM_IMG_HEIGHT                                 ),
+                .frame_num          (                                               ),
+
+                .s_img_row_first    (u_top.u_image_processing.img_buf.row_first     ),
+                .s_img_row_last     (u_top.u_image_processing.img_buf.row_last      ),
+                .s_img_col_first    (u_top.u_image_processing.img_buf.col_first     ),
+                .s_img_col_last     (u_top.u_image_processing.img_buf.col_last      ),
+                .s_img_de           (u_top.u_image_processing.img_buf.de            ),
+                .s_img_data         (u_top.u_image_processing.img_buf.data[0][0]    ),
+                .s_img_valid        (u_top.u_image_processing.img_buf.valid         )
+            );
+
+    jelly2_img_slave_model
+            #(
+                .COMPONENTS         (1                  ),
+                .DATA_WIDTH         (10                 ),
+                .FORMAT             ("P2"               ),
+                .FILE_NAME          ("output/buf1_"     ),
+                .FILE_EXT           (".pgm"             ),
+                .SEQUENTIAL_FILE    (1                  )
+            )
+        u_img_slave_model_buf1
+            (
+                .reset              (u_top.u_image_processing.img_buf.reset         ),
+                .clk                (u_top.u_image_processing.img_buf.clk           ),
+                .cke                (u_top.u_image_processing.img_buf.cke           ), 
+
+                .param_width        (SIM_IMG_WIDTH                                  ),
+                .param_height       (SIM_IMG_HEIGHT                                 ),
+                .frame_num          (                                               ),
+
+                .s_img_row_first    (u_top.u_image_processing.img_buf.row_first     ),
+                .s_img_row_last     (u_top.u_image_processing.img_buf.row_last      ),
+                .s_img_col_first    (u_top.u_image_processing.img_buf.col_first     ),
+                .s_img_col_last     (u_top.u_image_processing.img_buf.col_last      ),
+                .s_img_de           (u_top.u_image_processing.img_buf.de            ),
+                .s_img_data         (u_top.u_image_processing.img_buf.data[0][1]    ),
+                .s_img_valid        (u_top.u_image_processing.img_buf.valid         )
+            );
+
     /*
     jelly3_model_img_dump
             #(
