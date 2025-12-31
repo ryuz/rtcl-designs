@@ -50,8 +50,8 @@ module tb_main
             #(
                 .WIDTH_BITS     (WIDTH_BITS     ),
                 .HEIGHT_BITS    (HEIGHT_BITS    ),
-                .IMG_WIDTH      (IMG_WIDTH      ),
-                .IMG_HEIGHT     (IMG_HEIGHT     )
+                .IMG_WIDTH      (16'(IMG_WIDTH) ),
+                .IMG_HEIGHT     (16'(IMG_HEIGHT))
             )
         u_top
             (
@@ -62,6 +62,7 @@ module tb_main
                 .cam_scl        (),
                 .cam_sda        (),
                 .cam_enable     (),
+                .cam_gpio       (),
                 .fan_en         (),
                 .pmod           ()
             );
@@ -184,6 +185,50 @@ module tb_main
                 .s_axi4s_tready     ()
             );
     
+
+    jelly2_img_slave_model
+            #(
+                .COMPONENTS         (1                  ),
+                .DATA_WIDTH         (10                 ),
+                .FORMAT             ("P2"               ),
+                .FILE_NAME          ("output/gauss_"    ),
+                .FILE_EXT           (".pgm"             ),
+                .SEQUENTIAL_FILE    (1                  )
+            )
+        u_img_slave_model_gauss
+            (
+                .reset              (u_top.u_image_processing.img_gauss.reset       ),
+                .clk                (u_top.u_image_processing.img_gauss.clk         ),
+                .cke                (u_top.u_image_processing.img_gauss.cke         ), 
+
+                .param_width        (SIM_IMG_WIDTH                                  ),
+                .param_height       (SIM_IMG_HEIGHT                                 ),
+                .frame_num          (                                               ),
+
+                .s_img_row_first    (u_top.u_image_processing.img_gauss.row_first   ),
+                .s_img_row_last     (u_top.u_image_processing.img_gauss.row_last    ),
+                .s_img_col_first    (u_top.u_image_processing.img_gauss.col_first   ),
+                .s_img_col_last     (u_top.u_image_processing.img_gauss.col_last    ),
+                .s_img_de           (u_top.u_image_processing.img_gauss.de          ),
+                .s_img_data         (u_top.u_image_processing.img_gauss.data        ),
+                .s_img_valid        (u_top.u_image_processing.img_gauss.valid       )
+            );
+
+    /*
+    jelly3_model_img_dump
+            #(
+                .FORMAT             ("P2"           ),
+                .FILE_NAME          ("output/gauss_"),
+                .FILE_EXT           (".pgm"         ),
+                .SEQUENTIAL_FILE    (1              )
+            )
+        u_model_img_dump_gauss
+            (
+                .s_img              (u_top.u_image_processing.img_gauss.s),
+
+                .frame_num          (               )
+            );
+    */
 
     /*
     jelly3_mat_if   s_img       ,

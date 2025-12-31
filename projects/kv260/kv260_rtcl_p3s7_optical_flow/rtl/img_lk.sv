@@ -141,7 +141,7 @@ module img_lk
     for ( genvar i = 0; i < TAPS; i++ ) begin : loop_sobel
         img_lk_sobel
                 #(
-                    .RAW_BITS           (RAW_BITS           ),
+                    .RAW_BITS           ($bits(raw_t)       ),
                     .raw_t              (raw_t              ),
                     .SOBEL_BITS         ($bits(sobel_t)     ),
                     .sobel_t            (sobel_t            )

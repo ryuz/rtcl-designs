@@ -3,7 +3,7 @@
 # setting
 TOP_MODULE = tb_top
 
-JELLY_TOP_DIR = ../../../../../..
+JELLY_TOP_DIR = ../../../../../../jelly
 
 -include $(JELLY_TOP_DIR)/include/make/def_simulation.inc
 
@@ -32,7 +32,6 @@ SRCS  = ../$(TOP_MODULE).sv
 SRCS += ../../stub/design_1.v
 SRCS += ../../stub/IOBUF.v
 SRCS += ../../stub/mipi_dphy_cam.v
-SRCS += ../../stub/jelly2_mipi_csi2_rx.sv
 
 # rulres
 all: build run

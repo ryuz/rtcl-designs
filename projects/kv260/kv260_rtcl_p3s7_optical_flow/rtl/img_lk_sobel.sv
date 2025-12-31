@@ -22,7 +22,7 @@ module img_lk_sobel
             input   var logic                   clk             ,
             input   var logic                   cke             ,
 
-            input   var raw_t   [4:0][4:0][1:0] in_raw          ,
+            input   var raw_t   [2:0][2:0][1:0] in_raw          ,
 
             output  var raw_t             [1:0] out_raw         ,
             output  var sobel_t                 out_diff        ,
