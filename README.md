@@ -12,6 +12,8 @@
   - `kv260/` : KV260 用
     - `kv260_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
     - `kv260_rtcl_p3s7_csi2/` : RTCL-P3S70-MIPI CSI2 仕様実験版
+    - `kv260_rtcl_p3s7_mnist_seg/` : 1000fps MNISTセマンティックセグメンテーションサンプル
+    - `kv260_rtcl_p3s7_optical_flow/` : 1000fps オプティカルフロー計測サンプル
   - `zybo_z7/` : ZYBO Z7用
     - `zybo_z7_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
 
