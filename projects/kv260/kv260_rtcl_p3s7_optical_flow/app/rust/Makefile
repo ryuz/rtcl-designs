@@ -36,7 +36,7 @@ load:
 	jelly-fpga-loader unload --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader register-accel $(ACCEL_NAME) $(DTBO_FILE) $(BIN_FILE) --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader load $(ACCEL_NAME) --ip $(KV260_SERVER_ADDRESS)
-	jelly-fpga-loader remoteproc load ../rpu/target/armv7r-none-eabi/release/kv260_imx219_of_measuring_rpu --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader remoteproc load ../rpu/target/armv7r-none-eabi/release/kv260_rtcl_p3s7_optical_flow_rpu --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader remoteproc start --ip $(KV260_SERVER_ADDRESS)
 
 .PHONY: cross_build
