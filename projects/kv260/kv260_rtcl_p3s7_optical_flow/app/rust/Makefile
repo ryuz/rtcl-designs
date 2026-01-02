@@ -1,5 +1,5 @@
 
-BASE_NAME = kv260_rtcl_p3s7_hs
+BASE_NAME = kv260_rtcl_p3s7_optical_flow
 
 ELF_NAME   = $(BASE_NAME)
 ACCEL_NAME = $(BASE_NAME)
@@ -20,20 +20,24 @@ all: build
 build:
 	cargo build --release
 
+.PHONY: run
+run:
+	cargo run --release -- $(RUN_OPT)
+
 .PHONY: clean
 clean:
 	cargo clean
 
-.PHONY: run
-run: load
-	cargo run --release -- $(RUN_OPT)
-
 .PHONY: load
 load:
 	make -C ..
+	make -C ../rpu
+	-jelly-fpga-loader remoteproc stop --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader unload --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader register-accel $(ACCEL_NAME) $(DTBO_FILE) $(BIN_FILE) --ip $(KV260_SERVER_ADDRESS)
 	jelly-fpga-loader load $(ACCEL_NAME) --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader remoteproc load ../rpu/target/armv7r-none-eabi/release/kv260_rtcl_p3s7_optical_flow_rpu --ip $(KV260_SERVER_ADDRESS)
+	jelly-fpga-loader remoteproc start --ip $(KV260_SERVER_ADDRESS)
 
 .PHONY: cross_build
 cross_build:
@@ -42,8 +46,4 @@ cross_build:
 .PHONY: remote_run
 remote_run: cross_build load
 	scp target/$(TARGET_ARCH)/release/$(ELF_NAME) $(KV260_SSH_ADDRESS):/tmp/
-	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(ELF_NAME) $(RUN_OPT)
-
-.PHONY: remote_rerun
-remote_rerun:
 	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(ELF_NAME) $(RUN_OPT)

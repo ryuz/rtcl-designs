@@ -99,10 +99,6 @@ where
         self.pgood_enable = enable;
     }
 
-    pub fn sensor_ready(&mut self) -> Result<bool, Box<dyn Error>> {
-        Ok(self.cam_i2c.sensor_ready()?)
-    }
-
     pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_pgood()?)
     }

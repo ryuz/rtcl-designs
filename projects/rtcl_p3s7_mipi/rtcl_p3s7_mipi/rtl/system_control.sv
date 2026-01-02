@@ -200,6 +200,11 @@ module system_control
                 default: ;
                 endcase
             end
+
+            // PGOOD 監視中に PGOODが落ちたら enable も倒す
+            if ( reg_sensor_pgood_en && !reg_sensor_pgood ) begin
+                reg_sensor_enable <= 1'b0;
+            end
         end
     end
 
