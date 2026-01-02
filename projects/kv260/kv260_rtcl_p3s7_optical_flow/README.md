@@ -12,8 +12,11 @@ Kria KV260 でRTCL-P3S7-MIPI グローバルシャッター高速度カメラを
 ## 環境準備
 
 KV260 の RPU(Cortex-R5) も利用する為、クロスコンパイラのインストールが必要です。
+これはコンパイルする環境で必要ですので、KV260側でセルフコンパイルする場合は、KV260 側で、PC側でクロスコンパイルする場合は PC 側でインストールしてください。
+
 
 ```bash
+sudo apt update
 sudo apt install gcc-arm-none-eabi
 sudo apt install libnewlib-arm-none-eabi
 ```

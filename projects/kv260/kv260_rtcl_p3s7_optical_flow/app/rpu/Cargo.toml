@@ -1,5 +1,5 @@
 [package]
-name = "kv260_imx219_of_measuring_rpu"
+name = "kv260_rtcl_p3s7_optical_flow_rpu"
 version = "0.1.0"
 edition = "2024"
 

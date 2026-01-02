@@ -1,7 +1,7 @@
 
 
 
-PRJ_NAME = kv260_imx219_of_measuring_rpu
+PRJ_NAME = kv260_rtcl_p3s7_optical_flow_rpu
 
 # build
 RELEASE       ?= Yes
