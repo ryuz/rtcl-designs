@@ -115,5 +115,3 @@ set_property SLEW SLOW [get_ports {pmod[4]}]
 set_property SLEW SLOW [get_ports {pmod[5]}]
 set_property SLEW SLOW [get_ports {pmod[6]}]
 set_property SLEW SLOW [get_ports {pmod[7]}]
-
-
