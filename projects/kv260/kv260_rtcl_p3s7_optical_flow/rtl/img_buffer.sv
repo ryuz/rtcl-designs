@@ -48,6 +48,7 @@ module img_buffer
     addr_t              rd_addr     ;
     logic   [3:0][15:0] rd_dout     ;
     
+    /*
     jelly3_ram_simple_dualport
             #(
                 .ADDR_BITS      (ADDRH_BITS     ),
@@ -76,8 +77,8 @@ module img_buffer
                 .rd_addr        (rd_addr        ),
                 .rd_dout        (rd_dout        )
             );
+    */
     
-    /*
     jelly3_ram_singleport
             #(
                 .ADDR_BITS      (ADDRH_BITS     ),
@@ -104,7 +105,7 @@ module img_buffer
                 .din            (wr_din         ),
                 .dout           (rd_dout        )
             );
-    */
+    
 
     we_t                st0_we          ;
     addr_t              st0_addrh       ;

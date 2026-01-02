@@ -233,8 +233,8 @@ module image_processing
 
     img_buffer
             #(
-                .BUF_SIZE       (640 * 480  ),
-//              .BUF_SIZE       (320 * 320  ),
+//              .BUF_SIZE       (640 * 480  ),
+                .BUF_SIZE       (320 * 320  ),
 //              .BUF_SIZE       (256 * 256  ),
                 .RAM_TYPE       ("ultra"    )
 //              .RAM_TYPE       ("block"    )
