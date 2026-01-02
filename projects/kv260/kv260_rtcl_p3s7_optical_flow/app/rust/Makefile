@@ -21,7 +21,7 @@ build:
 	cargo build --release
 
 .PHONY: run
-build:
+run:
 	cargo run --release -- $(RUN_OPT)
 
 .PHONY: clean

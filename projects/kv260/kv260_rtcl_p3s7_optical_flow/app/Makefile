@@ -17,6 +17,7 @@ ACCEL_PATH    = $(FIRMWARE_PATH)/xilinx/$(ACCEL_NAME)
 KV260_SERVER_ADDRESS ?= 127.0.0.1:8051
 
 RUN_OPT ?=
+export RUN_OPT
 
 .PHONY: all
 all: $(DTBO_FILE) $(BIN_FILE)
@@ -25,27 +26,19 @@ all: $(DTBO_FILE) $(BIN_FILE)
 clean:
 	rm -rf $(DTBO_FILE) $(BIN_FILE)
 
-.PHONY: run
-run: run_rust
-
-#.PHONY: run_cpp
-#run_cpp: load
-#	make -C cpp run
-
-.PHONY: run_rust
-run_rust: load
-	cd rust; cargo run -- $(RUN_OPT)
-
-.PHONY: build_rust
-build_rust:
-	cd rust; cargo build
-
+.PHONY: build
+build:
+	make -C rpu build
+	make -C rust build
 
 .PHONY: run
-run: $(TARGET) load
-	-make -C rpu stop
+run: load
+	echo "=== RPU start ==="
 	make -C rpu run
-	./$(TARGET) $(RUN_OPT)
+	echo "=== app start ==="
+	make -C rust run
+#	cd rust; cargo run -- $(RUN_OPT)
+	echo "=== RPU stop ==="
 	make -C rpu stop
 
 .PHONY: stop
