@@ -47,7 +47,7 @@ module img_buffer
     logic               rd_regcke   ;
     addr_t              rd_addr     ;
     logic   [3:0][15:0] rd_dout     ;
-
+    
     jelly3_ram_simple_dualport
             #(
                 .ADDR_BITS      (ADDRH_BITS     ),
@@ -76,7 +76,35 @@ module img_buffer
                 .rd_addr        (rd_addr        ),
                 .rd_dout        (rd_dout        )
             );
-
+    
+    /*
+    jelly3_ram_singleport
+            #(
+                .ADDR_BITS      (ADDRH_BITS     ),
+                .WE_BITS        (4              ),
+                .DATA_BITS      (64             ),
+                .WORD_BITS      (16             ),
+                .MEM_DEPTH      (MEM_DEPTH      ),
+                .RAM_TYPE       (RAM_TYPE       ),
+                .MODE           ("READ_FIRST"   ),
+                .DOUT_REG       (1              ),
+                .FILLMEM        (1              ),
+                .FILLMEM_DATA   ('0             ),
+                .DEVICE         (DEVICE         ),
+                .SIMULATION     (SIMULATION     ),
+                .DEBUG          (DEBUG          )
+            )
+        u_ram_singleport
+            (
+                .clk            (s_mat.clk      ),
+                .en             (s_mat.cke      ),
+                .regcke         (s_mat.cke      ),
+                .we             (wr_en          ),
+                .addr           (wr_addr        ),
+                .din            (wr_din         ),
+                .dout           (rd_dout        )
+            );
+    */
 
     we_t                st0_we          ;
     addr_t              st0_addrh       ;
@@ -116,6 +144,7 @@ module img_buffer
     user_t              st2_user        ;
     logic               st2_valid       ;
 
+    logic   [1:0]       st3_addrl       ;
     rows_t              st3_rows        ;
     cols_t              st3_cols        ;
     logic               st3_row_first   ;
@@ -123,10 +152,22 @@ module img_buffer
     logic               st3_col_first   ;
     logic               st3_col_last    ;
     de_t                st3_de          ;
-    word_t              st3_data0       ;
+    logic   [3:0][15:0] st3_data0       ;
     word_t              st3_data1       ;
     user_t              st3_user        ;
     logic               st3_valid       ;
+
+    rows_t              st4_rows        ;
+    cols_t              st4_cols        ;
+    logic               st4_row_first   ;
+    logic               st4_row_last    ;
+    logic               st4_col_first   ;
+    logic               st4_col_last    ;
+    de_t                st4_de          ;
+    word_t              st4_data0       ;
+    word_t              st4_data1       ;
+    user_t              st4_user        ;
+    logic               st4_valid       ;
 
     always_ff @(posedge s_mat.clk) begin
         if ( s_mat.reset ) begin
@@ -134,12 +175,14 @@ module img_buffer
             st1_valid <= 1'b0   ;
             st2_valid <= 1'b0   ;
             st3_valid <= 1'b0   ;
+            st4_valid <= 1'b0   ;
         end
         else if ( s_mat.cke ) begin
             st0_valid <= s_mat.valid;
             st1_valid <= st0_valid  ;
             st2_valid <= st1_valid  ;
             st3_valid <= st2_valid  ;
+            st4_valid <= st3_valid  ;
         end
     end
 
@@ -161,7 +204,6 @@ module img_buffer
             else begin
                 st0_we                 <= 0;
             end
-
             st0_rows      <= s_mat.rows         ;
             st0_cols      <= s_mat.cols         ;
             st0_row_first <= s_mat.row_first    ;
@@ -197,6 +239,7 @@ module img_buffer
             st2_user      <= st1_user           ;
 
             // stage 3
+            st3_addrl     <= st2_addrl          ;
             st3_rows      <= st2_rows           ;
             st3_cols      <= st2_cols           ;
             st3_row_first <= st2_row_first      ;
@@ -204,9 +247,20 @@ module img_buffer
             st3_col_first <= st2_col_first      ;
             st3_col_last  <= st2_col_last       ;
             st3_de        <= st2_de             ;
-            st3_data0     <= word_t'(rd_dout[st2_addrl]) ;
+            st3_data0     <= rd_dout            ;
             st3_data1     <= st2_data           ;
             st3_user      <= st2_user           ;
+
+            // stage 3
+            st4_rows      <= st3_rows           ;
+            st4_cols      <= st3_cols           ;
+            st4_row_first <= st3_row_first      ;
+            st4_row_last  <= st3_row_last       ;
+            st4_col_first <= st3_col_first      ;
+            st4_col_last  <= st3_col_last       ;
+            st4_de        <= st3_de             ;
+            st4_data0     <= word_t'(st3_data0[st3_addrl]) ;
+            st4_data1     <= st3_data1          ;
         end
     end
 
@@ -219,16 +273,16 @@ module img_buffer
     assign rd_addr   = st0_addrh                ;
 
 
-    assign m_mat.rows      = st3_rows               ;
-    assign m_mat.cols      = st3_cols               ;
-    assign m_mat.row_first = st3_row_first          ;
-    assign m_mat.row_last  = st3_row_last           ;
-    assign m_mat.col_first = st3_col_first          ;
-    assign m_mat.col_last  = st3_col_last           ;
-    assign m_mat.de        = st3_de                 ;
-    assign m_mat.data      = {st3_data1, st3_data0} ;
-    assign m_mat.user      = st3_user               ;
-    assign m_mat.valid     = st3_valid              ;
+    assign m_mat.rows      = st4_rows               ;
+    assign m_mat.cols      = st4_cols               ;
+    assign m_mat.row_first = st4_row_first          ;
+    assign m_mat.row_last  = st4_row_last           ;
+    assign m_mat.col_first = st4_col_first          ;
+    assign m_mat.col_last  = st4_col_last           ;
+    assign m_mat.de        = st4_de                 ;
+    assign m_mat.data      = {st4_data1, st4_data0} ;
+    assign m_mat.user      = st4_user               ;
+    assign m_mat.valid     = st4_valid              ;
 
 endmodule
 

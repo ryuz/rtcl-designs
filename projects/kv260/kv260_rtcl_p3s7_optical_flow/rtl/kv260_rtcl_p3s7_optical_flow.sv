@@ -871,11 +871,31 @@ module kv260_rtcl_p3s7_optical_flow
                 .aclken     (1'b1               )
             );
 
+    /*
     assign axi4s_wdma_img.tuser  = axi4s_proc.tuser     ;
     assign axi4s_wdma_img.tlast  = axi4s_proc.tlast     ;
     assign axi4s_wdma_img.tdata  = axi4s_proc.tdata     ;
     assign axi4s_wdma_img.tvalid = axi4s_proc.tvalid    ;
     assign axi4s_proc.tready     = axi4s_wdma_img.tready;
+    */
+
+
+    jelly3_axi4s_fifo
+            #(
+                .ASYNC          (1          ),
+                .PTR_BITS       (9          ),
+                .RAM_TYPE       ("block"    ),
+                .DEVICE         ("RTL"      ),
+                .SIMULATION     ("false"    ),
+                .DEBUG          ("false"    )
+            )
+        u_axi4s_fifo
+            (
+                .s_axi4s        (axi4s_proc     ),
+                .m_axi4s        (axi4s_wdma_img ),
+                .s_free_size    (               ),
+                .m_data_size    (               )
+            );
 
     jelly3_dma_video_write
             #(

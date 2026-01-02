@@ -78,11 +78,13 @@ pub unsafe extern "C" fn irq_handler() {
         // 割込み番号取得
         let icciar = pl390.read_icciar();
 
+        /*
         static mut IRQ_COUNT: u32 = 0;
         IRQ_COUNT += 1;
         if IRQ_COUNT % 1000 == 0 {
             println!("irq [{}]", icciar);
         }
+        */
 
         match icciar {
             74 => {

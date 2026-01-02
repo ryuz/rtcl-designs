@@ -150,10 +150,10 @@ module tb_top();
 
         $display("lk");
         u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_CORE_ID     , rdata);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_X     , 100, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_Y     ,   2, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_X     ,  16, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_Y     ,  16, 8'hff);
         u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_WIDTH , 128, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_HEIGHT,  64, 8'hff);
+        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_HEIGHT, 128, 8'hff);
         u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_CTL_CONTROL ,   3, 8'hff);
         u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_IRQ_ENABLE  ,   1, 8'hff);
 

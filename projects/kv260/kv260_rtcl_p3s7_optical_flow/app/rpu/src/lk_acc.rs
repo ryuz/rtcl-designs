@@ -101,6 +101,13 @@ pub fn irq_handler() {
     let dx = (dx.min(255.0).max(-255.0) * 65536.0) as i64;
     let dy = (dy.min(255.0).max(-255.0) * 65536.0) as i64;
 
+    /*
+    println!(
+        "dx:{} dy:{} gx2:{} gy2:{} gxy:{} ex:{} ey:{}",
+        dx, dy, gx2, gy2, gxy, ex, ey
+    );
+    */
+
     // 書き込み
     wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, dx);
     wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, dy);

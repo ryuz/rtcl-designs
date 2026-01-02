@@ -212,7 +212,6 @@ module image_processing
         );
     
 
-
     // -------------------------------------
     //  frame buffer
     // -------------------------------------
@@ -235,7 +234,10 @@ module image_processing
     img_buffer
             #(
                 .BUF_SIZE       (640 * 480  ),
+//              .BUF_SIZE       (320 * 320  ),
+//              .BUF_SIZE       (256 * 256  ),
                 .RAM_TYPE       ("ultra"    )
+//              .RAM_TYPE       ("block"    )
             )
         u_img_buf
             (
@@ -303,7 +305,7 @@ module image_processing
     //  output selector
     // -------------------------------------
 
-    localparam int SEL_NUM = 4;
+    localparam int SEL_NUM = 5;
 
     jelly3_mat_if
             #(
@@ -376,8 +378,18 @@ module image_processing
     assign img_sel_s[3].user        = img_buf.user                  ;
     assign img_sel_s[3].valid       = img_buf.valid                 ;
 
-endmodule
+    assign img_sel_s[4].rows        = img_gauss.rows                ;
+    assign img_sel_s[4].cols        = img_gauss.cols                ;
+    assign img_sel_s[4].row_first   = img_gauss.row_first           ;
+    assign img_sel_s[4].row_last    = img_gauss.row_last            ;
+    assign img_sel_s[4].col_first   = img_gauss.col_first           ;
+    assign img_sel_s[4].col_last    = img_gauss.col_last            ;
+    assign img_sel_s[4].de          = img_gauss.de                  ;
+    assign img_sel_s[4].data        = M_CH_BITS'(img_gauss.data)    ;
+    assign img_sel_s[4].user        = img_gauss.user                ;
+    assign img_sel_s[4].valid       = img_gauss.valid               ;
 
+endmodule
 
 
 `default_nettype wire

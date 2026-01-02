@@ -46,6 +46,8 @@ SOURCES += $(PRJ_DIR)/rtl/img_gaussian3x3_core.sv
 SOURCES += $(PRJ_DIR)/rtl/img_gaussian.sv
 SOURCES += $(PRJ_DIR)/rtl/img_lk_sobel.sv
 SOURCES += $(PRJ_DIR)/rtl/img_lk.sv
+#SOURCES += $(PRJ_DIR)/rtl/img_pattern.sv
+#SOURCES += $(PRJ_DIR)/rtl/video_pattern.sv
 
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES

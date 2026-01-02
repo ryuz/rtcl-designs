@@ -45,6 +45,14 @@ const REG_IMG_LK_ACC_OUT_DX1      : usize =  0x65;
 const REG_IMG_LK_ACC_OUT_DY0      : usize =  0x66;
 const REG_IMG_LK_ACC_OUT_DY1      : usize =  0x67;
 
+// image selector
+const REG_IMG_SELECTOR_CORE_ID      : usize = 0x00;
+const REG_IMG_SELECTOR_CORE_VERSION : usize = 0x01;
+const REG_IMG_SELECTOR_CTL_SELECT   : usize = 0x08;
+const REG_IMG_SELECTOR_CONFIG_NUM   : usize = 0x10;
+
+
+// Logger
 const REG_LOGGER_CORE_ID          : usize =  0x00;
 const REG_LOGGER_CORE_VERSION     : usize =  0x01;
 const REG_LOGGER_CTL_CONTROL      : usize =  0x04;
@@ -72,7 +80,7 @@ struct Args {
     #[arg(short = 'f', long, default_value_t = 1000)]
     fps: i32,
 
-    #[arg(short = 'r', long, default_value_t = 100)]
+    #[arg(short = 'r', long, default_value_t = 1000)]
     rec_frames: usize,
 
     /// Enable color mode (default: monochrome)
@@ -142,7 +150,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 
     let i2c = LinuxI2c::new("/dev/i2c-6", 0x10)?;
-    let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    let mut cam = CameraDriver::new(i2c, reg_sys.clone(), reg_fmtr);
 
     if args.pgood_off {
         cam.set_sensor_pgood_enable(false);
@@ -175,6 +183,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
+    create_cv_trackbar("sel",        0,    3,   0)?;
 
     unsafe {
         reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_X,          16);
@@ -203,6 +212,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
+        let sel = get_cv_trackbar_pos("sel")?;
+
+        unsafe {
+            reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
+        }
 
         cam.set_gain(gain)?;
 

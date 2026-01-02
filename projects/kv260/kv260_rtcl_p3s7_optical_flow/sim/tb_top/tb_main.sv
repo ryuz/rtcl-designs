@@ -109,13 +109,14 @@ module tb_main
 
 
     localparam DATA_WIDTH      = 10;
-    localparam FILE_NAME       = "../../data/20251229-132155/img";
+//  localparam FILE_NAME       = "../../data/20251229-132155/img";
+    localparam FILE_NAME       = "../../data/20251231-181425/img";
     localparam FILE_EXT        = ".pgm";
     localparam SEQUENTIAL_FILE = 1;
     localparam FILE_IMG_WIDTH  = 320;
     localparam FILE_IMG_HEIGHT = 320;
-    localparam SIM_IMG_WIDTH   = 320;
-    localparam SIM_IMG_HEIGHT  = 320;
+    localparam SIM_IMG_WIDTH   = 256;//320;
+    localparam SIM_IMG_HEIGHT  = 256;//320;
     assign img_width  = SIM_IMG_WIDTH;
     assign img_height = SIM_IMG_HEIGHT;
 
@@ -136,7 +137,7 @@ module tb_main
                 .FILE_IMG_WIDTH     (FILE_IMG_WIDTH ),
                 .FILE_IMG_HEIGHT    (FILE_IMG_HEIGHT),
                 .SEQUENTIAL_FILE    (SEQUENTIAL_FILE),
-                .BUSY_RATE          (0              ),
+                .BUSY_RATE          (10             ),
                 .RANDOM_SEED        (0              )
             )
         u_model_axi4s_m
