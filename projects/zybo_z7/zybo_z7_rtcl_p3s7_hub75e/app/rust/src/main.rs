@@ -16,11 +16,11 @@ use opencv::core::*;
 #[command(version, about, long_about = None)]
 struct Args {
     /// Image width in pixels
-    #[arg(short = 'W', long, default_value_t = 640)]
+    #[arg(short = 'W', long, default_value_t = 64)]
     width: usize,
 
     /// Image height in pixels
-    #[arg(short = 'H', long, default_value_t = 480)]
+    #[arg(short = 'H', long, default_value_t = 64)]
     height: usize,
 
     /// Enable color mode (default: monochrome)
@@ -86,7 +86,27 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     unsafe {
         reg_hub75.write_reg(0x04, 1); // HUB75 LED ON
+        /*
+        reg_hub75.write_reg(0x20, 1); 
+        reg_hub75.write_reg(0x21, 4); 
+        reg_hub75.write_reg(0x22, 8); 
+        reg_hub75.write_reg(0x23, 16); 
+        reg_hub75.write_reg(0x24, 32/8); 
+        reg_hub75.write_reg(0x25, 64/4); 
+        reg_hub75.write_reg(0x26, 128/2); 
+        reg_hub75.write_reg(0x27, 256); 
+        */
+        reg_hub75.write_reg(0x20, 0); 
+        reg_hub75.write_reg(0x21, 0); 
+        reg_hub75.write_reg(0x22, 0); 
+        reg_hub75.write_reg(0x23, 0); 
+        reg_hub75.write_reg(0x24, 32/8); 
+        reg_hub75.write_reg(0x25, 64/4); 
+        reg_hub75.write_reg(0x26, 128/2); 
+        reg_hub75.write_reg(0x27, 256); 
     }
+
+
 
     let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 

@@ -967,14 +967,71 @@ module zybo_z7_rtcl_p3s7_hub75e
     assign pmod_e[6] = hub75e_cke   ;
     assign pmod_e[7] = hub75e_oe    ;
 
-    logic           hub75_last      ;
-    logic           hub75_valid     ;
-    logic           hub75_mem_we    ;
-    logic [9:0]     hub75_mem_xaddr ;
-    logic [8:0]     hub75_mem_yaddr ;
-    logic [7:0]     hub75_mem_r     ;
-    logic [7:0]     hub75_mem_g     ;
-    logic [7:0]     hub75_mem_b     ;
+    logic           hub75_st0_last      ;
+    logic           hub75_st0_valid     ;
+    logic           hub75_st0_mem_we    ;
+    logic [9:0]     hub75_st0_mem_xaddr ;
+    logic [8:0]     hub75_st0_mem_yaddr ;
+    logic [7:0]     hub75_st0_mem_r     ;
+    logic [7:0]     hub75_st0_mem_g     ;
+    logic [7:0]     hub75_st0_mem_b     ;
+
+    logic           hub75_st1_mem_we    ;
+    logic [5:0]     hub75_st1_mem_xaddr ;
+    logic [5:0]     hub75_st1_mem_yaddr ;
+    logic [7:0]     hub75_st1_mem_r     ;
+    logic [7:0]     hub75_st1_mem_g     ;
+    logic [7:0]     hub75_st1_mem_b     ;
+
+    always_ff @(posedge axi4s_fmtr.aclk) begin
+        if ( ~axi4s_fmtr.aresetn ) begin
+            hub75_st0_last      <= '0   ;
+            hub75_st0_valid     <= '0   ;
+            hub75_st0_mem_we    <= 1'b0 ;
+            hub75_st0_mem_xaddr <= 'x   ;
+            hub75_st0_mem_yaddr <= 'x   ;
+            hub75_st0_mem_r     <= 'x   ;
+            hub75_st0_mem_g     <= 'x   ;
+            hub75_st0_mem_b     <= 'x   ;
+            hub75_st1_mem_we    <= '0   ;
+            hub75_st1_mem_xaddr <= 'x   ;
+            hub75_st1_mem_yaddr <= 'x   ;
+            hub75_st1_mem_r     <= 'x   ;
+            hub75_st1_mem_g     <= 'x   ;
+            hub75_st1_mem_b     <= 'x   ;
+        end
+        else if ( axi4s_fmtr.aclken ) begin
+            // stage 0
+            hub75_st0_last      <= axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tlast;
+            hub75_st0_valid     <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
+            hub75_st0_mem_we    <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
+            hub75_st0_mem_r     <= axi4s_fmtr.tdata[9:2];
+            hub75_st0_mem_g     <= axi4s_fmtr.tdata[9:2];
+            hub75_st0_mem_b     <= axi4s_fmtr.tdata[9:2];
+            if ( hub75_st0_valid ) begin
+                hub75_st0_mem_xaddr <= hub75_st0_mem_xaddr + 1;
+                if ( hub75_st0_last ) begin
+                    hub75_st0_mem_xaddr <= '0;
+                    hub75_st0_mem_yaddr <= hub75_st0_mem_yaddr + 1;
+                end
+            end
+            if ( axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tuser[0] ) begin
+                hub75_st0_mem_xaddr <= 0;
+                hub75_st0_mem_yaddr <= 0;
+            end
+
+            // stage 1
+            hub75_st1_mem_we    <= hub75_st0_valid
+                                    && hub75_st0_mem_xaddr < 64
+                                    && hub75_st0_mem_yaddr < 64;
+            hub75_st1_mem_xaddr <= hub75_st0_mem_xaddr[5:0]  ;
+            hub75_st1_mem_yaddr <= hub75_st0_mem_yaddr[5:0]  ;
+            hub75_st1_mem_r     <= hub75_st0_mem_r      ;
+            hub75_st1_mem_g     <= hub75_st0_mem_g      ;
+            hub75_st1_mem_b     <= hub75_st0_mem_b      ;
+        end
+    end
+
     hub75_driver
             #(
                 .CLK_DIV            (2          ),
@@ -1005,50 +1062,16 @@ module zybo_z7_rtcl_p3s7_hub75e
                 .hub75_g            ({hub75e_g2, hub75e_g1}         ),
                 .hub75_b            ({hub75e_b2, hub75e_b1}         ),
 
-                .mem_clk            (axi4s_cam_aclk                 ),
-                .mem_we             (hub75_mem_we
-                                        && hub75_mem_xaddr < 64
-                                        && hub75_mem_yaddr < 64     ),
-                .mem_xaddr          (hub75_mem_xaddr[5:0]           ),
-                .mem_yaddr          (hub75_mem_yaddr[5:0]           ),
-                .mem_r              (hub75_mem_r                    ),
-                .mem_g              (hub75_mem_g                    ),
-                .mem_b              (hub75_mem_b                    ),
+                .mem_clk            (axi4s_fmtr.aclk                ),
+                .mem_we             (hub75_st1_mem_we               ),
+                .mem_xaddr          (hub75_st1_mem_xaddr            ),
+                .mem_yaddr          (hub75_st1_mem_yaddr            ),
+                .mem_r              (hub75_st1_mem_r                ),
+                .mem_g              (hub75_st1_mem_g                ),
+                .mem_b              (hub75_st1_mem_b                ),
 
                 .s_axi4l            (axi4l_dec[DEC_HUB75].s         )
         );
-
-    always_ff @(axi4s_fmtr.aclk) begin
-        if ( ~axi4s_fmtr.aresetn ) begin
-            hub75_last      <= '0   ;
-            hub75_valid     <= '0   ;
-            hub75_mem_we    <= 1'b0 ;
-            hub75_mem_xaddr <= 'x   ;
-            hub75_mem_yaddr <= 'x   ;
-            hub75_mem_r     <= 'x   ;
-            hub75_mem_g     <= 'x   ;
-            hub75_mem_b     <= 'x   ;
-        end
-        else if ( axi4s_fmtr.aclken ) begin
-            hub75_last      <= axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tlast;
-            hub75_valid     <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
-            hub75_mem_we    <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
-            hub75_mem_r     <= axi4s_fmtr.tdata[9:2];
-            hub75_mem_g     <= axi4s_fmtr.tdata[9:2];
-            hub75_mem_b     <= axi4s_fmtr.tdata[9:2];
-            
-            if ( hub75_valid ) begin
-                hub75_mem_xaddr <= hub75_mem_xaddr + 1;
-                if ( hub75_last ) begin
-                    hub75_mem_yaddr <= hub75_mem_yaddr + 1;
-                end
-            end
-            if ( axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tuser[0] ) begin
-                hub75_mem_xaddr <= 0;
-                hub75_mem_yaddr <= 0;
-            end
-        end
-    end
 
     
     // ----------------------------------------

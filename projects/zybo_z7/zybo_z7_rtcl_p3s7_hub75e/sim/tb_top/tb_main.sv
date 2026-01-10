@@ -180,8 +180,8 @@ module tb_main
     localparam SEQUENTIAL_FILE = 1;
     localparam FILE_IMG_WIDTH  = 320;
     localparam FILE_IMG_HEIGHT = 320;
-    localparam SIM_IMG_WIDTH   = 256;//320;
-    localparam SIM_IMG_HEIGHT  = 256;//320;
+    localparam SIM_IMG_WIDTH   = 128;//320;
+    localparam SIM_IMG_HEIGHT  = 128;//320;
     assign img_width  = SIM_IMG_WIDTH;
     assign img_height = SIM_IMG_HEIGHT;
 
