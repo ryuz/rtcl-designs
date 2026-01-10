@@ -264,37 +264,66 @@ module design_1
    input sys_reset;
   
   
-	localparam RATE100 = 1000.0/100.00;
-	localparam RATE200 = 1000.0/200.00;
-	localparam RATE250 = 1000.0/250.00;
-	localparam RATE133 = 1000.0/133.33;
-	
-	reg			reset = 1;
-	initial #100 reset = 0;
-	
-	reg			clk100 = 1'b1;
-	always #(RATE100/2.0) clk100 <= ~clk100;
-	
-	reg			clk200 = 1'b1;
-	always #(RATE200/2.0) clk200 <= ~clk200;
-	
-	reg			clk250 = 1'b1;
-	always #(RATE250/2.0) clk250 <= ~clk250;
-	
-	reg			clk133 = 1'b1;
-	always #(RATE133/2.0) clk133 <= ~clk133;
-	
-	
-	assign out_reset             = reset;
-	assign out_clk100            = clk100;
-	assign out_clk200            = clk200;
-	assign out_clk250            = clk250;
-	assign m_axi4l_peri_aresetn  = ~reset;
-	assign m_axi4l_peri_aclk     = clk100;
-	assign s_axi4_mem_aresetn    = ~reset;
-	assign s_axi4_mem_aclk       = clk133;
-	
-	
+    // テストベンチから force する前提
+    reg             reset               /*verilator public_flat*/;
+    reg             clk100              /*verilator public_flat*/;
+    reg             clk200              /*verilator public_flat*/;
+    reg             clk250              /*verilator public_flat*/;
+
+    reg             axi4l_peri_aclk     /*verilator public_flat*/;
+    reg    [31:0]   axi4l_peri_araddr   /*verilator public_flat*/;
+    reg    [0:0]    axi4l_peri_aresetn  /*verilator public_flat*/;
+    reg    [2:0]    axi4l_peri_arprot   /*verilator public_flat*/;
+    reg             axi4l_peri_arready  /*verilator public_flat*/;
+    reg             axi4l_peri_arvalid  /*verilator public_flat*/;
+    reg    [31:0]   axi4l_peri_awaddr   /*verilator public_flat*/;
+    reg    [2:0]    axi4l_peri_awprot   /*verilator public_flat*/;
+    reg             axi4l_peri_awready  /*verilator public_flat*/;
+    reg             axi4l_peri_awvalid  /*verilator public_flat*/;
+    reg             axi4l_peri_bready   /*verilator public_flat*/;
+    reg    [1:0]    axi4l_peri_bresp    /*verilator public_flat*/;
+    reg             axi4l_peri_bvalid   /*verilator public_flat*/;
+    reg    [31:0]   axi4l_peri_rdata    /*verilator public_flat*/;
+    reg             axi4l_peri_rready   /*verilator public_flat*/;
+    reg    [1:0]    axi4l_peri_rresp    /*verilator public_flat*/;
+    reg             axi4l_peri_rvalid   /*verilator public_flat*/;
+    reg    [31:0]   axi4l_peri_wdata    /*verilator public_flat*/;
+    reg             axi4l_peri_wready   /*verilator public_flat*/;
+    reg    [3:0]    axi4l_peri_wstrb    /*verilator public_flat*/;
+    reg             axi4l_peri_wvalid   /*verilator public_flat*/;
+
+    assign out_reset  = reset ;
+    assign out_clk100 = clk100;
+    assign out_clk200 = clk200;
+    assign out_clk250 = clk250;
+
+    assign axi4l_peri_aresetn = ~reset;
+    assign axi4l_peri_aclk    = clk100; // clk250;
+
+    assign axi4l_peri_awready = m_axi4l_peri_awready ;
+    assign axi4l_peri_wready  = m_axi4l_peri_wready  ;
+    assign axi4l_peri_bresp   = m_axi4l_peri_bresp   ;
+    assign axi4l_peri_bvalid  = m_axi4l_peri_bvalid  ;
+    assign axi4l_peri_arready = m_axi4l_peri_arready ;
+    assign axi4l_peri_rdata   = m_axi4l_peri_rdata   ;
+    assign axi4l_peri_rresp   = m_axi4l_peri_rresp   ;
+    assign axi4l_peri_rvalid  = m_axi4l_peri_rvalid  ;
+
+    assign m_axi4l_peri_aresetn = axi4l_peri_aresetn;
+    assign m_axi4l_peri_aclk    = axi4l_peri_aclk   ;
+    assign m_axi4l_peri_awaddr  = axi4l_peri_awaddr ;
+    assign m_axi4l_peri_awprot  = axi4l_peri_awprot ;
+    assign m_axi4l_peri_awvalid = axi4l_peri_awvalid;
+    assign m_axi4l_peri_wdata   = axi4l_peri_wdata  ;
+    assign m_axi4l_peri_wstrb   = axi4l_peri_wstrb  ;
+    assign m_axi4l_peri_wvalid  = axi4l_peri_wvalid ;
+    assign m_axi4l_peri_bready  = axi4l_peri_bready ;
+    assign m_axi4l_peri_araddr  = axi4l_peri_araddr ;
+    assign m_axi4l_peri_arprot  = axi4l_peri_arprot ;
+    assign m_axi4l_peri_arvalid = axi4l_peri_arvalid;
+    assign m_axi4l_peri_rready  = axi4l_peri_rready ;
+
+   
 	
 	jelly_axi4_slave_model
 			#(

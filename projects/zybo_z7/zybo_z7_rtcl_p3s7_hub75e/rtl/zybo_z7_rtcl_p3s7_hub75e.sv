@@ -135,7 +135,7 @@ module zybo_z7_rtcl_p3s7_hub75e
             );
 
     design_1
-        i_design_1
+        u_design_1
             (
                 .sys_reset              (1'b0               ),
                 .sys_clock              (in_clk125          ),
@@ -364,7 +364,7 @@ module zybo_z7_rtcl_p3s7_hub75e
     (* MARK_DEBUG=DEBUG *)  logic   [7:0]       reg_csi_data_type   ;
     (* MARK_DEBUG=DEBUG *)  logic               reg_dphy_init_done  ;
                             logic   [31:0]      reg_fps_count       ;
-                            logic   [31:0]      reg_frame_count     ;
+                            logic   [31:0]      reg_frame_count     = 0;
                             width_t             reg_image_width     ;
                             height_t            reg_image_height    ;
                             width_t             reg_black_width     ;

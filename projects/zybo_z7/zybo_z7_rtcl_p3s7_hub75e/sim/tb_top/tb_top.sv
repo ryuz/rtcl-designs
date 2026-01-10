@@ -45,8 +45,8 @@ module tb_top();
 
     jelly3_axi4l_if
             #(
-                .ADDR_BITS  (40                     ),
-                .DATA_BITS  (64                     )
+                .ADDR_BITS  (32                     ),
+                .DATA_BITS  (32                     )
             )
         axi4l_peri
             (
@@ -107,6 +107,7 @@ module tb_top();
     localparam  axi4l_addr_t    ADR_FMTR   = axi4l_addr_t'(40'ha010_0000);
     localparam  axi4l_addr_t    ADR_WDMA0  = axi4l_addr_t'(40'ha021_0000);
     localparam  axi4l_addr_t    ADR_WDMA1  = axi4l_addr_t'(40'ha022_0000);
+    localparam  axi4l_addr_t    ADR_HUB75  = axi4l_addr_t'(40'ha030_0000);
 
     localparam  SYSREG_ID             = 4'h0;
     localparam  SYSREG_SW_RESET       = 4'h1;

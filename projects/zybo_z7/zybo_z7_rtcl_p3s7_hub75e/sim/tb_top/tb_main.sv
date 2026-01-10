@@ -12,22 +12,22 @@ module tb_main
             
             output  var logic           s_axi4l_peri_aresetn    ,
             output  var logic           s_axi4l_peri_aclk       ,
-            input   var logic   [39:0]  s_axi4l_peri_awaddr     ,
+            input   var logic   [31:0]  s_axi4l_peri_awaddr     ,
             input   var logic   [2:0]   s_axi4l_peri_awprot     ,
             input   var logic           s_axi4l_peri_awvalid    ,
             output  var logic           s_axi4l_peri_awready    ,
-            input   var logic   [63:0]  s_axi4l_peri_wdata      ,
-            input   var logic   [7:0]   s_axi4l_peri_wstrb      ,
+            input   var logic   [31:0]  s_axi4l_peri_wdata      ,
+            input   var logic   [3:0]   s_axi4l_peri_wstrb      ,
             input   var logic           s_axi4l_peri_wvalid     ,
             output  var logic           s_axi4l_peri_wready     ,
             output  var logic   [1:0]   s_axi4l_peri_bresp      ,
             output  var logic           s_axi4l_peri_bvalid     ,
             input   var logic           s_axi4l_peri_bready     ,
-            input   var logic   [39:0]  s_axi4l_peri_araddr     ,
+            input   var logic   [31:0]  s_axi4l_peri_araddr     ,
             input   var logic   [2:0]   s_axi4l_peri_arprot     ,
             input   var logic           s_axi4l_peri_arvalid    ,
             output  var logic           s_axi4l_peri_arready    ,
-            output  var logic   [63:0]  s_axi4l_peri_rdata      ,
+            output  var logic   [31:0]  s_axi4l_peri_rdata      ,
             output  var logic   [1:0]   s_axi4l_peri_rresp      ,
             output  var logic           s_axi4l_peri_rvalid     ,
             input   var logic           s_axi4l_peri_rready     ,
@@ -46,8 +46,8 @@ module tb_main
     parameter   int     IMG_WIDTH   = 640   ;
     parameter   int     IMG_HEIGHT  = 64    ;
 
-    assign img_width  = IMG_WIDTH   ;
-    assign img_height = IMG_HEIGHT  ;
+//  assign img_width  = IMG_WIDTH   ;
+//  assign img_height = IMG_HEIGHT  ;
 
     zybo_z7_rtcl_p3s7_hub75e
             #(
@@ -109,17 +109,16 @@ module tb_main
     //  Clock & Reset
     // -----------------------------
     
-//    always_comb force u_top.u_design_1.reset  = reset;
-//    always_comb force u_top.u_design_1.clk100 = clk100;
-//    always_comb force u_top.u_design_1.clk200 = clk200;
-//    always_comb force u_top.u_design_1.clk250 = clk250;
-
+    always_comb force u_top.u_design_1.reset  = reset;
+    always_comb force u_top.u_design_1.clk100 = clk100;
+    always_comb force u_top.u_design_1.clk200 = clk200;
+    always_comb force u_top.u_design_1.clk250 = clk250;
 
 
     // -----------------------------
     //  Peripheral Bus
     // -----------------------------
-    /*
+    
     assign s_axi4l_peri_aresetn = u_top.u_design_1.axi4l_peri_aresetn ;
     assign s_axi4l_peri_aclk    = u_top.u_design_1.axi4l_peri_aclk    ;
 
@@ -143,7 +142,80 @@ module tb_main
     always_comb force u_top.u_design_1.axi4l_peri_arprot  = s_axi4l_peri_arprot ;
     always_comb force u_top.u_design_1.axi4l_peri_arvalid = s_axi4l_peri_arvalid;
     always_comb force u_top.u_design_1.axi4l_peri_rready  = s_axi4l_peri_rready ;
-    */
+    
+
+
+    // -----------------------------
+    //  Video input
+    // -----------------------------
+
+    logic   axi4s_src_aresetn;
+    logic   axi4s_src_aclk;
+
+    jelly3_axi4s_if
+            #(
+                .USER_BITS      (1),
+                .DATA_BITS      (10)
+            )
+        axi4s_src
+            (
+                .aresetn        (axi4s_src_aresetn  ),
+                .aclk           (axi4s_src_aclk     ),
+                .aclken         (1'b1               )
+            );
+
+    assign axi4s_src_aresetn = u_top.axi4s_img.aresetn;
+    assign axi4s_src_aclk    = u_top.axi4s_img.aclk;
+    
+    always_comb force u_top.axi4s_img.tuser  = axi4s_src.tuser ;
+    always_comb force u_top.axi4s_img.tlast  = axi4s_src.tlast ;
+    always_comb force u_top.axi4s_img.tdata  = axi4s_src.tdata ;
+    always_comb force u_top.axi4s_img.tvalid = axi4s_src.tvalid;
+    assign axi4s_src.tready = u_top.axi4s_img.tready;
+
+
+    localparam DATA_WIDTH      = 10;
+    localparam FILE_NAME       = "";
+    localparam FILE_EXT        = "";
+    localparam SEQUENTIAL_FILE = 1;
+    localparam FILE_IMG_WIDTH  = 320;
+    localparam FILE_IMG_HEIGHT = 320;
+    localparam SIM_IMG_WIDTH   = 256;//320;
+    localparam SIM_IMG_HEIGHT  = 256;//320;
+    assign img_width  = SIM_IMG_WIDTH;
+    assign img_height = SIM_IMG_HEIGHT;
+
+    // master
+    logic  [31:0]  out_x;
+    logic  [31:0]  out_y;
+    logic  [31:0]  out_f;
+    jelly3_model_axi4s_m
+            #(
+                .COMPONENTS         (1              ),
+                .DATA_BITS          (DATA_WIDTH     ),
+                .IMG_WIDTH          (SIM_IMG_WIDTH  ),
+                .IMG_HEIGHT         (SIM_IMG_HEIGHT ),
+                .H_BLANK            (64             ),
+                .V_BLANK            (32             ),
+                .FILE_NAME          (FILE_NAME      ),
+                .FILE_EXT           (FILE_EXT       ),
+                .FILE_IMG_WIDTH     (FILE_IMG_WIDTH ),
+                .FILE_IMG_HEIGHT    (FILE_IMG_HEIGHT),
+                .SEQUENTIAL_FILE    (SEQUENTIAL_FILE),
+                .BUSY_RATE          (10             ),
+                .RANDOM_SEED        (0              )
+            )
+        u_model_axi4s_m
+            (
+                .enable             (1'b1           ),
+                .busy               (               ),
+
+                .m_axi4s            (axi4s_src.m    ),
+                .out_x              (out_x          ),
+                .out_y              (out_y          ),
+                .out_f              (out_f          )
+            );
+    
 
     /*
     // -----------------------------

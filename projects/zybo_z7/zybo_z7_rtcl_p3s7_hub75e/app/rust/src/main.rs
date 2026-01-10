@@ -70,11 +70,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("uio_pl_peri phys addr : 0x{:x}", uio_acc.phys_addr());
     println!("uio_pl_peri size      : 0x{:x}", uio_acc.size());
 
-    let reg_sys      = uio_acc.subclone(0x00000000, 0x400);
-    let reg_timgen   = uio_acc.subclone(0x00010000, 0x400);
-    let reg_fmtr     = uio_acc.subclone(0x00100000, 0x400);
-    let reg_wdma_img = uio_acc.subclone(0x00210000, 0x400);
-    let reg_wdma_blk = uio_acc.subclone(0x00220000, 0x400);
+    let reg_sys      = uio_acc.subclone(0x0000_0000, 0x400);
+    let reg_timgen   = uio_acc.subclone(0x0001_0000, 0x400);
+    let reg_fmtr     = uio_acc.subclone(0x0010_0000, 0x400);
+    let reg_wdma_img = uio_acc.subclone(0x0021_0000, 0x400);
+    let reg_wdma_blk = uio_acc.subclone(0x0022_0000, 0x400);
+    let reg_hub75    = uio_acc.subclone(0x0030_0000, 0x400);
 
     println!("CORE ID");
     println!("reg_sys      : {:08x}", unsafe { reg_sys.read_reg(0) });
@@ -82,6 +83,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
     println!("reg_wdma_blk : {:08x}", unsafe { reg_wdma_blk.read_reg(0) });
+
+    unsafe {
+        reg_hub75.write_reg(0x04, 1); // HUB75 LED ON
+    }
 
     let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 
@@ -98,7 +103,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("camera module id      : {:04x}", cam.module_id()?);
     println!("camera module version : {:04x}", cam.module_version()?);
     println!("camera sensor id      : {:04x}", cam.sensor_id()?);
-
 
     let mut video_capture = CaptureDriver::new(reg_wdma_img, udmabuf_acc.clone())?;
 
@@ -180,6 +184,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             _ => {
             }
         }
+    }
+
+    unsafe {
+        reg_hub75.write_reg(0x04, 0); // HUB75 LED OFF
     }
 
     cam.close()?;
