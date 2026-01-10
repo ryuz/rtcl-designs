@@ -48,6 +48,7 @@ where
     reg_fmtr: UioAccessor<U>,
 
     opend: bool,
+    pgood_enable: bool,
     width: usize,
     height: usize,
     slave_mode: bool,
@@ -71,6 +72,7 @@ where
             reg_sys,
             reg_fmtr,
             opend: false,
+            pgood_enable: true,
             width: 480,
             height: 480,
             slave_mode: false,
@@ -81,6 +83,22 @@ where
             exposure: 10000,
             xsm_delay: 0,
         }
+    }
+
+    pub fn cam_i2c_mut(&mut self) -> &mut RtclP3s7ModuleDriver<I2C> {
+        &mut self.cam_i2c
+    }
+
+    pub fn sensor_pgood_enable(&mut self) -> bool {
+        self.pgood_enable
+    }
+
+    pub fn set_sensor_pgood_enable(&mut self, enable: bool) {
+        self.pgood_enable = enable;
+    }
+
+    pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_pgood()?)
     }
 
     pub fn opend(&self) -> bool {
@@ -110,6 +128,7 @@ where
         }
 
         // カメラ基板初期化
+        self.cam_i2c.set_sensor_pgood_enable(self.pgood_enable)?;
         self.cam_i2c.set_sensor_power_enable(false)?;
         self.cam_i2c.set_dphy_reset(true)?;
         std::thread::sleep(std::time::Duration::from_millis(10));

@@ -87,6 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    cam.set_sensor_pgood_enable(false);
     cam.set_image_size(width, height)?;
 //  cam.set_slave_mode(true)?;
 //  cam.set_trigger_mode(true)?;

@@ -91,7 +91,7 @@ where
         &mut self.cam_i2c
     }
 
-    pub fn ensor_pgood_enable(&mut self) -> bool {
+    pub fn sensor_pgood_enable(&mut self) -> bool {
         self.pgood_enable
     }
 
