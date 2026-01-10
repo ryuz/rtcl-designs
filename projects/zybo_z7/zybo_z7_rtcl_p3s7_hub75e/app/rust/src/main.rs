@@ -87,24 +87,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     unsafe {
         reg_hub75.write_reg(0x04, 1); // HUB75 LED ON
         
-        reg_hub75.write_reg(0x20, 0);
-        reg_hub75.write_reg(0x21, 0);
-        reg_hub75.write_reg(0x22, 0);
-        reg_hub75.write_reg(0x23, 0);
+        // 短すぎるパルスはスイッチが追いつかないので一旦ゼロにする
+        reg_hub75.write_reg(0x20, 0);   // 1
+        reg_hub75.write_reg(0x21, 0);   // 2
+        reg_hub75.write_reg(0x22, 0);   // 4
+        reg_hub75.write_reg(0x23, 0);   // 8
         reg_hub75.write_reg(0x24, 16);
         reg_hub75.write_reg(0x25, 32);
         reg_hub75.write_reg(0x26, 64);
         reg_hub75.write_reg(0x27, 128);
-        /*
-        reg_hub75.write_reg(0x20, 0);
-        reg_hub75.write_reg(0x21, 0);
-        reg_hub75.write_reg(0x22, 0);
-        reg_hub75.write_reg(0x23, 0);
-        reg_hub75.write_reg(0x24, 32/8);
-        reg_hub75.write_reg(0x25, 64/4);
-        reg_hub75.write_reg(0x26, 128/2);
-        reg_hub75.write_reg(0x27, 256);
-        */
     }
 
 
