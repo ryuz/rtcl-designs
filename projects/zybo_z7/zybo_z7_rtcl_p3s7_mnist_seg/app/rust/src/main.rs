@@ -8,6 +8,27 @@ use zybo_z7_rtcl_p3s7_mnist_seg::camera_driver::CameraDriver;
 use zybo_z7_rtcl_p3s7_mnist_seg::capture_driver::CaptureDriver;
 use zybo_z7_rtcl_p3s7_mnist_seg::timing_generator_driver::TimingGeneratorDriver;
 
+const REG_BIN_PARAM_END   : usize =        0x04;
+//const REG_BIN_PARAM_INV   : usize =        0x05;
+const REG_BIN_TBL0        : usize =        0x40;
+const REG_BIN_TBL1        : usize =        0x41;
+const REG_BIN_TBL2        : usize =        0x42;
+const REG_BIN_TBL3        : usize =        0x43;
+const REG_BIN_TBL4        : usize =        0x44;
+const REG_BIN_TBL5        : usize =        0x45;
+const REG_BIN_TBL6        : usize =        0x46;
+const REG_BIN_TBL7        : usize =        0x47;
+const REG_BIN_TBL8        : usize =        0x48;
+const REG_BIN_TBL9        : usize =        0x49;
+const REG_BIN_TBL10       : usize =        0x4a;
+const REG_BIN_TBL11       : usize =        0x4b;
+const REG_BIN_TBL12       : usize =        0x4c;
+const REG_BIN_TBL13       : usize =        0x4d;
+const REG_BIN_TBL14       : usize =        0x4e;
+//const REG_BIN_TBL15       : usize =        0x4f;
+const REG_LPF_PARAM_ALPHA : usize =        0x08;
+
+
 use opencv::*;
 use opencv::core::*;
 
@@ -221,7 +242,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             'd' => {
                 println!("write : dump.png");
-                imgcodecs::imwrite("dump.png", &view, &Vector::<i32>::new())?;
+                imgcodecs::imwrite("dump.png", &img, &Vector::<i32>::new())?;
             },
             'r' => {  // 動画記録
                 // 日時のディレクトリを生成

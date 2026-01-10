@@ -1156,8 +1156,8 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     logic [7:0]     hub75_st1_mem_g     ;
     logic [7:0]     hub75_st1_mem_b     ;
 
-    always_ff @(posedge axi4s_fmtr.aclk) begin
-        if ( ~axi4s_fmtr.aresetn ) begin
+    always_ff @(posedge axi4s_max.aclk) begin
+        if ( ~axi4s_max.aresetn ) begin
             hub75_st0_last      <= '0   ;
             hub75_st0_valid     <= '0   ;
             hub75_st0_mem_we    <= 1'b0 ;
@@ -1173,14 +1173,14 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             hub75_st1_mem_g     <= 'x   ;
             hub75_st1_mem_b     <= 'x   ;
         end
-        else if ( axi4s_fmtr.aclken ) begin
+        else if ( axi4s_max.aclken ) begin
             // stage 0
-            hub75_st0_last      <= axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tlast;
-            hub75_st0_valid     <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
-            hub75_st0_mem_we    <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
-            hub75_st0_mem_r     <= axi4s_fmtr.tdata[9:2];
-            hub75_st0_mem_g     <= axi4s_fmtr.tdata[9:2];
-            hub75_st0_mem_b     <= axi4s_fmtr.tdata[9:2];
+            hub75_st0_last      <= axi4s_max.tvalid && axi4s_max.tready && axi4s_max.tlast;
+            hub75_st0_valid     <= axi4s_max.tvalid && axi4s_max.tready;
+            hub75_st0_mem_we    <= axi4s_max.tvalid && axi4s_max.tready;
+            hub75_st0_mem_r     <= axi4s_max.tdata[7:0];
+            hub75_st0_mem_g     <= axi4s_max.tdata[7:0];
+            hub75_st0_mem_b     <= axi4s_max.tdata[7:0];
             if ( hub75_st0_valid ) begin
                 hub75_st0_mem_xaddr <= hub75_st0_mem_xaddr + 1;
                 if ( hub75_st0_last ) begin
@@ -1188,10 +1188,23 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                     hub75_st0_mem_yaddr <= hub75_st0_mem_yaddr + 1;
                 end
             end
-            if ( axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tuser[0] ) begin
+            if ( axi4s_max.tvalid && axi4s_max.tready && axi4s_max.tuser[0] ) begin
                 hub75_st0_mem_xaddr <= 0;
                 hub75_st0_mem_yaddr <= 0;
             end
+            case ( axi4s_max.tdata[15:8] )
+            8'd0: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd0,   8'd0  };  // 黒 (black)
+            8'd1: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd42,  8'd42,  8'd165};  // 茶 (brown)
+            8'd2: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd0,   8'd255};  // 赤 (red)
+            8'd3: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd165, 8'd255};  // 橙 (orange)
+            8'd4: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd255, 8'd255};  // 黄 (yellow)
+            8'd5: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd255, 8'd0  };  // 緑 (green)
+            8'd6: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd255, 8'd0,   8'd0  };  // 青 (blue)
+            8'd7: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd128, 8'd0,   8'd128};  // 紫 (purple)
+            8'd8: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd192, 8'd192, 8'd192};  // 灰 (gray)
+            8'd9: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd255, 8'd255, 8'd255};  // 白 (white)
+            default: ;
+            endcase
 
             // stage 1
             hub75_st1_mem_we    <= hub75_st0_valid

@@ -1,6 +1,6 @@
 
-DT_NAME   = zybo_z7_rtcl_p3s7_hub75e
-BIT_NAME  = zybo_z7_rtcl_p3s7_hub75e
+DT_NAME   = zybo_z7_rtcl_p3s7_mnist_seg
+BIT_NAME  = zybo_z7_rtcl_p3s7_mnist_seg
 
 DTS_FILE  = $(DT_NAME).dts
 DTBO_FILE = $(DT_NAME).dtbo

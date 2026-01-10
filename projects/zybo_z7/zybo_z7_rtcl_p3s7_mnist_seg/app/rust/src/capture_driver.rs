@@ -79,6 +79,16 @@ impl<T0: MemAccess, T1: MemAccess> CaptureDriver<T0, T1>
             Ok(img)
         }
     }
+    
+    pub fn read_image_vec(&mut self, index : usize) -> Result<Vec::<u8>> {
+        let size = self.record_width * self.record_height * 2;
+        let mut buf = vec![0u8; size as usize];
+        let offset = index * size;
+        unsafe {
+            self.dmabuf.copy_to_u8(offset, buf.as_mut_ptr(), size);
+        }
+        Ok(buf)
+    }
 
     pub fn record_frames(&self) -> usize {
         self.record_frames
