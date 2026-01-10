@@ -7,7 +7,7 @@ VIVADO_VERSIONS := $(subst .,$(space),$(subst v,,$(word 2,$(shell vivado -versio
 VIVADO_VERSION  := $(word 1,$(VIVADO_VERSIONS)).$(word 2,$(VIVADO_VERSIONS))
 
 # settings
-PROJECT_NAME = zybo_z7_rtcl_p3s7_hs
+PROJECT_NAME = zybo_z7_rtcl_p3s7_hub75e
 BOARD_NAME   = zybo_z7
 export PRJ_NAME     = $(PROJECT_NAME)_tcl
 export TOP_MODULE   = $(PROJECT_NAME)
@@ -34,10 +34,13 @@ HLS_IP =
 export HLS_IP
 
 # sources
-SOURCES  = $(PRJ_DIR)/rtl/zybo_z7_rtcl_p3s7_hs.sv
-SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
+SOURCES  = $(PRJ_DIR)/rtl/zybo_z7_rtcl_p3s7_hub75e.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_dphy_recv.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
+SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
+SOURCES += $(PRJ_DIR)/rtl/hub75_driver.sv
+SOURCES += $(PRJ_DIR)/rtl/hub75_driver_core.sv
+
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
 
