@@ -330,7 +330,7 @@ module zybo_z7_rtcl_p3s7_hub75e
 //  assign {axi4l_dec[DEC_RGB     ].addr_base, axi4l_dec[DEC_RGB     ].addr_high} = {32'h4012_0000, 32'h4012_ffff};
     assign {axi4l_dec[DEC_WDMA_IMG].addr_base, axi4l_dec[DEC_WDMA_IMG].addr_high} = {32'h4021_0000, 32'h4021_ffff};
     assign {axi4l_dec[DEC_WDMA_BLK].addr_base, axi4l_dec[DEC_WDMA_BLK].addr_high} = {32'h4022_0000, 32'h4022_ffff};
-    assign {axi4l_dec[DEC_HUB75   ].addr_base, axi4l_dec[DEC_HUB75   ].addr_high} = {32'h4030_0000, 32'h4030_ffff};
+    assign {axi4l_dec[DEC_HUB75   ].addr_base, axi4l_dec[DEC_HUB75   ].addr_high} = {32'h4040_0000, 32'h4040_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
