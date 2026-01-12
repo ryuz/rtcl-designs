@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_fmtr     = uio_acc.subclone(0x0010_0000, 0x400);
     let reg_wdma_img = uio_acc.subclone(0x0021_0000, 0x400);
     let reg_wdma_blk = uio_acc.subclone(0x0022_0000, 0x400);
-    let reg_hub75    = uio_acc.subclone(0x0030_0000, 0x400);
+    let reg_hub75    = uio_acc.subclone(0x0040_0000, 0x400);
 
     println!("CORE ID");
     println!("reg_sys      : {:08x}", unsafe { reg_sys.read_reg(0) });
