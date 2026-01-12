@@ -242,12 +242,10 @@ module hub75_driver_core
         st3_r    <= '0;
         st3_g    <= '0;
         st3_b    <= '0;
-        if ( st2_f >= 0 ) begin
-            for ( int i = 0; i < N; i++ ) begin
-                st3_r[i] <= mem_rd_dout[i][2][st2_f];
-                st3_g[i] <= mem_rd_dout[i][1][st2_f];
-                st3_b[i] <= mem_rd_dout[i][0][st2_f];
-            end
+        for ( int i = 0; i < N; i++ ) begin
+            st3_r[i] <= mem_rd_dout[i][2][st2_f];
+            st3_g[i] <= mem_rd_dout[i][1][st2_f];
+            st3_b[i] <= mem_rd_dout[i][0][st2_f];
         end
     end
 

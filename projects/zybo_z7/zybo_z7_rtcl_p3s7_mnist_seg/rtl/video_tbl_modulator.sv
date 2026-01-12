@@ -5,23 +5,23 @@
 
 module video_tbl_modulator
         #(
-            parameter   int     TUSER_BITS     = 1                      ,
-            parameter   type    user_t         = logic [TUSER_BITS-1:0] ,
-            parameter   int     TDATA_BITS     = 24                     ,
-            parameter   type    data_t         = logic [TDATA_BITS-1:0] ,
-            parameter   int     REGADR_BITS    = 8                      ,
-            parameter   type    regadr_t       = logic [REGADR_BITS-1:0],
+            parameter   int         TUSER_BITS     = 1                      ,
+            parameter   type        user_t         = logic [TUSER_BITS-1:0] ,
+            parameter   int         TDATA_BITS     = 24                     ,
+            parameter   type        data_t         = logic [TDATA_BITS-1:0] ,
+            parameter   int         REGADR_BITS    = 8                      ,
+            parameter   type        regadr_t       = logic [REGADR_BITS-1:0],
             
-            parameter   int     ADDR_BITS      = 6                      ,
-            parameter   int     MEM_DEPTH      = 2 ** ADDR_BITS         ,
-            parameter           RAM_TYPE       = "distributed"          ,
-            parameter   int     FILLMEM_DATA   = 127                    ,
+            parameter   int         ADDR_BITS      = 6                      ,
+            parameter   int         MEM_DEPTH      = 2 ** ADDR_BITS         ,
+            parameter               RAM_TYPE       = "distributed"          ,
+            parameter   int         FILLMEM_DATA   = 127                    ,
             
-            parameter   bit     M_SLAVE_REG    = 1                      ,
-            parameter   bit     M_MASTER_REG   = 1                      ,
+            parameter   bit         M_SLAVE_REG    = 1                      ,
+            parameter   bit         M_MASTER_REG   = 1                      ,
             
-            parameter   bit     INIT_PARAM_END = 0                      ,
-            parameter   bit     INIT_PARAM_INV = 0                      
+            parameter   regadr_t    INIT_PARAM_END = 0                      ,
+            parameter   bit         INIT_PARAM_INV = 0                      
         )
         (
             jelly3_axi4l_if.s           s_axi4l         ,

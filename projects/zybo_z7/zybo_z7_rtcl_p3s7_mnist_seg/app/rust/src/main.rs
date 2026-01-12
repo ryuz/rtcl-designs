@@ -44,9 +44,6 @@ struct Args {
     #[arg(short = 'H', long, default_value_t = 128)]
     height: usize,
 
-    /// Enable color mode (default: monochrome)
-    #[arg(short = 'c', long)]
-    color: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -56,12 +53,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Configuration:");
     println!("  width:  {}", args.width);
     println!("  height: {}", args.height);
-    println!("  color:  {}", args.color);
 
     let width = args.width;
     let height = args.height;
-    let color = args.color;
-
+    
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
     let r = running.clone();
@@ -108,6 +103,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_wdma_blk : {:08x}", unsafe { reg_wdma_blk.read_reg(0) });
 
     unsafe {
+        reg_sys.write_reg(0x0f, 1);
+        
         reg_hub75.write_reg(0x04, 1); // HUB75 LED ON
         
         // 短すぎるパルスはスイッチが追いつかないので一旦ゼロにする
@@ -127,10 +124,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_sensor_pgood_enable(false);
     cam.set_image_size(width, height)?;
-//  cam.set_slave_mode(true)?;
-//  cam.set_trigger_mode(true)?;
+    cam.set_slave_mode(true)?;
+    cam.set_trigger_mode(true)?;
     cam.open()?;
-    cam.set_color(color)?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -141,11 +137,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // ウィンドウ作成
     highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
+    highgui::resize_window("img", width as i32 + 64, height as i32 + 256)?;
+    highgui::named_window("class", highgui::WINDOW_AUTOSIZE)?;
+    highgui::resize_window("class", width as i32 + 64, height as i32 + 256)?;
 
     // トラックバー生成
-    create_cv_trackbar("gain",       0,  200,  10)?;
-    create_cv_trackbar("fps",       10, 1000,  60)?;
-    create_cv_trackbar("exposure",  10,  900, 900)?;
+    create_cv_trackbar("gain",       0,  200,   10)?;
+    create_cv_trackbar("fps",       10, 1000, 1000)?;
+    create_cv_trackbar("exposure",  10,  900,  900)?;
     create_cv_trackbar("lpf",       0,   255,  200)?;
     create_cv_trackbar("bin_th",    0,  1023,   64)?;
 
@@ -232,6 +231,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 *cls.at_2d_mut::<opencv::core::Vec3b>(y, x)? = opencv::core::Vec3b::from(color);
             }
         }
+        
+        // 表示
+        highgui::imshow("img", &img)?;
+        highgui::imshow("class", &cls)?;
 
         // キーボード操作
         let ch = key as u8 as char;

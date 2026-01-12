@@ -43,8 +43,8 @@ module tb_main
 
     parameter   int     WIDTH_BITS  = 16    ;
     parameter   int     HEIGHT_BITS = 16    ;
-    parameter   int     IMG_WIDTH   = 640   ;
-    parameter   int     IMG_HEIGHT  = 64    ;
+    parameter   int     IMG_WIDTH   = 128   ;
+    parameter   int     IMG_HEIGHT  = 128   ;
 
 //  assign img_width  = IMG_WIDTH   ;
 //  assign img_height = IMG_HEIGHT  ;
@@ -175,11 +175,11 @@ module tb_main
 
 
     localparam DATA_WIDTH      = 10;
-    localparam FILE_NAME       = "";
+    localparam FILE_NAME       = "../../mnist_test_640x480.pgm";
     localparam FILE_EXT        = "";
-    localparam SEQUENTIAL_FILE = 1;
-    localparam FILE_IMG_WIDTH  = 320;
-    localparam FILE_IMG_HEIGHT = 320;
+    localparam SEQUENTIAL_FILE = 0;
+    localparam FILE_IMG_WIDTH  = 640;
+    localparam FILE_IMG_HEIGHT = 480;
     localparam SIM_IMG_WIDTH   = 128;//320;
     localparam SIM_IMG_HEIGHT  = 128;//320;
     assign img_width  = SIM_IMG_WIDTH;
@@ -195,8 +195,8 @@ module tb_main
                 .DATA_BITS          (DATA_WIDTH     ),
                 .IMG_WIDTH          (SIM_IMG_WIDTH  ),
                 .IMG_HEIGHT         (SIM_IMG_HEIGHT ),
-                .H_BLANK            (64             ),
-                .V_BLANK            (32             ),
+                .H_BLANK            (32             ),
+                .V_BLANK            (16             ),
                 .FILE_NAME          (FILE_NAME      ),
                 .FILE_EXT           (FILE_EXT       ),
                 .FILE_IMG_WIDTH     (FILE_IMG_WIDTH ),
@@ -215,44 +215,94 @@ module tb_main
                 .out_y              (out_y          ),
                 .out_f              (out_f          )
             );
+
+
+        jelly2_axi4s_slave_model
+                #(
+                    .COMPONENTS         (1                          ),
+                    .DATA_WIDTH         (10                         ),
+                    .INIT_FRAME_NUM     (0                          ),
+                    .FORMAT             ("P2"                       ),
+                    .FILE_NAME          ("output/mnist_img_"        ),
+                    .FILE_EXT           (".pgm"                     ),
+                    .SEQUENTIAL_FILE    (1                          ),
+                    .ENDIAN             (1                          )
+                )
+            u_axi4s_slave_model_mnist
+                (
+                    .aresetn            (u_top.axi4s_img_aresetn    ),
+                    .aclk               (u_top.axi4s_img_aclk       ),
+                    .aclken             (1'b1                       ),
+
+                    .param_width        (SIM_IMG_WIDTH              ),
+                    .param_height       (SIM_IMG_HEIGHT             ),
+                    .frame_num          (                           ),
+                    
+                    .s_axi4s_tuser      (u_top.axi4s_mnist_tuser    ),
+                    .s_axi4s_tlast      (u_top.axi4s_mnist_tlast    ),
+                    .s_axi4s_tdata      (u_top.axi4s_mnist_tdata    ),
+                    .s_axi4s_tvalid     (u_top.axi4s_mnist_tvalid & u_top.axi4s_mnist_tready),
+                    .s_axi4s_tready     (                           )
+                );
     
+    for ( genvar i = 0; i < 10; i++ ) begin
+        jelly2_axi4s_slave_model
+                #(
+                    .COMPONENTS         (1                          ),
+                    .DATA_WIDTH         (8                          ),
+                    .INIT_FRAME_NUM     (0                          ),
+                    .FORMAT             ("P2"                       ),
+                    .FILE_NAME          ({"output/mnist", ("0" + i), "_"}),
+                    .FILE_EXT           (".pgm"                     ),
+                    .SEQUENTIAL_FILE    (1                          ),
+                    .ENDIAN             (1                          )
+                )
+            u_axi4s_slave_model_mnist
+                (
+                    .aresetn            (u_top.axi4s_img_aresetn    ),
+                    .aclk               (u_top.axi4s_img_aclk       ),
+                    .aclken             (1'b1                       ),
 
-    /*
-    // -----------------------------
-    //  RTCL-P3S7
-    // -----------------------------
-
-    tb_rtcl_p3s7_hs
-        u_rtcl_p3s7_hs
-            ();
-
-    logic               rxreseths   ;
-    logic               rxbyteclkhs ;
-    logic   [1:0][7:0]  rxdatahs    ;
-    logic   [1:0]       rxvalidhs   ;
-    logic   [1:0]       rxactivehs  ;
-    logic   [1:0]       rxsynchs    ;
-
-    assign rxreseths   = u_rtcl_p3s7_hs.rxreseths  ;
-    assign rxbyteclkhs = u_rtcl_p3s7_hs.rxbyteclkhs;
-    assign rxdatahs    = u_rtcl_p3s7_hs.rxdatahs   ;
-    assign rxvalidhs   = u_rtcl_p3s7_hs.rxvalidhs  ;
-    assign rxactivehs  = u_rtcl_p3s7_hs.rxactivehs ;
-    assign rxsynchs    = u_rtcl_p3s7_hs.rxsynchs   ;
-
-    initial begin
-        force u_top.system_rst_out = rxreseths;
-        force u_top.rxbyteclkhs    = rxbyteclkhs;
-        force u_top.dl0_rxdatahs   = rxdatahs[0];
-        force u_top.dl1_rxdatahs   = rxdatahs[1];
-        force u_top.dl0_rxactivehs = rxactivehs[0];
-        force u_top.dl1_rxactivehs = rxactivehs[1];
-        force u_top.dl0_rxsynchs   = rxsynchs[0];
-        force u_top.dl1_rxsynchs   = rxsynchs[1];
-        force u_top.dl0_rxvalidhs  = rxactivehs[0] & ~rxsynchs[0];
-        force u_top.dl1_rxvalidhs  = rxactivehs[1] & ~rxsynchs[1];
+                    .param_width        (SIM_IMG_WIDTH              ),
+                    .param_height       (SIM_IMG_HEIGHT             ),
+                    .frame_num          (                           ),
+                    
+                    .s_axi4s_tuser      (u_top.axi4s_mnist_tuser    ),
+                    .s_axi4s_tlast      (u_top.axi4s_mnist_tlast    ),
+                    .s_axi4s_tdata      (u_top.axi4s_mnist_tclass_u8[i]),
+                    .s_axi4s_tvalid     (u_top.axi4s_mnist_tvalid & u_top.axi4s_mnist_tready),
+                    .s_axi4s_tready     (                           )
+                );
     end
-    */
+
+    jelly2_axi4s_slave_model
+            #(
+                .COMPONENTS         (1                          ),
+                .DATA_WIDTH         (8                          ),
+                .INIT_FRAME_NUM     (0                          ),
+                .FORMAT             ("P2"                       ),
+                .FILE_NAME          ("output/dam_"           ),
+                .FILE_EXT           (".pgm"                     ),
+                .SEQUENTIAL_FILE    (1                          ),
+                .ENDIAN             (1                          )
+            )
+        u_axi4s_slave_model_dma
+            (
+                .aresetn            (u_top.axi4s_dma.aresetn    ),
+                .aclk               (u_top.axi4s_dma.aclk       ),
+                .aclken             (1'b1                       ),
+
+                .param_width        (SIM_IMG_WIDTH              ),
+                .param_height       (SIM_IMG_HEIGHT             ),
+                .frame_num          (                           ),
+                
+                .s_axi4s_tuser      (u_top.axi4s_dma.tuser      ),
+                .s_axi4s_tlast      (u_top.axi4s_dma.tlast      ),
+                .s_axi4s_tdata      (u_top.axi4s_dma.tdata[7:0] ),
+                .s_axi4s_tvalid     (u_top.axi4s_dma.tvalid & u_top.axi4s_dma.tready),
+                .s_axi4s_tready     (                           )
+            );
+
 
 endmodule
 

@@ -59,6 +59,10 @@ run:
 	mkdir -p output
 	xsim $(TOP_MODULE) --R
 
+.PHONY: vcd2fst
+vcd2fst:
+	vcd2fst tb_top.vcd tb_top.fst
+
 .PHONY: clean
 clean:
 	-rm -fr xsim.dir

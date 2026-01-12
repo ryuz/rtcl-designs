@@ -35,3 +35,7 @@ remote_run: cross_build load
 	scp target/$(TARGET_ARCH)/release/$(BASE_NAME) $(ZYBO_Z7_SSH_ADDRESS):/tmp/
 	ssh -Y -t $(ZYBO_Z7_SSH_ADDRESS) /tmp/$(BASE_NAME) $(RUN_OPT)
 
+.PHONY: remote_run_only
+remote_run_only: cross_build
+	scp target/$(TARGET_ARCH)/release/$(BASE_NAME) $(ZYBO_Z7_SSH_ADDRESS):/tmp/
+	ssh -Y -t $(ZYBO_Z7_SSH_ADDRESS) /tmp/$(BASE_NAME) $(RUN_OPT)

@@ -3,7 +3,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-
+(* use_dsp = "yes" *)
 module video_lpf_ram_core
         #(
             parameter   int     NUM         = 11 + 3            ,
@@ -100,6 +100,10 @@ module video_lpf_ram_core
 //  logic   [NUM-1:0][DATA_BITS-1:0]    st3_rdata   ;
     logic                               st3_tvalid  ;
 
+    (* use_dsp = "yes" *)
+    mut_t                               st4_alpha   ;
+    (* use_dsp = "yes" *)
+    mut_t                               st4_alpha1  ;
     logic   [ADDR_BITS-1:0]             st4_addr    ;
     logic   [TUSER_BITS-1:0]            st4_tuser   ;
     logic                               st4_tlast   ;
@@ -110,8 +114,24 @@ module video_lpf_ram_core
     logic   [ADDR_BITS-1:0]             st5_addr    ;
     logic   [TUSER_BITS-1:0]            st5_tuser   ;
     logic                               st5_tlast   ;
+    (* use_dsp = "yes" *)
     logic   [NUM-1:0][DATA_BITS-1:0]    st5_tdata   ;
+    (* use_dsp = "yes" *)
+    logic   [NUM-1:0][DATA_BITS-1:0]    st5_rdata   ;
     logic                               st5_tvalid  ;
+
+    logic   [ADDR_BITS-1:0]             st6_addr    ;
+    logic   [TUSER_BITS-1:0]            st6_tuser   ;
+    logic                               st6_tlast   ;
+    logic   [NUM-1:0][DATA_BITS-1:0]    st6_tdata   ;
+    logic   [NUM-1:0][DATA_BITS-1:0]    st6_rdata   ;
+    logic                               st6_tvalid  ;
+
+    logic   [ADDR_BITS-1:0]             st7_addr    ;
+    logic   [TUSER_BITS-1:0]            st7_tuser   ;
+    logic                               st7_tlast   ;
+    logic   [NUM-1:0][DATA_BITS-1:0]    st7_tdata   ;
+    logic                               st7_tvalid  ;
 
     always_ff @(posedge aclk) begin
         if (!aresetn) begin
@@ -121,6 +141,8 @@ module video_lpf_ram_core
             st3_tvalid <= 1'b0;
             st4_tvalid <= 1'b0;
             st5_tvalid <= 1'b0;
+            st6_tvalid <= 1'b0;
+            st7_tvalid <= 1'b0;
         end
         else if ( cke ) begin
             st0_tvalid <= s_axi4s_tvalid;
@@ -129,6 +151,8 @@ module video_lpf_ram_core
             st3_tvalid <= st2_tvalid;
             st4_tvalid <= st3_tvalid;
             st5_tvalid <= st4_tvalid;
+            st6_tvalid <= st5_tvalid;
+            st7_tvalid <= st6_tvalid;
         end
     end
     
@@ -165,30 +189,45 @@ module video_lpf_ram_core
             st4_addr  <=  st3_addr;
             st4_tuser <=  st3_tuser;
             st4_tlast <=  st3_tlast;
-            for ( int i = 0; i < NUM; ++i ) begin
-                st4_tdata[i] <=  DATA_BITS'((mut_t'(st3_tdata[i]) * mut_t'(param_alpha1)) >> DATA_BITS);
-                st4_rdata[i] <=  DATA_BITS'((mut_t'(rd_dout  [i]) * mut_t'(param_alpha )) >> DATA_BITS);
-            end
+            st4_tdata <=  st3_tdata;
+            st4_rdata <=  rd_dout;
+            st4_alpha  <= mut_t'(param_alpha ) ;
+            st4_alpha1 <= mut_t'(param_alpha1);
 
             // stage5
             st5_addr  <=  st4_addr;
             st5_tuser <=  st4_tuser;
             st5_tlast <=  st4_tlast;
-            for ( int i = 0; i < NUM; i = i + 1 ) begin
-                st5_tdata[i] <= st4_tdata[i] + st4_rdata[i];
+            for ( int i = 0; i < NUM; ++i ) begin
+                st5_tdata[i] <=  DATA_BITS'((mut_t'(st4_tdata[i]) * st4_alpha1) >> DATA_BITS);
+                st5_rdata[i] <=  DATA_BITS'((mut_t'(st4_rdata[i]) * st4_alpha ) >> DATA_BITS);
             end
 
+            // stage6
+            st6_addr  <=  st5_addr;
+            st6_tuser <=  st5_tuser;
+            st6_tlast <=  st5_tlast;
+            st6_tdata <=  st5_tdata;
+            st6_rdata <=  st5_rdata;
+
+            // stage7
+            st7_addr  <=  st6_addr;
+            st7_tuser <=  st6_tuser;
+            st7_tlast <=  st6_tlast;
+            for ( int i = 0; i < NUM; i = i + 1 ) begin
+                st7_tdata[i] <= st6_tdata[i] + st6_rdata[i];
+            end
         end
     end
 
     assign rd_addr = st1_addr   ;
-    assign wr_addr = st5_addr   ;
-    assign wr_din  = st5_tdata  ;
+    assign wr_addr = st7_addr   ;
+    assign wr_din  = st7_tdata  ;
     
-    assign m_axi4s_tuser  = st5_tuser   ;
-    assign m_axi4s_tlast  = st5_tlast   ;
-    assign m_axi4s_tdata  = st5_tdata   ;
-    assign m_axi4s_tvalid = st5_tvalid  ;
+    assign m_axi4s_tuser  = st7_tuser   ;
+    assign m_axi4s_tlast  = st7_tlast   ;
+    assign m_axi4s_tdata  = st7_tdata   ;
+    assign m_axi4s_tvalid = st7_tvalid  ;
 
 endmodule
 

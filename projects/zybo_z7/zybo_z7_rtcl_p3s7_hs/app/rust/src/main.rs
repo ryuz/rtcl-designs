@@ -26,6 +26,10 @@ struct Args {
     /// Enable color mode (default: monochrome)
     #[arg(short = 'c', long)]
     color: bool,
+
+    /// Frame Rate
+    #[arg(short = 'f', long, default_value_t = 60)]
+    fps: usize,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -89,8 +93,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_sensor_pgood_enable(false);
     cam.set_image_size(width, height)?;
-//  cam.set_slave_mode(true)?;
-//  cam.set_trigger_mode(true)?;
+    cam.set_slave_mode(true)?;
+    cam.set_trigger_mode(true)?;
     cam.open()?;
     cam.set_color(color)?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
@@ -107,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
-    create_cv_trackbar("fps",       10, 1000,  60)?;
+    create_cv_trackbar("fps",       10, 1000, args.fps as i32)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
 
     // 画像表示ループ

@@ -18,7 +18,7 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             parameter   type        height_t    = logic [HEIGHT_BITS-1:0]   ,
             parameter   width_t     IMG_WIDTH   = 64                        ,
             parameter   height_t    IMG_HEIGHT  = 64                        ,
-            parameter               DEBUG       = "true"                    
+            parameter               DEBUG       = "false"                   
         )
         (
             input   var logic           in_clk125           ,
@@ -281,7 +281,7 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             );
     
     IOBUF
-        i_IOBUF_cam_scl
+        u_IOBUF_cam_scl
             (
                 .IO     (cam_scl        ),
                 .I      (IIC_0_0_scl_o  ),
@@ -290,7 +290,7 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             );
 
     IOBUF
-        i_iobuf_cam_sda
+        u_iobuf_cam_sda
             (
                 .IO     (cam_sda        ),
                 .I      (IIC_0_0_sda_o  ),
@@ -361,17 +361,19 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     localparam  SYSREG_IMG_HEIGHT     = 4'h9;
     localparam  SYSREG_BLK_WIDTH      = 4'ha;
     localparam  SYSREG_BLK_HEIGHT     = 4'hb;
+    localparam  SYSREG_DMA_SEL        = 4'hf;
 
     (* MARK_DEBUG=DEBUG *)  logic               reg_sw_reset        ;
     (* MARK_DEBUG=DEBUG *)  logic               reg_cam_enable      ;
     (* MARK_DEBUG=DEBUG *)  logic   [7:0]       reg_csi_data_type   ;
     (* MARK_DEBUG=DEBUG *)  logic               reg_dphy_init_done  ;
                             logic   [31:0]      reg_fps_count       ;
-                            logic   [31:0]      reg_frame_count     = 0;
+                            logic   [31:0]      reg_frame_count = 0 ;
                             width_t             reg_image_width     ;
                             height_t            reg_image_height    ;
                             width_t             reg_black_width     ;
                             height_t            reg_black_height    ;
+
     always_ff @(posedge axi4l_dec[DEC_SYS].aclk) begin
         if ( ~axi4l_dec[DEC_SYS].aresetn ) begin
             axi4l_dec[DEC_SYS].bvalid <= 1'b0   ;
@@ -470,8 +472,8 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     // ----------------------------------------
     
                             logic               rxbyteclkhs         ;
-    (* mark_debug="true" *) logic               system_rst_out      ;
-    (* mark_debug="true" *) logic               init_done           ;
+    (* mark_debug=DEBUG *)  logic               system_rst_out      ;
+    (* mark_debug=DEBUG *)  logic               init_done           ;
     
                             logic               cl_rxclkactivehs    ;
                             logic               cl_stopstate        ;
@@ -479,10 +481,10 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                             logic               cl_rxulpsclknot     ;
                             logic               cl_ulpsactivenot    ;
     
-    (* mark_debug="true" *) logic   [7:0]       dl0_rxdatahs        ;
-    (* mark_debug="true" *) logic               dl0_rxvalidhs       ;
-    (* mark_debug="true" *) logic               dl0_rxactivehs      ;
-    (* mark_debug="true" *) logic               dl0_rxsynchs        ;
+    (* mark_debug=DEBUG *)  logic   [7:0]       dl0_rxdatahs        ;
+    (* mark_debug=DEBUG *)  logic               dl0_rxvalidhs       ;
+    (* mark_debug=DEBUG *)  logic               dl0_rxactivehs      ;
+    (* mark_debug=DEBUG *)  logic               dl0_rxsynchs        ;
                             logic               dl0_forcerxmode     ;
                             logic               dl0_stopstate       ;
                             logic               dl0_enable          ;
@@ -499,10 +501,10 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                             logic               dl0_errsyncesc      ;
                             logic               dl0_errcontrol      ;
     
-    (* mark_debug="true" *) logic   [7:0]       dl1_rxdatahs        ;
-    (* mark_debug="true" *) logic               dl1_rxvalidhs       ;
-    (* mark_debug="true" *) logic               dl1_rxactivehs      ;
-    (* mark_debug="true" *) logic               dl1_rxsynchs        ;
+    (* mark_debug=DEBUG *)  logic   [7:0]       dl1_rxdatahs        ;
+    (* mark_debug=DEBUG *)  logic               dl1_rxvalidhs       ;
+    (* mark_debug=DEBUG *)  logic               dl1_rxactivehs      ;
+    (* mark_debug=DEBUG *)  logic               dl1_rxsynchs        ;
                             logic               dl1_forcerxmode     ;
                             logic               dl1_stopstate       ;
                             logic               dl1_enable          ;
@@ -599,26 +601,6 @@ module zybo_z7_rtcl_p3s7_mnist_seg
         reg_dphy_init_done <= init_done;
     end
 
-
-    /*
-    wire        dphy_clk   = rxbyteclkhs;
-    wire        dphy_reset;
-    jelly_reset
-            #(
-                .IN_LOW_ACTIVE      (0),
-                .OUT_LOW_ACTIVE     (0),
-                .INPUT_REGS         (2),
-                .COUNTER_WIDTH      (5),
-                .INSERT_BUFG        (0)
-            )
-        i_reset
-            (
-                .clk                (dphy_clk),
-                .in_reset           (sys_reset || system_rst_out),
-                .out_reset          (dphy_reset)
-            );
-    */
-
     logic   dphy_clk    ;
     logic   dphy_reset  ;
     assign dphy_clk   = rxbyteclkhs;
@@ -636,13 +618,18 @@ module zybo_z7_rtcl_p3s7_mnist_seg
 //  assign axi4s_cam_aclk    = sys_clk250   ;
     assign axi4s_cam_aclk    = sys_clk200   ;
 
+    logic   axi4s_img_aresetn   ;
+    logic   axi4s_img_aclk      ;
+    assign axi4s_img_aresetn = ~sys_reset   ;
+    assign axi4s_img_aclk    = sys_clk100   ;
+
     jelly3_axi4s_if
             #(
                 .USE_LAST       (1'b1               ),
                 .USE_USER       (1'b1               ),
                 .DATA_BITS      (10                 ),
                 .USER_BITS      (1                  ),
-                .DEBUG          ("true"             )
+                .DEBUG          (DEBUG              )
             )
         axi4s_blk
             (
@@ -657,7 +644,7 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                 .USE_USER       (1'b1               ),
                 .DATA_BITS      (10                 ),
                 .USER_BITS      (1                  ),
-                .DEBUG          ("true"             )
+                .DEBUG          (DEBUG              )
             )
         axi4s_img
             (
@@ -697,13 +684,35 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                 .m_axi4s_image      (axi4s_img          )
             );
 
-    jelly3_axi4s_debug_monitor
-        u_axi4s_debug_monitor
+    // FIFO
+    jelly3_axi4s_if
+            #(
+                .DATA_BITS  (10               )
+            )
+        axi4s_img_fifo
             (
-                .mon_axi4s       (axi4s_img.mon)
+                .aresetn    (axi4s_img_aresetn),
+                .aclk       (axi4s_img_aclk   ),
+                .aclken     (1'b1             )
+            );
+    
+    jelly3_axi4s_fifo
+            #(
+                .ASYNC          (1                  ),
+                .PTR_BITS       (9                  ),
+                .RAM_TYPE       ("block"            ),
+                .DOUT_REG       (1                  ),
+                .S_REG          (1                  ),
+                .M_REG          (1                  )
+            )
+        u_axi4s_fifo
+            (
+                .s_axi4s        (axi4s_img.s        ),
+                .m_axi4s        (axi4s_img_fifo.m   ),
+                .s_free_size    (                   ),
+                .m_data_size    (                   )
             );
 
-    
     // format regularizer
     logic   [WIDTH_BITS-1:0]    fmtr_param_width;
     logic   [HEIGHT_BITS-1:0]   fmtr_param_height;
@@ -711,16 +720,15 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     jelly3_axi4s_if
             #(
                 .DATA_BITS  (10                     ),
-                .DEBUG      (DEBUG                  )
+                .DEBUG      ("true"                 )
             )
         axi4s_fmtr
             (
-                .aresetn    (axi4s_cam_aresetn      ),
-                .aclk       (axi4s_cam_aclk         ),
+                .aresetn    (axi4s_img_aresetn      ),
+                .aclk       (axi4s_img_aclk         ),
                 .aclken     (1'b1                   )
             );
     
-
     // video_format_regularizer
     jelly3_video_format_regularizer
             #(
@@ -735,7 +743,7 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             )
         u_video_format_regularizer
             (
-                .s_axi4s                (axi4s_img.s            ),
+                .s_axi4s                (axi4s_img_fifo.s       ),
                 .m_axi4s                (axi4s_fmtr.m           ),
                 .s_axi4l                (axi4l_dec[DEC_FMTR].s  ),
                 .out_param_width        (fmtr_param_width       ),
@@ -761,8 +769,8 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             (
                 .s_axi4l                (axi4l_dec[DEC_TBLMOD]  ),
 
-                .aresetn                (axi4s_cam_aresetn      ),
-                .aclk                   (axi4s_cam_aclk         ),
+                .aresetn                (axi4s_img_aresetn      ),
+                .aclk                   (axi4s_img_aclk         ),
                 .aclken                 (1'b1                   ),
                 
                 .s_axi4s_tuser          (axi4s_fmtr.tuser       ),
@@ -780,50 +788,60 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             );
     
     // mnist
-    logic   [0:0]   axi4s_mnist_tuser   ;
-    logic           axi4s_mnist_tlast   ;
-    logic   [9:0]   axi4s_mnist_tdata   ;
-    logic   [10:0]  axi4s_mnist_tclass  ;
-    logic           axi4s_mnist_tvalid  ;
-    logic           axi4s_mnist_tready  ;
+    logic   [0:0]       axi4s_mnist_tuser   ;
+    logic               axi4s_mnist_tlast   ;
+    logic   [9:0]       axi4s_mnist_tdata   ;
+    logic   [10:0]      axi4s_mnist_tclass  ;
+    logic               axi4s_mnist_tvalid  ;
+    logic               axi4s_mnist_tready  ;
 
-    mnist_seg
-            #(
-                .TUSER_WIDTH        (10 + 1     ),
-                .MAX_X_NUM          (128        ),
-                .RAM_TYPE           ("block"    ),
-                .IMG_Y_NUM          (128        ),
-                .IMG_Y_WIDTH        (12         ),
-                .S_TDATA_WIDTH      (1          ),
-                .M_TDATA_WIDTH      (11         ),
-                .DEVICE             ("rtl"      )
-            )
-        u_mnist_seg
-            (
-                .reset              (~axi4s_cam_aresetn ),
-                .clk                (axi4s_cam_aclk     ),
-                
-                .param_blank_num    (8'd30),
-                
-                .s_axi4s_tuser      ({
-                                        axi4s_bin_tdata,
-                                        axi4s_bin_tuser
-                                    }),
-                .s_axi4s_tlast      (axi4s_bin_tlast    ),
-                .s_axi4s_tdata      (axi4s_bin_tbinary  ),
-                .s_axi4s_tvalid     (axi4s_bin_tvalid   ),
-                .s_axi4s_tready     (axi4s_bin_tready   ),
-                
-                .m_axi4s_tuser      ({
-                                        axi4s_mnist_tdata ,
-                                        axi4s_mnist_tuser
-                                    }),
-                .m_axi4s_tlast      (axi4s_mnist_tlast  ),
-                .m_axi4s_tdata      (axi4s_mnist_tclass ),
-                .m_axi4s_tvalid     (axi4s_mnist_tvalid ),
-                .m_axi4s_tready     (axi4s_mnist_tready )
-            );
-    
+    if ( 1 ) begin : mnist
+        mnist_seg
+                #(
+                    .TUSER_WIDTH        (10 + 1     ),
+                    .MAX_X_NUM          (1024       ),
+                    .RAM_TYPE           ("block"    ),
+                    .IMG_Y_NUM          (480        ),
+                    .IMG_Y_WIDTH        (12         ),
+                    .S_TDATA_WIDTH      (1          ),
+                    .M_TDATA_WIDTH      (11         ),
+                    .DEVICE             ("rtl"      )
+                )
+            u_mnist_seg
+                (
+                    .reset              (~axi4s_img_aresetn ),
+                    .clk                (axi4s_img_aclk     ),
+                    
+                    .param_blank_num    (8'd30),
+                    
+                    .s_axi4s_tuser      ({
+                                            axi4s_bin_tdata,
+                                            axi4s_bin_tuser
+                                        }),
+                    .s_axi4s_tlast      (axi4s_bin_tlast    ),
+                    .s_axi4s_tdata      (axi4s_bin_tbinary  ),
+                    .s_axi4s_tvalid     (axi4s_bin_tvalid   ),
+                    .s_axi4s_tready     (axi4s_bin_tready   ),
+                    
+                    .m_axi4s_tuser      ({
+                                            axi4s_mnist_tdata ,
+                                            axi4s_mnist_tuser
+                                        }),
+                    .m_axi4s_tlast      (axi4s_mnist_tlast  ),
+                    .m_axi4s_tdata      (axi4s_mnist_tclass ),
+                    .m_axi4s_tvalid     (axi4s_mnist_tvalid ),
+                    .m_axi4s_tready     (axi4s_mnist_tready )
+                );
+    end
+    else begin : bypass_mnist
+        assign axi4s_mnist_tuser  = axi4s_bin_tuser ;
+        assign axi4s_mnist_tlast  = axi4s_bin_tlast ;
+        assign axi4s_mnist_tdata  = axi4s_bin_tdata ;
+        assign axi4s_mnist_tclass = '0;
+        assign axi4s_mnist_tvalid = axi4s_bin_tvalid;
+        assign axi4s_bin_tready = axi4s_mnist_tready;
+    end
+
     logic   [10:0][7:0]                 axi4s_mnist_tclass_u8;
     always_comb begin
         for ( int i = 0; i < 10; i++ ) begin
@@ -833,7 +851,6 @@ module zybo_z7_rtcl_p3s7_mnist_seg
         // 背景の学習状況が悪いので補正
         axi4s_mnist_tclass_u8[10] = {8{~|axi4s_mnist_tclass[9:0]}};
     end
-
 
     // LowPass-filter
     logic   [0:0]               axi4s_lpf_tuser;
@@ -856,9 +873,9 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             (
                 .s_axi4l                (axi4l_dec[DEC_LPF] ),
 
-                .aresetn                (axi4s_cam_aresetn  ),
-                .aclk                   (axi4s_cam_aclk     ),
-
+                .aresetn                (axi4s_img_aresetn  ),
+                .aclk                   (axi4s_img_aclk     ),
+                
                 .s_axi4s_tuser          (axi4s_mnist_tuser  ),
                 .s_axi4s_tlast          (axi4s_mnist_tlast  ),
                 .s_axi4s_tdata          ({axi4s_mnist_tclass_u8, axi4s_mnist_tdata[9:2]}),
@@ -871,8 +888,8 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                 .m_axi4s_tvalid         (axi4s_lpf_tvalid   ),
                 .m_axi4s_tready         (axi4s_lpf_tready   )
             );
-    
 
+    // argmax
     logic   [0:0]               axi4s_max_tuser     ;
     logic                       axi4s_max_tlast     ;
     logic   [7:0]               axi4s_max_tdata     ;
@@ -890,8 +907,8 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             )
         u_video_argmax
             (
-                .aresetn                (axi4s_cam_aresetn  ),
-                .aclk                   (axi4s_cam_aclk     ),
+                .aresetn                (axi4s_img_aresetn  ),
+                .aclk                   (axi4s_img_aclk     ),
 
                 .s_axi4s_tuser          (axi4s_lpf_tuser    ),
                 .s_axi4s_tlast          (axi4s_lpf_tlast    ),
@@ -908,25 +925,32 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                 .m_axi4s_tready         (axi4s_max_tready   )
             );
 
+    // DMA write
     jelly3_axi4s_if
             #(
                 .DATA_BITS  (16                 ),
                 .DEBUG      ("true"             )
             )
-        axi4s_max
+        axi4s_dma
             (
-                .aresetn    (axi4s_cam_aresetn  ),
-                .aclk       (axi4s_cam_aclk     ),
+                .aresetn    (axi4s_img_aresetn  ),
+                .aclk       (axi4s_img_aclk     ),
                 .aclken     (1'b1               )
             );
-    
-    assign axi4s_max.tuser        = axi4s_max_tuser         ;
-    assign axi4s_max.tlast        = axi4s_max_tlast         ;
-    assign axi4s_max.tdata[7:0]   = axi4s_max_tdata         ;
-    assign axi4s_max.tdata[15:8]  = axi4s_max_targmax       ;
-    assign axi4s_max.tvalid       = axi4s_max_tvalid        ;
-    assign axi4s_max_tready = axi4s_max.tready;
 
+    jelly3_axi4s_debug_monitor
+        u_axi4s_debug_monitor_dma
+            (
+                .mon_axi4s       (axi4s_dma.mon)
+            );
+
+
+    assign  axi4s_dma.tuser        = axi4s_max_tuser         ;
+    assign  axi4s_dma.tlast        = axi4s_max_tlast         ;
+    assign  axi4s_dma.tdata[7:0]   = axi4s_max_tdata         ;
+    assign  axi4s_dma.tdata[15:8]  = axi4s_max_targmax       ;
+    assign  axi4s_dma.tvalid       = axi4s_max_tvalid        ;
+    assign  axi4s_max_tready = axi4s_dma.tready;
 
     // FIFO
     jelly3_axi4s_if
@@ -935,23 +959,23 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             )
         axi4s_fifo
             (
-                .aresetn    (axi4s_cam_aresetn),
-                .aclk       (axi4s_cam_aclk   ),
+                .aresetn    (axi4s_img_aresetn),
+                .aclk       (axi4s_img_aclk   ),
                 .aclken     (1'b1             )
             );
     
     jelly3_axi4s_fifo
             #(
                 .ASYNC          (0          ),
-                .PTR_BITS       (8          ),
+                .PTR_BITS       (10         ),
                 .RAM_TYPE       ("block"    ),
                 .DOUT_REG       (1          ),
                 .S_REG          (1          ),
                 .M_REG          (1          )
             )
-        u_axi4s_fifo
+        u_axi4s_fifo_dma
             (
-                .s_axi4s        (axi4s_max.s    ),
+                .s_axi4s        (axi4s_dma.s    ),
                 .m_axi4s        (axi4s_fifo.m   ),
                 .s_free_size    (               ),
                 .m_data_size    (               )
@@ -1156,8 +1180,8 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     logic [7:0]     hub75_st1_mem_g     ;
     logic [7:0]     hub75_st1_mem_b     ;
 
-    always_ff @(posedge axi4s_max.aclk) begin
-        if ( ~axi4s_max.aresetn ) begin
+    always_ff @(posedge axi4s_dma.aclk) begin
+        if ( ~axi4s_dma.aresetn ) begin
             hub75_st0_last      <= '0   ;
             hub75_st0_valid     <= '0   ;
             hub75_st0_mem_we    <= 1'b0 ;
@@ -1173,14 +1197,14 @@ module zybo_z7_rtcl_p3s7_mnist_seg
             hub75_st1_mem_g     <= 'x   ;
             hub75_st1_mem_b     <= 'x   ;
         end
-        else if ( axi4s_max.aclken ) begin
+        else if ( axi4s_dma.aclken ) begin
             // stage 0
-            hub75_st0_last      <= axi4s_max.tvalid && axi4s_max.tready && axi4s_max.tlast;
-            hub75_st0_valid     <= axi4s_max.tvalid && axi4s_max.tready;
-            hub75_st0_mem_we    <= axi4s_max.tvalid && axi4s_max.tready;
-            hub75_st0_mem_r     <= axi4s_max.tdata[7:0];
-            hub75_st0_mem_g     <= axi4s_max.tdata[7:0];
-            hub75_st0_mem_b     <= axi4s_max.tdata[7:0];
+            hub75_st0_last      <= axi4s_dma.tvalid && axi4s_dma.tready && axi4s_dma.tlast;
+            hub75_st0_valid     <= axi4s_dma.tvalid && axi4s_dma.tready;
+            hub75_st0_mem_we    <= axi4s_dma.tvalid && axi4s_dma.tready;
+            hub75_st0_mem_r     <= axi4s_dma.tdata[7:0];
+            hub75_st0_mem_g     <= axi4s_dma.tdata[7:0];
+            hub75_st0_mem_b     <= axi4s_dma.tdata[7:0];
             if ( hub75_st0_valid ) begin
                 hub75_st0_mem_xaddr <= hub75_st0_mem_xaddr + 1;
                 if ( hub75_st0_last ) begin
@@ -1188,11 +1212,11 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                     hub75_st0_mem_yaddr <= hub75_st0_mem_yaddr + 1;
                 end
             end
-            if ( axi4s_max.tvalid && axi4s_max.tready && axi4s_max.tuser[0] ) begin
+            if ( axi4s_dma.tvalid && axi4s_dma.tready && axi4s_dma.tuser[0] ) begin
                 hub75_st0_mem_xaddr <= 0;
                 hub75_st0_mem_yaddr <= 0;
             end
-            case ( axi4s_max.tdata[15:8] )
+            case ( axi4s_dma.tdata[15:8] )
             8'd0: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd0,   8'd0  };  // 黒 (black)
             8'd1: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd42,  8'd42,  8'd165};  // 茶 (brown)
             8'd2: {hub75_st0_mem_b, hub75_st0_mem_g, hub75_st0_mem_r} <= {8'd0,   8'd0,   8'd255};  // 赤 (red)

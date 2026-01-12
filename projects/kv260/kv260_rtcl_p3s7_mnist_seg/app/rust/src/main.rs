@@ -229,7 +229,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        // チャンネル単位でプレーン分解
+        // 表示
         highgui::imshow("img", &img)?;
         highgui::imshow("class", &cls)?;
 
