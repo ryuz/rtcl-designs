@@ -16,11 +16,11 @@ use opencv::core::*;
 #[command(version, about, long_about = None)]
 struct Args {
     /// Image width in pixels
-    #[arg(short = 'W', long, default_value_t = 64)]
+    #[arg(short = 'W', long, default_value_t = 256)]
     width: usize,
 
     /// Image height in pixels
-    #[arg(short = 'H', long, default_value_t = 64)]
+    #[arg(short = 'H', long, default_value_t = 256)]
     height: usize,
 
     /// Enable color mode (default: monochrome)
@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
-    create_cv_trackbar("fps",       10, 1000,  60)?;
+    create_cv_trackbar("fps",       10, 1000, 1000)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
 
     // 画像表示ループ

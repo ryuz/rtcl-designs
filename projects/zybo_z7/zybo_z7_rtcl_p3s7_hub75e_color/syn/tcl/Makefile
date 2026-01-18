@@ -38,6 +38,9 @@ SOURCES  = $(PRJ_DIR)/rtl/zybo_z7_rtcl_p3s7_hub75e.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_dphy_recv.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
 SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
+SOURCES += $(PRJ_DIR)/rtl/image_processing.sv
+SOURCES += $(PRJ_DIR)/rtl/img_rgb4x4_core.sv
+SOURCES += $(PRJ_DIR)/rtl/img_rgb4x4_calc.sv
 SOURCES += $(PRJ_DIR)/rtl/hub75_driver.sv
 SOURCES += $(PRJ_DIR)/rtl/hub75_driver_core.sv
 

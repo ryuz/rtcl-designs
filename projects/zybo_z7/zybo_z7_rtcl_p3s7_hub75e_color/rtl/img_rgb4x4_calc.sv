@@ -139,9 +139,13 @@ module img_rgb4x4_calc
             // stage 1
             st1_rows      <= st0_rows                                   ;
             st1_cols      <= st0_cols                                   ;
-            st1_row_first <= st0_row_first                              ;
+            if ( st0_valid && st0_y == '0 && st0_x == '1 ) begin
+                st1_row_first <= st0_row_first                          ;
+            end
+            if ( st0_valid && st0_x == '0 ) begin
+                st1_col_first <= st0_col_first                          ;
+            end
             st1_row_last  <= st0_row_last                               ;
-            st1_col_first <= st0_col_first                              ;
             st1_col_last  <= st0_col_last                               ;
             st1_user      <= st0_user                                   ;
             st1_de        <= st0_de && st0_y == '1 && st0_x == '1       ;
@@ -154,9 +158,9 @@ module img_rgb4x4_calc
             st2_rows      <= st1_rows                   ;
             st2_cols      <= st1_cols                   ;
             st2_row_first <= st1_row_first              ;
-            st2_row_last  <= st1_row_last               ;
-            st2_col_first <= st1_col_first              ;
-            st2_col_last  <= st1_col_last               ;
+            st2_row_last  <= st1_row_last  & st1_de     ;
+            st2_col_first <= st1_col_first & st1_de     ;
+            st2_col_last  <= st1_col_last  & st1_de     ;
             st2_user      <= st1_user                   ;
             st2_de        <= st1_de                     ;
             st2_raw[0]    <= st1_raw00 + st1_raw11      ;
@@ -167,14 +171,14 @@ module img_rgb4x4_calc
     
     always_ff @(posedge clk) begin
         if ( reset ) begin
-            st0_valid = 1'b0        ;
-            st1_valid = 1'b0        ;
-            st2_valid = 1'b0        ;
+            st0_valid <= 1'b0        ;
+            st1_valid <= 1'b0        ;
+            st2_valid <= 1'b0        ;
         end
         else if ( cke ) begin
-            st0_valid = s_valid     ;
-            st1_valid = st0_valid   ;
-            st2_valid = st1_valid   ;
+            st0_valid <= s_valid     ;
+            st1_valid <= st0_valid   ;
+            st2_valid <= st1_valid   ;
         end
     end
 

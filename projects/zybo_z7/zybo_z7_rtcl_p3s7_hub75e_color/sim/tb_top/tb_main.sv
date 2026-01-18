@@ -175,13 +175,13 @@ module tb_main
 
 
     localparam DATA_WIDTH      = 10;
-    localparam FILE_NAME       = "../_dump_raw10.pgm";
+    localparam FILE_NAME       = "../../_dump_raw10.pgm";
     localparam FILE_EXT        = "";
-    localparam SEQUENTIAL_FILE = 1;
-    localparam FILE_IMG_WIDTH  = 320;
-    localparam FILE_IMG_HEIGHT = 320;
-    localparam SIM_IMG_WIDTH   = 128;//320;
-    localparam SIM_IMG_HEIGHT  = 128;//320;
+    localparam SEQUENTIAL_FILE = 0;
+    localparam FILE_IMG_WIDTH  = 256;
+    localparam FILE_IMG_HEIGHT = 256;
+    localparam SIM_IMG_WIDTH   = 256;
+    localparam SIM_IMG_HEIGHT  = 256;
     assign img_width  = SIM_IMG_WIDTH;
     assign img_height = SIM_IMG_HEIGHT;
 
@@ -216,6 +216,65 @@ module tb_main
                 .out_f              (out_f          )
             );
     
+
+
+    jelly2_axi4s_slave_model
+            #(
+                .COMPONENTS         (1                          ),
+                .DATA_WIDTH         (10                         ),
+                .INIT_FRAME_NUM     (0                          ),
+                .FORMAT             ("P2"                       ),
+                .FILE_NAME          ("output/img_src_"          ),
+                .FILE_EXT           (".pgm"                     ),
+                .SEQUENTIAL_FILE    (1                          ),
+                .ENDIAN             (1                          )
+            )
+        u_axi4s_slave_model_src
+            (
+                .aresetn            (u_top.axi4s_fmtr.aresetn    ),
+                .aclk               (u_top.axi4s_fmtr.aclk       ),
+                .aclken             (u_top.axi4s_fmtr.aclken     ),
+
+                .param_width        (SIM_IMG_WIDTH              ),
+                .param_height       (SIM_IMG_HEIGHT             ),
+                .frame_num          (                           ),
+                
+                .s_axi4s_tuser      (u_top.axi4s_fmtr.tuser     ),
+                .s_axi4s_tlast      (u_top.axi4s_fmtr.tlast     ),
+                .s_axi4s_tdata      (u_top.axi4s_fmtr.tdata     ),
+                .s_axi4s_tvalid     (u_top.axi4s_fmtr.tvalid & u_top.axi4s_fmtr.tready),
+                .s_axi4s_tready     (                           )
+            );
+    
+
+    jelly2_axi4s_slave_model
+            #(
+                .COMPONENTS         (3                          ),
+                .DATA_WIDTH         (10                         ),
+                .INIT_FRAME_NUM     (0                          ),
+                .FORMAT             ("P3"                       ),
+                .FILE_NAME          ("output/img_rgb_"          ),
+                .FILE_EXT           (".ppm"                     ),
+                .SEQUENTIAL_FILE    (1                          ),
+                .ENDIAN             (1                          )
+            )
+        u_axi4s_slave_model_rgb10
+            (
+                .aresetn            (u_top.axi4s_rgb10.aresetn  ),
+                .aclk               (u_top.axi4s_rgb10.aclk     ),
+                .aclken             (u_top.axi4s_rgb10.aclken   ),
+
+                .param_width        (SIM_IMG_WIDTH  / 4         ),
+                .param_height       (SIM_IMG_HEIGHT / 4         ),
+                .frame_num          (                           ),
+                
+                .s_axi4s_tuser      (u_top.axi4s_rgb10.tuser    ),
+                .s_axi4s_tlast      (u_top.axi4s_rgb10.tlast    ),
+                .s_axi4s_tdata      (u_top.axi4s_rgb10.tdata    ),
+                .s_axi4s_tvalid     (u_top.axi4s_rgb10.tvalid & u_top.axi4s_rgb10.tready),
+                .s_axi4s_tready     (                           )
+            );
+
 
     /*
     // -----------------------------

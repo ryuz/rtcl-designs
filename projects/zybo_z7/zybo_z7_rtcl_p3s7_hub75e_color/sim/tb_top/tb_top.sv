@@ -55,8 +55,8 @@ module tb_top();
                 .aclken     (1'b1                   )
             );
 
-    logic   [31:0]  sim_img_width  = 128 ;
-    logic   [31:0]  sim_img_height = 128  ;
+    logic   [31:0]  sim_img_width  = 256 ;
+    logic   [31:0]  sim_img_height = 256 ;
 
     tb_main
         u_tb_main

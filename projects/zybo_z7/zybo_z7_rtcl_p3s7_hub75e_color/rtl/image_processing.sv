@@ -19,18 +19,17 @@ module image_processing
             parameter   int     TAPS        = 1                             ,
             parameter   int     RAW_BITS    = 10                            ,
             parameter   type    raw_t       = logic [RAW_BITS-1:0]          ,
-            parameter   int     MAX_COLS    = 4096                          ,
+            parameter   int     MAX_COLS    = 512                           ,
             parameter           RAM_TYPE    = "block"                       ,
             parameter   bit     BYPASS_SIZE = 1'b1                          ,
             parameter           DEVICE      = "RTL"                     
         )
         (
-            input   var logic                       in_update_req   ,
-            input   var width_t                     param_width     ,
-            input   var height_t                    param_height    ,
+            input   var width_t     param_width     ,
+            input   var height_t    param_height    ,
 
-            jelly3_axi4s_if.s                       s_axi4s         ,
-            jelly3_axi4s_if.m                       m_axi4s         
+            jelly3_axi4s_if.s       s_axi4s         ,
+            jelly3_axi4s_if.m       m_axi4s         
         );
 
 

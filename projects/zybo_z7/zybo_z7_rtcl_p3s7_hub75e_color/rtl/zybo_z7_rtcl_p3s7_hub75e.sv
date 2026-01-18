@@ -517,7 +517,7 @@ module zybo_z7_rtcl_p3s7_hub75e
                             logic               dl1_errcontrol      ;
     
     mipi_dphy_cam
-        i_mipi_dphy_cam
+        u_mipi_dphy_cam
             (
                 .core_clk           (sys_clk200         ),
                 .core_rst           (sys_reset | reg_sw_reset),
@@ -596,26 +596,6 @@ module zybo_z7_rtcl_p3s7_hub75e
         reg_dphy_init_done <= init_done;
     end
 
-
-    /*
-    wire        dphy_clk   = rxbyteclkhs;
-    wire        dphy_reset;
-    jelly_reset
-            #(
-                .IN_LOW_ACTIVE      (0),
-                .OUT_LOW_ACTIVE     (0),
-                .INPUT_REGS         (2),
-                .COUNTER_WIDTH      (5),
-                .INSERT_BUFG        (0)
-            )
-        i_reset
-            (
-                .clk                (dphy_clk),
-                .in_reset           (sys_reset || system_rst_out),
-                .out_reset          (dphy_reset)
-            );
-    */
-
     logic   dphy_clk    ;
     logic   dphy_reset  ;
     assign dphy_clk   = rxbyteclkhs;
@@ -686,6 +666,9 @@ module zybo_z7_rtcl_p3s7_hub75e
                                         dl0_rxdatahs
                                     }),
                 .dphy_valid         (dl0_rxvalidhs      ),
+
+                .header_data        (                   ),
+                .header_valid       (                   ),
 
                 .m_axi4s_black      (axi4s_blk          ),
                 .m_axi4s_image      (axi4s_img          )
@@ -925,7 +908,65 @@ module zybo_z7_rtcl_p3s7_hub75e
     assign axi4_mem1.arvalid  = 0;
     assign axi4_mem1.rready   = 0;
     
-        
+
+    // ----------------------------------------
+    //  縮小
+    // ----------------------------------------
+
+    jelly3_axi4s_if
+            #(
+                .USE_LAST       (1'b1               ),
+                .USE_USER       (1'b1               ),
+                .DATA_BITS      (10                 ),
+                .USER_BITS      (1                  ),
+                .DEBUG          ("true"             )
+            )
+        axi4s_raw10
+            (
+                .aresetn        (axi4s_cam_aresetn  ),
+                .aclk           (axi4s_cam_aclk     ),
+                .aclken         (1'b1               )
+            );
+
+    jelly3_axi4s_if
+            #(
+                .USE_LAST       (1'b1               ),
+                .USE_USER       (1'b1               ),
+                .DATA_BITS      (10*3               ),
+                .USER_BITS      (1                  ),
+                .DEBUG          ("true"             )
+            )
+        axi4s_rgb10
+            (
+                .aresetn        (axi4s_cam_aresetn  ),
+                .aclk           (axi4s_cam_aclk     ),
+                .aclken         (1'b1               )
+            );
+
+    assign axi4s_raw10.tuser  = axi4s_fmtr.tuser  ;
+    assign axi4s_raw10.tlast  = axi4s_fmtr.tlast  ;
+    assign axi4s_raw10.tdata  = axi4s_fmtr.tdata  ;
+    assign axi4s_raw10.tvalid = axi4s_fmtr.tvalid && axi4s_fmtr.tready;
+
+    image_processing
+            #(
+                .WIDTH_BITS     (WIDTH_BITS         ),
+                .HEIGHT_BITS    (HEIGHT_BITS        ),
+                .TAPS           (1                  ),
+                .RAW_BITS       (10                 ),
+                .MAX_COLS       (512                ),
+                .RAM_TYPE       ("block"            ),
+                .BYPASS_SIZE    (1                  ),
+                .DEVICE         ("RTL"              )
+            )
+        u_processing
+            (
+                .param_width    (fmtr_param_width   ),
+                .param_height   (fmtr_param_height  ),
+
+                .s_axi4s        (axi4s_raw10        ),
+                .m_axi4s        (axi4s_rgb10        )
+            );
 
 
     // ----------------------------------------
@@ -983,8 +1024,8 @@ module zybo_z7_rtcl_p3s7_hub75e
     logic [7:0]     hub75_st1_mem_g     ;
     logic [7:0]     hub75_st1_mem_b     ;
 
-    always_ff @(posedge axi4s_fmtr.aclk) begin
-        if ( ~axi4s_fmtr.aresetn ) begin
+    always_ff @(posedge axi4s_rgb10.aclk) begin
+        if ( ~axi4s_rgb10.aresetn ) begin
             hub75_st0_last      <= '0   ;
             hub75_st0_valid     <= '0   ;
             hub75_st0_mem_we    <= 1'b0 ;
@@ -1000,14 +1041,14 @@ module zybo_z7_rtcl_p3s7_hub75e
             hub75_st1_mem_g     <= 'x   ;
             hub75_st1_mem_b     <= 'x   ;
         end
-        else if ( axi4s_fmtr.aclken ) begin
+        else if ( axi4s_rgb10.aclken ) begin
             // stage 0
-            hub75_st0_last      <= axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tlast;
-            hub75_st0_valid     <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
-            hub75_st0_mem_we    <= axi4s_fmtr.tvalid && axi4s_fmtr.tready;
-            hub75_st0_mem_r     <= axi4s_fmtr.tdata[9:2];
-            hub75_st0_mem_g     <= axi4s_fmtr.tdata[9:2];
-            hub75_st0_mem_b     <= axi4s_fmtr.tdata[9:2];
+            hub75_st0_last      <= axi4s_rgb10.tvalid && axi4s_rgb10.tready && axi4s_rgb10.tlast;
+            hub75_st0_valid     <= axi4s_rgb10.tvalid && axi4s_rgb10.tready;
+            hub75_st0_mem_we    <= axi4s_rgb10.tvalid && axi4s_rgb10.tready;
+            hub75_st0_mem_r     <= axi4s_rgb10.tdata[9:2];
+            hub75_st0_mem_g     <= axi4s_rgb10.tdata[9:2];
+            hub75_st0_mem_b     <= axi4s_rgb10.tdata[9:2];
             if ( hub75_st0_valid ) begin
                 hub75_st0_mem_xaddr <= hub75_st0_mem_xaddr + 1;
                 if ( hub75_st0_last ) begin
@@ -1015,7 +1056,7 @@ module zybo_z7_rtcl_p3s7_hub75e
                     hub75_st0_mem_yaddr <= hub75_st0_mem_yaddr + 1;
                 end
             end
-            if ( axi4s_fmtr.tvalid && axi4s_fmtr.tready && axi4s_fmtr.tuser[0] ) begin
+            if ( axi4s_rgb10.tvalid && axi4s_rgb10.tready && axi4s_rgb10.tuser[0] ) begin
                 hub75_st0_mem_xaddr <= 0;
                 hub75_st0_mem_yaddr <= 0;
             end
@@ -1031,6 +1072,8 @@ module zybo_z7_rtcl_p3s7_hub75e
             hub75_st1_mem_b     <= hub75_st0_mem_b      ;
         end
     end
+
+    assign axi4s_rgb10.tready = 1;
 
     hub75_driver
             #(
