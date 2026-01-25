@@ -36,6 +36,8 @@ module hub75_driver_core
                 input   var logic               reset       ,
                 input   var logic               clk         ,
                 input   var logic               enable      ,
+                input   var logic               flip_h      ,
+                input   var logic               flip_v      ,
                 input   var disp_t  [SLOTS-1:0] disp        ,
                 output  var logic               hub75_cke   ,
                 output  var logic               hub75_oe_n  ,
@@ -200,7 +202,11 @@ module hub75_driver_core
         end
     end
 
-    assign mem_rd_addr = {st0_y, st0_x};
+    x_t         mem_x       ;
+    y_t         mem_y       ;
+    assign mem_x = flip_h ? ~st0_x : st0_x;
+    assign mem_y = flip_v ? ~st0_y : st0_y;
+    assign mem_rd_addr = {mem_y, mem_x};
 
     logic           st1_cke ;
     logic           st1_lat ;

@@ -84,7 +84,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
     println!("reg_wdma_blk : {:08x}", unsafe { reg_wdma_blk.read_reg(0) });
 
+
     unsafe {
+        // X-Flip
+        reg_hub75.write_reg(0x10, 1);
+
         reg_hub75.write_reg(0x04, 1); // HUB75 LED ON
         
         // 短すぎるパルスはスイッチが追いつかないので一旦ゼロにする
