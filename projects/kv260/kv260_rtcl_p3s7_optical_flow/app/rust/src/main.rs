@@ -139,6 +139,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_gauss    = uio_acc.subclone(0x0040_1000, 0x400);
     let reg_lk       = uio_acc.subclone(0x0041_0000, 0x400);
     let reg_sel      = uio_acc.subclone(0x0040_f000, 0x400);
+    let reg_uart     = uio_acc.subclone(0x0050_0000, 0x400);
 
 
     println!("CORE ID");
@@ -146,6 +147,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_timgen   : {:08x}", unsafe { reg_timgen.read_reg(0) });
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
+
+    if false {
+        for _ in 0..3 {
+            // 1ms おきにループして円を描く
+            let r = 100;
+            for i in 0..360 {
+                let x = (r as f64 * (i as f64 * std::f64::consts::PI / 180.0).cos()) as i16;
+                let y = (r as f64 * (i as f64 * std::f64::consts::PI / 180.0).sin()) as i16;
+                send_projector_xy(&reg_uart, x, y, true);
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        }
+        return Ok(());
+    }
 
     let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 
@@ -341,4 +356,23 @@ fn get_cv_trackbar_pos(trackbarname: &str) -> opencv::Result<i32> {
     let winname = "img";
     let val = highgui::get_trackbar_pos(trackbarname, &winname)?;
     Ok(val)
+}
+
+
+fn send_projector_xy(reg_uart: &UioAccessor<usize>, x: i16, y: i16, laser_on: bool) {
+    let xh = ((x as u16) >> 8) as u8;
+    let xl = (x as u16 & 0xff) as u8;
+    let yh = ((y as u16) >> 8) as u8;
+    let yl = (y as u16 & 0xff) as u8;
+    let flg = if laser_on { 0x01 } else { 0x00 };
+    let chk = xh ^ xl ^ yh ^ yl ^ flg;
+    unsafe {
+        reg_uart.write_reg(0, 0xa5);
+        reg_uart.write_reg(0, xh as usize);
+        reg_uart.write_reg(0, xl as usize);
+        reg_uart.write_reg(0, yh as usize);
+        reg_uart.write_reg(0, yl as usize);
+        reg_uart.write_reg(0, flg as usize);
+        reg_uart.write_reg(0, chk as usize);
+    }
 }
