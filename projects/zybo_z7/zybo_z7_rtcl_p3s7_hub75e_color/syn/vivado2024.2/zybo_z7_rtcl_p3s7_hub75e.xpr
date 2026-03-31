@@ -4,11 +4,11 @@
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.                   -->
 <!-- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.   -->
 
-<Project Product="Vivado" Version="7" Minor="68" Path="/home/ryuji/git-work/rtcl-designs/projects/kv260/kv260_rtcl_p3s7_optical_flow/syn/vivado2024.2/kv260_rtcl_p3s7_optical_flow.xpr">
+<Project Product="Vivado" Version="7" Minor="68" Path="/home/ryuji/git-work/rtcl-designs/projects/zybo_z7/zybo_z7_rtcl_p3s7_hub75e_color/syn/vivado2024.2/zybo_z7_rtcl_p3s7_hub75e.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
-    <Option Name="Id" Val="04d0077474f14c6f802c05dae35ffa6c"/>
-    <Option Name="Part" Val="xck26-sfvc784-2LV-c"/>
+    <Option Name="Id" Val="a8751467a641406596f468d6b128e3c0"/>
+    <Option Name="Part" Val="xc7z020clg400-1"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
     <Option Name="CompiledLibDirModelSim" Val="$PCACHEDIR/compile_simlib/modelsim"/>
@@ -35,15 +35,15 @@
     <Option Name="SimulatorVersionXcelium" Val="24.03.003"/>
     <Option Name="SimulatorVersionVCS" Val="V-2023.12-SP1"/>
     <Option Name="SimulatorVersionRiviera" Val="2024.04"/>
-    <Option Name="SimulatorVersionActiveHdl" Val="12.0"/>
+    <Option Name="SimulatorVersionActiveHdl" Val="14.1"/>
     <Option Name="SimulatorGccVersionXsim" Val="9.3.0"/>
     <Option Name="SimulatorGccVersionModelSim" Val="7.4.0"/>
     <Option Name="SimulatorGccVersionQuesta" Val="7.4.0"/>
     <Option Name="SimulatorGccVersionXcelium" Val="9.3.0"/>
     <Option Name="SimulatorGccVersionVCS" Val="9.2.0"/>
     <Option Name="SimulatorGccVersionRiviera" Val="9.3.0"/>
-    <Option Name="SimulatorGccVersionActiveHdl" Val="6.2.0"/>
-    <Option Name="BoardPart" Val="xilinx.com:kv260_som:part0:1.2"/>
+    <Option Name="SimulatorGccVersionActiveHdl" Val="9.3.0"/>
+    <Option Name="BoardPart" Val="digilentinc.com:zybo-z7-20:part0:1.2"/>
     <Option Name="ActiveSimSet" Val="sim_1"/>
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="ProjectType" Val="Default"/>
@@ -58,7 +58,7 @@
     <Option Name="IPUserFilesDir" Val="$PIPUSERFILESDIR"/>
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
-    <Option Name="DSABoardId" Val="zcu102"/>
+    <Option Name="DSABoardId" Val="zybo-z7-20"/>
     <Option Name="WTXSimLaunchSim" Val="0"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
@@ -66,22 +66,19 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="11"/>
-    <Option Name="WTModelSimExportSim" Val="11"/>
-    <Option Name="WTQuestaExportSim" Val="11"/>
-    <Option Name="WTIesExportSim" Val="4"/>
-    <Option Name="WTVcsExportSim" Val="11"/>
-    <Option Name="WTRivieraExportSim" Val="11"/>
-    <Option Name="WTActivehdlExportSim" Val="11"/>
+    <Option Name="WTXSimExportSim" Val="16"/>
+    <Option Name="WTModelSimExportSim" Val="16"/>
+    <Option Name="WTQuestaExportSim" Val="16"/>
+    <Option Name="WTIesExportSim" Val="6"/>
+    <Option Name="WTVcsExportSim" Val="16"/>
+    <Option Name="WTRivieraExportSim" Val="16"/>
+    <Option Name="WTActivehdlExportSim" Val="15"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
     <Option Name="XSimArrayDisplayLimit" Val="1024"/>
     <Option Name="XSimTraceLimit" Val="65536"/>
     <Option Name="SimTypes" Val="rtl"/>
-    <Option Name="SimTypes" Val="bfm"/>
-    <Option Name="SimTypes" Val="tlm"/>
-    <Option Name="SimTypes" Val="tlm_dpi"/>
     <Option Name="MEMEnableMemoryMapGeneration" Val="TRUE"/>
     <Option Name="DcpsUptoDate" Val="TRUE"/>
     <Option Name="UseInlineHdlIP" Val="TRUE"/>
@@ -96,26 +93,26 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_axi_iic_0_0/design_1_axi_iic_0_0.xci">
-          <Proxy FileSetName="design_1_axi_iic_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_axi_protocol_convert_0_0/design_1_axi_protocol_convert_0_0.xci">
-          <Proxy FileSetName="design_1_axi_protocol_convert_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_clk_wiz_0_0/design_1_clk_wiz_0_0.xci">
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_clk_wiz_0_0_2/design_1_clk_wiz_0_0.xci">
           <Proxy FileSetName="design_1_clk_wiz_0_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_proc_sys_reset_0_0/design_1_proc_sys_reset_0_0.xci">
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_proc_sys_reset_0_0_2/design_1_proc_sys_reset_0_0.xci">
           <Proxy FileSetName="design_1_proc_sys_reset_0_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_ps8_0_axi_periph_imp_auto_pc_0/design_1_ps8_0_axi_periph_imp_auto_pc_0.xci">
-          <Proxy FileSetName="design_1_ps8_0_axi_periph_imp_auto_pc_0"/>
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_proc_sys_reset_1_0_2/design_1_proc_sys_reset_1_0.xci">
+          <Proxy FileSetName="design_1_proc_sys_reset_1_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_rst_ps8_0_99M_0/design_1_rst_ps8_0_99M_0.xci">
-          <Proxy FileSetName="design_1_rst_ps8_0_99M_0"/>
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_proc_sys_reset_2_0_2/design_1_proc_sys_reset_2_0.xci">
+          <Proxy FileSetName="design_1_proc_sys_reset_2_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_zynq_ultra_ps_e_0_0/design_1_zynq_ultra_ps_e_0_0.xci">
-          <Proxy FileSetName="design_1_zynq_ultra_ps_e_0_0"/>
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_processing_system7_0_0_2/design_1_processing_system7_0_0.xci">
+          <Proxy FileSetName="design_1_processing_system7_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_smartconnect_0_0_2/design_1_smartconnect_0_0.xci">
+          <Proxy FileSetName="design_1_smartconnect_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="design_1.bd" FileRelPathName="ip/design_1_smartconnect_1_0_2/design_1_smartconnect_1_0.xci">
+          <Proxy FileSetName="design_1_smartconnect_1_0"/>
         </CompFileExtendedInfo>
       </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v1/library/jelly_data_async.v">
@@ -153,20 +150,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v1/library/jelly_param_update_master.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v1/library/jelly_param_update_slave.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v1/library/jelly_pipeline_control.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -188,6 +171,20 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../rtl/hub75_driver.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../rtl/hub75_driver_core.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../rtl/image_processing.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -195,42 +192,14 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/img_buffer.sv">
+      <File Path="$PPRDIR/../../rtl/img_rgb4x4_calc.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/img_gaussian.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../rtl/img_gaussian3x3_calc.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../rtl/img_gaussian3x3_core.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../rtl/img_lk.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../rtl/img_lk_sobel.sv">
+      <File Path="$PPRDIR/../../rtl/img_rgb4x4_core.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -461,27 +430,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v2/peripheral/jelly2_uart_core.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v2/peripheral/jelly2_uart_rx.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v2/peripheral/jelly2_uart_tx.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/bus/jelly3_axi4_if.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -552,20 +500,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/library/jelly3_data_delay.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/misc/jelly3_data_logger_fifo.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/dma/jelly3_dma_stream_write.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -622,48 +556,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_img_lk_acc.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_img_lk_acc_core.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_img_lk_calc.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_img_mask_rect_core.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_img_selector.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_img_selector_core.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_mat_buf_blk.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -679,13 +571,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_mat_buf_row.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/image/jelly3_mat_delay.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -734,13 +619,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/library/jelly3_stream_delay.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/library/jelly3_stream_ff.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -776,13 +654,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/peripheral/jelly3_uart.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/video/jelly3_video_format_regularizer.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -791,13 +662,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../../../../jelly/rtl/v3/video/jelly3_video_format_regularizer_core.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../rtl/output_dac.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -825,8 +689,16 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/kv260_rtcl_p3s7_optical_flow.sv">
+      <File Path="$PPRDIR/../../rtl/zybo_z7_rtcl_p3s7_hub75e.sv">
         <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../../../jelly/rtl/v3/bus/jelly3_bram_if.sv">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -834,18 +706,19 @@
       </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="kv260_rtcl_p3s7_optical_flow"/>
+        <Option Name="TopModule" Val="zybo_z7_rtcl_p3s7_hub75e"/>
+        <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
-      <File Path="$PPRDIR/../../constrain/top.xdc">
+      <File Path="$PPRDIR/../../constrain/debug.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../constrain/debug.xdc">
+      <File Path="$PPRDIR/../../constrain/top.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -860,7 +733,7 @@
       <Filter Type="Srcs"/>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="kv260_rtcl_p3s7_optical_flow"/>
+        <Option Name="TopModule" Val="zybo_z7_rtcl_p3s7_hub75e"/>
         <Option Name="TopLib" Val="xil_defaultlib"/>
         <Option Name="TopAutoSet" Val="TRUE"/>
         <Option Name="TransportPathDelay" Val="0"/>
@@ -882,6 +755,18 @@
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
+    <FileSet Name="design_1_smartconnect_1_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_smartconnect_1_0" RelGenDir="$PGENDIR/design_1_smartconnect_1_0">
+      <Config>
+        <Option Name="TopModule" Val="design_1_smartconnect_1_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="design_1_smartconnect_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_smartconnect_0_0" RelGenDir="$PGENDIR/design_1_smartconnect_0_0">
+      <Config>
+        <Option Name="TopModule" Val="design_1_smartconnect_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
     <FileSet Name="mipi_dphy_cam" Type="BlockSrcs" RelSrcDir="$PSRCDIR/mipi_dphy_cam" RelGenDir="$PGENDIR/mipi_dphy_cam">
       <File Path="$PPRDIR/../../ip/vivado2024.2/mipi_dphy_cam/mipi_dphy_cam.xci">
         <FileInfo>
@@ -895,33 +780,9 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="design_1_rst_ps8_0_99M_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_rst_ps8_0_99M_0" RelGenDir="$PGENDIR/design_1_rst_ps8_0_99M_0">
-      <Config>
-        <Option Name="TopModule" Val="design_1_rst_ps8_0_99M_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="design_1_zynq_ultra_ps_e_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_zynq_ultra_ps_e_0_0" RelGenDir="$PGENDIR/design_1_zynq_ultra_ps_e_0_0">
-      <Config>
-        <Option Name="TopModule" Val="design_1_zynq_ultra_ps_e_0_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
     <FileSet Name="design_1_clk_wiz_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_clk_wiz_0_0" RelGenDir="$PGENDIR/design_1_clk_wiz_0_0">
       <Config>
         <Option Name="TopModule" Val="design_1_clk_wiz_0_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="design_1_axi_protocol_convert_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_axi_protocol_convert_0_0" RelGenDir="$PGENDIR/design_1_axi_protocol_convert_0_0">
-      <Config>
-        <Option Name="TopModule" Val="design_1_axi_protocol_convert_0_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="design_1_axi_iic_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_axi_iic_0_0" RelGenDir="$PGENDIR/design_1_axi_iic_0_0">
-      <Config>
-        <Option Name="TopModule" Val="design_1_axi_iic_0_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -931,9 +792,21 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="design_1_ps8_0_axi_periph_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_ps8_0_axi_periph_imp_auto_pc_0" RelGenDir="$PGENDIR/design_1_ps8_0_axi_periph_imp_auto_pc_0">
+    <FileSet Name="design_1_proc_sys_reset_1_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_proc_sys_reset_1_0" RelGenDir="$PGENDIR/design_1_proc_sys_reset_1_0">
       <Config>
-        <Option Name="TopModule" Val="design_1_ps8_0_axi_periph_imp_auto_pc_0"/>
+        <Option Name="TopModule" Val="design_1_proc_sys_reset_1_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="design_1_proc_sys_reset_2_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_proc_sys_reset_2_0" RelGenDir="$PGENDIR/design_1_proc_sys_reset_2_0">
+      <Config>
+        <Option Name="TopModule" Val="design_1_proc_sys_reset_2_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="design_1_processing_system7_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/design_1_processing_system7_0_0" RelGenDir="$PGENDIR/design_1_processing_system7_0_0">
+      <Config>
+        <Option Name="TopModule" Val="design_1_processing_system7_0_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -960,7 +833,7 @@
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="22">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xck26-sfvc784-2LV-c" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1" ParallelReportGen="true">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7z020clg400-1" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2019"/>
         <Step Id="synth_design"/>
@@ -970,7 +843,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="mipi_dphy_cam_synth_1" Type="Ft3:Synth" SrcSet="mipi_dphy_cam" Part="xck26-sfvc784-2LV-c" ConstrsSet="mipi_dphy_cam" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/mipi_dphy_cam_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_smartconnect_1_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_smartconnect_1_0" Part="xc7z020clg400-1" ConstrsSet="design_1_smartconnect_1_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_smartconnect_1_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_1_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_1_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -980,7 +853,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_rst_ps8_0_99M_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_rst_ps8_0_99M_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_rst_ps8_0_99M_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_rst_ps8_0_99M_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_rst_ps8_0_99M_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_rst_ps8_0_99M_0_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_smartconnect_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_smartconnect_0_0" Part="xc7z020clg400-1" ConstrsSet="design_1_smartconnect_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_smartconnect_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -990,7 +863,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_zynq_ultra_ps_e_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_zynq_ultra_ps_e_0_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_zynq_ultra_ps_e_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_zynq_ultra_ps_e_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_zynq_ultra_ps_e_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_zynq_ultra_ps_e_0_0_synth_1" ParallelReportGen="true">
+    <Run Id="mipi_dphy_cam_synth_1" Type="Ft3:Synth" SrcSet="mipi_dphy_cam" Part="xc7z020clg400-1" ConstrsSet="mipi_dphy_cam" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/mipi_dphy_cam_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -1000,7 +873,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_clk_wiz_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_clk_wiz_0_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_clk_wiz_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_clk_wiz_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_clk_wiz_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_clk_wiz_0_0" Part="xc7z020clg400-1" ConstrsSet="design_1_clk_wiz_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_clk_wiz_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -1010,7 +883,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_axi_protocol_convert_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_axi_protocol_convert_0_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_axi_protocol_convert_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_axi_protocol_convert_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_axi_protocol_convert_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_axi_protocol_convert_0_0_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_proc_sys_reset_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_proc_sys_reset_0_0" Part="xc7z020clg400-1" ConstrsSet="design_1_proc_sys_reset_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_proc_sys_reset_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -1020,7 +893,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_axi_iic_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_axi_iic_0_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_axi_iic_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_axi_iic_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_axi_iic_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_axi_iic_0_0_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_proc_sys_reset_1_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_proc_sys_reset_1_0" Part="xc7z020clg400-1" ConstrsSet="design_1_proc_sys_reset_1_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_proc_sys_reset_1_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_1_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_1_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -1030,7 +903,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_proc_sys_reset_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_proc_sys_reset_0_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_proc_sys_reset_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_proc_sys_reset_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_proc_sys_reset_2_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_proc_sys_reset_2_0" Part="xc7z020clg400-1" ConstrsSet="design_1_proc_sys_reset_2_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_proc_sys_reset_2_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_2_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_2_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -1040,7 +913,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_ps8_0_axi_periph_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_ps8_0_axi_periph_imp_auto_pc_0" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_ps8_0_axi_periph_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_ps8_0_axi_periph_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_ps8_0_axi_periph_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_ps8_0_axi_periph_imp_auto_pc_0_synth_1" ParallelReportGen="true">
+    <Run Id="design_1_processing_system7_0_0_synth_1" Type="Ft3:Synth" SrcSet="design_1_processing_system7_0_0" Part="xc7z020clg400-1" ConstrsSet="design_1_processing_system7_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/design_1_processing_system7_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_processing_system7_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_processing_system7_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2024"/>
         <Step Id="synth_design"/>
@@ -1050,7 +923,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" LaunchOptions="-jobs 6 " AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1" ParallelReportGen="true">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" LaunchOptions="-jobs 6 " AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2019"/>
         <Step Id="init_design"/>
@@ -1068,7 +941,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="mipi_dphy_cam_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="mipi_dphy_cam" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="mipi_dphy_cam_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_smartconnect_1_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_smartconnect_1_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_smartconnect_1_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_1_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_1_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1085,7 +958,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_rst_ps8_0_99M_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_rst_ps8_0_99M_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_rst_ps8_0_99M_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_rst_ps8_0_99M_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_rst_ps8_0_99M_0_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_smartconnect_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_smartconnect_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_smartconnect_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_smartconnect_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1102,7 +975,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_zynq_ultra_ps_e_0_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_zynq_ultra_ps_e_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_zynq_ultra_ps_e_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_zynq_ultra_ps_e_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_zynq_ultra_ps_e_0_0_impl_1" ParallelReportGen="true">
+    <Run Id="mipi_dphy_cam_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="mipi_dphy_cam" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="mipi_dphy_cam_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/mipi_dphy_cam_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1119,7 +992,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_clk_wiz_0_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_clk_wiz_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_clk_wiz_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_clk_wiz_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_clk_wiz_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_clk_wiz_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_clk_wiz_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1136,7 +1009,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_axi_protocol_convert_0_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_axi_protocol_convert_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_axi_protocol_convert_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_axi_protocol_convert_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_axi_protocol_convert_0_0_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_proc_sys_reset_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_proc_sys_reset_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_proc_sys_reset_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1153,7 +1026,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_axi_iic_0_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_axi_iic_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_axi_iic_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_axi_iic_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_axi_iic_0_0_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_proc_sys_reset_1_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_proc_sys_reset_1_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_proc_sys_reset_1_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_1_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_1_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1170,7 +1043,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_proc_sys_reset_0_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_proc_sys_reset_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_proc_sys_reset_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_0_0_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_proc_sys_reset_2_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_proc_sys_reset_2_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_proc_sys_reset_2_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_2_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_proc_sys_reset_2_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>
@@ -1187,7 +1060,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="design_1_ps8_0_axi_periph_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xck26-sfvc784-2LV-c" ConstrsSet="design_1_ps8_0_axi_periph_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_ps8_0_axi_periph_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_ps8_0_axi_periph_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_ps8_0_axi_periph_imp_auto_pc_0_impl_1" ParallelReportGen="true">
+    <Run Id="design_1_processing_system7_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="design_1_processing_system7_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="design_1_processing_system7_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/design_1_processing_system7_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/design_1_processing_system7_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2024"/>
         <Step Id="init_design"/>

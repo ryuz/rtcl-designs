@@ -34,6 +34,7 @@ const REG_IMG_LK_ACC_OUT_DX1: usize = 0x65;
 const REG_IMG_LK_ACC_OUT_DY0: usize = 0x66;
 const REG_IMG_LK_ACC_OUT_DY1: usize = 0x67;
 
+
 // レジスタ書き込み
 fn wrtie_reg(reg: usize, data: i64) {
     let p = (LK_ACC_BASE + 8 * reg) as *mut i64;
@@ -47,6 +48,31 @@ fn read_reg(reg: usize) -> i64 {
     let p = (LK_ACC_BASE + 8 * reg) as *const i64;
     unsafe { core::ptr::read_volatile(p) }
 }
+
+// UART書き込み
+fn wrtie_uart(tx: u8) {
+    let p = 0xa0500000 as *mut u8;
+    unsafe {
+        core::ptr::write_volatile(p, tx);
+    }
+}
+
+fn send_projector_xy(x: i16, y: i16, laser_on: bool) {
+    let xh = ((x as u16) >> 8) as u8;
+    let xl = (x as u16 & 0xff) as u8;
+    let yh = ((y as u16) >> 8) as u8;
+    let yl = (y as u16 & 0xff) as u8;
+    let flg = if laser_on { 0x01 } else { 0x00 };
+    let chk = xh ^ xl ^ yh ^ yl ^ flg;
+    wrtie_uart(0xa5);
+    wrtie_uart(xh);
+    wrtie_uart(xl);
+    wrtie_uart(yh);
+    wrtie_uart(yl);
+    wrtie_uart(flg);
+    wrtie_uart(chk);
+}
+
 
 pub fn get_id() -> u64 {
     read_reg(REG_IMG_LK_ACC_CORE_ID) as u64
@@ -97,19 +123,36 @@ pub fn irq_handler() {
     }
     */
 
-    // 固定小数点化
-    let dx = (dx.min(255.0).max(-255.0) * 65536.0) as i64;
-    let dy = (dy.min(255.0).max(-255.0) * 65536.0) as i64;
+    // クリップ
+    let dx = dx.min(255.0).max(-255.0);
+    let dy = dy.min(255.0).max(-255.0);
 
-    /*
-    println!(
-        "dx:{} dy:{} gx2:{} gy2:{} gxy:{} ex:{} ey:{}",
-        dx, dy, gx2, gy2, gxy, ex, ey
-    );
-    */
+    unsafe {
+        static mut X: f64 = 0.0;
+        static mut Y: f64 = 0.0;
+        let gain = 1.5;
+        X += dx * gain;
+        Y += dy * gain;
 
-    // 書き込み
-    wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, dx);
-    wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, dy);
-    wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
+        // 固定小数点化
+        let dx = (dx.min(255.0).max(-255.0) * 65536.0) as i64;
+        let dy = (dy.min(255.0).max(-255.0) * 65536.0) as i64;
+
+        // 書き込み
+        wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, dx);
+        wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, dy);
+        wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
+
+        // ゼロへドリフト
+        X *= 0.999;
+        Y *= 0.999;
+//      let limit = 32767.0;
+        let limit = 2*255.0;
+        X = X.min(limit).max(-limit);
+        Y = Y.min(limit).max(-limit);
+
+        let px = (X * -1.0) as i16;
+        let py = -30;//(Y * -1.0) as i16;
+        send_projector_xy(px as i16, py as i16, true);
+    }
 }
