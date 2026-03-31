@@ -130,8 +130,9 @@ pub fn irq_handler() {
     unsafe {
         static mut X: f64 = 0.0;
         static mut Y: f64 = 0.0;
-        X += dx * 3.0;
-        Y += dy * 3.0;
+        let gain = 1.5;
+        X += dx * gain;
+        Y += dy * gain;
 
         // 固定小数点化
         let dx = (dx.min(255.0).max(-255.0) * 65536.0) as i64;
@@ -143,14 +144,15 @@ pub fn irq_handler() {
         wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
 
         // ゼロへドリフト
-        X *= 0.995;
-        Y *= 0.995;
-        let limit = 32767.0;
+        X *= 0.999;
+        Y *= 0.999;
+//      let limit = 32767.0;
+        let limit = 2*255.0;
         X = X.min(limit).max(-limit);
         Y = Y.min(limit).max(-limit);
 
         let px = (X * -1.0) as i16;
-        let py = (Y * -1.0) as i16;
+        let py = -30;//(Y * -1.0) as i16;
         send_projector_xy(px as i16, py as i16, true);
     }
 }
