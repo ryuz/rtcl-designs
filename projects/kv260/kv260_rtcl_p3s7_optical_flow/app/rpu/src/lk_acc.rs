@@ -127,27 +127,31 @@ pub fn irq_handler() {
     let dx = dx.min(255.0).max(-255.0);
     let dy = dy.min(255.0).max(-255.0);
 
+    // 固定小数点化
+    let vx = (dx * 65536.0) as i64;
+    let vy = (dy * 65536.0) as i64;
+
+    // 書き込み
+    unsafe {
+        wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, vx);
+        wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, vy);
+        wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
+    }
+
+
+    // Laser Projectorへ送信
     unsafe {
         static mut X: f64 = 0.0;
         static mut Y: f64 = 0.0;
+
         let gain = 1.5;
         X += dx * gain;
         Y += dy * gain;
 
-        // 固定小数点化
-        let dx = (dx.min(255.0).max(-255.0) * 65536.0) as i64;
-        let dy = (dy.min(255.0).max(-255.0) * 65536.0) as i64;
-
-        // 書き込み
-        wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, dx);
-        wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, dy);
-        wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
-
-        // ゼロへドリフト
+        // ゼロへ自動復帰
         X *= 0.999;
         Y *= 0.999;
-//      let limit = 32767.0;
-        let limit = 2*255.0;
+        let limit = 2.0*255.0;
         X = X.min(limit).max(-limit);
         Y = Y.min(limit).max(-limit);
 
