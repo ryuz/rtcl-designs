@@ -34,6 +34,8 @@ pub unsafe extern "C" fn main() -> ! {
     println!("kv260_imx219_of_measuring RPU");
     println!("id  : {:08x}", lk_acc::get_id());
     println!("ver : {:08x}", lk_acc::get_version());
+//  println!("ocm[0] : {}", lk_acc::read_ocm_f64(0));
+//  println!("ocm[1] : {}", lk_acc::read_ocm_f64(1));
 
     unsafe {
         // タイマ初期化
