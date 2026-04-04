@@ -177,7 +177,6 @@ pub fn irq_handler() {
         wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
     }
 
-
     // Laser Projectorへ送信
     let mut prj_x : f64 = read_ocm_f64(OCM_PRJ_X);
     let mut prj_y : f64 = read_ocm_f64(OCM_PRJ_Y);
@@ -202,12 +201,15 @@ pub fn irq_handler() {
     let py = prj_y + read_ocm_f64(OCM_PRJ_OFFSET_Y);
     send_projector_xy(px as i16, py as i16, true);
 
-    unsafe {
-        static mut IRQ_COUNT: u32 = 0;
-        IRQ_COUNT += 1;
-        if IRQ_COUNT % 1000 == 0 {
-            println!("dx : {}  dy : {}", dx, dy);
-            println!("px : {}  py : {}", px, py);
+    // デバッグ出力
+    if false {
+        unsafe {
+            static mut IRQ_COUNT: u32 = 0;
+            IRQ_COUNT += 1;
+            if IRQ_COUNT % 1000 == 0 {
+                println!("dx : {}  dy : {}", dx, dy);
+                println!("px : {}  py : {}", px, py);
+            }
         }
     }
 }

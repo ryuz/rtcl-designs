@@ -51,7 +51,6 @@ const REG_IMG_SELECTOR_CORE_VERSION : usize = 0x01;
 const REG_IMG_SELECTOR_CTL_SELECT   : usize = 0x08;
 const REG_IMG_SELECTOR_CONFIG_NUM   : usize = 0x10;
 
-
 // Logger
 const REG_LOGGER_CORE_ID          : usize =  0x00;
 const REG_LOGGER_CORE_VERSION     : usize =  0x01;
@@ -64,6 +63,24 @@ const REG_LOGGER_POL_TIMER0       : usize =  0x18;
 const REG_LOGGER_POL_TIMER1       : usize =  0x19;
 const REG_LOGGER_POL_DATA0        : usize =  0x20;
 const REG_LOGGER_POL_DATA1        : usize =  0x21;
+
+// OCM
+const OCM_X_MIN: usize = 0x10;
+const OCM_X_MAX: usize = 0x11;
+const OCM_Y_MIN: usize = 0x12;
+const OCM_Y_MAX: usize = 0x13;
+const OCM_PRJ_GIAN_X: usize = 0x20;
+const OCM_PRJ_GIAN_Y: usize = 0x21;
+const OCM_PRJ_DECAY_X: usize = 0x22;
+const OCM_PRJ_DECAY_Y: usize = 0x23;
+const OCM_PRJ_OFFSET_X: usize = 0x24;
+const OCM_PRJ_OFFSET_Y: usize = 0x25;
+const OCM_PRJ_X_MIN: usize = 0x26;
+const OCM_PRJ_X_MAX: usize = 0x27;
+const OCM_PRJ_Y_MIN: usize = 0x28;
+const OCM_PRJ_Y_MAX: usize = 0x29;
+const OCM_PRJ_X: usize = 0x40;
+const OCM_PRJ_Y: usize = 0x41;
 
 
 #[derive(Parser, Debug)]
@@ -204,6 +221,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
+    create_cv_trackbar("pgx",     -200,  200, 100)?;
+    create_cv_trackbar("pgy",     -200,  200, 100)?;
 
     unsafe {
         reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_X,          16);
@@ -233,6 +252,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
         let sel = get_cv_trackbar_pos("sel")?;
+
+        let prj_gain_x = get_cv_trackbar_pos("pgx")?;
+        let prj_gain_y = get_cv_trackbar_pos("pgy")?;
+        unsafe {
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_X, prj_gain_x as f64 / 100.0);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y as f64 / 100.0);
+        }
 
         unsafe {
             reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
