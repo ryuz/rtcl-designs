@@ -252,7 +252,6 @@ module image_processing
     // -------------------------------------
     //  rect region
     // -------------------------------------
-
     jelly3_mat_if
             #(
                 .TAPS       (TAPS           ),
@@ -276,7 +275,22 @@ module image_processing
                 .CH_BITS    (S_CH_BITS      ),
                 .CH_DEPTH   (1              )
             )
-        img_rect_tmp
+        img_rect_trim
+            (
+                .reset      (reset          ),
+                .clk        (clk            ),
+                .cke        (cke            )
+            );
+
+    jelly3_mat_if
+            #(
+                .TAPS       (TAPS           ),
+                .ROWS_BITS  ($bits(rows_t)  ),
+                .COLS_BITS  ($bits(cols_t)  ),
+                .CH_BITS    (S_CH_BITS      ),
+                .CH_DEPTH   (1              )
+            )
+        img_rect_org
             (
                 .reset      (reset          ),
                 .clk        (clk            ),
@@ -300,11 +314,23 @@ module image_processing
                 .in_update_req      (in_update_req      ),
 
                 .s_img              (img_clamp          ),
-                .m_img              (img_rect           ),
-                .m_img_org          (img_rect_tmp       ),
+                .m_img              (img_rect_trim      ),
+                .m_img_org          (img_rect_org       ),
                 
                 .s_axi4l            (axi4l_dec[DEC_RECT])
             );
+
+    assign img_rect.rows      = img_rect_org.rows;
+    assign img_rect.cols      = img_rect_org.cols;
+    assign img_rect.row_first = img_rect_org.row_first;
+    assign img_rect.row_last  = img_rect_org.row_last ;
+    assign img_rect.col_first = img_rect_org.col_first;
+    assign img_rect.col_last  = img_rect_org.col_last ;
+    assign img_rect.de        = img_rect_org.de       ;
+    assign img_rect.user      = img_rect_org.user     ;
+    assign img_rect.data      = img_rect_trim.de ? img_rect_org.data : '0;
+    assign img_rect.valid     = img_rect_org.valid    ;
+
 
 
     // -------------------------------------
@@ -405,16 +431,16 @@ module image_processing
     assign img_sel_s[2].user        = img_clamp.user                ;
     assign img_sel_s[2].valid       = img_clamp.valid               ;
 
-    assign img_sel_s[3].rows        = img_rect.rows                 ;
-    assign img_sel_s[3].cols        = img_rect.cols                 ;
-    assign img_sel_s[3].row_first   = img_rect.row_first            ;
-    assign img_sel_s[3].row_last    = img_rect.row_last             ;
-    assign img_sel_s[3].col_first   = img_rect.col_first            ;
-    assign img_sel_s[3].col_last    = img_rect.col_last             ;
-    assign img_sel_s[3].de          = img_rect.de                   ;
-    assign img_sel_s[3].data        = M_CH_BITS'(img_rect.data)     ;
-    assign img_sel_s[3].user        = img_rect.user                 ;
-    assign img_sel_s[3].valid       = img_rect.valid                ;
+    assign img_sel_s[3].rows        = img_rect.rows             ;
+    assign img_sel_s[3].cols        = img_rect.cols             ;
+    assign img_sel_s[3].row_first   = img_rect.row_first        ;
+    assign img_sel_s[3].row_last    = img_rect.row_last         ;
+    assign img_sel_s[3].col_first   = img_rect.col_first        ;
+    assign img_sel_s[3].col_last    = img_rect.col_last         ;
+    assign img_sel_s[3].de          = img_rect.de               ;
+    assign img_sel_s[3].data        = M_CH_BITS'(img_rect.data) ;
+    assign img_sel_s[3].user        = img_rect.user             ;
+    assign img_sel_s[3].valid       = img_rect.valid            ;
 
 endmodule
 

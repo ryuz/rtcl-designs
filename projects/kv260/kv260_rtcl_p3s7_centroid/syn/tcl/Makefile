@@ -7,7 +7,7 @@ VIVADO_VERSIONS := $(subst .,$(space),$(subst v,,$(word 2,$(shell vivado -versio
 VIVADO_VERSION  := $(word 1,$(VIVADO_VERSIONS)).$(word 2,$(VIVADO_VERSIONS))
 
 # settings
-PROJECT_NAME = kv260_rtcl_p3s7_optical_flow
+PROJECT_NAME = kv260_rtcl_p3s7_centroid
 BOARD_NAME   = kv260
 export PRJ_NAME     = $(PROJECT_NAME)_tcl
 export TOP_MODULE   = $(PROJECT_NAME)
@@ -34,20 +34,15 @@ HLS_IP =
 export HLS_IP
 
 # sources
-SOURCES  = $(PRJ_DIR)/rtl/kv260_rtcl_p3s7_optical_flow.sv
+SOURCES  = $(PRJ_DIR)/rtl/kv260_rtcl_p3s7_centroid.sv
 SOURCES += $(PRJ_DIR)/rtl/output_dac.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_dphy_recv.sv
 SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
 SOURCES += $(PRJ_DIR)/rtl/image_processing.sv
-SOURCES += $(PRJ_DIR)/rtl/img_buffer.sv
-SOURCES += $(PRJ_DIR)/rtl/img_gaussian3x3_calc.sv
-SOURCES += $(PRJ_DIR)/rtl/img_gaussian3x3_core.sv
 SOURCES += $(PRJ_DIR)/rtl/img_gaussian.sv
-SOURCES += $(PRJ_DIR)/rtl/img_lk_sobel.sv
-SOURCES += $(PRJ_DIR)/rtl/img_lk.sv
-#SOURCES += $(PRJ_DIR)/rtl/img_pattern.sv
-#SOURCES += $(PRJ_DIR)/rtl/video_pattern.sv
+SOURCES += $(PRJ_DIR)/rtl/img_gaussian3x3_core.sv
+SOURCES += $(PRJ_DIR)/rtl/img_gaussian3x3_calc.sv
 
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
