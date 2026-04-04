@@ -11,6 +11,14 @@ use kv260_rtcl_p3s7_optical_flow::camera_driver::CameraDriver;
 use kv260_rtcl_p3s7_optical_flow::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_optical_flow::timing_generator_driver::TimingGeneratorDriver;
 
+// Gaussian filter
+ const REG_IMG_GAUSS_CORE_ID        : usize = 0x00;
+ const REG_IMG_GAUSS_CORE_VERSION   : usize = 0x01;
+ const REG_IMG_GAUSS_CTL_CONTROL    : usize = 0x04;
+ const REG_IMG_GAUSS_CTL_STATUS     : usize = 0x05;
+ const REG_IMG_GAUSS_CTL_INDEX      : usize = 0x07;
+ const REG_IMG_GAUSS_PARAM_ENABLE   : usize = 0x08;
+ const REG_IMG_GAUSS_CURRENT_ENABLE : usize = 0x18;
 
 /* LK acc */
 const REG_IMG_LK_ACC_CORE_ID      : usize =  0x00;
@@ -219,10 +227,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
+    create_cv_trackbar("gauss",      0,    4,   3)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
-    create_cv_trackbar("pgx",     -200,  200, 100)?;
-    create_cv_trackbar("pgy",     -200,  200, 100)?;
+    create_cv_trackbar("pgx",     -200,  200,  100)?;
+    create_cv_trackbar("pgy",     -200,  200, -100)?;
 
     unsafe {
         reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_X,          16);
@@ -251,17 +260,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
+        let gauss     = get_cv_trackbar_pos("gauss")?;
         let sel = get_cv_trackbar_pos("sel")?;
-
         let prj_gain_x = get_cv_trackbar_pos("pgx")?;
         let prj_gain_y = get_cv_trackbar_pos("pgy")?;
+
         unsafe {
-            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_X, prj_gain_x as f64 / 100.0);
-            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y as f64 / 100.0);
+            reg_gauss.write_reg(REG_IMG_GAUSS_PARAM_ENABLE, ((1 << gauss) - 1) as usize);
+            reg_gauss.write_reg(REG_IMG_GAUSS_CTL_CONTROL, 3);
+            reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
         }
 
         unsafe {
-            reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_X, prj_gain_x as f64 / 100.0);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y as f64 / 100.0);
         }
 
         cam.set_gain(gain)?;

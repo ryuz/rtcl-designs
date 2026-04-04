@@ -220,7 +220,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gain",       0,  200,   10)?;
     create_cv_trackbar("fps",       10, 1000,  fps)?;
     create_cv_trackbar("exposure",  10,  900,  900)?;
-    create_cv_trackbar("gauss",      0,    3,    0)?;
+    create_cv_trackbar("gauss",      0,    4,    0)?;
     create_cv_trackbar("min",        0, 1023,    0)?;
     create_cv_trackbar("max",        0, 1023, 1023)?;
     create_cv_trackbar("x0",         0, (width -1) as i32,       0)?;
