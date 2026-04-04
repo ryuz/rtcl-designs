@@ -23,11 +23,11 @@ module image_processing
             parameter   type    cx_t        = logic signed  [CX_BITS-1:0]   ,
             parameter   int     CY_BITS     = 32                            ,
             parameter   type    cy_t        = logic signed  [CY_BITS-1:0]   ,
-            parameter   int     M00_BITS    = 32                            ,
+            parameter   int     M00_BITS    = 48                            ,
             parameter   type    m00_t       = logic [M00_BITS-1:0]          ,
-            parameter   int     M10_BITS    = 32                            ,
+            parameter   int     M10_BITS    = 48                            ,
             parameter   type    m10_t       = logic [M10_BITS-1:0]          ,
-            parameter   int     M01_BITS    = 32                            ,
+            parameter   int     M01_BITS    = 48                            ,
             parameter   type    m01_t       = logic [M01_BITS-1:0]          ,
             parameter   int     MAX_COLS    = 4096                          ,
             parameter           RAM_TYPE    = "block"                       ,
@@ -369,7 +369,7 @@ module image_processing
     //  output selector
     // -------------------------------------
 
-    localparam int SEL_NUM = 4;
+    localparam int SEL_NUM = 5;
 
     jelly3_mat_if
             #(
@@ -441,6 +441,17 @@ module image_processing
     assign img_sel_s[3].data        = M_CH_BITS'(img_rect.data) ;
     assign img_sel_s[3].user        = img_rect.user             ;
     assign img_sel_s[3].valid       = img_rect.valid            ;
+
+    assign img_sel_s[4].rows        = img_rect.rows             ;
+    assign img_sel_s[4].cols        = img_rect.cols             ;
+    assign img_sel_s[4].row_first   = img_rect.row_first        ;
+    assign img_sel_s[4].row_last    = img_rect.row_last         ;
+    assign img_sel_s[4].col_first   = img_rect.col_first        ;
+    assign img_sel_s[4].col_last    = img_rect.col_last         ;
+    assign img_sel_s[4].de          = img_rect.de               ;
+    assign img_sel_s[4].data        = img_rect.data != 0 ? '1 : '0;
+    assign img_sel_s[4].user        = img_rect.user             ;
+    assign img_sel_s[4].valid       = img_rect.valid            ;
 
 endmodule
 

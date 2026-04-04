@@ -106,7 +106,9 @@ module tb_top();
     localparam  axi4l_addr_t    ADR_FMTR   = axi4l_addr_t'(40'ha010_0000);
     localparam  axi4l_addr_t    ADR_WDMA   = axi4l_addr_t'(40'ha021_0000);
     localparam  axi4l_addr_t    ADR_GAUSS  = axi4l_addr_t'(40'ha040_1000);
-    localparam  axi4l_addr_t    ADR_LK     = axi4l_addr_t'(40'ha041_0000);
+    localparam  axi4l_addr_t    ADR_CLAMP  = axi4l_addr_t'(40'ha040_2000);
+    localparam  axi4l_addr_t    ADR_RECT   = axi4l_addr_t'(40'ha040_3000);
+    localparam  axi4l_addr_t    ADR_MOMENT = axi4l_addr_t'(40'ha040_4000);
     localparam  axi4l_addr_t    ADR_IMGSEL = axi4l_addr_t'(40'ha040_f000);
 
     jelly3_axi4l_accessor
@@ -148,15 +150,6 @@ module tb_top();
         u_axi4l.write_reg(ADR_GAUSS, `REG_IMG_GAUSS3X3_PARAM_ENABLE, 7, 8'hff);
         u_axi4l.write_reg(ADR_GAUSS, `REG_IMG_GAUSS3X3_CTL_CONTROL , 3, 8'hff);
 
-        $display("lk");
-        u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_CORE_ID     , rdata);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_X     ,  16, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_Y     ,  16, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_WIDTH , 128, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_PARAM_HEIGHT, 128, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_CTL_CONTROL ,   3, 8'hff);
-        u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_IRQ_ENABLE  ,   1, 8'hff);
-
         $display("imgsel");
         u_axi4l.write_reg(ADR_IMGSEL, `REG_IMG_SELECTOR_CTL_SELECT, axi4l_data_t'(1), 8'hff);
 
@@ -183,26 +176,24 @@ module tb_top();
         
         $display("start");
         u_axi4l.write_reg(ADR_WDMA, int'(`REG_VDMA_WRITE_CTL_CONTROL)     , 3                             , 8'hff);  // update & enable
-        
 
         $display("wait for IRQ");
+        u_axi4l.write_reg(ADR_MOMENT, `REG_IMG_MOMENT_IRQ_ENABLE, 1, 8'hff);
         for ( int i = 0; i < 3; i++ ) begin
             do begin
-               #1000;
-                u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_IRQ_STATUS, rdata);
+               #10000;
+                u_axi4l.read_reg (ADR_MOMENT, `REG_IMG_MOMENT_IRQ_STATUS, rdata);
             end while ( rdata == 0 );
-            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GXX0, rdata);
-            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GXX1, rdata);
-            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GYY0, rdata);
-            u_axi4l.read_reg (ADR_LK, `REG_IMG_LK_ACC_ACC_GYY1, rdata);
-            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_ACC_READY, 1, 8'hff);
-            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_IRQ_CLR,   1, 8'hff);
-            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_OUT_DX0,  8192 * (210+i), 8'hff);
-            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_OUT_DY0, -8192 * (123+i), 8'hff);
-            u_axi4l.write_reg(ADR_LK, `REG_IMG_LK_ACC_OUT_VALID, 1, 8'hff);
+            u_axi4l.read_reg (ADR_MOMENT, `REG_IMG_MOMENT_MOMENT_DATA, rdata);
+            u_axi4l.write_reg(ADR_MOMENT, `REG_IMG_MOMENT_MOMENT_READY, 1, 8'hff);
+            u_axi4l.write_reg(ADR_MOMENT, `REG_IMG_MOMENT_IRQ_CLR,   1, 8'hff);
+            u_axi4l.write_reg(ADR_MOMENT, `REG_IMG_MOMENT_OUT_X_LO,  8192 * (210+i), 8'hff);
+            u_axi4l.write_reg(ADR_MOMENT, `REG_IMG_MOMENT_OUT_Y_LO, -8192 * (123+i), 8'hff);
+            u_axi4l.write_reg(ADR_MOMENT, `REG_IMG_MOMENT_OUT_VALID, 1, 8'hff);
         end
 
-        #10000000
+        $display("wait");
+        #2000000
         $display("stop");
         u_axi4l.write_reg(ADR_WDMA, int'(`REG_VDMA_WRITE_CTL_CONTROL)     , 0 , 8'hff);  // update & enable
         #1000

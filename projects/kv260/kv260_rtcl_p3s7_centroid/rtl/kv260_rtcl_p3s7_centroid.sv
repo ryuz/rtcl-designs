@@ -679,11 +679,11 @@ module kv260_rtcl_p3s7_centroid
     localparam  type    cx_t        = logic signed  [CX_BITS-1:0]   ;
     localparam  int     CY_BITS     = 32                            ;
     localparam  type    cy_t        = logic signed  [CY_BITS-1:0]   ;
-    localparam  int     M00_BITS    = 32                            ;
+    localparam  int     M00_BITS    = 48                            ;
     localparam  type    m00_t       = logic [M00_BITS-1:0]          ;
-    localparam  int     M10_BITS    = 32                            ;
+    localparam  int     M10_BITS    = 48                            ;
     localparam  type    m10_t       = logic [M10_BITS-1:0]          ;
-    localparam  int     M01_BITS    = 32                            ;
+    localparam  int     M01_BITS    = 48                            ;
     localparam  type    m01_t       = logic [M01_BITS-1:0]          ;
 
     jelly3_axi4s_if

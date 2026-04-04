@@ -32,6 +32,17 @@ use kv260_rtcl_p3s7_centroid::timing_generator_driver::TimingGeneratorDriver;
  const REG_IMG_CLAMP_PARAM_MIN      : usize = 0x20;
  const REG_IMG_CLAMP_PARAM_MAX      : usize = 0x21;
 
+ // Rect
+ const REG_IMG_RECT_CORE_ID       : usize = 0x00;
+ const REG_IMG_RECT_CORE_VERSION  : usize = 0x01;
+ const REG_IMG_RECT_CTL_CONTROL   : usize = 0x04;
+ const REG_IMG_RECT_CTL_STATUS    : usize = 0x05;
+ const REG_IMG_RECT_CTL_INDEX     : usize = 0x07;
+ const REG_IMG_RECT_PARAM_X       : usize = 0x10;
+ const REG_IMG_RECT_PARAM_Y       : usize = 0x11;
+ const REG_IMG_RECT_PARAM_WIDTH   : usize = 0x12;
+ const REG_IMG_RECT_PARAM_HEIGHT  : usize = 0x13;
+
 // moment
 const REG_IMG_MOMENT_CORE_ID      : usize = 0x00;
 const REG_IMG_MOMENT_CORE_VERSION : usize = 0x01;
@@ -209,7 +220,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gauss",      0,    3,    0)?;
     create_cv_trackbar("min",        0, 1023,    0)?;
     create_cv_trackbar("max",        0, 1023, 1023)?;
-//  create_cv_trackbar("sel",        0,    2,    0)?;
+    create_cv_trackbar("x0",         0, (width -1) as i32,       0)?;
+    create_cv_trackbar("x1",         0, (width -1) as i32, (width-1) as i32)?;
+    create_cv_trackbar("y0",         0, (height-1) as i32,       0)?;
+    create_cv_trackbar("y1",         0, (height-1) as i32, (width-1) as i32)?;
+
+
+    //  create_cv_trackbar("sel",        0,    2,    0)?;
 
     /*
     unsafe {
@@ -243,7 +260,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gauss     = get_cv_trackbar_pos("gauss")?;
         let clamp_min = get_cv_trackbar_pos("min")?;
         let clamp_max = get_cv_trackbar_pos("max")?;
-//      let sel       = get_cv_trackbar_pos("sel")?;
+        let rect_x0   = get_cv_trackbar_pos("x0")?;
+        let rect_x1   = get_cv_trackbar_pos("x1")?;
+        let rect_y0   = get_cv_trackbar_pos("y0")?;
+        let rect_y1   = get_cv_trackbar_pos("y1")?;
+        //      let sel       = get_cv_trackbar_pos("sel")?;
+
+        let rect_x = rect_x0.min(rect_x1);
+        let rect_y = rect_y0.min(rect_y1);
+        let rect_width = (rect_x0.max(rect_x1) - rect_x) + 1;
+        let rect_height = (rect_y0.max(rect_y1) - rect_y) + 1;
 
         unsafe {
             reg_gauss.write_reg(REG_IMG_GAUSS_PARAM_ENABLE, ((1 << gauss) - 1) as usize);
@@ -253,9 +279,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             reg_clamp.write_reg(REG_IMG_CLAMP_PARAM_MIN, clamp_min as usize);
             reg_clamp.write_reg(REG_IMG_CLAMP_PARAM_MAX, clamp_max as usize);
             reg_clamp.write_reg(REG_IMG_CLAMP_CTL_CONTROL, 3);
-        
-
-
+            reg_rect.write_reg(REG_IMG_RECT_PARAM_X, rect_x as usize);
+            reg_rect.write_reg(REG_IMG_RECT_PARAM_Y, rect_y as usize);
+            reg_rect.write_reg(REG_IMG_RECT_PARAM_WIDTH, rect_width as usize);
+            reg_rect.write_reg(REG_IMG_RECT_PARAM_HEIGHT, rect_height as usize);
+            reg_rect.write_reg(REG_IMG_RECT_CTL_CONTROL, 3);
 //          reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
         }
 
