@@ -77,6 +77,7 @@ const OCM_X_MIN: usize = 0x10;
 const OCM_X_MAX: usize = 0x11;
 const OCM_Y_MIN: usize = 0x12;
 const OCM_Y_MAX: usize = 0x13;
+const OCM_LATENCY: usize = 0x18;
 const OCM_PRJ_GIAN_X: usize = 0x20;
 const OCM_PRJ_GIAN_Y: usize = 0x21;
 const OCM_PRJ_DECAY_X: usize = 0x22;
@@ -230,6 +231,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gauss",      0,    4,   3)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
+    create_cv_trackbar("latency",    0,  199,   0)?;
     create_cv_trackbar("pgx",     -200,  200,  150)?;
     create_cv_trackbar("pgy",     -200,  200, -150)?;
     create_cv_trackbar("pox",     -500,  500,   0)?;
@@ -264,6 +266,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
         let gauss     = get_cv_trackbar_pos("gauss")?;
         let sel = get_cv_trackbar_pos("sel")?;
+        let latency = get_cv_trackbar_pos("latency")?;
         let prj_gain_x = get_cv_trackbar_pos("pgx")?;
         let prj_gain_y = get_cv_trackbar_pos("pgy")?;
         let prj_offset_x = get_cv_trackbar_pos("pox")?;
@@ -282,6 +285,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y as f64 / 100.0);
             uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_X, prj_offset_x as f64);
             uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_Y, prj_offset_y as f64);
+            uio_ocm.write_reg_u64(OCM_LATENCY, latency as u64);
         }
 
         cam.set_gain(gain)?;
