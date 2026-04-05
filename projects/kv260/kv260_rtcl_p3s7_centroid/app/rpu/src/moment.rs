@@ -90,7 +90,7 @@ pub fn irq_handler() {
     let m00 = read_reg(REG_IMG_MOMENT_MOMENT_M00) as f64;
     let m10 = read_reg(REG_IMG_MOMENT_MOMENT_M10) as f64;
     let m01 = read_reg(REG_IMG_MOMENT_MOMENT_M01) as f64;
-    wrtie_reg(REG_IMG_MOMENT_OUT_READY, 0x1);
+    wrtie_reg(REG_IMG_MOMENT_MOMENT_READY, 0x1);
     wrtie_reg(REG_IMG_MOMENT_IRQ_CLR, 0x1);
     
     // 計算
