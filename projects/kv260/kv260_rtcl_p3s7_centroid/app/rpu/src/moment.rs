@@ -223,12 +223,12 @@ pub fn irq_handler() {
     send_projector_xy(px as i16, py as i16, true);
 
     // デバッグ用
-    if false {
+    if true {
         unsafe {
             static mut IRQ_COUNT: u32 = 0;
             IRQ_COUNT += 1;
             if IRQ_COUNT % 1000 == 0 {
-                println!("x : {}  y : {}", x, y);
+                println!("x:{}  y:{} px:{} py:{}", x, y, px, py);
             }
         }
     }

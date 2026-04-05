@@ -79,6 +79,24 @@ const REG_LOGGER_POL_TIMER1       : usize =  0x19;
 const REG_LOGGER_POL_DATA0        : usize =  0x20;
 const REG_LOGGER_POL_DATA1        : usize =  0x21;
 
+// OCM
+const OCM_X: usize = 0x08;
+const OCM_Y: usize = 0x01;
+const OCM_OFFSET_X: usize = 0x10;
+const OCM_OFFSET_Y: usize = 0x11;
+const OCM_M00_LIMIT: usize = 0x14;
+const OCM_LATENCY: usize = 0x18;
+const OCM_PRJ_GIAN_X: usize = 0x20;
+const OCM_PRJ_GIAN_Y: usize = 0x21;
+const OCM_PRJ_OFFSET_X: usize = 0x24;
+const OCM_PRJ_OFFSET_Y: usize = 0x25;
+const OCM_PRJ_X_MIN: usize = 0x26;
+const OCM_PRJ_X_MAX: usize = 0x27;
+const OCM_PRJ_Y_MIN: usize = 0x28;
+const OCM_PRJ_Y_MAX: usize = 0x29;
+const OCM_PRJ_X: usize = 0x40;
+const OCM_PRJ_Y: usize = 0x41;
+
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -169,7 +187,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_moment   : {:08x}", unsafe { reg_moment.read_reg(0) });
 
     if false {
-        for _ in 0..3 {
+        for _ in 0..10 {
             // 1ms おきにループして円を描く
             let r = 100;
             for i in 0..360 {
@@ -179,6 +197,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 std::thread::sleep(std::time::Duration::from_millis(1));
             }
         }
+        send_projector_xy(&reg_uart, 0, 0, true);
         return Ok(());
     }
 
@@ -219,25 +238,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("fps",       10, 1000,  fps)?;
     create_cv_trackbar("exposure",  10,  900,  900)?;
     create_cv_trackbar("gauss",      0,    4,    0)?;
-    create_cv_trackbar("min",        0, 1023,    0)?;
+    create_cv_trackbar("min",        0, 1023,  400)?;
     create_cv_trackbar("max",        0, 1023, 1023)?;
     create_cv_trackbar("x0",         0, (width -1) as i32,       0)?;
     create_cv_trackbar("x1",         0, (width -1) as i32, (width-1) as i32)?;
     create_cv_trackbar("y0",         0, (height-1) as i32,       0)?;
     create_cv_trackbar("y1",         0, (height-1) as i32, (width-1) as i32)?;
-
-
     //  create_cv_trackbar("sel",        0,    2,    0)?;
 
-    /*
-    unsafe {
-        reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_X,          16);
-        reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_Y,          16);
-        reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_WIDTH,   width-32);
-        reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_HEIGHT,  height-32);
-        reg_lk.write_reg(REG_IMG_LK_ACC_CTL_CONTROL,       3);
-    }
-    */
+    create_cv_trackbar("m00_lim",    0, 1000, 10 as i32)?;
+    create_cv_trackbar("pgx",        -500, 500, -200)?;
+    create_cv_trackbar("pgy",        -500, 500, -200)?;
+    create_cv_trackbar("pox",        -1000, 1000, 0)?;
+    create_cv_trackbar("poy",        -1000, 1000, 200)?;
+
 
     let mut hist_x: Vec<f64> = Vec::new();
     let mut hist_y: Vec<f64> = Vec::new();
@@ -245,6 +259,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut log_hist_y: Vec<f64> = Vec::new();
     let mut track_x: f64 = 0.0;
     let mut track_y: f64 = 0.0;
+
+    // 初期値設定
+    unsafe {
+        reg_clamp.write_reg(REG_IMG_CLAMP_PARAM_INV, 1);
+        reg_clamp.write_reg(REG_IMG_CLAMP_PARAM_ZERO, 1);
+        reg_clamp.write_reg(REG_IMG_CLAMP_CTL_CONTROL, 3);
+
+        uio_ocm.write_reg_f64(OCM_PRJ_X_MIN, -1000.0);
+        uio_ocm.write_reg_f64(OCM_PRJ_X_MAX,  1000.0);
+        uio_ocm.write_reg_f64(OCM_PRJ_Y_MIN,  -10.0);
+        uio_ocm.write_reg_f64(OCM_PRJ_Y_MAX, 1000.0);
+    }
 
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
@@ -286,6 +312,24 @@ fn main() -> Result<(), Box<dyn Error>> {
             reg_rect.write_reg(REG_IMG_RECT_PARAM_HEIGHT, rect_height as usize);
             reg_rect.write_reg(REG_IMG_RECT_CTL_CONTROL, 3);
 //          reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
+        }
+
+        let m00_lim = get_cv_trackbar_pos("m00_lim")? as f64 * 100.0;
+        let prj_gain_x = get_cv_trackbar_pos("pgx")? as f64 / 100.0;
+        let prj_gain_y = get_cv_trackbar_pos("pgy")? as f64 / 100.0;
+        let prj_offset_x = get_cv_trackbar_pos("pox")? as f64;
+        let prj_offset_y = get_cv_trackbar_pos("poy")? as f64;
+
+        unsafe {
+            reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, 3);
+
+            uio_ocm.write_reg_f64(OCM_OFFSET_X, -0.5 * width as f64);
+            uio_ocm.write_reg_f64(OCM_OFFSET_Y, -0.5 * height as f64);
+            uio_ocm.write_reg_f64(OCM_M00_LIMIT, m00_lim);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_X, prj_gain_x);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y);
+            uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_X, prj_offset_x);
+            uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_Y, prj_offset_y);
         }
 
         cam.set_gain(gain)?;
