@@ -230,8 +230,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gauss",      0,    4,   3)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
-    create_cv_trackbar("pgx",     -200,  200,  100)?;
-    create_cv_trackbar("pgy",     -200,  200, -100)?;
+    create_cv_trackbar("pgx",     -200,  200,  150)?;
+    create_cv_trackbar("pgy",     -200,  200, -150)?;
+    create_cv_trackbar("pox",     -500,  500,   0)?;
+    create_cv_trackbar("poy",     -500,  500, 300)?;
 
     unsafe {
         reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_X,          16);
@@ -264,6 +266,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let sel = get_cv_trackbar_pos("sel")?;
         let prj_gain_x = get_cv_trackbar_pos("pgx")?;
         let prj_gain_y = get_cv_trackbar_pos("pgy")?;
+        let prj_offset_x = get_cv_trackbar_pos("pox")?;
+        let prj_offset_y = get_cv_trackbar_pos("poy")?;
 
         unsafe {
             reg_gauss.write_reg(REG_IMG_GAUSS_PARAM_ENABLE, ((1 << gauss) - 1) as usize);
@@ -272,8 +276,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         unsafe {
+            uio_ocm.write_reg_f64(OCM_PRJ_DECAY_X, 0.998);
+            uio_ocm.write_reg_f64(OCM_PRJ_DECAY_Y, 0.998);
             uio_ocm.write_reg_f64(OCM_PRJ_GIAN_X, prj_gain_x as f64 / 100.0);
             uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y as f64 / 100.0);
+            uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_X, prj_offset_x as f64);
+            uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_Y, prj_offset_y as f64);
         }
 
         cam.set_gain(gain)?;
