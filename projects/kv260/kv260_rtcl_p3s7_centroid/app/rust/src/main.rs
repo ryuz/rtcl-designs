@@ -158,8 +158,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_uart     = uio_acc.subclone(0x0050_0000, 0x400);
 
     let uio_ocm = UioAccessor::<u64>::new_with_name("uio_ocm").expect("Failed to open uio_ocm");
-    uio_ocm.write_reg_f64(0, 0.1234);
-    uio_ocm.write_reg_f64(1, 9.87654);
 
     println!("CORE ID");
     println!("reg_sys      : {:08x}", unsafe { reg_sys.read_reg(0) });

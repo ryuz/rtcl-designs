@@ -73,8 +73,8 @@ pub fn get_irq_status() -> u64 {
     read_reg(REG_IMG_MOMENT_IRQ_STATUS) as u64
 }
 
-pub fn get_acc_valid() -> u64 {
-    read_reg(REG_IMG_MOMENT_IRQ_STATUS) as u64
+pub fn get_moment_valid() -> u64 {
+    read_reg(REG_IMG_MOMENT_MOMENT_VALID) as u64
 }
 
 pub fn start() {
