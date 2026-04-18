@@ -100,6 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         cam.set_sensor_pgood_enable(false);
     }
 
+    cam.set_color(color);
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
