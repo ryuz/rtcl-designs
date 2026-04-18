@@ -112,6 +112,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
+
+    cam.set_pmod_mode(0x10)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -127,7 +130,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  900, 900)?;
+    create_cv_trackbar("exposure",  10,  900, 800)?;
 
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
