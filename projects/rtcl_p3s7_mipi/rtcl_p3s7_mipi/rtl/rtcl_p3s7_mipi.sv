@@ -22,7 +22,7 @@ module rtcl_p3s7_mipi
             input   var logic           in_clk50                ,
             input   var logic           in_clk72                ,
             output  var logic   [1:0]   led                     ,
-            output  var logic   [7:0]   pmod                    ,
+            inout   tri logic   [7:0]   pmod                    ,
 
             output  var logic           spi_flash_wp_n          ,
             output  var logic           spi_flash_hold_n        ,
@@ -339,6 +339,11 @@ module rtcl_p3s7_mipi
     logic           ctl_mmcm_pwrdwn     ;
     logic           ctl_pll_rst         ;
     logic           ctl_pll_pwrdwn      ;
+    logic   [15:0]  ctl_pmod_mode       ;
+    logic   [7:0]   ctl_pmod_gpio_o     ;
+    logic   [7:0]   ctl_pmod_dir        ;
+    logic   [7:0]   ctl_pmod_gpio_i     ;
+
 
     system_control
             #(
@@ -387,7 +392,11 @@ module rtcl_p3s7_mipi
                 .out_mmcm_rst           (ctl_mmcm_rst           ),
                 .out_mmcm_pwrdwn        (ctl_mmcm_pwrdwn        ),
                 .out_pll_rst            (ctl_pll_rst            ),
-                .out_pll_pwrdwn         (ctl_pll_pwrdwn         )
+                .out_pll_pwrdwn         (ctl_pll_pwrdwn         ),
+                .out_pmod_mode          (ctl_pmod_mode          ),
+                .out_pmod_data          (ctl_pmod_gpio_o        ),
+                .out_pmod_dir           (ctl_pmod_dir           ),
+                .in_pmod_data           (ctl_pmod_gpio_i        )
             );
     
 
@@ -921,7 +930,8 @@ module rtcl_p3s7_mipi
     (* ASYNC_REG = "true" *)    logic   [1:0]   monitor_ff0, monitor_ff1;
                                 logic   [1:0]   monitor_ff2             ;
     always_ff @(posedge dphy_clk) begin
-        pmod_ff0 <= pmod;
+//      pmod_ff0 <= pmod;
+        pmod_ff0 <= ctl_pmod_gpio_i;
         pmod_ff1 <= pmod_ff0;
         monitor_ff0 <= python_monitor;
         monitor_ff1 <= monitor_ff0;
@@ -1090,15 +1100,30 @@ module rtcl_p3s7_mipi
     // --------------------------------
     //  PMOD
     // --------------------------------
+    
+    logic  [7:0]   test0;
+    assign test0[0] = python_monitor[0]      ;
+    assign test0[1] = python_monitor[1]      ;
+    assign test0[2] = python_trigger[0]      ;
+    assign test0[3] = axi4s_recv.tvalid      ;
+    assign test0[4] = python_frame_toggle    ;
+    assign test0[5] = dphy_dl0_txrequesths   ;
+    assign test0[6] = dphy_dl0_txreadyhs     ;
+    assign test0[7] = sensor_pgood           ;
 
-    assign pmod[0] = python_monitor[0]      ;
-    assign pmod[1] = python_monitor[1]      ;
-    assign pmod[2] = python_trigger[0]      ;
-    assign pmod[3] = axi4s_recv.tvalid      ;
-    assign pmod[4] = python_frame_toggle    ;
-    assign pmod[5] = dphy_dl0_txrequesths   ;
-    assign pmod[6] = dphy_dl0_txreadyhs     ;
-    assign pmod[7] = sensor_pgood           ;
+    pmod_control
+        u_pmod_control
+            (
+                .reset      (reset          ),
+                .clk        (clk72          ),
+                .pmod       (pmod           ),
+                .mode       (ctl_pmod_mode  ),
+                .gpio_in    (ctl_pmod_gpio_i),
+                .gpio_out   (ctl_pmod_gpio_o),
+                .gpio_dir   (ctl_pmod_dir   ),
+                .trigger    (mipi_gpio1     ),
+                .test0      (test0          )
+        );
 
 endmodule
 

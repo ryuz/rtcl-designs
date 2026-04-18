@@ -49,6 +49,7 @@ where
 
     opend: bool,
     pgood_enable: bool,
+    color : bool,
     width: usize,
     height: usize,
     slave_mode: bool,
@@ -76,6 +77,7 @@ where
             reg_fmtr,
             opend: false,
             pgood_enable: true,
+            color : false,
             width: 640,
             height: 480,
             slave_mode: false,
@@ -105,6 +107,10 @@ where
 
     pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_pgood()?)
+    }
+
+    pub fn set_color(&mut self, color: bool) {
+        self.color = color;
     }
 
     pub fn opend(&self) -> bool {
@@ -175,6 +181,7 @@ where
         }
 
         // センサー起動
+        self.cam_i2c.set_color(self.color)?;
         self.cam_i2c.set_sensor_enable(true)?;
 
         // ROI 設定
@@ -256,6 +263,22 @@ where
 
     pub fn sensor_id(&mut self) -> Result<u16, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_id()?)
+    }
+
+    pub fn set_pmod_mode(&mut self, mode: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_mode(mode)?)
+    }
+
+    pub fn read_pmod(&mut self) -> Result<u8, Box<dyn Error>> {
+        Ok(self.cam_i2c.read_pmod()?)
+    }
+
+    pub fn set_gpio_out(&mut self, value: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_out(value)?)
+    }
+
+    pub fn set_gpio_dir(&mut self, dir: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_dir(dir)?)
     }
 
     /// スレーブモード設定

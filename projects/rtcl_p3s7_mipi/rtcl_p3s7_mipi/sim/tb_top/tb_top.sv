@@ -55,7 +55,7 @@ module tb_top();
     // ---------------------------------
 
     logic   [1:0]   led                 ;
-    logic   [7:0]   pmod                ;
+    wire    [7:0]   pmod                ;
 
     logic           spi_flash_wp_n      ;
     logic           spi_flash_hold_n    ;
@@ -110,7 +110,7 @@ module tb_top();
                 .in_clk72               (clk72      ),
 
                 .led                    ,
-                .pmod                   ,
+                .pmod                   (pmod       ),
 
                 .spi_flash_wp_n         ,
                 .spi_flash_hold_n       ,
@@ -195,7 +195,6 @@ module tb_top();
 
     // SPI
     assign python_miso = ~python_mosi;
-
 
 
     // ----------------------------------
@@ -395,6 +394,14 @@ module tb_top();
         $finish;
     end
     
+    initial begin
+        mipi_gpio1 = 1'b0;
+        forever begin
+            #100000
+            mipi_gpio1 = ~mipi_gpio1;
+        end
+    end
+
 
 
     // ----------------------------------
@@ -488,7 +495,10 @@ module tb_top();
     localparam  REGADR_DPHY_INIT_DONE  = 15'h0088;
     localparam  REGADR_MMCM_CONTROL    = 15'h00a0;
     localparam  REGADR_PLL_CONTROL     = 15'h00a1;
-
+    localparam  REGADR_PMOD_MODE       = 15'h00b0;
+    localparam  REGADR_PMOD_GPIO_IN    = 15'h00b2;
+    localparam  REGADR_PMOD_GPIO_OUT   = 15'h00b3;
+    localparam  REGADR_PMOD_GPIO_DIR   = 15'h00b4;
 
     initial begin
         logic [15:0] rdata;
@@ -507,6 +517,8 @@ module tb_top();
         $display("addr: 0x014f 0x%04h 0b%16b", rdata, rdata);
         cmd_write(REGADR_MMCM_CONTROL, 0);
         */
+
+        cmd_write(REGADR_PMOD_MODE, 16'h0010);
 
 //      cmd_write(REGADR_CSI_MODE, 1);
         cmd_write(REGADR_CSI_MODE, 0);

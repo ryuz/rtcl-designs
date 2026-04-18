@@ -213,6 +213,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
+    cam.set_pmod_mode(0x10)?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
