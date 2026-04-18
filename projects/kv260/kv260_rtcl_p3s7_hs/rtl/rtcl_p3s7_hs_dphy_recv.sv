@@ -11,7 +11,7 @@
 
 module rtcl_p3s7_hs_dphy_recv
         #(
-            parameter   int     X_BITS         = 10                         ,
+            parameter   int     X_BITS         = 11                         ,
             parameter   type    x_t            = logic  [X_BITS-1:0]        ,
             parameter   int     Y_BITS         = 10                         ,
             parameter   type    y_t            = logic  [Y_BITS-1:0]        ,
