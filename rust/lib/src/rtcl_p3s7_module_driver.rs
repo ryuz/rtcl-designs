@@ -208,7 +208,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Self {
             i2c,
             usleep,
-            general_configuration: 0x0000,
+            general_configuration: 0, //0x087C,
             analog_gain : 1.0,
             digital_gain : 1.0,
         }
@@ -636,7 +636,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi( 43, 0x0008)?;
         }
 
-        if true {
+        if false {
             self.write_sensor_spi( 32, 0x2004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
             self.write_sensor_spi( 20, 0x0000)?; // config1
             self.write_sensor_spi( 17, 0x2113)?;
@@ -659,10 +659,10 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi( 71, 0x4800)?;
             self.write_sensor_spi( 72, 0x0017)?; // configuration
 
-            self.write_sensor_spi(128, 0x470f)?;
-            self.write_sensor_spi(129, 0x0030)?;
+//          self.write_sensor_spi(128, 0x470f)?;
+//          self.write_sensor_spi(129, 0x0030)?;
             self.write_sensor_spi(130, 0x000f)?;
-            self.write_sensor_spi(194, 0x0324)?;
+            self.write_sensor_spi(194, 0x0ee4)?;
             self.write_sensor_spi(197, 0x191c)?;
             self.write_sensor_spi(199, 0x06a1)?;
             self.write_sensor_spi(200, 0x01f4)?;
@@ -781,7 +781,8 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi(112, 0x0007)?; // Serializers/LVDS/IO
 
             self.write_sensor_spi(192, 0x087D)?; // general_configuration
-            self.write_sensor_spi(193, 0x0000)?; // delay_configuration
+//          self.write_sensor_spi(193, 0x0000)?; // delay_configuration
+            self.write_sensor_spi(193, 0x2f00)?; // delay_configuration
             self.write_sensor_spi(197, 0x0110)?; // black_lines
             self.write_sensor_spi(224, 0x3E03)?; //
             self.write_sensor_spi(192, 0x087C)?; //
@@ -789,10 +790,25 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi(192, 0x087D)?; // general_configuration
 
             self.write_sensor_spi(195, 0x0001)?; //roi_active0_0
-            self.write_sensor_spi(129, 0x0084)?; //general_configuration
+//          self.write_sensor_spi(129, 0x0084)?; //general_configuration
             self.write_sensor_spi(204, 0x01E1)?; //gain_configuration0
             self.write_sensor_spi( 66, 0x53C8)?; //afe_bias
             println!("sensor_boot end");
+//          self.general_configuration = 0x087C;
+
+            // 今まで通り
+            self.write_sensor_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+            self.write_sensor_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+            self.write_sensor_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
+            self.write_sensor_spi(9, 0x0000)?; // cgen_soft_reset
+            self.write_sensor_spi(34, 0x1)?; // config0 Logic General Enable Configuration
+            self.write_sensor_spi(40, 0x7)?; // image_core_config0
+            self.write_sensor_spi(48, 0x1)?; // AFE Power down for AFE’s
+            self.write_sensor_spi(64, 0x1)?; // Bias Bias Power Down Configuration
+            self.write_sensor_spi(72, 0x2227)?; // Charge Pump
+            self.write_sensor_spi(112, 0x7)?; // Serializers/LVDS/IO
+            self.write_sensor_spi(10, 0x0000)?; // soft_reset_analog
+
         }
         else {
             self.write_sensor_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
@@ -808,6 +824,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi(10, 0x0000)?; // soft_reset_analog
         }
 
+        self.write_sensor_spi(197, 0x0102)?; // black_lines
         self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
@@ -1343,7 +1360,8 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         addr: u16,
         data: u16,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        println!("SPI WRITE - ADDR: {:3}, DATA: 0x{:04x}", addr, data);
+//      println!("SPI WRITE - ADDR: {:3}, DATA: 0x{:04x}", addr, data);
+        println!("{:3} 1 0x{:04X}", addr, data);
         let addr = addr | (1 << 14);
         self.write_i2c(addr, data)
     }
@@ -1407,6 +1425,14 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_i2c(REG_P3S7_MMCM_CONTROL, 0)?;
         self.usleep(100);
 
+        Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    pub fn sensor_reg_dump(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        for addr in 0..512 {
+            println!("ADDR: {:3}, DATA: 0x{:04x}", addr, self.read_sensor_spi(addr)?);
+        }
         Ok(())
     }
 

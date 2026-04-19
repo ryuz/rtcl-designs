@@ -615,7 +615,13 @@ module kv260_rtcl_p3s7_hs
             );
 
     jelly3_axi4s_debug_monitor
-        u_axi4s_debug_monitor
+        u_axi4s_debug_monitor_blk
+            (
+                .mon_axi4s       (axi4s_blk.mon)
+            );
+
+    jelly3_axi4s_debug_monitor
+        u_axi4s_debug_monitor_img
             (
                 .mon_axi4s       (axi4s_img.mon)
             );

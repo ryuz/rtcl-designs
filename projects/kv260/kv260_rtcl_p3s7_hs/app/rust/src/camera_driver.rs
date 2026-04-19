@@ -203,7 +203,7 @@ where
                 .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x0);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
             self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
@@ -319,6 +319,8 @@ where
                     .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
             }
+            self.cam_i2c.set_xsm_delay(100)?;
+            self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
             self.cam_i2c.set_sequencer_enable(true)?;
         } else {
             self.width = width;
@@ -382,6 +384,9 @@ where
         fps_count as f32 * 4.0
     }
 
+    pub fn print_sensor_register(&mut self) {
+        self.cam_i2c.sensor_reg_dump().unwrap();
+    }
 
     // debug用
     pub fn print_timing_status(&mut self) {
