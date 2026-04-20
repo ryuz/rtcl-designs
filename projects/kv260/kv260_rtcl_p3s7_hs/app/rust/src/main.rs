@@ -145,7 +145,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
 
-//      cam.set_gain(gain)?;
+        cam.set_gain(gain)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;

@@ -793,7 +793,6 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 //          self.write_sensor_spi(129, 0x0084)?; //general_configuration
             self.write_sensor_spi(204, 0x01E1)?; //gain_configuration0
             self.write_sensor_spi( 66, 0x53C8)?; //afe_bias
-            println!("sensor_boot end");
 //          self.general_configuration = 0x087C;
 
             // 今まで通り
@@ -953,7 +952,6 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         &mut self,
         enable: bool,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        println!("set_nzrot_xsm_delay_enable : {}", enable);
         if enable {
             self.general_configuration |= 1 << 6;
         } else {
@@ -1360,8 +1358,6 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         addr: u16,
         data: u16,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-//      println!("SPI WRITE - ADDR: {:3}, DATA: 0x{:04x}", addr, data);
-        println!("{:3} 1 0x{:04X}", addr, data);
         let addr = addr | (1 << 14);
         self.write_i2c(addr, data)
     }
