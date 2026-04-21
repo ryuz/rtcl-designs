@@ -166,10 +166,14 @@ pub struct RtclP3s7ModuleDriver<I2C: I2cHal>
     usleep: fn(u64),
     /// General configuration register cache
     general_configuration: u16,
+    /// Current XSM delay setting (in cycles)
+    xsm_delay : u16,
     /// Current analog gain setting (linear scale)
     analog_gain : f32,
     /// Current digital gain setting (linear scale)
     digital_gain : f32,
+    /// Current D-PHY speed setting (bps)
+    dphy_speed : f64,
 }
 
 /// Default sleep function using portable delay
@@ -208,9 +212,11 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Self {
             i2c,
             usleep,
-            general_configuration: 0, //0x087C,
+            general_configuration: 0x084c,
+            xsm_delay : 21,
             analog_gain : 1.0,
             digital_gain : 1.0,
+            dphy_speed: 1250000000.0,
         }
     }
 
@@ -622,21 +628,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     }
 
     fn sensor_boot(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        if false {
-            self.write_sensor_spi( 17, 0x2113)?;
-            self.write_sensor_spi( 26, 0x2280)?;
-            self.write_sensor_spi( 27, 0x3d2d)?;
-            self.write_sensor_spi(  8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
-            self.write_sensor_spi( 16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-            self.write_sensor_spi(  9, 0x0000)?; // cgen_soft_reset
-            self.write_sensor_spi( 32, 0x2006)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-            self.write_sensor_spi( 34, 0x0001)?; // config0 Logic General Enable Configuration
-            self.write_sensor_spi( 41, 0x085f)?; // image_core_config1
-            self.write_sensor_spi( 42, 0x4113)?;
-            self.write_sensor_spi( 43, 0x0008)?;
-        }
-
-        if false {
+        if true {
             self.write_sensor_spi( 32, 0x2004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
             self.write_sensor_spi( 20, 0x0000)?; // config1
             self.write_sensor_spi( 17, 0x2113)?;
@@ -659,8 +651,8 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi( 71, 0x4800)?;
             self.write_sensor_spi( 72, 0x0017)?; // configuration
 
-//          self.write_sensor_spi(128, 0x470f)?;
-//          self.write_sensor_spi(129, 0x0030)?;
+            self.write_sensor_spi(128, 0x470f)?;
+            self.write_sensor_spi(129, 0x0030)?;
             self.write_sensor_spi(130, 0x000f)?;
             self.write_sensor_spi(194, 0x0ee4)?;
             self.write_sensor_spi(197, 0x191c)?;
@@ -781,8 +773,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi(112, 0x0007)?; // Serializers/LVDS/IO
 
             self.write_sensor_spi(192, 0x087D)?; // general_configuration
-//          self.write_sensor_spi(193, 0x0000)?; // delay_configuration
-            self.write_sensor_spi(193, 0x2f00)?; // delay_configuration
+            self.write_sensor_spi(193, self.xsm_delay)?; // delay_configuration
             self.write_sensor_spi(197, 0x0110)?; // black_lines
             self.write_sensor_spi(224, 0x3E03)?; //
             self.write_sensor_spi(192, 0x087C)?; //
@@ -790,24 +781,10 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             self.write_sensor_spi(192, 0x087D)?; // general_configuration
 
             self.write_sensor_spi(195, 0x0001)?; //roi_active0_0
-//          self.write_sensor_spi(129, 0x0084)?; //general_configuration
+            self.write_sensor_spi(129, 0x0084)?; //general_configuration
             self.write_sensor_spi(204, 0x01E1)?; //gain_configuration0
             self.write_sensor_spi( 66, 0x53C8)?; //afe_bias
-//          self.general_configuration = 0x087C;
-
-            // 今まで通り
-            self.write_sensor_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-            self.write_sensor_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-            self.write_sensor_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
-            self.write_sensor_spi(9, 0x0000)?; // cgen_soft_reset
-            self.write_sensor_spi(34, 0x1)?; // config0 Logic General Enable Configuration
-            self.write_sensor_spi(40, 0x7)?; // image_core_config0
-            self.write_sensor_spi(48, 0x1)?; // AFE Power down for AFE’s
-            self.write_sensor_spi(64, 0x1)?; // Bias Bias Power Down Configuration
-            self.write_sensor_spi(72, 0x2227)?; // Charge Pump
-            self.write_sensor_spi(112, 0x7)?; // Serializers/LVDS/IO
-            self.write_sensor_spi(10, 0x0000)?; // soft_reset_analog
-
+            self.general_configuration = 0x087C;
         }
         else {
             self.write_sensor_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
@@ -830,17 +807,32 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
     fn sensor_shutdown(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         self.write_sensor_spi(192, 0x0000)?;
-        self.write_sensor_spi(10, 0x0999)?; // soft_reset_analog
         self.write_sensor_spi(112, 0x0000)?; // Serializers/LVDS/IO
-        self.write_sensor_spi(72, 0x2220)?; // Charge Pump
-        self.write_sensor_spi(64, 0x0000)?; // Bias Bias Power Down Configuration
-        self.write_sensor_spi(48, 0x0000)?; // AFE Power down for AFE’s
-        self.write_sensor_spi(40, 0x0000)?; // image_core_config0
-        self.write_sensor_spi(34, 0x0000)?; // config0 Logic General Enable Configuration
-        self.write_sensor_spi(9, 0x0009)?; // cgen_soft_reset
-        self.write_sensor_spi(8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
-        self.write_sensor_spi(32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        self.write_sensor_spi(16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_sensor_spi( 48, 0x0000)?; // AFE Power down for AFE’s
+        self.write_sensor_spi( 40, 0x0000)?; // image_core_config0
+        self.write_sensor_spi( 72, 0x2220)?; // Charge Pump
+        self.write_sensor_spi( 64, 0x0000)?; // Bias Bias Power Down Configuration
+        self.write_sensor_spi( 10, 0x0999)?; // soft_reset_analog
+        self.write_sensor_spi( 32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi( 34, 0x0000)?; // config0 Logic General Enable Configuration
+        self.write_sensor_spi(  9, 0x0009)?; // cgen_soft_reset
+        self.write_sensor_spi( 16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_sensor_spi(  8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
+
+        /*
+        self.write_sensor_spi(192, 0x0000)?;
+        self.write_sensor_spi( 10, 0x0999)?; // soft_reset_analog
+        self.write_sensor_spi(112, 0x0000)?; // Serializers/LVDS/IO
+        self.write_sensor_spi( 72, 0x2220)?; // Charge Pump
+        self.write_sensor_spi( 64, 0x0000)?; // Bias Bias Power Down Configuration
+        self.write_sensor_spi( 48, 0x0000)?; // AFE Power down for AFE’s
+        self.write_sensor_spi( 40, 0x0000)?; // image_core_config0
+        self.write_sensor_spi( 34, 0x0000)?; // config0 Logic General Enable Configuration
+        self.write_sensor_spi(  9, 0x0009)?; // cgen_soft_reset
+        self.write_sensor_spi(  8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_sensor_spi( 32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi( 16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        */
         Ok(())
     }
 
@@ -1025,8 +1017,8 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
 
     /// XSM Delay 設定
     pub fn set_xsm_delay(&mut self, delay: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        let delay = delay & 0xff;
-        self.write_sensor_spi(193, delay << 8)?;
+        self.xsm_delay = (delay & 0xff) << 8;
+        self.write_sensor_spi(193, self.xsm_delay)?;
         Ok(())
     }
 
@@ -1408,11 +1400,13 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             for i in 0..MMCM_TBL_1250.len() {
                 self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_1250[i].0, MMCM_TBL_1250[i].1)?;
             }
+            self.dphy_speed = 1250000000.0;
         } else if speed >= 950000000.0 {
             // D-PHY 950Mbps用設定
             for i in 0..MMCM_TBL_950.len() {
                 self.write_i2c(REG_P3S7_MMCM_DRP + MMCM_TBL_950[i].0, MMCM_TBL_950[i].1)?;
             }
+            self.dphy_speed = 950000000.0;
         } else {
             return Err(RtclP3s7ModuleDriverError::UnsupportedDphySpeed);
         }
@@ -1420,8 +1414,18 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         // MMCM release reset
         self.write_i2c(REG_P3S7_MMCM_CONTROL, 0)?;
         self.usleep(100);
-
         Ok(())
+    }
+
+    pub fn dphy_speed(&self) -> f64 {
+        self.dphy_speed
+    }
+
+    pub fn calc_xsm_delay(&self, line_length: usize) -> u16 {
+        let sensor_rate = 720_000_000.0 / 10.0 * 4.0; // Sensor pixel clock rate in Hz (720bps 10bit 4lane)
+        let dphy_rate = self.dphy_speed / 10.0 * 2.0; // D-PHY 10bit 2lane
+        let xsm_delay = (sensor_rate - dphy_rate) * line_length as f64 / sensor_rate / 4.0;
+        xsm_delay as u16
     }
 
     #[cfg(feature = "std")]
