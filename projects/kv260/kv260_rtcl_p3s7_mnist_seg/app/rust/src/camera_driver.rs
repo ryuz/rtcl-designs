@@ -170,6 +170,12 @@ where
             self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
         }
 
+        // xsm_delay
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+        self.cam_i2c.set_zero_rot_enable(true)?;
+
         // センサー起動
         self.cam_i2c.set_sensor_enable(true)?;
 
@@ -292,6 +298,10 @@ where
                     .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
             }
+            let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+            self.cam_i2c.set_xsm_delay(xsm_delay)?;
+            self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+            self.cam_i2c.set_zero_rot_enable(true)?;
             self.cam_i2c.set_sequencer_enable(true)?;
         } else {
             self.width = width;
