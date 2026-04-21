@@ -628,179 +628,156 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     }
 
     fn sensor_boot(&mut self) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
-        if true {
-            self.write_sensor_spi( 32, 0x2004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-            self.write_sensor_spi( 20, 0x0000)?; // config1
-            self.write_sensor_spi( 17, 0x2113)?;
-            self.write_sensor_spi( 26, 0x2280)?;
-            self.write_sensor_spi( 27, 0x3d2d)?;
-            self.write_sensor_spi(  8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
-            self.write_sensor_spi( 16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-            self.write_sensor_spi(  9, 0x0000)?; // cgen_soft_reset
-            self.write_sensor_spi( 32, 0x2006)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-            self.write_sensor_spi( 34, 0x0001)?; // config0 Logic General Enable Configuration
-            self.write_sensor_spi( 41, 0x085f)?; // image_core_config1
-            self.write_sensor_spi( 42, 0x4113)?;
-            self.write_sensor_spi( 43, 0x0008)?;
-
-            self.write_sensor_spi( 65, 0x282b)?; // configuration
-            self.write_sensor_spi( 66, 0x53c8)?; // afe_bias
-            self.write_sensor_spi( 67, 0x0777)?; // mux_bias
-            self.write_sensor_spi( 68, 0x0087)?; // lvds_bias
-            self.write_sensor_spi( 70, 0x1111)?;
-            self.write_sensor_spi( 71, 0x4800)?;
-            self.write_sensor_spi( 72, 0x0017)?; // configuration
-
-            self.write_sensor_spi(128, 0x470f)?;
-            self.write_sensor_spi(129, 0x0030)?;
-            self.write_sensor_spi(130, 0x000f)?;
-            self.write_sensor_spi(194, 0x0ee4)?;
-            self.write_sensor_spi(197, 0x191c)?;
-            self.write_sensor_spi(199, 0x06a1)?;
-            self.write_sensor_spi(200, 0x01f4)?;
-            self.write_sensor_spi(201, 0x06a1)?;
-            self.write_sensor_spi(204, 0x00e1)?;
-            self.write_sensor_spi(207, 0x0000)?;
-            self.write_sensor_spi(211, 0x0e49)?;
-            self.write_sensor_spi(215, 0x0107)?;
-            self.write_sensor_spi(216, 0x7f00)?;
-            self.write_sensor_spi(217, 0x4444)?;
-            self.write_sensor_spi(219, 0x0020)?;
-            self.write_sensor_spi(220, 0x3a28)?;
-            self.write_sensor_spi(222, 0x6259)?;
-            self.write_sensor_spi(224, 0x3e5e)?;
-            self.write_sensor_spi(384, 0xc800)?;
-            self.write_sensor_spi(385, 0xfb1f)?;
-            self.write_sensor_spi(386, 0xfb1f)?;
-            self.write_sensor_spi(387, 0xfb12)?;
-            self.write_sensor_spi(388, 0xf903)?;
-            self.write_sensor_spi(389, 0xf802)?;
-            self.write_sensor_spi(390, 0xf30f)?;
-            self.write_sensor_spi(391, 0xf30f)?;
-            self.write_sensor_spi(392, 0xf30f)?;
-            self.write_sensor_spi(393, 0xf30a)?;
-            self.write_sensor_spi(394, 0xf101)?;
-            self.write_sensor_spi(395, 0xf00f)?;
-            self.write_sensor_spi(396, 0xf24b)?;
-            self.write_sensor_spi(397, 0xf226)?;
-            self.write_sensor_spi(398, 0xf001)?;
-            self.write_sensor_spi(399, 0xf402)?;
-            self.write_sensor_spi(400, 0xf001)?;
-            self.write_sensor_spi(401, 0xf402)?;
-            self.write_sensor_spi(402, 0xf001)?;
-            self.write_sensor_spi(403, 0xf401)?;
-            self.write_sensor_spi(404, 0xf007)?;
-            self.write_sensor_spi(405, 0xf20f)?;
-            self.write_sensor_spi(406, 0xf20f)?;
-            self.write_sensor_spi(407, 0xf202)?;
-            self.write_sensor_spi(408, 0xf006)?;
-            self.write_sensor_spi(409, 0xec02)?;
-            self.write_sensor_spi(410, 0xe801)?;
-            self.write_sensor_spi(411, 0xec02)?;
-            self.write_sensor_spi(412, 0xe801)?;
-            self.write_sensor_spi(413, 0xec02)?;
-            self.write_sensor_spi(414, 0xc801)?;
-            self.write_sensor_spi(415, 0xc800)?;
-            self.write_sensor_spi(416, 0xc800)?;
-            self.write_sensor_spi(417, 0xcc02)?;
-            self.write_sensor_spi(418, 0xc801)?;
-            self.write_sensor_spi(419, 0xcc02)?;
-            self.write_sensor_spi(420, 0xc801)?;
-            self.write_sensor_spi(421, 0xcc02)?;
-            self.write_sensor_spi(422, 0xc806)?;
-            self.write_sensor_spi(423, 0xc800)?;
-            self.write_sensor_spi(424, 0x0030)?;
-            self.write_sensor_spi(425, 0x207c)?;
-            self.write_sensor_spi(426, 0x2071)?;
-            self.write_sensor_spi(427, 0x0074)?;
-            self.write_sensor_spi(428, 0x107f)?;
-            self.write_sensor_spi(429, 0x1072)?;
-            self.write_sensor_spi(430, 0x1074)?;
-            self.write_sensor_spi(431, 0x0076)?;
-            self.write_sensor_spi(432, 0x0031)?;
-            self.write_sensor_spi(433, 0x21bb)?;
-            self.write_sensor_spi(434, 0x20b1)?;
-            self.write_sensor_spi(435, 0x20b1)?;
-            self.write_sensor_spi(436, 0x00b1)?;
-            self.write_sensor_spi(437, 0x10bf)?;
-            self.write_sensor_spi(438, 0x10b2)?;
-            self.write_sensor_spi(439, 0x10b4)?;
-            self.write_sensor_spi(440, 0x00b1)?;
-            self.write_sensor_spi(441, 0x0030)?;
-            self.write_sensor_spi(442, 0x0030)?;
-            self.write_sensor_spi(443, 0x217b)?;
-            self.write_sensor_spi(444, 0x2071)?;
-            self.write_sensor_spi(445, 0x2071)?;
-            self.write_sensor_spi(446, 0x0074)?;
-            self.write_sensor_spi(447, 0x107f)?;
-            self.write_sensor_spi(448, 0x1072)?;
-            self.write_sensor_spi(449, 0x1074)?;
-            self.write_sensor_spi(450, 0x0076)?;
-            self.write_sensor_spi(451, 0x0031)?;
-            self.write_sensor_spi(452, 0x20bb)?;
-            self.write_sensor_spi(453, 0x20b1)?;
-            self.write_sensor_spi(454, 0x20b1)?;
-            self.write_sensor_spi(455, 0x00b1)?;
-            self.write_sensor_spi(456, 0x10bf)?;
-            self.write_sensor_spi(457, 0x10b2)?;
-            self.write_sensor_spi(458, 0x10b4)?;
-            self.write_sensor_spi(459, 0x00b1)?;
-            self.write_sensor_spi(460, 0x0030)?;
-            self.write_sensor_spi(473, 0x2030)?;
-            self.write_sensor_spi(474, 0x20f3)?;
-            self.write_sensor_spi(475, 0x2071)?;
-            self.write_sensor_spi(476, 0x0071)?;
-            self.write_sensor_spi(477, 0x0179)?;
-            self.write_sensor_spi(478, 0x0078)?;
-            self.write_sensor_spi(479, 0x1074)?;
-            self.write_sensor_spi(480, 0x0076)?;
-            self.write_sensor_spi(481, 0x0031)?;
-            self.write_sensor_spi(482, 0x21bd)?;
-            self.write_sensor_spi(483, 0x20b1)?;
-            self.write_sensor_spi(484, 0x00b1)?;
-            self.write_sensor_spi(485, 0x10bf)?;
-            self.write_sensor_spi(486, 0x10b2)?;
-            self.write_sensor_spi(487, 0x10b4)?;
-            self.write_sensor_spi(488, 0x00b1)?;
-            self.write_sensor_spi(489, 0x0030)?;
-
-            self.write_sensor_spi( 32, 0x2007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-            self.write_sensor_spi( 10, 0x0000)?; // soft_reset_analog
-            self.write_sensor_spi( 64, 0x0001)?; // Bias Bias Power Down Configuration
-            self.write_sensor_spi( 72, 0x0017)?; // Charge Pump
-            self.write_sensor_spi( 40, 0x0003)?; // image_core_config0
-            self.write_sensor_spi( 48, 0x0001)?; // AFE Power down for AFE’s
-            self.write_sensor_spi(112, 0x0007)?; // Serializers/LVDS/IO
-
-            self.write_sensor_spi(192, 0x087D)?; // general_configuration
-            self.write_sensor_spi(193, self.xsm_delay)?; // delay_configuration
-            self.write_sensor_spi(197, 0x0110)?; // black_lines
-            self.write_sensor_spi(224, 0x3E03)?; //
-            self.write_sensor_spi(192, 0x087C)?; //
-            self.write_sensor_spi(220, 0x3A28)?; // lsm_prog_base_ss
-            self.write_sensor_spi(192, 0x087D)?; // general_configuration
-
-            self.write_sensor_spi(195, 0x0001)?; //roi_active0_0
-            self.write_sensor_spi(129, 0x0084)?; //general_configuration
-            self.write_sensor_spi(204, 0x01E1)?; //gain_configuration0
-            self.write_sensor_spi( 66, 0x53C8)?; //afe_bias
-            self.general_configuration = 0x087C;
-        }
-        else {
-            self.write_sensor_spi(16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-            self.write_sensor_spi(32, 0x0007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-            self.write_sensor_spi(8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
-            self.write_sensor_spi(9, 0x0000)?; // cgen_soft_reset
-            self.write_sensor_spi(34, 0x1)?; // config0 Logic General Enable Configuration
-            self.write_sensor_spi(40, 0x7)?; // image_core_config0
-            self.write_sensor_spi(48, 0x1)?; // AFE Power down for AFE’s
-            self.write_sensor_spi(64, 0x1)?; // Bias Bias Power Down Configuration
-            self.write_sensor_spi(72, 0x2227)?; // Charge Pump
-            self.write_sensor_spi(112, 0x7)?; // Serializers/LVDS/IO
-            self.write_sensor_spi(10, 0x0000)?; // soft_reset_analog
-        }
-
+        self.write_sensor_spi( 32, 0x2004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi( 20, 0x0000)?; // config1
+        self.write_sensor_spi( 17, 0x2113)?;
+        self.write_sensor_spi( 26, 0x2280)?;
+        self.write_sensor_spi( 27, 0x3d2d)?;
+        self.write_sensor_spi(  8, 0x0000)?; // pll_soft_reset, pll_lock_soft_reset
+        self.write_sensor_spi( 16, 0x0003)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        self.write_sensor_spi(  9, 0x0000)?; // cgen_soft_reset
+        self.write_sensor_spi( 32, 0x2006)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi( 34, 0x0001)?; // config0 Logic General Enable Configuration
+        self.write_sensor_spi( 41, 0x085f)?; // image_core_config1
+        self.write_sensor_spi( 42, 0x4113)?;
+        self.write_sensor_spi( 43, 0x0008)?;
+        self.write_sensor_spi( 65, 0x282b)?; // configuration
+        self.write_sensor_spi( 66, 0x53c8)?; // afe_bias
+        self.write_sensor_spi( 67, 0x0777)?; // mux_bias
+        self.write_sensor_spi( 68, 0x0087)?; // lvds_bias
+        self.write_sensor_spi( 70, 0x1111)?;
+        self.write_sensor_spi( 71, 0x4800)?;
+        self.write_sensor_spi( 72, 0x0017)?; // configuration
+        self.write_sensor_spi(128, 0x470f)?;
+        self.write_sensor_spi(129, 0x0030)?;
+        self.write_sensor_spi(130, 0x000f)?;
+        self.write_sensor_spi(194, 0x0ee4)?;
+        self.write_sensor_spi(197, 0x191c)?;
+        self.write_sensor_spi(199, 0x06a1)?;
+        self.write_sensor_spi(200, 0x01f4)?;
+        self.write_sensor_spi(201, 0x06a1)?;
+        self.write_sensor_spi(204, 0x00e1)?;
+        self.write_sensor_spi(207, 0x0000)?;
+        self.write_sensor_spi(211, 0x0e49)?;
+        self.write_sensor_spi(215, 0x0107)?;
+        self.write_sensor_spi(216, 0x7f00)?;
+        self.write_sensor_spi(217, 0x4444)?;
+        self.write_sensor_spi(219, 0x0020)?;
+        self.write_sensor_spi(220, 0x3a28)?;
+        self.write_sensor_spi(222, 0x6259)?;
+        self.write_sensor_spi(224, 0x3e5e)?;
+        self.write_sensor_spi(384, 0xc800)?;
+        self.write_sensor_spi(385, 0xfb1f)?;
+        self.write_sensor_spi(386, 0xfb1f)?;
+        self.write_sensor_spi(387, 0xfb12)?;
+        self.write_sensor_spi(388, 0xf903)?;
+        self.write_sensor_spi(389, 0xf802)?;
+        self.write_sensor_spi(390, 0xf30f)?;
+        self.write_sensor_spi(391, 0xf30f)?;
+        self.write_sensor_spi(392, 0xf30f)?;
+        self.write_sensor_spi(393, 0xf30a)?;
+        self.write_sensor_spi(394, 0xf101)?;
+        self.write_sensor_spi(395, 0xf00f)?;
+        self.write_sensor_spi(396, 0xf24b)?;
+        self.write_sensor_spi(397, 0xf226)?;
+        self.write_sensor_spi(398, 0xf001)?;
+        self.write_sensor_spi(399, 0xf402)?;
+        self.write_sensor_spi(400, 0xf001)?;
+        self.write_sensor_spi(401, 0xf402)?;
+        self.write_sensor_spi(402, 0xf001)?;
+        self.write_sensor_spi(403, 0xf401)?;
+        self.write_sensor_spi(404, 0xf007)?;
+        self.write_sensor_spi(405, 0xf20f)?;
+        self.write_sensor_spi(406, 0xf20f)?;
+        self.write_sensor_spi(407, 0xf202)?;
+        self.write_sensor_spi(408, 0xf006)?;
+        self.write_sensor_spi(409, 0xec02)?;
+        self.write_sensor_spi(410, 0xe801)?;
+        self.write_sensor_spi(411, 0xec02)?;
+        self.write_sensor_spi(412, 0xe801)?;
+        self.write_sensor_spi(413, 0xec02)?;
+        self.write_sensor_spi(414, 0xc801)?;
+        self.write_sensor_spi(415, 0xc800)?;
+        self.write_sensor_spi(416, 0xc800)?;
+        self.write_sensor_spi(417, 0xcc02)?;
+        self.write_sensor_spi(418, 0xc801)?;
+        self.write_sensor_spi(419, 0xcc02)?;
+        self.write_sensor_spi(420, 0xc801)?;
+        self.write_sensor_spi(421, 0xcc02)?;
+        self.write_sensor_spi(422, 0xc806)?;
+        self.write_sensor_spi(423, 0xc800)?;
+        self.write_sensor_spi(424, 0x0030)?;
+        self.write_sensor_spi(425, 0x207c)?;
+        self.write_sensor_spi(426, 0x2071)?;
+        self.write_sensor_spi(427, 0x0074)?;
+        self.write_sensor_spi(428, 0x107f)?;
+        self.write_sensor_spi(429, 0x1072)?;
+        self.write_sensor_spi(430, 0x1074)?;
+        self.write_sensor_spi(431, 0x0076)?;
+        self.write_sensor_spi(432, 0x0031)?;
+        self.write_sensor_spi(433, 0x21bb)?;
+        self.write_sensor_spi(434, 0x20b1)?;
+        self.write_sensor_spi(435, 0x20b1)?;
+        self.write_sensor_spi(436, 0x00b1)?;
+        self.write_sensor_spi(437, 0x10bf)?;
+        self.write_sensor_spi(438, 0x10b2)?;
+        self.write_sensor_spi(439, 0x10b4)?;
+        self.write_sensor_spi(440, 0x00b1)?;
+        self.write_sensor_spi(441, 0x0030)?;
+        self.write_sensor_spi(442, 0x0030)?;
+        self.write_sensor_spi(443, 0x217b)?;
+        self.write_sensor_spi(444, 0x2071)?;
+        self.write_sensor_spi(445, 0x2071)?;
+        self.write_sensor_spi(446, 0x0074)?;
+        self.write_sensor_spi(447, 0x107f)?;
+        self.write_sensor_spi(448, 0x1072)?;
+        self.write_sensor_spi(449, 0x1074)?;
+        self.write_sensor_spi(450, 0x0076)?;
+        self.write_sensor_spi(451, 0x0031)?;
+        self.write_sensor_spi(452, 0x20bb)?;
+        self.write_sensor_spi(453, 0x20b1)?;
+        self.write_sensor_spi(454, 0x20b1)?;
+        self.write_sensor_spi(455, 0x00b1)?;
+        self.write_sensor_spi(456, 0x10bf)?;
+        self.write_sensor_spi(457, 0x10b2)?;
+        self.write_sensor_spi(458, 0x10b4)?;
+        self.write_sensor_spi(459, 0x00b1)?;
+        self.write_sensor_spi(460, 0x0030)?;
+        self.write_sensor_spi(473, 0x2030)?;
+        self.write_sensor_spi(474, 0x20f3)?;
+        self.write_sensor_spi(475, 0x2071)?;
+        self.write_sensor_spi(476, 0x0071)?;
+        self.write_sensor_spi(477, 0x0179)?;
+        self.write_sensor_spi(478, 0x0078)?;
+        self.write_sensor_spi(479, 0x1074)?;
+        self.write_sensor_spi(480, 0x0076)?;
+        self.write_sensor_spi(481, 0x0031)?;
+        self.write_sensor_spi(482, 0x21bd)?;
+        self.write_sensor_spi(483, 0x20b1)?;
+        self.write_sensor_spi(484, 0x00b1)?;
+        self.write_sensor_spi(485, 0x10bf)?;
+        self.write_sensor_spi(486, 0x10b2)?;
+        self.write_sensor_spi(487, 0x10b4)?;
+        self.write_sensor_spi(488, 0x00b1)?;
+        self.write_sensor_spi(489, 0x0030)?;
+        self.write_sensor_spi( 32, 0x2007)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
+        self.write_sensor_spi( 10, 0x0000)?; // soft_reset_analog
+        self.write_sensor_spi( 64, 0x0001)?; // Bias Bias Power Down Configuration
+        self.write_sensor_spi( 72, 0x0017)?; // Charge Pump
+        self.write_sensor_spi( 40, 0x0003)?; // image_core_config0
+        self.write_sensor_spi( 48, 0x0001)?; // AFE Power down for AFE’s
+        self.write_sensor_spi(112, 0x0007)?; // Serializers/LVDS/IO
+        self.write_sensor_spi(192, 0x087D)?; // general_configuration
+        self.write_sensor_spi(193, self.xsm_delay)?; // delay_configuration
         self.write_sensor_spi(197, 0x0102)?; // black_lines
+        self.write_sensor_spi(224, 0x3E03)?; //
+        self.write_sensor_spi(192, 0x087C)?; //
+        self.write_sensor_spi(220, 0x3A28)?; // lsm_prog_base_ss
+        self.write_sensor_spi(192, 0x087D)?; // general_configuration
+        self.write_sensor_spi(195, 0x0001)?; //roi_active0_0
+        self.write_sensor_spi(129, 0x0084)?; //general_configuration
+        self.write_sensor_spi(204, 0x01E1)?; //gain_configuration0
+        self.write_sensor_spi( 66, 0x53C8)?; //afe_bias
         self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
     }
@@ -818,21 +795,6 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_sensor_spi(  9, 0x0009)?; // cgen_soft_reset
         self.write_sensor_spi( 16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
         self.write_sensor_spi(  8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
-
-        /*
-        self.write_sensor_spi(192, 0x0000)?;
-        self.write_sensor_spi( 10, 0x0999)?; // soft_reset_analog
-        self.write_sensor_spi(112, 0x0000)?; // Serializers/LVDS/IO
-        self.write_sensor_spi( 72, 0x2220)?; // Charge Pump
-        self.write_sensor_spi( 64, 0x0000)?; // Bias Bias Power Down Configuration
-        self.write_sensor_spi( 48, 0x0000)?; // AFE Power down for AFE’s
-        self.write_sensor_spi( 40, 0x0000)?; // image_core_config0
-        self.write_sensor_spi( 34, 0x0000)?; // config0 Logic General Enable Configuration
-        self.write_sensor_spi(  9, 0x0009)?; // cgen_soft_reset
-        self.write_sensor_spi(  8, 0x0099)?; // pll_soft_reset, pll_lock_soft_reset
-        self.write_sensor_spi( 32, 0x0004)?; // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        self.write_sensor_spi( 16, 0x0004)?; // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-        */
         Ok(())
     }
 
