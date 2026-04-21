@@ -205,6 +205,12 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_BLACK_WIDTH,  1280);
     reg_sys.WriteReg(SYSREG_BLACK_HEIGHT, 1);
 
+    // D-PHY速度とセンサー速度の差に対して、各ラインの追加ディレイ(xsm-delay) を計算して設定
+    auto xsm_delay = cam.CalcXsmDelay(width);
+    cam.SetXsmDelay(xsm_delay);
+    cam.SetNzrotXsmDelayEnable(true);
+    cam.SetZeroRotEnable(true);
+
     // センサー起動
     if ( !cam.SetSensorEnable(true) ) {
         if ( !cam.GetSensorPGood() ) {
