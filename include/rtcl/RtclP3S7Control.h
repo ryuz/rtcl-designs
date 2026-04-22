@@ -39,6 +39,10 @@ namespace rtcl {
 #define RTCL_P3S7_DPHY_INIT_DONE        0x0088
 #define RTCL_P3S7_MMCM_CONTROL          0x00a0
 #define RTCL_P3S7_PLL_CONTROL           0x00a1
+#define RTCL_P3S7_PMOD_MODE             0x00b0
+#define RTCL_P3S7_PMOD_GPIO_IN          0x00b2
+#define RTCL_P3S7_PMOD_GPIO_OUT         0x00b3
+#define RTCL_P3S7_PMOD_GPIO_DIR         0x00b4
 
 #define RTCL_P3S7_MMCM_DRP              0x1000
 
@@ -524,6 +528,29 @@ public:
         if ( IsOpend() ) {
             spi_write(192, m_general_configuration);
         }
+        return true;
+    }
+
+    bool SetPmodMode(std::uint16_t mode) {
+        if ( !IsOpend() ) { return false; }
+        i2c_write(RTCL_P3S7_PMOD_MODE, mode);
+        return true;
+    }
+
+    std::uint8_t ReadPmod(void) {
+        if ( !IsOpend() ) { return 0; }
+        return static_cast<std::uint8_t>(i2c_read(RTCL_P3S7_PMOD_GPIO_IN) & 0xff);
+    }
+
+    bool SetPmodGpioOut(std::uint8_t value) {
+        if ( !IsOpend() ) { return false; }
+        i2c_write(RTCL_P3S7_PMOD_GPIO_OUT, value);
+        return true;
+    }
+
+    bool SetPmodGpioDir(std::uint8_t dir) {
+        if ( !IsOpend() ) { return false; }
+        i2c_write(RTCL_P3S7_PMOD_GPIO_DIR, dir);
         return true;
     }
 

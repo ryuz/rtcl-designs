@@ -71,4 +71,4 @@ load:
 .PHONY: remote_run
 remote_run: $(TARGET) load
 	scp $(TARGET) $(KV260_SSH_ADDRESS):/tmp/
-	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(TARGET)
+	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(TARGET) $(RUN_OPT)
