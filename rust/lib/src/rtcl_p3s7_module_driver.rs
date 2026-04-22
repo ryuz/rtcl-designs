@@ -1386,8 +1386,11 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     pub fn calc_xsm_delay(&self, line_length: usize) -> u16 {
         let sensor_rate = 720_000_000.0 / 10.0 * 4.0; // Sensor pixel clock rate in Hz (720bps 10bit 4lane)
         let dphy_rate = self.dphy_speed / 10.0 * 2.0; // D-PHY 10bit 2lane
-        let xsm_delay = (sensor_rate - dphy_rate) * line_length as f64 / sensor_rate / 4.0;
-        xsm_delay as u16
+        if sensor_rate <= dphy_rate {
+            return 0;
+        }
+        let xsm_delay = (sensor_rate - dphy_rate) * line_length as f64 / dphy_rate / 4.0;
+        xsm_delay.ceil() as u16
     }
 
     #[cfg(feature = "std")]

@@ -538,11 +538,11 @@ public:
         // Rust版 calc_xsm_delay と同じ式
         const double sensor_rate = 720000000.0 / 10.0 * 4.0; // Sensor: 10bit, 4lane
         const double dphy_rate   = m_dphy_speed / 10.0 * 2.0; // D-PHY: 10bit, 2lane
-        const double xsm_delay = (sensor_rate - dphy_rate) * static_cast<double>(line_length) / sensor_rate / 4.0;
-        if ( xsm_delay <= 0.0 ) {
+        if ( sensor_rate <= dphy_rate ) {
             return 0;
         }
-        return static_cast<std::uint16_t>(xsm_delay);
+        const double xsm_delay = (sensor_rate - dphy_rate) * static_cast<double>(line_length) / dphy_rate / 4.0;
+        return static_cast<std::uint16_t>(std::ceil(xsm_delay));
     }
     
     bool SetRoi0(int width, int height, int x=-1, int y=-1) {
