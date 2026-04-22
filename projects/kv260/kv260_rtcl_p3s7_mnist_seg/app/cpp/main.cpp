@@ -305,8 +305,11 @@ int main(int argc, char *argv[])
 
         cam.SetGainDb((float)(gain - 10) / 10.0f);
 
-        int period = 100000000 / fps;   // 100MHz / fps
-        int trig_end = period * exposure / 100;
+        double period_us = std::max(1000000.0 / static_cast<double>(fps), 1000.0);
+        double exposure_us = period_us * (static_cast<double>(exposure) / 1000.0);
+        exposure_us = std::clamp(exposure_us, 100.0, period_us - 100.0);
+        int period = static_cast<int>(period_us / 0.01);    // 100MHz / fps
+        int trig_end = std::max(static_cast<int>(exposure_us / 0.01), 1);
         reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      period-1);
         reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, 1);
         reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig_end);
