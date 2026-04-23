@@ -144,15 +144,15 @@ int main(int argc, char *argv[])
     rtcl::RtclP3S7ControlI2c cam;
     cam.Open("/dev/i2c-6", 0x10);
 
-    // カメラ基板ID確認
-    std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
-    std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
-
     // カメラモジュールリセット
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
     usleep(10000);
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 1);
     usleep(10000);
+
+    // カメラ基板ID確認
+    std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
+    std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
 
     // MMCM 設定
     cam.SetDphySpeed(1250000000);   // 1250Mbps

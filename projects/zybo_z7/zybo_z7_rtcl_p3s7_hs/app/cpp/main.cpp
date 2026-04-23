@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
     int exposure = 90;  // 90%
     int gain     = 0;   // 0.0 db
     bool color = false;
+    bool pgood_enable = true;
 
     for ( int i = 1; i < argc; ++i ) {
         if ( (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) && i+1 < argc) {
@@ -73,11 +74,18 @@ int main(int argc, char *argv[])
         else if ( strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--color") == 0 ) {
             color = true;
         }
+        else if ( strcmp(argv[i], "--pgood-off") == 0 ) {
+            pgood_enable = false;
+        }
         else {
             std::cout << "unknown option : " << argv[i] << std::endl;
             return 1;
         }
     }
+
+    std::cout << "width  : " << width << std::endl;
+    std::cout << "height : " << height << std::endl;
+    std::cout << "color  : " << color << std::endl;
 
     width &= ~0xf;
     width  = std::max(width, 16);
@@ -132,6 +140,12 @@ int main(int argc, char *argv[])
     std::cout << "udmabuf1 phys addr : 0x" << std::hex << dmabuf1_phys_adr << std::endl;
     std::cout << "udmabuf1 size      : " << std::dec << dmabuf1_mem_size << std::endl;
 
+    // カメラモジュールリセット
+    reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
+    usleep(10000);
+    reg_sys.WriteReg(SYSREG_CAM_ENABLE, 1);
+    usleep(10000);
+
     rtcl::RtclP3S7ControlI2c cam;
     cam.Open("/dev/i2c-0", 0x10);
 
@@ -139,17 +153,15 @@ int main(int argc, char *argv[])
     std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
     std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
 
-    // カメラモジュールリセット
-    reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
-    usleep(10000);
-    reg_sys.WriteReg(SYSREG_CAM_ENABLE, 1);
-    usleep(10000);
-
     // MMCM 設定
     cam.SetDphySpeed(950000000);   // 950Mbps
     
     // 受信側 DPHY リセット
     reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 1);
+
+    // センサー電源OK監視有無設定
+    std::cout << "Sensor PGood Enable : " << (pgood_enable ? "ON" : "OFF") << std::endl;
+    cam.SetSensorPGoodEnable(pgood_enable);
 
     // カメラ基板初期化
     std::cout << "Init Camera" << std::endl;
@@ -179,13 +191,12 @@ int main(int argc, char *argv[])
     // ここで RX 側も init_done が来る
     auto dphy_rx_init_done = reg_sys.ReadReg(SYSREG_DPHY_INIT_DONE);
     if ( dphy_rx_init_done == 0 ) {
-        std::cout << "!!ERROR!! KV260 DPHY RX init_done = 0" << std::endl;
+        std::cout << "!!ERROR!! ZYBO DPHY RX init_done = 0" << std::endl;
         return 1;
     }
 
     // センサーID確認
     std::cout << "Sensor ID : " << cam.GetSensorId() << std::endl;
-
 
     // 受信画像サイズ設定
     reg_sys.WriteReg(SYSREG_IMAGE_WIDTH,  width);
@@ -193,8 +204,26 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_BLACK_WIDTH,  1280);
     reg_sys.WriteReg(SYSREG_BLACK_HEIGHT, 1);
 
+    // D-PHY速度とセンサー速度の差に対して、各ラインの追加ディレイ(xsm-delay) を計算して設定
+    auto xsm_delay = cam.CalcXsmDelay(width);
+    cam.SetXsmDelay(xsm_delay);
+    cam.SetNzrotXsmDelayEnable(true);
+    cam.SetZeroRotEnable(true);
+
     // センサー起動
-    cam.SetSensorEnable(true);
+    if ( !cam.SetSensorEnable(true) ) {
+        if ( !cam.GetSensorPGood() ) {
+            std::cout << "\n!! sensor power good error. !! Retry with --pgood-off option." << std::endl;
+        }
+        else {
+            std::cout << "!!ERROR!! CAM sensor enable failed" << std::endl;
+        }
+        // カメラモジュールOFF
+        cam.SetSensorPowerEnable(false);
+        usleep(10000);
+        reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
+        return 1;
+    }
 
     // 画像サイズ設定
     cam.SetRoi0(width, height);
@@ -206,7 +235,7 @@ int main(int argc, char *argv[])
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_WIDTH,       width);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_HEIGHT,      height);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0x000);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     1000000);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     100000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
     usleep(100000);
 
@@ -217,20 +246,8 @@ int main(int argc, char *argv[])
     cam.SetFrLength0(0);
     cam.SetExposure0(10000);
 
-
-    double mergin = 0.0000001; // 100ns
-    double min_line_time = width * (10.0 / (2.0 * 950000000.0));                    // 2lane 10bit 950Mbps
-    double sensor_line_time  = (width + 68) *  (10.0 / (4.0 * 720000000.0)) + mergin;   // 4lane 10bit 720Mbps
-    std::uint16_t xsm_delay = 0;
-    if ( sensor_line_time < min_line_time ) {
-        xsm_delay = std::ceil(((min_line_time - sensor_line_time) * 720000000.0) / 4.0);
-    }
-    cam.SetXsmDelay(xsm_delay);
-    cam.SetNzrotXsmDelayEnable(true);
-
-
-//  cam.SetTriggeredMode(true);
-//  cam.SetSlaveMode(true);
+    cam.SetTriggeredMode(true);
+    cam.SetSlaveMode(true);
     cam.SetSequencerEnable(true);
     usleep(100000);
 

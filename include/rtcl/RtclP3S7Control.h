@@ -393,8 +393,6 @@ protected:
         if ( enable ) {
             // シーケンサ停止(トレーニングパターン出力状態へ)
             SetSequencerEnable(false);
-
-            usleep(1000);
             i2c_write(RTCL_P3S7_RECEIVER_RESET, 1);
             i2c_write(RTCL_P3S7_RECEIVER_CLK_DLY, 8);
             i2c_write(RTCL_P3S7_ALIGN_RESET, 1);
