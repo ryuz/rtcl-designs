@@ -57,7 +57,6 @@ where
     mult_timer: u16,
     fr_length: u16,
     exposure: u16,
-    xsm_delay: u16,
 }
 
 impl<I2C, U> CameraDriver<I2C, U>
@@ -81,7 +80,6 @@ where
             mult_timer: 72,
             fr_length: 0,
             exposure: 10000,
-            xsm_delay: 0,
         }
     }
 
@@ -197,8 +195,10 @@ where
         self.cam_i2c.set_triggered_mode(self.trigger_mode)?;
 
         // 動作開始
-        self.cam_i2c.set_xsm_delay(self.xsm_delay)?;
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
         self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+        self.cam_i2c.set_zero_rot_enable(true)?;
         self.cam_i2c.set_sequencer_enable(true)?;
 
         self.opend = true;
@@ -273,16 +273,6 @@ where
     }
 
     pub fn set_image_size(&mut self, width: usize, height: usize) -> Result<(), Box<dyn Error>> {
-        let mergin = 0.000_000_100; // 100ns
-        let min_line_time = (width as f32) * (10.0 / (2.0 * 950_000_000.0));              // 2lane 10bit 950Mbps
-        let sensor_line_time = (width + 68) as f32 *  (10.0 / (4.0 * 720_000_000.0)) + mergin;   // 4lane 10bit 720Mbps
-        self.xsm_delay = if sensor_line_time > min_line_time {0} else {
-            (((min_line_time - sensor_line_time) * 720_000_000.0) / 4.0).ceil() as u16
-        };
-//      println!("min_line_time:    {}", min_line_time);
-//      println!("sensor_line_time: {}", sensor_line_time);
-//      println!("set_xsm_delay:    {}", self.xsm_delay);
-
         if self.opend() {
             unsafe {
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x00);
@@ -303,8 +293,10 @@ where
                     .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
             }
-            self.cam_i2c.set_xsm_delay(self.xsm_delay)?;
+            let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+            self.cam_i2c.set_xsm_delay(xsm_delay)?;
             self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+            self.cam_i2c.set_zero_rot_enable(true)?;
             self.cam_i2c.set_sequencer_enable(true)?;
         } else {
             self.width = width;

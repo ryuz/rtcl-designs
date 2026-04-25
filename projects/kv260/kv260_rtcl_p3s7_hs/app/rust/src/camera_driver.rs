@@ -54,6 +54,7 @@ where
     height: usize,
     slave_mode: bool,
     trigger_mode: bool,
+    dphy_speed : f64,
     gain: f32,
     mult_timer: u16,
     fr_length: u16,
@@ -81,6 +82,7 @@ where
             width: 640,
             height: 480,
             slave_mode: false,
+            dphy_speed : 1250000000.0,
             trigger_mode: false,
             gain: 0.0,
             mult_timer: 72,
@@ -179,6 +181,12 @@ where
             self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
             self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
         }
+        
+        // xsm_delay
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+        self.cam_i2c.set_zero_rot_enable(true)?;
 
         // センサー起動
         self.cam_i2c.set_color(self.color)?;
@@ -203,7 +211,7 @@ where
                 .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x0);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
             self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
@@ -319,6 +327,10 @@ where
                     .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
             }
+            let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+            self.cam_i2c.set_xsm_delay(xsm_delay)?;
+            self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+            self.cam_i2c.set_zero_rot_enable(true)?;
             self.cam_i2c.set_sequencer_enable(true)?;
         } else {
             self.width = width;
@@ -382,6 +394,9 @@ where
         fps_count as f32 * 4.0
     }
 
+    pub fn print_sensor_register(&mut self) {
+        self.cam_i2c.sensor_reg_dump().unwrap();
+    }
 
     // debug用
     pub fn print_timing_status(&mut self) {

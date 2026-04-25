@@ -180,6 +180,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
+            'x' => {
+                println!("---- sensor reg ----");
+                cam.print_sensor_register();
+                println!("------ end  ------");
+            },
             'd' => {
                 println!("write : dump.png");
                 imgcodecs::imwrite("dump.png", &view, &Vector::<i32>::new())?;

@@ -1,5 +1,5 @@
 
-BASE_NAME = kv260_rtcl_p3s7_hs
+BASE_NAME = kv260_rtcl_p3s7_mnist_seg
 
 TARGET     = $(BASE_NAME).out
 ACCEL_NAME = $(BASE_NAME)
@@ -22,7 +22,7 @@ LDFLAGS += -g
 ifeq ($(HOST_ARCH),$(TARGET_ARCH))
     CC  := gcc
     CXX := g++
-    CFLAGS  += `pkg-config --cflags opencv4`
+	CFLAGS  += `pkg-config --cflags opencv4`
     LDFLAGS += `pkg-config --libs opencv4`
 else
     CC  = $(TARGET_TRIPLET)gcc
@@ -71,8 +71,4 @@ load:
 .PHONY: remote_run
 remote_run: $(TARGET) load
 	scp $(TARGET) $(KV260_SSH_ADDRESS):/tmp/
-	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(TARGET) $(RUN_OPT)
-
-.PHONY: remote_rerun
-remote_rerun: $(TARGET)
 	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(TARGET) $(RUN_OPT)

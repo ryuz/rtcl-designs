@@ -30,9 +30,26 @@ clean:
 build:
 	make -C rpu build
 	make -C rust build
+	make -C cpp build
 
 .PHONY: run
-run: load
+run: run_cpp
+
+.PHONY: run_cpp
+run_cpp: load
+	echo "=== RPU start ==="
+	make -C rpu run
+	echo "=== app start ==="
+	make -C cpp run RUN_OPT="$(RUN_OPT)"
+	echo "=== RPU stop ==="
+	make -C rpu stop
+
+.PHONY: build_cpp
+build_cpp:
+	make -C cpp build
+
+.PHONY: run_rust
+run_rust: load
 	echo "=== RPU start ==="
 	make -C rpu run
 	echo "=== app start ==="
@@ -40,6 +57,10 @@ run: load
 #	cd rust; cargo run -- $(RUN_OPT)
 	echo "=== RPU stop ==="
 	make -C rpu stop
+
+.PHONY: build_rust
+build_rust:
+	make -C rust build
 
 .PHONY: stop
 stop:

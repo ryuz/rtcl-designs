@@ -16,7 +16,7 @@ module rtcl_p3s7_mipi
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
-            parameter                   DEBUG          = "false"     
+            parameter                   DEBUG          = "true"     
         )
         (
             input   var logic           in_clk50                ,

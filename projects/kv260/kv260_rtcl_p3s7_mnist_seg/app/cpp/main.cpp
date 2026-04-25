@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
+#include <vector>
 #include <opencv2/opencv.hpp>
 #include "jelly/UioAccessor.h"
 #include "jelly/UdmabufAccessor.h"
@@ -14,6 +15,7 @@
 #include "jelly/GpioAccessor.h"
 #include "jelly/VideoDmaControl.h"
 #include "rtcl/RtclP3S7Control.h"
+
 
 #define SYSREG_ID                   0x0000
 #define SYSREG_DPHY_SW_RESET        0x0001
@@ -37,9 +39,26 @@
 #define TIMGENREG_PARAM_TRIG0_END   0x21
 #define TIMGENREG_PARAM_TRIG0_POL   0x22
 
+#define REG_BIN_PARAM_END   0x04
+#define REG_BIN_TBL0        0x40
+#define REG_BIN_TBL1        0x41
+#define REG_BIN_TBL2        0x42
+#define REG_BIN_TBL3        0x43
+#define REG_BIN_TBL4        0x44
+#define REG_BIN_TBL5        0x45
+#define REG_BIN_TBL6        0x46
+#define REG_BIN_TBL7        0x47
+#define REG_BIN_TBL8        0x48
+#define REG_BIN_TBL9        0x49
+#define REG_BIN_TBL10       0x4a
+#define REG_BIN_TBL11       0x4b
+#define REG_BIN_TBL12       0x4c
+#define REG_BIN_TBL13       0x4d
+#define REG_BIN_TBL14       0x4e
+#define REG_LPF_PARAM_ALPHA 0x08
+
 void          sensor_reg_dump(rtcl::RtclP3S7ControlI2c  &cam, const char *fname);
 void          load_setting(rtcl::RtclP3S7ControlI2c  &cam);
-
 
 static  volatile    bool    g_signal = false;
 void signal_handler(int signo) {
@@ -50,29 +69,25 @@ void signal_handler(int signo) {
 // メイン関数
 int main(int argc, char *argv[])
 {
-    int width  = 640 ;
-    int height = 480 ;
-    int fps    = 200 ;
-    int exposure = 90;  // 90%
-    int gain     = 0;   // 0.0 db
-    bool color = false;
+    int width  = 256 ;
+    int height = 256 ;
+    int fps = 1000;
+    int exposure = 900;
+    int gain = 10;
     bool pgood_enable = true;
 
     for ( int i = 1; i < argc; ++i ) {
-        if ( (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) && i+1 < argc) {
+        if ( (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0 || strcmp(argv[i], "-width") == 0) && i+1 < argc) {
             ++i;
             width = strtol(argv[i], nullptr, 0);
         }
-        else if ( (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) && i+1 < argc) {
+        else if ( (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0 || strcmp(argv[i], "-height") == 0) && i+1 < argc) {
             ++i;
             height = strtol(argv[i], nullptr, 0);
         }
         else if ( (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fps") == 0) && i+1 < argc) {
             ++i;
             fps = strtol(argv[i], nullptr, 0);
-        }
-        else if ( strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--color") == 0 ) {
-            color = true;
         }
         else if ( strcmp(argv[i], "--pgood-off") == 0 ) {
             pgood_enable = false;
@@ -82,10 +97,6 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-
-    std::cout << "width  : " << width << std::endl;
-    std::cout << "height : " << height << std::endl;
-    std::cout << "color  : " << color << std::endl;
 
     width &= ~0xf;
     width  = std::max(width, 16);
@@ -106,6 +117,8 @@ int main(int argc, char *argv[])
     auto reg_fmtr   = uio_acc.GetAccessor(0x00100000);
     auto reg_wdma0  = uio_acc.GetAccessor(0x00210000);
     auto reg_wdma1  = uio_acc.GetAccessor(0x00220000);
+    auto reg_bin    = uio_acc.GetAccessor(0x00300000);
+    auto reg_lpf    = uio_acc.GetAccessor(0x00320000);
     
     // レジスタ確認
     std::cout << "CORE ID" << std::endl;
@@ -114,6 +127,8 @@ int main(int argc, char *argv[])
     std::cout << std::hex << reg_fmtr.ReadReg(0) << std::endl;
     std::cout << std::hex << reg_wdma0.ReadReg(0) << std::endl;
     std::cout << std::hex << reg_wdma1.ReadReg(0) << std::endl;
+    std::cout << std::hex << reg_bin.ReadReg(0) << std::endl;
+    std::cout << std::hex << reg_lpf.ReadReg(0) << std::endl;
 
     // mmap udmabuf0
     jelly::UdmabufAccessor udmabuf0_acc("udmabuf-jelly-vram0");
@@ -140,28 +155,28 @@ int main(int argc, char *argv[])
     std::cout << "udmabuf1 phys addr : 0x" << std::hex << dmabuf1_phys_adr << std::endl;
     std::cout << "udmabuf1 size      : " << std::dec << dmabuf1_mem_size << std::endl;
 
+    rtcl::RtclP3S7ControlI2c cam;
+    cam.Open("/dev/i2c-6", 0x10);
+
+    // カメラ基板ID確認
+    std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
+    std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
+
     // カメラモジュールリセット
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
     usleep(10000);
     reg_sys.WriteReg(SYSREG_CAM_ENABLE, 1);
     usleep(10000);
 
-    rtcl::RtclP3S7ControlI2c cam;
-    cam.Open("/dev/i2c-0", 0x10);
-
-    // カメラ基板ID確認
-    std::cout << "Camera Module ID      : " << std::hex << cam.GetModuleId() << std::endl;
-    std::cout << "Camera Module Version : " << std::hex << cam.GetModuleVersion() << std::endl;
-
     // MMCM 設定
-    cam.SetDphySpeed(950000000);   // 950Mbps
-    
-    // 受信側 DPHY リセット
-    reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 1);
+    cam.SetDphySpeed(1250000000);   // 1250Mbps
 
     // センサー電源OK監視有無設定
     std::cout << "Sensor PGood Enable : " << (pgood_enable ? "ON" : "OFF") << std::endl;
     cam.SetSensorPGoodEnable(pgood_enable);
+    
+    // 受信側 DPHY リセット
+    reg_sys.WriteReg(SYSREG_DPHY_SW_RESET, 1);
 
     // カメラ基板初期化
     std::cout << "Init Camera" << std::endl;
@@ -191,7 +206,7 @@ int main(int argc, char *argv[])
     // ここで RX 側も init_done が来る
     auto dphy_rx_init_done = reg_sys.ReadReg(SYSREG_DPHY_INIT_DONE);
     if ( dphy_rx_init_done == 0 ) {
-        std::cout << "!!ERROR!! ZYBO DPHY RX init_done = 0" << std::endl;
+        std::cout << "!!ERROR!! KV260 DPHY RX init_done = 0" << std::endl;
         return 1;
     }
 
@@ -204,7 +219,7 @@ int main(int argc, char *argv[])
     reg_sys.WriteReg(SYSREG_BLACK_WIDTH,  1280);
     reg_sys.WriteReg(SYSREG_BLACK_HEIGHT, 1);
 
-    // D-PHY速度とセンサー速度の差に対して、各ラインの追加ディレイ(xsm-delay) を計算して設定
+    // D-PHY速度とライン長から XSM delay を計算して設定
     auto xsm_delay = cam.CalcXsmDelay(width);
     cam.SetXsmDelay(xsm_delay);
     cam.SetNzrotXsmDelayEnable(true);
@@ -218,7 +233,6 @@ int main(int argc, char *argv[])
         else {
             std::cout << "!!ERROR!! CAM sensor enable failed" << std::endl;
         }
-        // カメラモジュールOFF
         cam.SetSensorPowerEnable(false);
         usleep(10000);
         reg_sys.WriteReg(SYSREG_CAM_ENABLE, 0);
@@ -229,15 +243,13 @@ int main(int argc, char *argv[])
     cam.SetRoi0(width, height);
 
     // video input start
-    // video input start
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN,  1);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT,   20000000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_WIDTH,       width);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_HEIGHT,      height);
-    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0x000);
+    reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_FILL,        0x0);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_PARAM_TIMEOUT,     100000);
     reg_fmtr.WriteReg(REG_VIDEO_FMTREG_CTL_CONTROL,       0x03);
-    usleep(100000);
 
     // 動作開始
     std::cout << "Start Camera" << std::endl;
@@ -246,32 +258,40 @@ int main(int argc, char *argv[])
     cam.SetFrLength0(0);
     cam.SetExposure0(10000);
 
+//  cam.SetTriggeredMode(true);
+//  cam.SetSlaveMode(true);
     cam.SetTriggeredMode(true);
     cam.SetSlaveMode(true);
     cam.SetSequencerEnable(true);
     usleep(100000);
 
-    cam.SetGainDb(10.0);
+    cam.SetGainDb((float)(gain - 10) / 10.0f);
 
     // Video DMA ドライバ生成
     jelly::VideoDmaControl vdmaw0(reg_wdma0, 2, 2, true);
     jelly::VideoDmaControl vdmaw1(reg_wdma1, 2, 2, true);
 
-
-    cv::namedWindow("img", cv::WINDOW_NORMAL);
-    cv::resizeWindow("img", width + 64, height + 128);
+    cv::namedWindow("img", cv::WINDOW_AUTOSIZE);
+    cv::resizeWindow("img", width + 64, height + 256);
+    cv::namedWindow("class", cv::WINDOW_AUTOSIZE);
+    cv::resizeWindow("class", width + 64, height + 256);
     cv::imshow("img", cv::Mat::zeros(height, width, CV_8UC3));
-    cv::createTrackbar("gain", "img", nullptr, 100);
+    cv::createTrackbar("gain", "img", nullptr, 200);
     cv::setTrackbarPos("gain", "img", gain);
 
-    cv::createTrackbar("fps", "img", nullptr, 100);
-    cv::setTrackbarMin("fps", "img", 5);
+    cv::createTrackbar("fps", "img", nullptr, 1000);
+    cv::setTrackbarMin("fps", "img", 10);
     cv::setTrackbarPos("fps", "img", fps);
 
-    cv::createTrackbar("exposure", "img", nullptr, 90);
+    cv::createTrackbar("exposure", "img", nullptr, 900);
     cv::setTrackbarMin("exposure", "img", 10);
     cv::setTrackbarPos("exposure", "img", exposure);
 
+    cv::createTrackbar("lpf", "img", nullptr, 255);
+    cv::setTrackbarPos("lpf", "img", 200);
+
+    cv::createTrackbar("bin_th", "img", nullptr, 1023);
+    cv::setTrackbarPos("bin_th", "img", 64);
 
     int     key;
     while ( (key = (cv::waitKey(10) & 0xff)) != 0x1b ) {
@@ -280,34 +300,74 @@ int main(int argc, char *argv[])
         gain     = cv::getTrackbarPos("gain", "img");
         fps      = cv::getTrackbarPos("fps", "img");
         exposure = cv::getTrackbarPos("exposure", "img");
+        int lpf = cv::getTrackbarPos("lpf", "img");
+        int bin_th = cv::getTrackbarPos("bin_th", "img");
 
-        cam.SetGainDb((float)gain / 10.0f);
+        cam.SetGainDb((float)(gain - 10) / 10.0f);
 
-        int period = 100000000 / fps;   // 100MHz / fps
-        int trig_end = period * exposure / 100;
+        double period_us = std::max(1000000.0 / static_cast<double>(fps), 1000.0);
+        double exposure_us = period_us * (static_cast<double>(exposure) / 1000.0);
+        exposure_us = std::clamp(exposure_us, 100.0, period_us - 100.0);
+        int period = static_cast<int>(period_us / 0.01);    // 100MHz / fps
+        int trig_end = std::max(static_cast<int>(exposure_us / 0.01), 1);
         reg_timgen.WriteReg(TIMGENREG_PARAM_PERIOD,      period-1);
         reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_START, 1);
         reg_timgen.WriteReg(TIMGENREG_PARAM_TRIG0_END,   trig_end);
         reg_timgen.WriteReg(TIMGENREG_CTL_CONTROL, 3);
 
+        // binarize / lpf パラメータ設定
+        reg_lpf.WriteReg(REG_LPF_PARAM_ALPHA, lpf);
+        int amp = 4;
+        reg_bin.WriteReg(REG_BIN_TBL0,  bin_th + (0x1*amp));
+        reg_bin.WriteReg(REG_BIN_TBL1,  bin_th + (0xf*amp));
+        reg_bin.WriteReg(REG_BIN_TBL2,  bin_th + (0x7*amp));
+        reg_bin.WriteReg(REG_BIN_TBL3,  bin_th + (0x9*amp));
+        reg_bin.WriteReg(REG_BIN_TBL4,  bin_th + (0x3*amp));
+        reg_bin.WriteReg(REG_BIN_TBL5,  bin_th + (0xd*amp));
+        reg_bin.WriteReg(REG_BIN_TBL6,  bin_th + (0x5*amp));
+        reg_bin.WriteReg(REG_BIN_TBL7,  bin_th + (0xb*amp));
+        reg_bin.WriteReg(REG_BIN_TBL8,  bin_th + (0x2*amp));
+        reg_bin.WriteReg(REG_BIN_TBL9,  bin_th + (0xe*amp));
+        reg_bin.WriteReg(REG_BIN_TBL10, bin_th + (0x6*amp));
+        reg_bin.WriteReg(REG_BIN_TBL11, bin_th + (0xa*amp));
+        reg_bin.WriteReg(REG_BIN_TBL12, bin_th + (0x4*amp));
+        reg_bin.WriteReg(REG_BIN_TBL13, bin_th + (0xc*amp));
+        reg_bin.WriteReg(REG_BIN_TBL14, bin_th + (0x8*amp));
+        reg_bin.WriteReg(REG_BIN_PARAM_END, 14);
+
         // 画像読み込み
         vdmaw0.Oneshot(dmabuf0_phys_adr, width, height, 1);
-        cv::Mat img(height, width, CV_16U);
-        udmabuf0_acc.MemCopyTo(img.data, 0, width * height * 2);
-        img = img * 64; // 10bit -> 16bit
+        std::vector<std::uint8_t> src(width * height * 2);
+        udmabuf0_acc.MemCopyTo(src.data(), 0, src.size());
 
-        // 表示画像準備
-        cv::Mat img_view;
-        if ( color ) {
-            cv::Mat img_bgr;
-            cv::cvtColor(img, img_view, cv::COLOR_BayerBG2BGR);
-        }
-        else {
-            img_view = img;
+        cv::Mat img(height, width, CV_8UC1);
+        cv::Mat cls(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+        for ( int y = 0; y < height; y++ ) {
+            for ( int x = 0; x < width; x++ ) {
+                std::size_t index = static_cast<std::size_t>(y * width + x);
+                std::uint8_t img_v = src[index * 2 + 0];
+                std::uint8_t cls_v = src[index * 2 + 1];
+                img.at<std::uint8_t>(y, x) = img_v;
+                cv::Vec3b color;
+                switch ( cls_v ) {
+                case 0: color = cv::Vec3b(0,   0,   0);   break;
+                case 1: color = cv::Vec3b(42,  42,  165); break;
+                case 2: color = cv::Vec3b(0,   0,   255); break;
+                case 3: color = cv::Vec3b(0,   165, 255); break;
+                case 4: color = cv::Vec3b(0,   255, 255); break;
+                case 5: color = cv::Vec3b(0,   255, 0);   break;
+                case 6: color = cv::Vec3b(255, 0,   0);   break;
+                case 7: color = cv::Vec3b(128, 0,   128); break;
+                case 8: color = cv::Vec3b(192, 192, 192); break;
+                case 9: color = cv::Vec3b(255, 255, 255); break;
+                default:color = cv::Vec3b(64,  64,  64);  break;
+                }
+                cls.at<cv::Vec3b>(y, x) = color;
+            }
         }
 
-        // 表示
-        cv::imshow("img", img_view);
+        cv::imshow("img", img);
+        cv::imshow("class", cls);
 
         // ユーザー操作
         switch ( key ) {
@@ -331,6 +391,7 @@ int main(int argc, char *argv[])
             
         case 'd':   // image dump
             cv::imwrite("img_dump.png", img);
+            cv::imwrite("class_dump.png", cls);
             break;
 
         case 'r':   // record
@@ -338,14 +399,41 @@ int main(int argc, char *argv[])
             vdmaw0.Oneshot(dmabuf0_phys_adr, width, height, rec_frames);
             
             for ( int i = 0; i < rec_frames; i++ ) {
-                // 画像読み込み
-                cv::Mat img(height, width, CV_16U);
-                udmabuf0_acc.MemCopyTo(img.data, width * height * 2 * i, width * height * 2);
+                std::vector<std::uint8_t> rec(width * height * 2);
+                udmabuf0_acc.MemCopyTo(rec.data(), width * height * 2 * i, width * height * 2);
+
+                cv::Mat rec_img(height, width, CV_8UC1);
+                cv::Mat rec_cls(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+                for ( int y = 0; y < height; y++ ) {
+                    for ( int x = 0; x < width; x++ ) {
+                        std::size_t index = static_cast<std::size_t>(y * width + x);
+                        std::uint8_t img_v = rec[index * 2 + 0];
+                        std::uint8_t cls_v = rec[index * 2 + 1];
+                        rec_img.at<std::uint8_t>(y, x) = img_v;
+                        cv::Vec3b color;
+                        switch ( cls_v ) {
+                        case 0: color = cv::Vec3b(0,   0,   0);   break;
+                        case 1: color = cv::Vec3b(42,  42,  165); break;
+                        case 2: color = cv::Vec3b(0,   0,   255); break;
+                        case 3: color = cv::Vec3b(0,   165, 255); break;
+                        case 4: color = cv::Vec3b(0,   255, 255); break;
+                        case 5: color = cv::Vec3b(0,   255, 0);   break;
+                        case 6: color = cv::Vec3b(255, 0,   0);   break;
+                        case 7: color = cv::Vec3b(128, 0,   128); break;
+                        case 8: color = cv::Vec3b(192, 192, 192); break;
+                        case 9: color = cv::Vec3b(255, 255, 255); break;
+                        default:color = cv::Vec3b(64,  64,  64);  break;
+                        }
+                        rec_cls.at<cv::Vec3b>(y, x) = color;
+                    }
+                }
 
                 // 保存
                 char fname[256];
                 sprintf(fname, "rec/img_%03d.png", i);
-                cv::imwrite(fname, img * (65535.0/1023.0));
+                cv::imwrite(fname, rec_img);
+                sprintf(fname, "rec/class_%03d.png", i);
+                cv::imwrite(fname, rec_cls);
             }
         }
     }
@@ -376,7 +464,7 @@ int main(int argc, char *argv[])
 }
 
 
-// レジスタダンプ
+// センサーのレジスタダンプ
 void sensor_reg_dump(rtcl::RtclP3S7ControlI2c &cam, const char *fname) {
     FILE* fp = fopen(fname, "w");
     for ( int i = 0; i < 512; i++ ) {
@@ -385,7 +473,6 @@ void sensor_reg_dump(rtcl::RtclP3S7ControlI2c &cam, const char *fname) {
     }
     fclose(fp);
 }
-
 
 // 設定ファイルを読み込む
 void load_setting(rtcl::RtclP3S7ControlI2c &cam) {
@@ -410,7 +497,5 @@ void load_setting(rtcl::RtclP3S7ControlI2c &cam) {
     }
     fclose(fp);
 }
-
-
 
 // end of file
