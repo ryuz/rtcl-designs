@@ -32,6 +32,9 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
 
+    #[arg(long="pmod-mode", default_value_t = 0)]
+    pmod_mode: u16,
+
     /// Enable color mode (default: monochrome)
     #[arg(long="pgood-off", default_value_t = false)]
     pgood_off: bool,
@@ -113,7 +116,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    cam.set_pmod_mode(0x10)?;
+    // PMODモード設定
+    cam.set_pmod_mode( pmod_mode)?;
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
