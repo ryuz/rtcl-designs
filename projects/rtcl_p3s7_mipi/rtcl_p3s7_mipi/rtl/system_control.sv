@@ -31,7 +31,10 @@ module system_control
             parameter   bit             INIT_DPHY_CORE_RESET     = 1'b1                     ,
             parameter   bit             INIT_DPHY_SYS_RESET      = 1'b1                     ,
             parameter   bit [1:0]       INIT_MMCM_CONTROL        = 2'b00                    ,
-            parameter   bit [1:0]       INIT_PLL_CONTROL         = 2'b00                    
+            parameter   bit [1:0]       INIT_PLL_CONTROL         = 2'b00                    ,
+            parameter   bit [15:0]      INIT_PMOD_MODE           = '0                       ,
+            parameter   bit [7:0]       INIT_PMOD_OUT            = '0                       ,
+            parameter   bit [7:0]       INIT_PMOD_DIR            = '0                       
         )
         (
             jelly3_axi4l_if.s           s_axi4l             ,
@@ -59,7 +62,11 @@ module system_control
             output  var logic           out_mmcm_rst        ,
             output  var logic           out_mmcm_pwrdwn     ,
             output  var logic           out_pll_rst         ,
-            output  var logic           out_pll_pwrdwn      
+            output  var logic           out_pll_pwrdwn      ,
+            output  var logic   [15:0]  out_pmod_mode       ,
+            output  var logic   [7:0]   out_pmod_data       ,
+            output  var logic   [7:0]   out_pmod_dir        ,
+            input   var logic   [7:0]   in_pmod_data        
         );
     
     
@@ -95,6 +102,10 @@ module system_control
     localparam  regadr_t REGADR_DPHY_INIT_DONE      = regadr_t'('h88);
     localparam  regadr_t REGADR_MMCM_CONTROL        = regadr_t'('ha0);
     localparam  regadr_t REGADR_PLL_CONTROL         = regadr_t'('ha1);
+    localparam  regadr_t REGADR_PMOD_MODE           = regadr_t'('hb0);
+    localparam  regadr_t REGADR_PMOD_GPIO_IN        = regadr_t'('hb2);
+    localparam  regadr_t REGADR_PMOD_GPIO_OUT       = regadr_t'('hb3);
+    localparam  regadr_t REGADR_PMOD_GPIO_DIR       = regadr_t'('hb4);
 
     // registers
     logic           reg_sensor_enable       ;
@@ -115,6 +126,9 @@ module system_control
     logic           reg_dphy_init_done      ;
     logic   [1:0]   reg_mmcm_control        ;
     logic   [1:0]   reg_pll_control         ;
+    logic   [15:0]  reg_pmod_mode           ;
+    logic   [7:0]   reg_pmod_data           ;
+    logic   [7:0]   reg_pmod_dir            ;
 
     always_ff @(posedge s_axi4l.aclk) begin
         reg_sensor_ready   <= in_sensor_ready                   ;
@@ -165,20 +179,24 @@ module system_control
     // write
     always_ff @(posedge s_axi4l.aclk) begin
         if ( ~s_axi4l.aresetn ) begin
-            reg_sensor_enable    <= INIT_SENSOR_ENABLE   ;
-            reg_sensor_pgood_en  <= INIT_SENSOR_PGOOD_EN ;
-            reg_receiver_reset   <= INIT_RECEIVER_RESET  ;
-            reg_receiver_clk_dly <= INIT_RECEIVER_CLK_DLY;
-            reg_align_reset      <= INIT_ALIGN_RESET     ;
-            reg_align_pattern    <= INIT_ALIGN_PATTERN   ;
-            reg_clip_enable      <= INIT_CLIP_ENABLE     ;
-            reg_csi_mode         <= INIT_CSI_MODE        ;
-            reg_csi_dt           <= INIT_CSI_DT          ;
-            reg_csi_wc           <= INIT_CSI_WC          ;
-            reg_dphy_core_reset  <= INIT_DPHY_CORE_RESET ;
-            reg_dphy_sys_reset   <= INIT_DPHY_SYS_RESET  ;
-            reg_mmcm_control     <= INIT_MMCM_CONTROL    ;
-            reg_pll_control      <= INIT_PLL_CONTROL     ;
+            reg_sensor_enable    <= INIT_SENSOR_ENABLE      ;
+            reg_sensor_pgood_en  <= INIT_SENSOR_PGOOD_EN    ;
+            reg_receiver_reset   <= INIT_RECEIVER_RESET     ;
+            reg_receiver_clk_dly <= INIT_RECEIVER_CLK_DLY   ;
+            reg_align_reset      <= INIT_ALIGN_RESET        ;
+            reg_align_pattern    <= INIT_ALIGN_PATTERN      ;
+            reg_clip_enable      <= INIT_CLIP_ENABLE        ;
+            reg_csi_mode         <= INIT_CSI_MODE           ;
+            reg_csi_dt           <= INIT_CSI_DT             ;
+            reg_csi_wc           <= INIT_CSI_WC             ;
+            reg_dphy_core_reset  <= INIT_DPHY_CORE_RESET    ;
+            reg_dphy_sys_reset   <= INIT_DPHY_SYS_RESET     ;
+            reg_mmcm_control     <= INIT_MMCM_CONTROL       ;
+            reg_pll_control      <= INIT_PLL_CONTROL        ;
+            reg_pmod_mode        <= INIT_PMOD_MODE          ;
+            reg_pmod_data        <= INIT_PMOD_OUT           ;
+            reg_pmod_dir         <= INIT_PMOD_DIR           ;
+
         end
         else if ( s_axi4l.aclken ) begin
             if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
@@ -197,6 +215,9 @@ module system_control
                 REGADR_DPHY_SYS_RESET     :   reg_dphy_sys_reset   <=  1'(write_mask(axi4l_data_t'(reg_dphy_sys_reset  ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_MMCM_CONTROL       :   reg_mmcm_control     <=  2'(write_mask(axi4l_data_t'(reg_mmcm_control    ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PLL_CONTROL        :   reg_pll_control      <=  2'(write_mask(axi4l_data_t'(reg_pll_control     ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_MODE          :   reg_pmod_mode        <= 16'(write_mask(axi4l_data_t'(reg_pmod_mode       ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_GPIO_OUT      :   reg_pmod_data        <=  8'(write_mask(axi4l_data_t'(reg_pmod_data       ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_GPIO_DIR      :   reg_pmod_dir         <=  8'(write_mask(axi4l_data_t'(reg_pmod_dir        ), s_axi4l.wdata, s_axi4l.wstrb));
                 default: ;
                 endcase
             end
@@ -254,6 +275,10 @@ module system_control
                 REGADR_DPHY_INIT_DONE   :   s_axi4l.rdata <= axi4l_data_t'(reg_dphy_init_done  );
                 REGADR_MMCM_CONTROL     :   s_axi4l.rdata <= axi4l_data_t'(reg_mmcm_control    );
                 REGADR_PLL_CONTROL      :   s_axi4l.rdata <= axi4l_data_t'(reg_pll_control     );
+                REGADR_PMOD_MODE        :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_mode       );
+                REGADR_PMOD_GPIO_IN     :   s_axi4l.rdata <= axi4l_data_t'(in_pmod_data        );
+                REGADR_PMOD_GPIO_OUT    :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_data       );
+                REGADR_PMOD_GPIO_DIR    :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_dir        );
                 default                 :   s_axi4l.rdata <= '0;
                 endcase
             end
@@ -297,6 +322,9 @@ module system_control
     assign  out_mmcm_pwrdwn      = reg_mmcm_control[1]   ;
     assign  out_pll_rst          = reg_pll_control[0]    ;
     assign  out_pll_pwrdwn       = reg_pll_control[1]    ;
+    assign  out_pmod_mode        = reg_pmod_mode         ;
+    assign  out_pmod_data        = reg_pmod_data         ;
+    assign  out_pmod_dir         = reg_pmod_dir          ;
     
 endmodule
 

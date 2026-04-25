@@ -11,6 +11,14 @@ use kv260_rtcl_p3s7_optical_flow::camera_driver::CameraDriver;
 use kv260_rtcl_p3s7_optical_flow::capture_driver::CaptureDriver;
 use kv260_rtcl_p3s7_optical_flow::timing_generator_driver::TimingGeneratorDriver;
 
+// Gaussian filter
+ const REG_IMG_GAUSS_CORE_ID        : usize = 0x00;
+ const REG_IMG_GAUSS_CORE_VERSION   : usize = 0x01;
+ const REG_IMG_GAUSS_CTL_CONTROL    : usize = 0x04;
+ const REG_IMG_GAUSS_CTL_STATUS     : usize = 0x05;
+ const REG_IMG_GAUSS_CTL_INDEX      : usize = 0x07;
+ const REG_IMG_GAUSS_PARAM_ENABLE   : usize = 0x08;
+ const REG_IMG_GAUSS_CURRENT_ENABLE : usize = 0x18;
 
 /* LK acc */
 const REG_IMG_LK_ACC_CORE_ID      : usize =  0x00;
@@ -51,7 +59,6 @@ const REG_IMG_SELECTOR_CORE_VERSION : usize = 0x01;
 const REG_IMG_SELECTOR_CTL_SELECT   : usize = 0x08;
 const REG_IMG_SELECTOR_CONFIG_NUM   : usize = 0x10;
 
-
 // Logger
 const REG_LOGGER_CORE_ID          : usize =  0x00;
 const REG_LOGGER_CORE_VERSION     : usize =  0x01;
@@ -64,6 +71,25 @@ const REG_LOGGER_POL_TIMER0       : usize =  0x18;
 const REG_LOGGER_POL_TIMER1       : usize =  0x19;
 const REG_LOGGER_POL_DATA0        : usize =  0x20;
 const REG_LOGGER_POL_DATA1        : usize =  0x21;
+
+// OCM
+const OCM_X_MIN: usize = 0x10;
+const OCM_X_MAX: usize = 0x11;
+const OCM_Y_MIN: usize = 0x12;
+const OCM_Y_MAX: usize = 0x13;
+const OCM_LATENCY: usize = 0x18;
+const OCM_PRJ_GIAN_X: usize = 0x20;
+const OCM_PRJ_GIAN_Y: usize = 0x21;
+const OCM_PRJ_DECAY_X: usize = 0x22;
+const OCM_PRJ_DECAY_Y: usize = 0x23;
+const OCM_PRJ_OFFSET_X: usize = 0x24;
+const OCM_PRJ_OFFSET_Y: usize = 0x25;
+const OCM_PRJ_X_MIN: usize = 0x26;
+const OCM_PRJ_X_MAX: usize = 0x27;
+const OCM_PRJ_Y_MIN: usize = 0x28;
+const OCM_PRJ_Y_MAX: usize = 0x29;
+const OCM_PRJ_X: usize = 0x40;
+const OCM_PRJ_Y: usize = 0x41;
 
 
 #[derive(Parser, Debug)]
@@ -139,13 +165,33 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reg_gauss    = uio_acc.subclone(0x0040_1000, 0x400);
     let reg_lk       = uio_acc.subclone(0x0041_0000, 0x400);
     let reg_sel      = uio_acc.subclone(0x0040_f000, 0x400);
+    let reg_uart     = uio_acc.subclone(0x0050_0000, 0x400);
 
+    let uio_ocm = UioAccessor::<u64>::new_with_name("uio_ocm").expect("Failed to open uio_ocm");
+    unsafe {
+        uio_ocm.write_reg_f64(0, 0.1234);
+        uio_ocm.write_reg_f64(1, 9.87654);
+    }
 
     println!("CORE ID");
     println!("reg_sys      : {:08x}", unsafe { reg_sys.read_reg(0) });
     println!("reg_timgen   : {:08x}", unsafe { reg_timgen.read_reg(0) });
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
+
+    if false {
+        for _ in 0..3 {
+            // 1ms おきにループして円を描く
+            let r = 100;
+            for i in 0..360 {
+                let x = (r as f64 * (i as f64 * std::f64::consts::PI / 180.0).cos()) as i16;
+                let y = (r as f64 * (i as f64 * std::f64::consts::PI / 180.0).sin()) as i16;
+                send_projector_xy(&reg_uart, x, y, true);
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        }
+        return Ok(());
+    }
 
     let mut timgen = TimingGeneratorDriver::new(reg_timgen);
 
@@ -167,6 +213,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
+    cam.set_pmod_mode(0x10)?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -182,8 +229,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
+    create_cv_trackbar("gauss",      0,    4,   3)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
+    create_cv_trackbar("latency",    0,  199,   0)?;
+    create_cv_trackbar("pgx",     -200,  200,  150)?;
+    create_cv_trackbar("pgy",     -200,  200, -150)?;
+    create_cv_trackbar("pox",     -500,  500,   0)?;
+    create_cv_trackbar("poy",     -500,  500, 300)?;
 
     unsafe {
         reg_lk.write_reg(REG_IMG_LK_ACC_PARAM_X,          16);
@@ -212,10 +265,28 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
+        let gauss     = get_cv_trackbar_pos("gauss")?;
         let sel = get_cv_trackbar_pos("sel")?;
+        let latency = get_cv_trackbar_pos("latency")?;
+        let prj_gain_x = get_cv_trackbar_pos("pgx")?;
+        let prj_gain_y = get_cv_trackbar_pos("pgy")?;
+        let prj_offset_x = get_cv_trackbar_pos("pox")?;
+        let prj_offset_y = get_cv_trackbar_pos("poy")?;
 
         unsafe {
+            reg_gauss.write_reg(REG_IMG_GAUSS_PARAM_ENABLE, ((1 << gauss) - 1) as usize);
+            reg_gauss.write_reg(REG_IMG_GAUSS_CTL_CONTROL, 3);
             reg_sel.write_reg(REG_IMG_SELECTOR_CTL_SELECT, sel as usize);
+        }
+
+        unsafe {
+            uio_ocm.write_reg_f64(OCM_PRJ_DECAY_X, 0.998);
+            uio_ocm.write_reg_f64(OCM_PRJ_DECAY_Y, 0.998);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_X, prj_gain_x as f64 / 100.0);
+            uio_ocm.write_reg_f64(OCM_PRJ_GIAN_Y, prj_gain_y as f64 / 100.0);
+            uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_X, prj_offset_x as f64);
+            uio_ocm.write_reg_f64(OCM_PRJ_OFFSET_Y, prj_offset_y as f64);
+            uio_ocm.write_reg_u64(OCM_LATENCY, latency as u64);
         }
 
         cam.set_gain(gain)?;
@@ -341,4 +412,23 @@ fn get_cv_trackbar_pos(trackbarname: &str) -> opencv::Result<i32> {
     let winname = "img";
     let val = highgui::get_trackbar_pos(trackbarname, &winname)?;
     Ok(val)
+}
+
+
+fn send_projector_xy(reg_uart: &UioAccessor<usize>, x: i16, y: i16, laser_on: bool) {
+    let xh = ((x as u16) >> 8) as u8;
+    let xl = (x as u16 & 0xff) as u8;
+    let yh = ((y as u16) >> 8) as u8;
+    let yl = (y as u16 & 0xff) as u8;
+    let flg = if laser_on { 0x01 } else { 0x00 };
+    let chk = xh ^ xl ^ yh ^ yl ^ flg;
+    unsafe {
+        reg_uart.write_reg(0, 0xa5);
+        reg_uart.write_reg(0, xh as usize);
+        reg_uart.write_reg(0, xl as usize);
+        reg_uart.write_reg(0, yh as usize);
+        reg_uart.write_reg(0, yl as usize);
+        reg_uart.write_reg(0, flg as usize);
+        reg_uart.write_reg(0, chk as usize);
+    }
 }

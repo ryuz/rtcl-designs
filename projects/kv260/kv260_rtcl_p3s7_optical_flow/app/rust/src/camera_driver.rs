@@ -170,6 +170,12 @@ where
             self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
         }
 
+        // xsm_delay
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+        self.cam_i2c.set_zero_rot_enable(true)?;
+
         // センサー起動
         self.cam_i2c.set_sensor_enable(true)?;
 
@@ -254,6 +260,22 @@ where
         Ok(self.cam_i2c.sensor_id()?)
     }
 
+    pub fn set_pmod_mode(&mut self, mode: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_mode(mode)?)
+    }
+
+    pub fn read_pmod(&mut self) -> Result<u8, Box<dyn Error>> {
+        Ok(self.cam_i2c.read_pmod()?)
+    }
+
+    pub fn set_gpio_out(&mut self, value: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_out(value)?)
+    }
+
+    pub fn set_gpio_dir(&mut self, dir: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_dir(dir)?)
+    }
+
     /// スレーブモード設定
     pub fn set_slave_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
         self.slave_mode = enable;
@@ -292,6 +314,10 @@ where
                     .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
             }
+            let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+            self.cam_i2c.set_xsm_delay(xsm_delay)?;
+            self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+            self.cam_i2c.set_zero_rot_enable(true)?;
             self.cam_i2c.set_sequencer_enable(true)?;
         } else {
             self.width = width;

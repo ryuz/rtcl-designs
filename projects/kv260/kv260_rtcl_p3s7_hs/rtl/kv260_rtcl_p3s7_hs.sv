@@ -608,11 +608,20 @@ module kv260_rtcl_p3s7_hs
                 .dphy_valid         (dl0_rxvalidhs      ),
 
                 .m_axi4s_black      (axi4s_blk          ),
-                .m_axi4s_image      (axi4s_img          )
+                .m_axi4s_image      (axi4s_img          ),
+
+                .header_data        (                   ),
+                .header_valid       (                   )
             );
 
     jelly3_axi4s_debug_monitor
-        u_axi4s_debug_monitor
+        u_axi4s_debug_monitor_blk
+            (
+                .mon_axi4s       (axi4s_blk.mon)
+            );
+
+    jelly3_axi4s_debug_monitor
+        u_axi4s_debug_monitor_img
             (
                 .mon_axi4s       (axi4s_img.mon)
             );

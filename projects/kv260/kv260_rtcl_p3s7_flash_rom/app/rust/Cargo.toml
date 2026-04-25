@@ -1,0 +1,10 @@
+[package]
+name = "kv260_rtcl_p3s7_flash_rom"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.1", features = ["derive"] }
+jelly-mem_access = "0.2.6"
+rtcl-lib  = { path = "../../../../../rust/lib" }
+jelly-lib = {path = "../../../../../jelly/rust/lib" }

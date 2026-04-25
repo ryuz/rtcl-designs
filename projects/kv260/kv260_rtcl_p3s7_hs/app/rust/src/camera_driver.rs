@@ -49,10 +49,12 @@ where
 
     opend: bool,
     pgood_enable: bool,
+    color : bool,
     width: usize,
     height: usize,
     slave_mode: bool,
     trigger_mode: bool,
+    dphy_speed : f64,
     gain: f32,
     mult_timer: u16,
     fr_length: u16,
@@ -76,9 +78,11 @@ where
             reg_fmtr,
             opend: false,
             pgood_enable: true,
+            color : false,
             width: 640,
             height: 480,
             slave_mode: false,
+            dphy_speed : 1250000000.0,
             trigger_mode: false,
             gain: 0.0,
             mult_timer: 72,
@@ -105,6 +109,10 @@ where
 
     pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_pgood()?)
+    }
+
+    pub fn set_color(&mut self, color: bool) {
+        self.color = color;
     }
 
     pub fn opend(&self) -> bool {
@@ -173,8 +181,15 @@ where
             self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
             self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
         }
+        
+        // xsm_delay
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+        self.cam_i2c.set_zero_rot_enable(true)?;
 
         // センサー起動
+        self.cam_i2c.set_color(self.color)?;
         self.cam_i2c.set_sensor_enable(true)?;
 
         // ROI 設定
@@ -196,7 +211,7 @@ where
                 .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x0);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
             self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
@@ -258,6 +273,22 @@ where
         Ok(self.cam_i2c.sensor_id()?)
     }
 
+    pub fn set_pmod_mode(&mut self, mode: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_mode(mode)?)
+    }
+
+    pub fn read_pmod(&mut self) -> Result<u8, Box<dyn Error>> {
+        Ok(self.cam_i2c.read_pmod()?)
+    }
+
+    pub fn set_gpio_out(&mut self, value: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_out(value)?)
+    }
+
+    pub fn set_gpio_dir(&mut self, dir: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_dir(dir)?)
+    }
+
     /// スレーブモード設定
     pub fn set_slave_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
         self.slave_mode = enable;
@@ -296,6 +327,10 @@ where
                     .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
                 self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
             }
+            let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+            self.cam_i2c.set_xsm_delay(xsm_delay)?;
+            self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+            self.cam_i2c.set_zero_rot_enable(true)?;
             self.cam_i2c.set_sequencer_enable(true)?;
         } else {
             self.width = width;
@@ -359,6 +394,9 @@ where
         fps_count as f32 * 4.0
     }
 
+    pub fn print_sensor_register(&mut self) {
+        self.cam_i2c.sensor_reg_dump().unwrap();
+    }
 
     // debug用
     pub fn print_timing_status(&mut self) {

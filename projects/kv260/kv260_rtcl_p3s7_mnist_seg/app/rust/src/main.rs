@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
-    std::thread::sleep(std::time::Duration::from_millis(1000));
+    std::thread::sleep(std::time::Duration::from_millis(100));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
     println!("camera module version : {:04x}", cam.module_version()?);
@@ -229,7 +229,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        // チャンネル単位でプレーン分解
+        // 表示
         highgui::imshow("img", &img)?;
         highgui::imshow("class", &cls)?;
 

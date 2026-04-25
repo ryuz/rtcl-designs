@@ -32,6 +32,9 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
 
+    #[arg(long="pmod-mode", default_value_t = 0)]
+    pmod_mode: u16,
+
     /// Enable color mode (default: monochrome)
     #[arg(long="pgood-off", default_value_t = false)]
     pgood_off: bool,
@@ -100,6 +103,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         cam.set_sensor_pgood_enable(false);
     }
 
+    cam.set_color(color);
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -111,6 +115,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
+
+    // PMODモード設定
+    cam.set_pmod_mode(args.pmod_mode)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -126,7 +134,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  900, 900)?;
+    create_cv_trackbar("exposure",  10,  900, 800)?;
 
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
@@ -175,6 +183,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("sensor_ready : {}", cam.sensor_ready()?);
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
+            },
+            'x' => {
+                println!("---- sensor reg ----");
+                cam.print_sensor_register();
+                println!("------ end  ------");
             },
             'd' => {
                 println!("write : dump.png");

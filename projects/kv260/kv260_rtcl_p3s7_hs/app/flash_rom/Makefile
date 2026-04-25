@@ -39,3 +39,10 @@ cross_build:
 remote_run: cross_build load
 	scp target/$(TARGET_ARCH)/release/$(ELF_NAME) $(KV260_SSH_ADDRESS):/tmp/
 	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(ELF_NAME) $(RUN_OPT)
+
+.PHONY: remote_update
+remote_update: cross_build load
+	make -C ../../../../rtcl_p3s7_mipi/rtcl_p3s7_mipi/syn/tcl
+	scp target/$(TARGET_ARCH)/release/$(ELF_NAME) $(KV260_SSH_ADDRESS):/tmp/
+	scp ../../../../rtcl_p3s7_mipi/rtcl_p3s7_mipi/syn/tcl/rtcl_p3s7_mipi_tcl.runs/impl_1/rtcl_p3s7_mipi.bin $(KV260_SSH_ADDRESS):/tmp/
+	ssh -Y -t $(KV260_SSH_ADDRESS) /tmp/$(ELF_NAME) /tmp/rtcl_p3s7_mipi.bin -w -v
