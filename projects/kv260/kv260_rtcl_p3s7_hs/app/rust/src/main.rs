@@ -117,7 +117,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // PMODモード設定
-    cam.set_pmod_mode( pmod_mode)?;
+    cam.set_pmod_mode(args.pmod_mode)?;
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
