@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("  color:  {}", args.color);
 
     let width = args.width & !0xf;  // 16ピクセル境界に合わせる
-    let height = args.height;
+    let height = args.height & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
 
@@ -132,7 +132,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     highgui::resize_window("img", width as i32 + 128, height as i32 + 256)?;
 
     // トラックバー生成
-    create_cv_trackbar("gain",       0,  200,  10)?;
+    create_cv_trackbar("sgain",      0,  200,  10)?;    // センサーゲイン
+    create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10,  900, 800)?;
 
@@ -145,7 +146,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // トラックバー値取得
-        let gain_db = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
+        let sgain_db = (get_cv_trackbar_pos("sgain")? as f32 - 10.0) / 10.0;
+        let dgain_db = (get_cv_trackbar_pos("dgain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
 
@@ -158,16 +160,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         video_capture.record(width, height, 1)?;
         let mut img = video_capture.read_image_mat(0)?;
 
-        if true {
-            cam.set_gain(gain_db)?;
-        }
-        else {
-            // センサーゲインの代わりにデジタルゲインを適用
-            let gain_scale = 10.0_f64.powf(gain_db as f64 / 20.0);
-            let mut img_gain = Mat::default();
-            img.convert_to(&mut img_gain, -1, gain_scale, 0.0)?;
-            img = img_gain;
-        }
+        // センサーゲインを適用
+        cam.set_gain(sgain_db)?;
+
+        // センサーゲインの代わりにデジタルゲインを適用
+        let dgain_scale = 10.0_f64.powf(dgain_db as f64 / 20.0);
+        let mut img_dgain = Mat::default();
+        img.convert_to(&mut img_dgain, -1, dgain_scale, 0.0)?;
+        img = img_dgain;
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
