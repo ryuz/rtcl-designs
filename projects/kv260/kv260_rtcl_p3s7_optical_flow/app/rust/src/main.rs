@@ -109,6 +109,9 @@ struct Args {
     #[arg(short = 'r', long, default_value_t = 1000)]
     rec_frames: usize,
 
+    #[arg(long="pmod-mode", default_value_t = 0)]
+    pmod_mode: u16,
+
     /// Enable color mode (default: monochrome)
     #[arg(long="pgood-off", default_value_t = false)]
     pgood_off: bool,
@@ -116,7 +119,7 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    println!("start kv260_rtcl_p3s7_hs");
+    println!("start kv260_rtcl_p3s7_optical_flow");
     println!("Configuration:");
     println!("  width:  {}", args.width);
     println!("  height: {}", args.height);
@@ -202,6 +205,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         cam.set_sensor_pgood_enable(false);
     }
 
+    cam.set_color(false);
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -213,7 +217,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
-    cam.set_pmod_mode(0x10)?;
+
+    // PMODモード設定
+    cam.set_pmod_mode(args.pmod_mode)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -289,7 +296,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             uio_ocm.write_reg_u64(OCM_LATENCY, latency as u64);
         }
 
-        cam.set_gain(gain)?;
+//      cam.set_gain(gain)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;

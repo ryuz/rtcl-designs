@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("  height: {}", args.height);
     println!("  color:  {}", args.color);
 
-    let width = args.width;
+    let width = args.width & !0xf;  // 16ピクセル境界に合わせる
     let height = args.height;
     let color = args.color;
     let fps = args.fps;
@@ -145,11 +145,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // トラックバー値取得
-        let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
+        let gain_db = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
-
-        cam.set_gain(gain)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
@@ -158,7 +156,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
-        let img = video_capture.read_image_mat(0)?;
+        let mut img = video_capture.read_image_mat(0)?;
+
+        if true {
+            cam.set_gain(gain_db)?;
+        }
+        else {
+            // センサーゲインの代わりにデジタルゲインを適用
+            let gain_scale = 10.0_f64.powf(gain_db as f64 / 20.0);
+            let mut img_gain = Mat::default();
+            img.convert_to(&mut img_gain, -1, gain_scale, 0.0)?;
+            img = img_gain;
+        }
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();

@@ -49,6 +49,7 @@ where
 
     opend: bool,
     pgood_enable: bool,
+    color : bool,
     width: usize,
     height: usize,
     slave_mode: bool,
@@ -76,6 +77,7 @@ where
             reg_fmtr,
             opend: false,
             pgood_enable: true,
+            color : false,
             width: 640,
             height: 480,
             slave_mode: false,
@@ -101,6 +103,10 @@ where
 
     pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_pgood()?)
+    }
+
+    pub fn set_color(&mut self, color: bool) {
+        self.color = color;
     }
 
     pub fn opend(&self) -> bool {

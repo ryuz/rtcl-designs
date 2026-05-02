@@ -211,7 +211,7 @@ where
                 .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
-            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0xffff);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x0);
             self.reg_fmtr
                 .write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
             self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
