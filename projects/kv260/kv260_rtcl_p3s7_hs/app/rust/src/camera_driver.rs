@@ -115,6 +115,11 @@ where
         self.color = color;
     }
 
+    pub fn set_black_lines(&mut self, lines: usize) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.set_black_lines(lines as u16)?;
+        Ok(())
+    }
+
     pub fn opend(&self) -> bool {
         self.opend
     }
@@ -179,7 +184,7 @@ where
             self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
             self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
             self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
-            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
+            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, self.cam_i2c.black_lines() as usize);
         }
         
         // xsm_delay
@@ -250,11 +255,6 @@ where
         // センサー電源OFF
         self.cam_i2c.set_sensor_power_enable(false)?;
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
-        // モジュールリセットON
-        unsafe {
-            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0);
-        }
 
         self.opend = false;
 
@@ -345,6 +345,14 @@ where
     pub fn image_height(&self) -> usize {
         self.height
     }
+
+
+    pub fn set_xsm_delay(&mut self, delay: u16) -> Result<(), Box<dyn Error>> {
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width).max(delay);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        Ok(())
+    }
+
 
     pub fn set_gain(&mut self, db: f32) -> Result<(), Box<dyn Error>> {
         if self.opend {

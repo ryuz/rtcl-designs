@@ -101,8 +101,20 @@ class RtclP3s7Client:
         res = self.stub.CameraSetTriggerMode(rtcl_p3s7_control_pb2.BoolRequest(value=enable))
         return res.result
 
+    def camera_set_color(self, color):
+        res = self.stub.CameraSetColor(rtcl_p3s7_control_pb2.BoolRequest(value=color))
+        return res.result
+
     def camera_set_image_size(self, width, height):
         res = self.stub.CameraSetImageSize(rtcl_p3s7_control_pb2.ImageSizeRequest(width=width, height=height))
+        return res.result
+
+    def camera_set_black_lines(self, lines):
+        res = self.stub.CameraSetBlackLines(rtcl_p3s7_control_pb2.U16Request(value=lines))
+        return res.result
+
+    def camera_set_xsm_delay(self, delay):
+        res = self.stub.CameraSetXsmDelay(rtcl_p3s7_control_pb2.U16Request(value=delay))
         return res.result
 
     def camera_get_image_width(self):

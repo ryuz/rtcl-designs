@@ -48,8 +48,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("  height: {}", args.height);
     println!("  color:  {}", args.color);
 
-    let width = args.width & !0xf;  // 16ピクセル境界に合わせる
-    let height = args.height & !0x01;  // 2ピクセル境界に合わせる
+    let width = (args.width + 15) & !0xf;  // 16ピクセル境界に合わせる
+    let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
 
@@ -104,6 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     cam.set_color(color);
+    cam.set_black_lines(1)?;
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -136,7 +137,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10,  900, 800)?;
-
+//  create_cv_trackbar("xsm_delay",  0,  255,   0)?;
+    
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         // ESC キーで終了
@@ -150,6 +152,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let dgain_db = (get_cv_trackbar_pos("dgain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
+
+//      let xsm_delay = get_cv_trackbar_pos("xsm_delay")? as u16;
+//      cam.set_xsm_delay(xsm_delay)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
