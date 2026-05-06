@@ -117,6 +117,17 @@ make remote_run RUN_OPT="--width 256 --height 256 --fps 500"
 ```
 
 
+## レーザープロジェクタ(ガルバノミラー)の制御サンプル
+
+試験的に [簡易レーザープロジェクタ ProjectionBall Unit](https://www.switch-science.com/products/9393) を制御する機能を追加しております。
+
+[こちら](https://github.com/ryuz/ProjectionBallUnit)に当方で fork して、外部から UART で座標を受け取ってレーザーを制御するように改造したものを置いております。
+
+現在のプロジェクトは KV260 の PMOD 端子の 4番ピンより UART にて座標を出力しますので、これを ProjectionBall Unit の P1 の R 端子に接続し、さらに GND も接続すれば、カメラで捉えた運動量でレーザーを動かすことができます。
+
+実行例は[こちらの動画](https://youtu.be/a_S5naYyBKw?si=yVp-rikakngwe0o5)などを参照ください。
+
+
 ## 参考情報
 
 - [Lucas–Kanade method](https://en.wikipedia.org/wiki/Lucas%E2%80%93Kanade_method)
