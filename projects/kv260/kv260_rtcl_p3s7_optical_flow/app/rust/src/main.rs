@@ -206,6 +206,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     cam.set_color(false);
+    cam.set_black_lines(15)?;
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -237,7 +238,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("gauss",      0,    4,   3)?;
-    create_cv_trackbar("exposure",  10,  900, 900)?;
+    create_cv_trackbar("exposure",  10,  980, 990)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
     create_cv_trackbar("latency",    0,  199,   0)?;
     create_cv_trackbar("pgx",     -200,  200,  150)?;
@@ -272,7 +273,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
-        let gauss     = get_cv_trackbar_pos("gauss")?;
+        let gauss = get_cv_trackbar_pos("gauss")?;
         let sel = get_cv_trackbar_pos("sel")?;
         let latency = get_cv_trackbar_pos("latency")?;
         let prj_gain_x = get_cv_trackbar_pos("pgx")?;
@@ -296,7 +297,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             uio_ocm.write_reg_u64(OCM_LATENCY, latency as u64);
         }
 
-//      cam.set_gain(gain)?;
+        cam.set_gain(gain)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;

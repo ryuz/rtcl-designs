@@ -32,6 +32,10 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
 
+    /// Trigger Mode
+    #[arg(short = 't', long, default_value_t = false)]
+    trigger : bool,
+
     #[arg(long="pmod-mode", default_value_t = 0)]
     pmod_mode: u16,
 
@@ -52,6 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
+    let trigger_mode = args.trigger;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -104,10 +109,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     cam.set_color(color);
-    cam.set_black_lines(1)?;
+    cam.set_black_lines(15)?;
     cam.set_image_size(width, height)?;
-    cam.set_slave_mode(true)?;
-    cam.set_trigger_mode(true)?;
+    cam.set_slave_mode(trigger_mode)?;
+    cam.set_trigger_mode(trigger_mode)?;
     if let Err(err) = cam.open() {
         if err.to_string().contains("Sensor power good signal indicates failure") {
             println!("\n!! sensor power good error. !! Retry with --pgood-off option.");
@@ -137,7 +142,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10,  900, 800)?;
-//  create_cv_trackbar("xsm_delay",  0,  255,   0)?;
+    create_cv_trackbar("xsm_delay",  0,  255,   0)?;
     
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
@@ -153,14 +158,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
 
-//      let xsm_delay = get_cv_trackbar_pos("xsm_delay")? as u16;
-//      cam.set_xsm_delay(xsm_delay)?;
+        let xsm_delay = get_cv_trackbar_pos("xsm_delay")? as u16;
+        cam.set_xsm_delay(xsm_delay)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
         let exposure_us = period_us * (exposure as f32 / 1000.0);
-        timgen.set_timing(period_us, exposure_us)?;
-
+        if trigger_mode {
+            timgen.set_timing(period_us, exposure_us)?;
+        }
+        else {
+            cam.set_exposure(exposure_us)?;
+        }
+        
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
         let mut img = video_capture.read_image_mat(0)?;
@@ -203,6 +213,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 cam.print_sensor_register();
                 println!("------ end  ------");
             },
+            'z' => {
+                cam.print_timing_status();
+            }
             'd' => {
                 println!("write : dump.png");
                 imgcodecs::imwrite("dump.png", &view, &Vector::<i32>::new())?;
