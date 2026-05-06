@@ -168,6 +168,8 @@ pub struct RtclP3s7ModuleDriver<I2C: I2cHal>
     general_configuration: u16,
     /// Current XSM delay setting (in cycles)
     xsm_delay : u16,
+    /// black_lines
+    black_lines : u16,
     /// Current analog gain setting (linear scale)
     analog_gain : f32,
     /// Current digital gain setting (linear scale)
@@ -214,6 +216,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             usleep,
             general_configuration: 0x084c,
             xsm_delay : 21,
+            black_lines : 0x0102,
             analog_gain : 1.0,
             digital_gain : 1.0,
             dphy_speed: 1250000000.0,
@@ -769,7 +772,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_sensor_spi(112, 0x0007)?; // Serializers/LVDS/IO
         self.write_sensor_spi(192, 0x087D)?; // general_configuration
         self.write_sensor_spi(193, self.xsm_delay)?; // delay_configuration
-        self.write_sensor_spi(197, 0x0102)?; // black_lines
+        self.write_sensor_spi(197, self.black_lines)?; // black_lines
         self.write_sensor_spi(224, 0x3E03)?; //
         self.write_sensor_spi(192, 0x087C)?; //
         self.write_sensor_spi(220, 0x3A28)?; // lsm_prog_base_ss
@@ -913,6 +916,15 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         }
         self.write_sensor_spi(192, self.general_configuration)?;
         Ok(())
+    }
+
+    pub fn set_black_lines(&mut self, lines: u16) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.black_lines = 0x0100 | ((lines + 1) & 0xff);
+        Ok(())
+    }
+
+    pub fn black_lines(&mut self) -> u16 {
+        (self.black_lines & 0xff) - 1
     }
 
     /// Enable or disable subsampling mode

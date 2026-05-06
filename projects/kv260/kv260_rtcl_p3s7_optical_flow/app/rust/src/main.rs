@@ -109,6 +109,9 @@ struct Args {
     #[arg(short = 'r', long, default_value_t = 1000)]
     rec_frames: usize,
 
+    #[arg(long="pmod-mode", default_value_t = 0)]
+    pmod_mode: u16,
+
     /// Enable color mode (default: monochrome)
     #[arg(long="pgood-off", default_value_t = false)]
     pgood_off: bool,
@@ -116,7 +119,7 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    println!("start kv260_rtcl_p3s7_hs");
+    println!("start kv260_rtcl_p3s7_optical_flow");
     println!("Configuration:");
     println!("  width:  {}", args.width);
     println!("  height: {}", args.height);
@@ -202,6 +205,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         cam.set_sensor_pgood_enable(false);
     }
 
+    cam.set_color(false);
+    cam.set_black_lines(15)?;
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(true)?;
     cam.set_trigger_mode(true)?;
@@ -213,7 +218,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
-    cam.set_pmod_mode(0x10)?;
+
+    // PMODモード設定
+    cam.set_pmod_mode(args.pmod_mode)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -230,7 +238,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("gain",       0,  200,  10)?;
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("gauss",      0,    4,   3)?;
-    create_cv_trackbar("exposure",  10,  900, 900)?;
+    create_cv_trackbar("exposure",  10,  980, 990)?;
     create_cv_trackbar("sel",        0,    3,   0)?;
     create_cv_trackbar("latency",    0,  199,   0)?;
     create_cv_trackbar("pgx",     -200,  200,  150)?;
@@ -265,7 +273,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
-        let gauss     = get_cv_trackbar_pos("gauss")?;
+        let gauss = get_cv_trackbar_pos("gauss")?;
         let sel = get_cv_trackbar_pos("sel")?;
         let latency = get_cv_trackbar_pos("latency")?;
         let prj_gain_x = get_cv_trackbar_pos("pgx")?;

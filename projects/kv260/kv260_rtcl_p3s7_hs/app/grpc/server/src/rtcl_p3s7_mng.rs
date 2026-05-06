@@ -138,8 +138,20 @@ impl RtclP3s7Mng {
         self.cam.set_trigger_mode(enable)
     }
 
+    pub fn camera_set_color(&mut self, color: bool) {
+        self.cam.set_color(color)
+    }
+
     pub fn camera_set_image_size(&mut self, width: usize, height: usize) -> Result<(), Box<dyn Error>> {
         self.cam.set_image_size(width, height)
+    }
+
+    pub fn camera_set_black_lines(&mut self, lines: u16) -> Result<(), Box<dyn Error>> {
+        self.cam.set_black_lines(lines as usize)
+    }
+
+    pub fn camera_set_xsm_delay(&mut self, delay: u16) -> Result<(), Box<dyn Error>> {
+        self.cam.set_xsm_delay(delay)
     }
 
     pub fn camera_get_image_width(&self) -> usize {

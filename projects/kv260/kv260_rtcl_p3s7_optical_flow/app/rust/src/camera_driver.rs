@@ -49,10 +49,12 @@ where
 
     opend: bool,
     pgood_enable: bool,
+    color : bool,
     width: usize,
     height: usize,
     slave_mode: bool,
     trigger_mode: bool,
+    dphy_speed : f64,
     gain: f32,
     mult_timer: u16,
     fr_length: u16,
@@ -76,9 +78,11 @@ where
             reg_fmtr,
             opend: false,
             pgood_enable: true,
+            color : false,
             width: 640,
             height: 480,
             slave_mode: false,
+            dphy_speed : 1250000000.0,
             trigger_mode: false,
             gain: 0.0,
             mult_timer: 72,
@@ -99,8 +103,21 @@ where
         self.pgood_enable = enable;
     }
 
+    pub fn sensor_ready(&mut self) -> Result<bool, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_ready()?)
+    }
+
     pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_pgood()?)
+    }
+
+    pub fn set_color(&mut self, color: bool) {
+        self.color = color;
+    }
+
+    pub fn set_black_lines(&mut self, lines: usize) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.set_black_lines(lines as u16)?;
+        Ok(())
     }
 
     pub fn opend(&self) -> bool {
@@ -167,9 +184,9 @@ where
             self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
             self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
             self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
-            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, 1);
+            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, self.cam_i2c.black_lines() as usize);
         }
-
+        
         // xsm_delay
         let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
         self.cam_i2c.set_xsm_delay(xsm_delay)?;
@@ -177,6 +194,7 @@ where
         self.cam_i2c.set_zero_rot_enable(true)?;
 
         // センサー起動
+        self.cam_i2c.set_color(self.color)?;
         self.cam_i2c.set_sensor_enable(true)?;
 
         // ROI 設定
@@ -237,11 +255,6 @@ where
         // センサー電源OFF
         self.cam_i2c.set_sensor_power_enable(false)?;
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
-        // モジュールリセットON
-        unsafe {
-            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0);
-        }
 
         self.opend = false;
 
@@ -333,6 +346,14 @@ where
         self.height
     }
 
+
+    pub fn set_xsm_delay(&mut self, delay: u16) -> Result<(), Box<dyn Error>> {
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width).max(delay);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        Ok(())
+    }
+
+
     pub fn set_gain(&mut self, db: f32) -> Result<(), Box<dyn Error>> {
         if self.opend {
             self.cam_i2c.set_gain_db(db)?;
@@ -381,6 +402,9 @@ where
         fps_count as f32 * 4.0
     }
 
+    pub fn print_sensor_register(&mut self) {
+        self.cam_i2c.sensor_reg_dump().unwrap();
+    }
 
     // debug用
     pub fn print_timing_status(&mut self) {

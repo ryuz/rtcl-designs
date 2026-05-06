@@ -12,7 +12,10 @@ service RtclP3s7Control {
     rpc CameraGetSensorId ( Empty ) returns (U16Response);
     rpc CameraSetSlaveMode ( BoolRequest ) returns (BoolResponse);
     rpc CameraSetTriggerMode ( BoolRequest ) returns (BoolResponse);
+    rpc CameraSetColor ( BoolRequest ) returns (BoolResponse);
     rpc CameraSetImageSize ( ImageSizeRequest ) returns (BoolResponse);
+    rpc CameraSetBlackLines ( U16Request ) returns (BoolResponse);
+    rpc CameraSetXsmDelay ( U16Request ) returns (BoolResponse);
     rpc CameraGetImageWidth ( Empty ) returns (U64Response);
     rpc CameraGetImageHeight ( Empty ) returns (U64Response);
     rpc CameraSetGain ( F32Request ) returns (BoolResponse);
@@ -52,6 +55,10 @@ message BoolResponse {
 message U16Response {
     bool result = 1;
     uint32 value = 2;
+}
+
+message U16Request {
+    uint32 value = 1;
 }
 
 message U64Response {
