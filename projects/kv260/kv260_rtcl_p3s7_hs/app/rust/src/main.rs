@@ -32,9 +32,9 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
 
-    /// Trigger Mode
-    #[arg(short = 't', long, default_value_t = false)]
-    trigger : bool,
+    /// Master Mode (No External Triggers)
+    #[arg(short = 'm', long, default_value_t = false)]
+    master : bool,
 
     #[arg(long="pmod-mode", default_value_t = 0)]
     pmod_mode: u16,
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
-    let trigger_mode = args.trigger;
+    let trigger_mode = !args.master;
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
