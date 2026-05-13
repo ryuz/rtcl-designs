@@ -261,6 +261,7 @@ proc create_root_design { parentCell } {
     CONFIG.CLKOUT1_JITTER {145.780} \
     CONFIG.CLKOUT1_PHASE_ERROR {231.840} \
     CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {50} \
+    CONFIG.CLKOUT1_USED {true} \
     CONFIG.CLKOUT2_JITTER {133.815} \
     CONFIG.CLKOUT2_PHASE_ERROR {231.840} \
     CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100} \
@@ -271,7 +272,7 @@ proc create_root_design { parentCell } {
     CONFIG.CLKOUT3_USED {true} \
     CONFIG.CLKOUT4_JITTER {104.543} \
     CONFIG.CLKOUT4_PHASE_ERROR {98.576} \
-    CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {333.333} \
+    CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {100.000} \
     CONFIG.CLKOUT4_USED {false} \
     CONFIG.MMCM_CLKFBOUT_MULT_F {111.625} \
     CONFIG.MMCM_CLKOUT0_DIVIDE_F {32} \
@@ -1389,6 +1390,7 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -1400,6 +1402,4 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

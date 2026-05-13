@@ -105,6 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // VRAM 書き込み
+    println!("write vram");
     for y in 0..64 {
         for x in 0..64 {
             let r = img[y][x][2] as f32 / 255.0f32;
@@ -117,15 +118,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             let b = b.powf(2.2);
 
             // 10bit 階調で表示
-            let r = (r * 1023.0f32) as usize;
-            let g = (g * 1023.0f32) as usize;
-            let b = (b * 1023.0f32) as usize;
+            let r = (r * 1023.0f32) as u32;
+            let g = (g * 1023.0f32) as u32;
+            let b = (b * 1023.0f32) as u32;
             let v = (r << 20) | (g << 10) | b;
+
             unsafe {
-                uio_vram.write_reg(y*64+x, v);
+                uio_vram.write_reg_u32(y*64+x, v);
             }
         }
     }
+    println!("write end");
 
     // 表示ON
     unsafe {

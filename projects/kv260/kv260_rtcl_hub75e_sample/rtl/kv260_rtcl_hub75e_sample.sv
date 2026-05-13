@@ -23,8 +23,8 @@ module kv260_rtcl_hub75e_sample
             parameter   int     HUB75E_DEPTH        = HUB75E_N * HUB75E_HEIGHT * HUB75E_WIDTH   ,
             parameter   int     HUB75E_ADDR_BITS    = $clog2(HUB75E_DEPTH)                      ,
             parameter           HUB75E_RAM_TYPE     = "block"                                   ,
-            parameter   bit     HUB75E_READMEMH     = 1'b1                                      ,
-            parameter           HUB75E_READMEM_FILE = "../image.hex"                            ,
+            parameter   bit     HUB75E_READMEMH     = 0                                         ,
+            parameter           HUB75E_READMEM_FILE = "../../../image.hex"                      ,
             parameter           DEVICE              = "ULTRASCALE_PLUS"                         ,
             parameter           SIMULATION          = "false"                                   ,
             parameter           DEBUG               = "false"                                   
@@ -41,8 +41,8 @@ module kv260_rtcl_hub75e_sample
 
     localparam  int     AXI4L_ADDR_BITS = 40;
     localparam  int     AXI4L_DATA_BITS = 64;
-    localparam  int     AXI4_ID_BITS    = 6;
-    localparam  int     AXI4_ADDR_BITS  = 49;
+    localparam  int     AXI4_ID_BITS    = 16;
+    localparam  int     AXI4_ADDR_BITS  = 40;
     localparam  int     AXI4_DATA_BITS  = 32;
 
     logic           axi4l_aresetn   ;
@@ -66,12 +66,13 @@ module kv260_rtcl_hub75e_sample
             #(
                 .ID_BITS    (AXI4_ID_BITS   ),
                 .ADDR_BITS  (AXI4_ADDR_BITS ),
-                .DATA_BITS  (AXI4_DATA_BITS )
+                .DATA_BITS  (AXI4_DATA_BITS ),
+                .USE_REGION (0              )
             )
         axi4
             (
-                .aresetn    (axi4l_aresetn  ),
-                .aclk       (axi4l_aclk     ),
+                .aresetn    (axi4_aresetn   ),
+                .aclk       (axi4_aclk      ),
                 .aclken     (1'b1           )
             );
 
@@ -236,15 +237,15 @@ module kv260_rtcl_hub75e_sample
 
     jelly3_bram_if
             #(
-                .ID_BITS    (AXI4_ID_BITS   ),
-                .ADDR_BITS  (32             ),
-                .DATA_BITS  (32             )
+                .ID_BITS    (AXI4_ID_BITS       ),
+                .ADDR_BITS  (AXI4_ADDR_BITS-2   ) ,
+                .DATA_BITS  (AXI4_DATA_BITS     )
             )
         bram
             (
-                .reset      (~axi4.aresetn  ),
-                .clk        (axi4.aclk      ),
-                .cke        (axi4.aclken    )
+                .reset      (~axi4.aresetn      ),
+                .clk        (axi4.aclk          ),
+                .cke        (axi4.aclken        )
             );
     
     jelly3_axi4_to_bram
@@ -311,95 +312,7 @@ module kv260_rtcl_hub75e_sample
 
                 .pmod           (pmod           )
             );
-
-    /*
-    logic   [7:0]   pmod_p      ;
-    logic   [7:0]   pmod_n      ;
-    for ( genvar i = 0; i < 8; i++ ) begin : pmod_ddr
-        ODDRE1
-            u_oddr
-                (
-                    .Q      (pmod[i]       ),
-                    .C      (hub75e_clk    ),
-                    .D1     (pmod_p[i]     ),
-                    .D2     (pmod_n[i]     ),
-                    .SR     (hub75e_reset  )
-                );
-    end
-
-    assign pmod_p[0] = hub75e_oe    ;
-    assign pmod_p[1] = hub75e_lat   ;
-    assign pmod_p[2] = hub75e_cke   ;
-    assign pmod_p[3] = hub75e_a     ;
-    assign pmod_p[4] = hub75e_b     ;
-    assign pmod_p[5] = hub75e_c     ;
-    assign pmod_p[6] = hub75e_d     ;
-    assign pmod_n[0] = hub75e_e     ;
-    assign pmod_n[1] = hub75e_r1    ;
-    assign pmod_n[2] = hub75e_g1    ;
-    assign pmod_n[3] = hub75e_b1    ;
-    assign pmod_n[4] = hub75e_r2    ;
-    assign pmod_n[5] = hub75e_g2    ;
-    assign pmod_n[6] = hub75e_b2    ;
-    assign pmod_p[7] = 1'b0         ;
-    assign pmod_n[7] = 1'b1         ;
-    */
-
-    /*
-    assign pmod_d[0] = hub75e_g1    ;
-    assign pmod_d[1] = 1'b0         ;
-    assign pmod_d[2] = hub75e_g2    ;
-    assign pmod_d[3] = hub75e_e     ;
-    assign pmod_d[4] = hub75e_r1    ;
-    assign pmod_d[5] = hub75e_b1    ;
-    assign pmod_d[6] = hub75e_r2    ;
-    assign pmod_d[7] = hub75e_b2    ;
-
-    assign pmod_e[0] = hub75e_b     ;
-    assign pmod_e[1] = hub75e_d     ;
-    assign pmod_e[2] = hub75e_lat   ;
-    assign pmod_e[3] = 1'b0         ;
-    assign pmod_e[4] = hub75e_a     ;
-    assign pmod_e[5] = hub75e_c     ;
-    assign pmod_e[6] = hub75e_cke   ;
-    assign pmod_e[7] = hub75e_oe    ;
-    */
-
-
-    /*
-    logic   [1:0]   pre     ;
-    logic   [30:0]  count   ;
-    always_ff @(posedge clk) begin
-        pre <= pre + 1;
-        if ( pre == 0 ) begin
-            count <= count + 1;
-        end
-    end
-
-    assign hub75e_cke = pre[1];
-//  assign hub75e_cke = dip_sw[0] && count[0];
-//  assign hub75e_oe  = !dip_sw[0] || (count[5:0] <= count[11:6]);
-    assign hub75e_oe  = !dip_sw[0] || (count[5:0] == 4);
-    assign hub75e_lat = dip_sw[0] && (count[5:0] == '1);
-
-    assign hub75e_a = count[6]  && !push_sw[0];
-    assign hub75e_b = count[7]  && !push_sw[1];
-    assign hub75e_c = count[8]  && !push_sw[2];
-    assign hub75e_d = count[9]  && !push_sw[3];
-    assign hub75e_e = count[10] && dip_sw[1];
-
-    logic [5:0] color;
-//  assign color = count[5:0] + count[11:6];
-    assign color = count[5:0] + count[11:6] + count[25:20];
-
-    assign hub75e_r1 = color[0];
-    assign hub75e_g1 = color[1];
-    assign hub75e_b1 = color[2];
-    assign hub75e_r2 = color[3];
-    assign hub75e_g2 = color[4];
-    assign hub75e_b2 = color[5];
-    */
-
+    
     
 endmodule
 

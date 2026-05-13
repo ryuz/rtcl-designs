@@ -37,6 +37,7 @@ export HLS_IP
 SOURCES  = $(PRJ_DIR)/rtl/kv260_rtcl_hub75e_sample.sv
 SOURCES += $(PRJ_DIR)/rtl/hub75_driver.sv
 SOURCES += $(PRJ_DIR)/rtl/hub75_driver_core.sv
+SOURCES += $(PRJ_DIR)/rtl/rtcl_hub75e_pmod.sv
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
 
