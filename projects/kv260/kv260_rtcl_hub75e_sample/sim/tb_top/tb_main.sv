@@ -6,9 +6,9 @@
 module tb_main
         (
             input   var logic           reset                   ,
-            input   var logic           clk50                   ,
             input   var logic           clk100                  ,
-            input   var logic           clk200                  ,
+            input   var logic           clk50                   ,
+            input   var logic           clk50_90                ,
             
             output  var logic           s_axi4l_aresetn         ,
             output  var logic           s_axi4l_aclk            ,
@@ -163,14 +163,14 @@ module tb_main
     //  Clock & Reset
     // -----------------------------
     
-    always_comb force u_top.u_design_1.out_reset  = reset;
-    always_comb force u_top.u_design_1.out_clk50  = clk50;
-    always_comb force u_top.u_design_1.out_clk100 = clk100;
-    always_comb force u_top.u_design_1.out_clk200 = clk200;
+    always_comb force u_top.u_design_1.out_reset    = reset;
+    always_comb force u_top.u_design_1.out_clk100   = clk100;
+    always_comb force u_top.u_design_1.out_clk50    = clk50;
+    always_comb force u_top.u_design_1.out_clk50_90 = clk50_90;
     always_comb force u_top.u_design_1.m_axi4l_aresetn = ~reset;
-    always_comb force u_top.u_design_1.m_axi4l_aclk    = clk200;
+    always_comb force u_top.u_design_1.m_axi4l_aclk    = clk100;
     always_comb force u_top.u_design_1.m_axi4_aresetn = ~reset;
-    always_comb force u_top.u_design_1.m_axi4_aclk    = clk200;
+    always_comb force u_top.u_design_1.m_axi4_aclk    = clk100;
 
 
     // -----------------------------

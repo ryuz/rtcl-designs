@@ -65,8 +65,8 @@ module design_1
     m_axi4l_wstrb,
     m_axi4l_wvalid,
     out_clk100,
-    out_clk200,
     out_clk50,
+    out_clk50_90,
     out_reset);
   output [0:0]fan_en;
   output m_axi4_aclk;
@@ -132,8 +132,8 @@ module design_1
   output [7:0]m_axi4l_wstrb;
   output m_axi4l_wvalid;
   output out_clk100;
-  output out_clk200;
   output out_clk50;
+  output out_clk50_90;
   output [0:0]out_reset;
 
 

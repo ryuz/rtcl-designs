@@ -18,22 +18,23 @@ module tb_top();
     //  reset & clock
     // -----------------------------
 
-    localparam RATE50  = 1000.0/50.00 ;
     localparam RATE100 = 1000.0/100.00;
-    localparam RATE200 = 1000.0/200.00;
+    localparam RATE50  = 1000.0/50.00 ;
 
     logic       reset = 1;
     initial #100 reset = 0;
 
-    logic       clk50 = 1'b1;
-    initial forever #(RATE50/2.0) clk50 = ~clk50;
-
     logic       clk100 = 1'b1;
     initial forever #(RATE100/2.0) clk100 = ~clk100;
 
-    logic       clk200 = 1'b1;
-    initial forever #(RATE200/2.0) clk200 = ~clk200;
+    logic       clk50 = 1'b1;
+    initial forever #(RATE50/2.0) clk50 = ~clk50;
 
+    logic       clk50_90 = 1'b1;
+    initial begin
+        #(RATE50/4.0);
+        forever #(RATE50/2.0) clk50_90 = ~clk50_90;
+    end
 
 
     // -----------------------------
@@ -75,9 +76,9 @@ module tb_top();
         u_tb_main
             (
                 .reset                  (reset              ),
-                .clk50                  (clk50              ),
                 .clk100                 (clk100             ),
-                .clk200                 (clk200             ),
+                .clk50                  (clk50              ),
+                .clk50_90               (clk50_90           ),
                 
                 .s_axi4l_aresetn        (axi4l_aresetn      ),
                 .s_axi4l_aclk           (axi4l_aclk         ),

@@ -250,7 +250,7 @@ proc create_root_design { parentCell } {
    CONFIG.POLARITY {ACTIVE_LOW} \
  ] $m_axi4_aresetn
   set out_clk100 [ create_bd_port -dir O -type clk out_clk100 ]
-  set out_clk200 [ create_bd_port -dir O -type clk out_clk200 ]
+  set out_clk50_90 [ create_bd_port -dir O -type clk out_clk50_90 ]
 
   # Create instance: axi_protocol_convert_0, and set properties
   set axi_protocol_convert_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 axi_protocol_convert_0 ]
@@ -258,30 +258,33 @@ proc create_root_design { parentCell } {
   # Create instance: clk_wiz_0, and set properties
   set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0 ]
   set_property -dict [list \
-    CONFIG.CLKOUT1_JITTER {145.780} \
-    CONFIG.CLKOUT1_PHASE_ERROR {231.840} \
-    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {50} \
+    CONFIG.CLKOUT1_JITTER {111.971} \
+    CONFIG.CLKOUT1_PHASE_ERROR {84.520} \
+    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {99.999} \
     CONFIG.CLKOUT1_USED {true} \
-    CONFIG.CLKOUT2_JITTER {133.815} \
-    CONFIG.CLKOUT2_PHASE_ERROR {231.840} \
-    CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100} \
+    CONFIG.CLKOUT2_JITTER {127.818} \
+    CONFIG.CLKOUT2_PHASE_ERROR {84.520} \
+    CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {49.9995} \
     CONFIG.CLKOUT2_USED {true} \
-    CONFIG.CLKOUT3_JITTER {123.021} \
-    CONFIG.CLKOUT3_PHASE_ERROR {231.840} \
-    CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {200} \
+    CONFIG.CLKOUT3_JITTER {127.818} \
+    CONFIG.CLKOUT3_PHASE_ERROR {84.520} \
+    CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {49.9995} \
+    CONFIG.CLKOUT3_REQUESTED_PHASE {90.000} \
     CONFIG.CLKOUT3_USED {true} \
     CONFIG.CLKOUT4_JITTER {104.543} \
     CONFIG.CLKOUT4_PHASE_ERROR {98.576} \
     CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {100.000} \
     CONFIG.CLKOUT4_USED {false} \
-    CONFIG.MMCM_CLKFBOUT_MULT_F {111.625} \
-    CONFIG.MMCM_CLKOUT0_DIVIDE_F {32} \
-    CONFIG.MMCM_CLKOUT1_DIVIDE {16} \
-    CONFIG.MMCM_CLKOUT2_DIVIDE {8} \
+    CONFIG.MMCM_CLKFBOUT_MULT_F {12.500} \
+    CONFIG.MMCM_CLKIN2_PERIOD {10.000} \
+    CONFIG.MMCM_CLKOUT0_DIVIDE_F {12.500} \
+    CONFIG.MMCM_CLKOUT1_DIVIDE {25} \
+    CONFIG.MMCM_CLKOUT2_DIVIDE {25} \
+    CONFIG.MMCM_CLKOUT2_PHASE {90.000} \
     CONFIG.MMCM_CLKOUT3_DIVIDE {1} \
-    CONFIG.MMCM_DIVCLK_DIVIDE {7} \
+    CONFIG.MMCM_DIVCLK_DIVIDE {1} \
     CONFIG.NUM_OUT_CLKS {3} \
-    CONFIG.OVERRIDE_MMCM {true} \
+    CONFIG.OVERRIDE_MMCM {false} \
     CONFIG.RESET_PORT {resetn} \
     CONFIG.RESET_TYPE {ACTIVE_LOW} \
   ] $clk_wiz_0
@@ -1345,32 +1348,37 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   ] $zynq_ultra_ps_e_0
 
 
+  # Create instance: proc_sys_reset_1, and set properties
+  set proc_sys_reset_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_1 ]
+
   # Create interface connections
   connect_bd_intf_net -intf_net axi_protocol_convert_0_M_AXI [get_bd_intf_ports m_axi4l] [get_bd_intf_pins axi_protocol_convert_0/M_AXI]
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins axi_protocol_convert_0/S_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM1_FPD [get_bd_intf_ports m_axi4] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM1_FPD]
 
   # Create port connections
-  connect_bd_net -net clk_wiz_0_clk_out1  [get_bd_pins clk_wiz_0/clk_out1] \
-  [get_bd_ports out_clk50] \
-  [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
-  connect_bd_net -net clk_wiz_0_clk_out2  [get_bd_pins clk_wiz_0/clk_out3] \
+  connect_bd_net -net clk_wiz_0_clk_out3  [get_bd_pins clk_wiz_0/clk_out1] \
+  [get_bd_ports out_clk100] \
   [get_bd_pins axi_protocol_convert_0/aclk] \
   [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] \
   [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk] \
   [get_bd_ports m_axi4l_aclk] \
   [get_bd_ports m_axi4_aclk] \
-  [get_bd_ports out_clk200]
-  connect_bd_net -net clk_wiz_0_clk_out3  [get_bd_pins clk_wiz_0/clk_out2] \
-  [get_bd_ports out_clk100]
+  [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
+  connect_bd_net -net clk_wiz_0_clk_out4  [get_bd_pins clk_wiz_0/clk_out2] \
+  [get_bd_ports out_clk50] \
+  [get_bd_pins proc_sys_reset_1/slowest_sync_clk]
+  connect_bd_net -net clk_wiz_0_clk_out5  [get_bd_pins clk_wiz_0/clk_out3] \
+  [get_bd_ports out_clk50_90]
   connect_bd_net -net clk_wiz_0_locked  [get_bd_pins clk_wiz_0/locked] \
-  [get_bd_pins proc_sys_reset_0/dcm_locked]
+  [get_bd_pins proc_sys_reset_0/dcm_locked] \
+  [get_bd_pins proc_sys_reset_1/dcm_locked]
   connect_bd_net -net proc_sys_reset_0_interconnect_aresetn  [get_bd_pins proc_sys_reset_0/interconnect_aresetn] \
   [get_bd_pins axi_protocol_convert_0/aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn  [get_bd_pins proc_sys_reset_0/peripheral_aresetn] \
   [get_bd_ports m_axi4l_aresetn] \
   [get_bd_ports m_axi4_aresetn]
-  connect_bd_net -net proc_sys_reset_0_peripheral_reset  [get_bd_pins proc_sys_reset_0/peripheral_reset] \
+  connect_bd_net -net proc_sys_reset_1_peripheral_reset  [get_bd_pins proc_sys_reset_1/peripheral_reset] \
   [get_bd_ports out_reset]
   connect_bd_net -net xlslice_0_Dout  [get_bd_pins xlslice_0/Dout] \
   [get_bd_ports fan_en]
@@ -1380,7 +1388,8 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   [get_bd_pins clk_wiz_0/clk_in1]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0  [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0] \
   [get_bd_pins clk_wiz_0/resetn] \
-  [get_bd_pins proc_sys_reset_0/ext_reset_in]
+  [get_bd_pins proc_sys_reset_0/ext_reset_in] \
+  [get_bd_pins proc_sys_reset_1/ext_reset_in]
 
   # Create address segments
   assign_bd_address -offset 0xB0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs m_axi4/Reg] -force

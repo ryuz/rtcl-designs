@@ -78,9 +78,9 @@ module kv260_rtcl_hub75e_sample
 
 
     logic       sys_reset           ;
-    logic       sys_clk50           ;
     logic       sys_clk100          ;
-    logic       sys_clk200          ;
+    logic       sys_clk50           ;
+    logic       sys_clk50_90        ;
 
     design_1
         u_design_1
@@ -88,9 +88,9 @@ module kv260_rtcl_hub75e_sample
                 .fan_en                 (fan_en         ),
                 
                 .out_reset              (sys_reset      ),
-                .out_clk50              (sys_clk50      ),
                 .out_clk100             (sys_clk100     ),
-                .out_clk200             (sys_clk200     ),
+                .out_clk50              (sys_clk50      ),
+                .out_clk50_90           (sys_clk50_90   ),
 
                 .m_axi4l_aresetn        (axi4l_aresetn  ),
                 .m_axi4l_aclk           (axi4l_aclk     ),
@@ -165,10 +165,10 @@ module kv260_rtcl_hub75e_sample
 
     logic   hub75e_reset    ;
     logic   hub75e_clk      ;
-    logic   hub75e_clk_x2   ;
+    logic   hub75e_clk_90   ;
     assign hub75e_reset  = sys_reset    ;
     assign hub75e_clk    = sys_clk50    ;
-    assign hub75e_clk_x2 = sys_clk100   ;
+    assign hub75e_clk_90 = sys_clk50_90 ;
 
     logic   hub75e_a;
     logic   hub75e_b;
@@ -293,7 +293,7 @@ module kv260_rtcl_hub75e_sample
             (
                 .reset          (hub75e_reset   ),
                 .clk            (hub75e_clk     ),
-                .clk_x2         (hub75e_clk_x2  ),
+                .clk_90         (hub75e_clk_90  ),
 
                 .hub75e_a       (hub75e_a       ),
                 .hub75e_b       (hub75e_b       ),
