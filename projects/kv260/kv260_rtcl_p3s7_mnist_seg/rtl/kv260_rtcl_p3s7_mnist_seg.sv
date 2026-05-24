@@ -52,6 +52,10 @@ module kv260_rtcl_p3s7_mnist_seg
     logic       sys_clk250          ;
     logic       sys_clk333          ;
 
+    logic       hub75e_reset        ;
+    logic       hub75e_clk          ;
+    logic       hub75e_clk_90       ;
+
     logic       axi4l_peri_aresetn  ;
     logic       axi4l_peri_aclk     ;
     logic       axi4_mem_aresetn    ;
@@ -112,6 +116,10 @@ module kv260_rtcl_p3s7_mnist_seg
                 .out_clk200             (sys_clk200         ),
                 .out_clk250             (sys_clk250         ),
                 .out_clk333             (sys_clk333         ),
+
+                .hub75e_reset           (hub75e_reset       ),
+                .hub75e_clk             (hub75e_clk         ),
+                .hub75e_clk_90          (hub75e_clk_90      ),
 
                 .i2c_scl_i              (i2c0_scl_i         ),
                 .i2c_scl_o              (i2c0_scl_o         ),
@@ -259,7 +267,8 @@ module kv260_rtcl_p3s7_mnist_seg
     localparam DEC_WDMA_BLK = 4;
     localparam DEC_TBLMOD   = 5;
     localparam DEC_LPF      = 6;
-    localparam DEC_NUM      = 7;
+    localparam DEC_HUB75    = 7;
+    localparam DEC_NUM      = 8;
 
     jelly3_axi4l_if
             #(
@@ -282,6 +291,7 @@ module kv260_rtcl_p3s7_mnist_seg
     assign {axi4l_dec[DEC_WDMA_BLK].addr_base, axi4l_dec[DEC_WDMA_BLK].addr_high} = {40'ha022_0000, 40'ha022_ffff};
     assign {axi4l_dec[DEC_TBLMOD  ].addr_base, axi4l_dec[DEC_TBLMOD  ].addr_high} = {40'ha030_0000, 40'ha030_ffff};
     assign {axi4l_dec[DEC_LPF     ].addr_base, axi4l_dec[DEC_LPF     ].addr_high} = {40'ha032_0000, 40'ha032_ffff};
+    assign {axi4l_dec[DEC_HUB75   ].addr_base, axi4l_dec[DEC_HUB75   ].addr_high} = {40'ha040_0000, 40'ha040_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
@@ -993,6 +1003,189 @@ module kv260_rtcl_p3s7_mnist_seg
     
     
     // ----------------------------------------
+    //  HUB-75E
+    // ----------------------------------------
+
+    // AXI4-Stream to HUB-75E
+    logic           hub75e_st0_last      ;
+    logic           hub75e_st0_valid     ;
+    logic           hub75e_st0_mem_we    ;
+    logic [9:0]     hub75e_st0_mem_xaddr ;
+    logic [9:0]     hub75e_st0_mem_yaddr ;
+    logic [7:0]     hub75e_st0_mem_r     ;
+    logic [7:0]     hub75e_st0_mem_g     ;
+    logic [7:0]     hub75e_st0_mem_b     ;
+
+    logic           hub75e_st1_mem_we    ;
+    logic [5:0]     hub75e_st1_mem_xaddr ;
+    logic [5:0]     hub75e_st1_mem_yaddr ;
+    logic [7:0]     hub75e_st1_mem_r     ;
+    logic [7:0]     hub75e_st1_mem_g     ;
+    logic [7:0]     hub75e_st1_mem_b     ;
+
+    always_ff @(posedge axi4s_wdma_img.aclk) begin
+        if ( ~axi4s_wdma_img.aresetn ) begin
+            hub75e_st0_last      <= '0   ;
+            hub75e_st0_valid     <= '0   ;
+            hub75e_st0_mem_we    <= 1'b0 ;
+            hub75e_st0_mem_xaddr <= 'x   ;
+            hub75e_st0_mem_yaddr <= 'x   ;
+            hub75e_st0_mem_r     <= 'x   ;
+            hub75e_st0_mem_g     <= 'x   ;
+            hub75e_st0_mem_b     <= 'x   ;
+            hub75e_st1_mem_we    <= '0   ;
+            hub75e_st1_mem_xaddr <= 'x   ;
+            hub75e_st1_mem_yaddr <= 'x   ;
+            hub75e_st1_mem_r     <= 'x   ;
+            hub75e_st1_mem_g     <= 'x   ;
+            hub75e_st1_mem_b     <= 'x   ;
+        end
+        else if ( axi4s_wdma_img.aclken ) begin
+            // stage 0
+            hub75e_st0_last      <= axi4s_wdma_img.tvalid && axi4s_wdma_img.tready && axi4s_wdma_img.tlast;
+            hub75e_st0_valid     <= axi4s_wdma_img.tvalid && axi4s_wdma_img.tready;
+            hub75e_st0_mem_we    <= axi4s_wdma_img.tvalid && axi4s_wdma_img.tready;
+            hub75e_st0_mem_r     <= axi4s_wdma_img.tdata[7:0];
+            hub75e_st0_mem_g     <= axi4s_wdma_img.tdata[7:0];
+            hub75e_st0_mem_b     <= axi4s_wdma_img.tdata[7:0];
+            if ( hub75e_st0_valid ) begin
+                hub75e_st0_mem_xaddr <= hub75e_st0_mem_xaddr + 1;
+                if ( hub75e_st0_last ) begin
+                    hub75e_st0_mem_xaddr <= '0;
+                    hub75e_st0_mem_yaddr <= hub75e_st0_mem_yaddr + 1;
+                end
+            end
+            if ( axi4s_wdma_img.tvalid && axi4s_wdma_img.tready && axi4s_wdma_img.tuser[0] ) begin
+                hub75e_st0_mem_xaddr <= 0;
+                hub75e_st0_mem_yaddr <= 0;
+            end
+            case ( axi4s_wdma_img.tdata[15:8] )
+            8'd0: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd0,   8'd0,   8'd0  };  // 黒 (black)
+            8'd1: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd42,  8'd42,  8'd165};  // 茶 (brown)
+            8'd2: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd0,   8'd0,   8'd255};  // 赤 (red)
+            8'd3: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd0,   8'd165, 8'd255};  // 橙 (orange)
+            8'd4: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd0,   8'd255, 8'd255};  // 黄 (yellow)
+            8'd5: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd0,   8'd255, 8'd0  };  // 緑 (green)
+            8'd6: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd255, 8'd0,   8'd0  };  // 青 (blue)
+            8'd7: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd128, 8'd0,   8'd128};  // 紫 (purple)
+            8'd8: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd192, 8'd192, 8'd192};  // 灰 (gray)
+            8'd9: {hub75e_st0_mem_b, hub75e_st0_mem_g, hub75e_st0_mem_r} <= {8'd255, 8'd255, 8'd255};  // 白 (white)
+            default: ;
+            endcase
+
+            // stage 1
+            hub75e_st1_mem_we    <= hub75e_st0_valid
+                                    && hub75e_st0_mem_xaddr >= 64 && hub75e_st0_mem_xaddr < 64+64
+                                    && hub75e_st0_mem_yaddr >= 64 && hub75e_st0_mem_yaddr < 64+64;
+            hub75e_st1_mem_xaddr <= hub75e_st0_mem_xaddr[5:0]  ;
+            hub75e_st1_mem_yaddr <= hub75e_st0_mem_yaddr[5:0]  ;
+            hub75e_st1_mem_r     <= hub75e_st0_mem_r      ;
+            hub75e_st1_mem_g     <= hub75e_st0_mem_g      ;
+            hub75e_st1_mem_b     <= hub75e_st0_mem_b      ;
+        end
+    end
+
+
+    localparam HUB75E_DATA_BITS = 10;
+
+    logic   hub75e_a;
+    logic   hub75e_b;
+    logic   hub75e_c;
+    logic   hub75e_d;
+    logic   hub75e_e;
+
+    logic   hub75e_oe;
+    logic   hub75e_lat;
+    logic   hub75e_cke;
+
+    logic   hub75e_r1;
+    logic   hub75e_g1;
+    logic   hub75e_b1;
+    logic   hub75e_r2;
+    logic   hub75e_g2;
+    logic   hub75e_b2;
+
+    // logic                           mem_we     ;
+    // logic   [11:0]                  mem_addr   ;
+    // logic   [HUB75E_DATA_BITS-1:0]  mem_r      ;
+    // logic   [HUB75E_DATA_BITS-1:0]  mem_g      ;
+    // logic   [HUB75E_DATA_BITS-1:0]  mem_b      ;
+
+    hub75_driver
+            #(
+                .CLK_DIV        (2                  ),
+                .DISP_BITS      (16                 ),
+                .N              (2                  ),
+                .WIDTH          (64                 ),
+                .HEIGHT         (32                 ),
+                .DATA_BITS      (HUB75E_DATA_BITS   ),
+                .RAM_TYPE       ("block"            ),
+                .READMEMH       (0                  ),
+                .READMEM_FILE   (0                  )
+            )
+        u_hub75_driver
+            (
+                .reset          (hub75e_reset           ),
+                .clk            (hub75e_clk             ),
+
+                .hub75_cke      (hub75e_cke             ),
+                .hub75_oe_n     (hub75e_oe              ),
+                .hub75_lat      (hub75e_lat             ),
+                .hub75_sel      ({
+                                    hub75e_e,
+                                    hub75e_d,
+                                    hub75e_c,
+                                    hub75e_b,
+                                    hub75e_a
+                                }),
+                .hub75_r        ({hub75e_r2, hub75e_r1}    ),
+                .hub75_g        ({hub75e_g2, hub75e_g1}    ),
+                .hub75_b        ({hub75e_b2, hub75e_b1}    ),
+
+                .s_axi4l        (axi4l_dec[DEC_HUB75].s     ),
+
+                .mem_clk        (axi4s_wdma_img.aclk        ),
+                .mem_we         (hub75e_st1_mem_we          ),
+                .mem_addr       ({hub75e_st1_mem_yaddr, hub75e_st1_mem_xaddr}),
+                .mem_r          ({hub75e_st0_mem_r, 2'b00}  ),
+                .mem_g          ({hub75e_st0_mem_g, 2'b00}  ),
+                .mem_b          ({hub75e_st0_mem_b, 2'b00}  )
+            );
+
+
+    // ------------------------------
+    //  RTCL-HUB75E-PMOD board
+    // ------------------------------
+
+    rtcl_hub75e_pmod
+            #(
+                .DEBUG          (DEBUG          )
+            )
+        u_rtcl_hub75e_pmod
+            (
+                .reset          (hub75e_reset   ),
+                .clk            (hub75e_clk     ),
+                .clk_90         (hub75e_clk_90  ),
+
+                .hub75e_a       (hub75e_a       ),
+                .hub75e_b       (hub75e_b       ),
+                .hub75e_c       (hub75e_c       ),
+                .hub75e_d       (hub75e_d       ),
+                .hub75e_e       (hub75e_e       ),
+                .hub75e_oe      (hub75e_oe      ),
+                .hub75e_lat     (hub75e_lat     ),
+                .hub75e_cke     (hub75e_cke     ),
+                .hub75e_r1      (hub75e_r1      ),
+                .hub75e_g1      (hub75e_g1      ),
+                .hub75e_b1      (hub75e_b1      ),
+                .hub75e_r2      (hub75e_r2      ),
+                .hub75e_g2      (hub75e_g2      ),
+                .hub75e_b2      (hub75e_b2      ),
+
+                .pmod           (pmod           )
+            );
+
+    // ----------------------------------------
     //  Debug
     // ----------------------------------------
     
@@ -1080,7 +1273,7 @@ module kv260_rtcl_p3s7_mnist_seg
     assign pmod[7:6] = reg_counter_clk100[9:8];
     */
 
-    assign pmod[7:0] = timegen_frames[7:0];
+//  assign pmod[7:0] = timegen_frames[7:0];
     
     
     // Debug
