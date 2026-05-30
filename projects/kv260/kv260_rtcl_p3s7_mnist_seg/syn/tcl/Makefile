@@ -45,6 +45,9 @@ SOURCES += $(PRJ_DIR)/rtl/video_tbl_modulator.sv
 SOURCES += $(PRJ_DIR)/rtl/video_argmax.sv
 SOURCES += $(PRJ_DIR)/rtl/mnist_seg.v
 SOURCES += $(PRJ_DIR)/rtl/bb_lut.v
+SOURCES += $(PRJ_DIR)/rtl/hub75_driver.sv
+SOURCES += $(PRJ_DIR)/rtl/hub75_driver_core.sv
+SOURCES += $(PRJ_DIR)/rtl/rtcl_hub75e_pmod.sv
 
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
