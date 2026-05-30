@@ -670,6 +670,7 @@ dependencies = [
  "jelly-mem_access",
  "jelly-pac 0.1.1 (git+https://github.com/ryuz/jelly-pac-rs.git?rev=6a62e64)",
  "rtcl-lib",
+ "rtcl_p3s7_shared",
 ]
 
 [[package]]
@@ -999,6 +1000,15 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
+]
+
+[[package]]
+name = "rtcl_p3s7_shared"
+version = "0.1.0"
+dependencies = [
+ "jelly-lib 0.2.0",
+ "jelly-mem_access",
+ "rtcl-lib",
 ]
 
 [[package]]
