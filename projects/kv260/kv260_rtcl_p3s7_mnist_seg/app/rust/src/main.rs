@@ -7,9 +7,9 @@ use opencv::core::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use kv260_rtcl_p3s7_mnist_seg::camera_driver::CameraDriver;
-use kv260_rtcl_p3s7_mnist_seg::capture_driver::CaptureDriver;
-use kv260_rtcl_p3s7_mnist_seg::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_p3s7_shared::camera_driver::CameraDriver;
+use rtcl_p3s7_shared::capture_driver::CaptureDriver;
+use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 const REG_BIN_PARAM_END   : usize =        0x04;
 //const REG_BIN_PARAM_INV   : usize =        0x05;
