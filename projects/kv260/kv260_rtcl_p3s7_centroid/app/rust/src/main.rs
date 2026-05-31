@@ -7,9 +7,9 @@ use opencv::core::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use kv260_rtcl_p3s7_centroid::camera_driver::CameraDriver;
-use kv260_rtcl_p3s7_centroid::capture_driver::CaptureDriver;
-use kv260_rtcl_p3s7_centroid::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_p3s7_shared::camera_driver::CameraDriver;
+use rtcl_p3s7_shared::capture_driver::CaptureDriver;
+use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 
 // Gaussian filter

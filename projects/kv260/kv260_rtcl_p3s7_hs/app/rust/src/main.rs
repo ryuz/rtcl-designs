@@ -7,9 +7,9 @@ use opencv::core::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use kv260_rtcl_p3s7_hs::camera_driver::*;
-use kv260_rtcl_p3s7_hs::capture_driver::*;
-use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_p3s7_shared::camera_driver::*;
+use rtcl_p3s7_shared::capture_driver::*;
+use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
