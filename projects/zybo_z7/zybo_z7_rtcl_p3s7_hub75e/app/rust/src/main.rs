@@ -11,6 +11,9 @@ use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 use opencv::*;
 use opencv::core::*;
 
+const ZYBO_DPHY_SPEED_BPS: f64 = 950_000_000.0;
+const ZYBO_FPS_COUNTER_CLOCK_HZ: f32 = 200_000_000.0;
+
 /// ZYBO Z7 RTCL P3S7 High Speed Camera Application
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -36,6 +39,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("  width:  {}", args.width);
     println!("  height: {}", args.height);
     println!("  color:  {}", args.color);
+    println!("  dphy_speed[bps]: {}", ZYBO_DPHY_SPEED_BPS);
+    println!("  fps_counter_clock[Hz]: {}", ZYBO_FPS_COUNTER_CLOCK_HZ);
 
     let width = args.width;
     let height = args.height;
@@ -105,6 +110,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
     cam.set_sensor_pgood_enable(false);
+    cam.set_dphy_speed(ZYBO_DPHY_SPEED_BPS);
+    cam.set_fps_counter_clock_hz(ZYBO_FPS_COUNTER_CLOCK_HZ);
     cam.set_image_size(width, height)?;
 //  cam.set_slave_mode(true)?;
 //  cam.set_trigger_mode(true)?;
