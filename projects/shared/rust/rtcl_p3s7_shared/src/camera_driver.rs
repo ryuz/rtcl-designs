@@ -55,6 +55,7 @@ where
     slave_mode: bool,
     trigger_mode: bool,
     dphy_speed : f64,
+    fps_counter_clock_hz: f32,
     gain: f32,
     mult_timer: u16,
     fr_length: u16,
@@ -83,6 +84,7 @@ where
             height: 480,
             slave_mode: false,
             dphy_speed : 1250000000.0,
+            fps_counter_clock_hz: 250_000_000.0,
             trigger_mode: false,
             gain: 0.0,
             mult_timer: 72,
@@ -115,6 +117,22 @@ where
         self.color = color;
     }
 
+    pub fn set_dphy_speed(&mut self, dphy_speed: f64) {
+        self.dphy_speed = dphy_speed;
+    }
+
+    pub fn dphy_speed(&self) -> f64 {
+        self.dphy_speed
+    }
+
+    pub fn set_fps_counter_clock_hz(&mut self, clock_hz: f32) {
+        self.fps_counter_clock_hz = clock_hz;
+    }
+
+    pub fn fps_counter_clock_hz(&self) -> f32 {
+        self.fps_counter_clock_hz
+    }
+
     pub fn set_black_lines(&mut self, lines: usize) -> Result<(), Box<dyn Error>> {
         self.cam_i2c.set_black_lines(lines as u16)?;
         Ok(())
@@ -144,7 +162,7 @@ where
 //      self.cam_i2c.softeare_reset()?;
 
         // MMCM 設定
-        self.cam_i2c.set_dphy_speed(1250000000.0)?; // 1250Mbps
+        self.cam_i2c.set_dphy_speed(self.dphy_speed)?;
 
         // 受信側 DPHY リセット
         unsafe {
@@ -394,12 +412,18 @@ where
     /// fps 計測
     pub fn measure_fps(&self) -> f32 {
         let fps_count   = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
-        250_000_000.0f32 / fps_count as f32
+        if fps_count == 0 {
+            return 0.0;
+        }
+        self.fps_counter_clock_hz / fps_count as f32
     }
 
     pub fn measure_frame_period(&self) -> f32 {
         let fps_count = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
-        fps_count as f32 * 4.0
+        if self.fps_counter_clock_hz <= 0.0 {
+            return 0.0;
+        }
+        fps_count as f32 * (1_000_000_000.0f32 / self.fps_counter_clock_hz)
     }
 
     pub fn print_sensor_register(&mut self) {
