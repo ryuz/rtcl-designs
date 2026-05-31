@@ -1124,7 +1124,6 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     
         
 
-
     // ----------------------------------------
     //  HUB-75E
     // ----------------------------------------
@@ -1284,41 +1283,6 @@ module zybo_z7_rtcl_p3s7_mnist_seg
         );
 
 
-    // ------------------------------
-    //  RTCL-HUB75E-PMOD board
-    // ------------------------------
-
-    rtcl_hub75_pmod
-            #(
-                .DEVICE     (DEVICE         ),
-                .SIMULATION (SIMULATION     ),
-                .DEBUG      (DEBUG          )
-            )
-        u_rtcl_hub75e_pmod
-            (
-                .reset          (hub75e_reset   ),
-                .clk            (hub75e_clk     ),
-                .clk_90         (hub75e_clk_90  ),
-
-                .hub75e_a       (hub75e_a       ),
-                .hub75e_b       (hub75e_b       ),
-                .hub75e_c       (hub75e_c       ),
-                .hub75e_d       (hub75e_d       ),
-                .hub75e_e       (hub75e_e       ),
-                .hub75e_oe      (hub75e_oe      ),
-                .hub75e_lat     (hub75e_lat     ),
-                .hub75e_cke     (hub75e_cke     ),
-                .hub75e_r1      (hub75e_r1      ),
-                .hub75e_g1      (hub75e_g1      ),
-                .hub75e_b1      (hub75e_b1      ),
-                .hub75e_r2      (hub75e_r2      ),
-                .hub75e_g2      (hub75e_g2      ),
-                .hub75e_b2      (hub75e_b2      ),
-
-                .pmod           (pmod           )
-            );
-    
-
     // ----------------------------------------
     //  Debug
     // ----------------------------------------
@@ -1370,13 +1334,11 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     assign led[2] = reg_counter_mem_aclk[24];  // reg_counter_clk100[24];
     assign led[3] = cam_gpio0;
     
-    /*
     assign pmod_a[0]   = frame_toggle;
     assign pmod_a[1]   = reg_counter_rxbyteclkhs[5];
     assign pmod_a[2]   = reg_counter_clk200[5];
     assign pmod_a[3]   = reg_counter_clk100[5];
     assign pmod_a[7:4] = 0;
-    */
     
 endmodule
 
