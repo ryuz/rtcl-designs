@@ -559,6 +559,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtcl_p3s7_shared"
+version = "0.1.0"
+dependencies = [
+ "jelly-lib",
+ "jelly-mem_access",
+ "opencv",
+ "rtcl-lib",
+]
+
+[[package]]
 name = "rustix"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -911,4 +921,5 @@ dependencies = [
  "jelly-pac",
  "opencv",
  "rtcl-lib",
+ "rtcl_p3s7_shared",
 ]

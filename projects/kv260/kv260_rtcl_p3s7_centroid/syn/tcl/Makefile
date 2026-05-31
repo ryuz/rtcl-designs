@@ -36,9 +36,9 @@ export HLS_IP
 # sources
 SOURCES  = $(PRJ_DIR)/rtl/kv260_rtcl_p3s7_centroid.sv
 SOURCES += $(PRJ_DIR)/rtl/output_dac.sv
-SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
-SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_dphy_recv.sv
-SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/rtcl_p3s7_hs_dphy_recv.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/timing_generator.sv
 SOURCES += $(PRJ_DIR)/rtl/image_processing.sv
 SOURCES += $(PRJ_DIR)/rtl/img_gaussian.sv
 SOURCES += $(PRJ_DIR)/rtl/img_gaussian3x3_core.sv

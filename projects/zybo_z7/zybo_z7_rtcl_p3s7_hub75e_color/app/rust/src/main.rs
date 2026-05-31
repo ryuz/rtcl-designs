@@ -4,9 +4,9 @@ use clap::Parser;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use zybo_z7_rtcl_p3s7_hub75e::camera_driver::CameraDriver;
-use zybo_z7_rtcl_p3s7_hub75e::capture_driver::CaptureDriver;
-use zybo_z7_rtcl_p3s7_hub75e::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_p3s7_shared::camera_driver::CameraDriver;
+use rtcl_p3s7_shared::capture_driver::CaptureDriver;
+use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 use opencv::*;
 use opencv::core::*;
@@ -113,7 +113,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 //  cam.set_slave_mode(true)?;
 //  cam.set_trigger_mode(true)?;
     cam.open()?;
-    cam.set_color(color)?;
+    cam.set_color(color);
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -152,7 +152,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
-        let img = video_capture.read_image(0)?;
+        let img = video_capture.read_image_mat(0)?;
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
@@ -189,7 +189,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let frames = 100;
                 video_capture.record(width, height, frames)?;
                 for f in 0..frames {
-                   let img = video_capture.read_image(f)?;
+                   let img = video_capture.read_image_mat(f)?;
                     let mut view = Mat::default();
                     img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
                     let file_name = format!("{}/img{:04}.png", dir_name, f);
