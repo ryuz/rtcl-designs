@@ -75,6 +75,8 @@ is25lp016d-spi-x1_x2_x4
 
 を選択して書き込んでください。
 
+その際、Stage of non-config mem I/O pins は pull-up を選んで下さい。
+
 #### アップデートイメージをI2C経由で更新する場合
 
 先に作った rtcl_p3s7_mipi.bin を SPI-ROM の 0x100000 から書き込むことで、アップデートを更新できます。
