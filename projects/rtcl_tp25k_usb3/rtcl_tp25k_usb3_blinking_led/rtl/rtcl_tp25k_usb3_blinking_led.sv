@@ -4,7 +4,11 @@
 module rtcl_tp25k_usb3_blinking_led
         (
             input   var logic           in_clk50,     // 50MHz
-            output  var logic   [3:0]   led
+
+            output  var logic           ft601_reset_n   ,
+            output  var logic           ft601_wakeup    ,
+
+            output  var logic   [3:0]   led     
         );
     
     logic   reset = 0;
@@ -14,6 +18,9 @@ module rtcl_tp25k_usb3_blinking_led
         counter <= counter + 1;
     end
     assign led = ~counter[26:23];
+
+    assign ft601_reset_n = 1'b1;
+    assign ft601_wakeup  = 1'b1;
 
 endmodule
 

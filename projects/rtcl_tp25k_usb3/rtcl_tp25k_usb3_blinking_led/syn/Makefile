@@ -42,7 +42,12 @@ clean:
 	rm -fr impl
 
 run: $(FS_FILE)
-	openFPGALoader $(FS_FILE)
+	openFPGALoader -c digilent_hs2 $(FS_FILE)
 
 run2:
 	programmer_cli --device GW5A-25B --run 2 --fsFile $(TARGET).fs --location `programmer_cli --scan-cable | grep -oP 'USB location:\K\d+'`
+
+
+rom_write:
+#	openFPGALoader -c digilent_hs2 -b tangprimer25k -f $(FS_FILE)
+	openFPGALoader -c digilent_hs2 -f $(FS_FILE)
