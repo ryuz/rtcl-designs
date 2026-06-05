@@ -6,7 +6,7 @@ module rtcl_tp25k_usb3_fifo_sample
             input   var logic           in_clk50        ,
 
             output  var logic           ft601_reset_n   ,
-            inout   tri logic           ft601_wakeup    ,
+            inout   tri logic           ft601_wakeup_n  ,
             input   var logic           ft601_clk       ,
             input   var logic           ft601_rxf_n     ,
             input   var logic           ft601_txe_n     ,
@@ -26,22 +26,23 @@ module rtcl_tp25k_usb3_fifo_sample
     
     logic   reset = push_sw[0];
 
-    logic   [26:0]  counter;
+    logic   [24:0]  clk_counter;
     always_ff @(posedge in_clk50) begin
-        counter <= counter + 1;
+        clk_counter <= clk_counter + 1;
     end
-    assign led[1:0] = ~counter[24:23];
 
-    logic   [26:0]  counter_usb;
+    logic   [26:0]  usb_counter;
     always_ff @(posedge ft601_clk) begin
-        counter_usb <= counter_usb + 1;
+        usb_counter <= usb_counter + 1;
     end
-    assign led[3:2] = ~counter_usb[24:23];
+
+    assign led[0] = clk_counter[24];
+    assign led[1] = usb_counter[26];
 
 //  assign pmod = counter[9:2];
 
-    assign ft601_reset_n = 1'b1; //~reset;
-    assign ft601_wakeup  = 1'bz  ;
+    assign ft601_reset_n  = 1'b1; //~reset;
+    assign ft601_wakeup_n = 1'bz  ;
 
     assign ft601_siwu_n = 1'b1   ;
     assign ft601_wr_n   = 1'b1   ;
@@ -51,10 +52,10 @@ module rtcl_tp25k_usb3_fifo_sample
     assign ft601_data   = 'z     ;
     assign ft601_gpio   = 'z     ;
 
-    assign pmod[0] = ft601_rxf_n ;
-    assign pmod[1] = ft601_txe_n ;
-    assign pmod[2] = ft601_wakeup;
-    assign pmod[7:3] = counter_usb[9:4];
+    assign pmod[0] = ft601_rxf_n    ;
+    assign pmod[1] = ft601_txe_n    ;
+    assign pmod[2] = ft601_wakeup_n ;
+    assign pmod[7:3] = usb_counter[8:4];
 
 endmodule
 

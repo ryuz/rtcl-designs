@@ -6,7 +6,7 @@ module rtcl_tp25k_usb3_blinking_led
             input   var logic           in_clk50        ,
 
             output  var logic           ft601_reset_n   ,
-            output  var logic           ft601_wakeup_n  ,
+            inout   tri logic           ft601_wakeup_n  ,
             input   var logic           ft601_clk       ,
 
             input   var logic   [1:0]   push_sw         ,
