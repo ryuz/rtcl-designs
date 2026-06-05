@@ -18,11 +18,13 @@ module rtcl_tp25k_usb3_fifo_sample
             inout   tri logic   [31:0]  ft601_data      ,
             inout   tri logic   [1:0]   ft601_gpio      ,
 
-            output  var logic   [7:0]   pmod            ,
-            output  var logic   [3:0]   led             
+            input   var logic   [1:0]   push_sw         ,
+            input   var logic   [1:0]   dip_sw          ,
+            output  var logic   [3:0]   led             ,
+            output  var logic   [7:0]   pmod            
         );
     
-    logic   reset = 0;
+    logic   reset = push_sw[0];
 
     logic   [26:0]  counter;
     always_ff @(posedge in_clk50) begin
@@ -38,8 +40,8 @@ module rtcl_tp25k_usb3_fifo_sample
 
 //  assign pmod = counter[9:2];
 
-    assign ft601_reset_n = 1'b1;
-    assign ft601_wakeup  = 1'bz;
+    assign ft601_reset_n = 1'b1; //~reset;
+    assign ft601_wakeup  = 1'bz  ;
 
     assign ft601_siwu_n = 1'b1   ;
     assign ft601_wr_n   = 1'b1   ;
