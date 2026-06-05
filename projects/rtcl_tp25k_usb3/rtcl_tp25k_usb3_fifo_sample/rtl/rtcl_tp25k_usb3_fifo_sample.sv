@@ -44,8 +44,9 @@ module rtcl_tp25k_usb3_fifo_sample
 
 
 
-    assign ft601_reset_n  = ~reset;
-    assign ft601_wakeup_n = 1'bz  ;
+    assign ft601_reset_n  = ~reset  ;
+    assign ft601_wakeup_n = 1'bz    ;
+    assign ft601_gpio     = 2'b00   ;
 
     assign ft601_siwu_n = 1'b1   ;
     assign ft601_wr_n   = 1'b1   ;
@@ -58,7 +59,8 @@ module rtcl_tp25k_usb3_fifo_sample
     assign pmod[0] = ft601_rxf_n    ;
     assign pmod[1] = ft601_txe_n    ;
     assign pmod[2] = ft601_wakeup_n ;
-    assign pmod[7:3] = usb_counter[8:4];
+    assign pmod[3] = usb_counter[4];
+    assign pmod[7:4] = ft601_data[15:12];
 
 endmodule
 
