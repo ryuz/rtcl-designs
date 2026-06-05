@@ -40,7 +40,7 @@ IO_PORT "pmod[7]" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
 
 
 IO_LOC "ft601_reset_n"  L2;
-IO_LOC "ft601_wakeup"   H4;
+IO_LOC "ft601_wakeup_n" H4;
 IO_LOC "ft601_clk"      K5;
 IO_LOC "ft601_oe_n"     L1;
 IO_LOC "ft601_rd_n"     K1;
