@@ -24,7 +24,8 @@ module rtcl_tp25k_usb3_fifo_sample
             output  var logic   [7:0]   pmod            
         );
     
-    logic   reset = push_sw[0];
+    logic   reset;
+    assign reset = push_sw[0];
 
     logic   [24:0]  clk_counter;
     always_ff @(posedge in_clk50) begin
@@ -38,10 +39,12 @@ module rtcl_tp25k_usb3_fifo_sample
 
     assign led[0] = clk_counter[24];
     assign led[1] = usb_counter[26];
+    assign led[2] = ft601_wakeup_n;
+    assign led[3] = reset;
 
-//  assign pmod = counter[9:2];
 
-    assign ft601_reset_n  = 1'b1; //~reset;
+
+    assign ft601_reset_n  = ~reset;
     assign ft601_wakeup_n = 1'bz  ;
 
     assign ft601_siwu_n = 1'b1   ;
