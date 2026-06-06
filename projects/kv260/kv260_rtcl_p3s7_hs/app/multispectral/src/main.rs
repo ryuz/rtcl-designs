@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
-    let trigger_mode = !args.master;
+    let trigger_mode = false; // !args.master;
     let multispectral_num : usize = 9;
 
     println!("start kv260_rtcl_p3s7_hs");
@@ -181,19 +181,38 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         
         // CaptureDriver で 1frame キャプチャ
+        let mut imgs = vec![Mat::default(); multispectral_num as usize];
         video_capture.record(width, height, multispectral_num as usize)?;
         for i in 0..multispectral_num {
-            let img = video_capture.read_image_mat(i as usize)?;
+            let src = video_capture.read_image_mat(i as usize)?;
             // 先頭ピクセルの上位6bitにインデックス値が入っているので、画像化前に取り出す
-            let idx = (img.at_2d::<u16>(0, 0)? >> 10) as usize;
-            let mut view = Mat::default();
-            img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-//          let file_name = format!("dump_{}.png", i);
-//          imgcodecs::imwrite(&file_name, &view, &Vector::<i32>::new())?;
-            let win_name = format!("img{}", idx);
-            highgui::imshow(win_name.as_str(), &view)?;
+            let idx = (src.at_2d::<u16>(0, 0)? >> 10) as usize;
+            let mut img = Mat::default();
+            src.convert_to(&mut img, CV_16U, 64.0, 0.0)?;
+
+            // imgs の対応する番号に格納
+            imgs[idx] = img;
         }
-        let mut img = video_capture.read_image_mat(0)?;
+
+        // imgs の0から7までの8枚をタイル状になれべ手 4x2 倍の img を作る
+        let mut img = Mat::zeros(height as i32 * 2, width as i32 * 4, CV_16U)?.to_mat()?;
+        for i in 0..multispectral_num-1 {
+            let x = (i % 4) as i32;
+            let y = (i / 4) as i32;
+            let roi = Rect::new(x * width as i32, y * height as i32, width as i32, height as i32);
+            let mut dst = img.roi_mut(roi)?;
+            imgs[i].copy_to(&mut dst)?;
+        }
+        highgui::imshow("back ground", &imgs[8])?;
+
+        /*
+        for i in 0..multispectral_num {
+            let win_name = format!("img{}", i);
+            highgui::imshow(win_name.as_str(), &imgs[i])?;
+        }
+        */
+
+//      let mut img = video_capture.read_image_mat(9)?;
 
         // センサーゲインを適用
         cam.set_gain(sgain_db)?;
@@ -204,6 +223,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         img.convert_to(&mut img_dgain, -1, dgain_scale, 0.0)?;
         img = img_dgain;
 
+        highgui::imshow("img", &img)?;
+        
+        
+        /*
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
         img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
@@ -215,6 +238,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         } else {
             highgui::imshow("img", &view)?;
         }
+        */
 
         // キーボード操作
         let ch = key as u8 as char;
@@ -238,7 +262,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             'd' => {
                 println!("write : dump.png");
-                imgcodecs::imwrite("dump.png", &view, &Vector::<i32>::new())?;
+                imgcodecs::imwrite("dump.png", &img, &Vector::<i32>::new())?;
             },
             'r' => {  // 動画記録
                 // 日時のディレクトリを生成
