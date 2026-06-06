@@ -131,7 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_pmod_pattern_len(multispectral_num as u16)?;
 
     // ヘッダに設定するのをインデックス値に設定
-    cam.set_pmod_header_select(2)?;
+    cam.set_pmod_header_select(3)?;
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
