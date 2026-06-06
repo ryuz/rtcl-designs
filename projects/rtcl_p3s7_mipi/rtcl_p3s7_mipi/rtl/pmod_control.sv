@@ -34,9 +34,9 @@ module pmod_control
         );
     
     // I/O
-    logic   [7:0]   pmod_i     ;
-    logic   [7:0]   pmod_o     ;
-    logic   [7:0]   pmod_t     ;
+    (* MARK_DEBUG = "true" *) logic   [7:0]   pmod_i     ;
+    (* MARK_DEBUG = "true" *) logic   [7:0]   pmod_o     ;
+    (* MARK_DEBUG = "true" *) logic   [7:0]   pmod_t     ;
     for ( genvar i = 0; i < 8; i++ ) begin
         IOBUF
             u_iobuf_pmod
@@ -49,10 +49,10 @@ module pmod_control
     end
 
     // trriger sync
-    logic   [0:0]   sync_trigger    ;
-    logic   [1:0]   sync_monitor    ;
-    logic   [7:0]   sync_test0      ;
-    logic   [7:0]   sync_pmod       ;
+    (* MARK_DEBUG = "true" *)   logic   [0:0]   sync_trigger    ;
+    (* MARK_DEBUG = "true" *)   logic   [1:0]   sync_monitor    ;
+    (* MARK_DEBUG = "true" *)   logic   [7:0]   sync_test0      ;
+    (* MARK_DEBUG = "true" *)   logic   [7:0]   sync_pmod       ;
     jelly3_async_latch
             #(
                 .WIDTH      (  $bits(trigger)
@@ -80,25 +80,25 @@ module pmod_control
             );
 
     // trigger select
-    logic   [1:0]   ff_trigger;
+    (* MARK_DEBUG = "true" *)   logic   [1:0]   ff_trigger;
     always_ff @( posedge clk ) begin
         if ( reset ) begin
             ff_trigger <= '0;
         end
         else begin
             case ( trg_sel )
-            2'b00:  ff_trigger[0] <= sync_trigger;
-            2'b01:  ff_trigger[0] <= sync_trigger;
-            2'b10:  ff_trigger[0] <= sync_monitor[0];
+            2'b00:  ff_trigger[0] <= sync_monitor[0];
             2'b01:  ff_trigger[0] <= sync_monitor[1];
+            2'b10:  ff_trigger[0] <= sync_trigger;
+            2'b11:  ff_trigger[0] <= sync_trigger;
             endcase
         end
         ff_trigger[1] <= ff_trigger[0];
     end
 
     // light rotation
-    logic   [3:0]   pattern_idx     ;
-    logic   [7:0]   light_pattern   ;
+    (* MARK_DEBUG = "true" *)   logic   [3:0]   pattern_idx     ;
+    (* MARK_DEBUG = "true" *)   logic   [7:0]   light_pattern   ;
     always_ff @( posedge clk ) begin
         if ( reset ) begin
             pattern_idx   <= 0;
@@ -146,7 +146,7 @@ module pmod_control
         end
     end
 
-    logic   [7:0]   hdr_pmod  ;
+    (* MARK_DEBUG = "true" *)  logic   [7:0]   hdr_pmod  ;
     always_ff @(posedge clk) begin
         if ( reset ) begin
             hdr_pmod  <= '0;
@@ -166,8 +166,8 @@ module pmod_control
         end
         else begin
             case ( hdr_sel )
-            2'd0:       pkt_hdr <= sync_pmod        ;
-            2'd1:       pkt_hdr <= hdr_pmod         ;
+            2'd0:       pkt_hdr <= hdr_pmod         ;
+            2'd1:       pkt_hdr <= sync_pmod        ;
             2'd2:       pkt_hdr <= light_pattern    ;
             2'd3:       pkt_hdr <= 8'(pattern_idx)  ;
             default:    pkt_hdr <= '0               ;

@@ -299,6 +299,18 @@ where
         Ok(self.cam_i2c.set_pmod_mode(mode)?)
     }
 
+    pub fn set_pmod_trigger_select(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_trigger_select(sel)?)
+    }
+
+    pub fn set_pmod_header_select(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_header_select(sel)?)
+    }
+
+    pub fn set_pmod_pattern_len(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_pattern_len(sel)?)
+    }
+
     pub fn read_pmod(&mut self) -> Result<u8, Box<dyn Error>> {
         Ok(self.cam_i2c.read_pmod()?)
     }

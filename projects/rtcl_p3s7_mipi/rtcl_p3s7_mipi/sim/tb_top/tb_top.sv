@@ -154,6 +154,8 @@ module tb_top();
     
     assign spi_flash_miso = spi_flash_mosi;
 
+    assign python_monitor[0] = python_trigger[0];
+
     assign mipi_gpio0 = ~reset;
 
     // monitor
@@ -560,8 +562,8 @@ module tb_top();
         cmd_read(REGADR_CORE_ID     , rdata);
         cmd_read(REGADR_CORE_VERSION, rdata);
 
-        /*
         #500000;
+        /*
 //      cmd_write(REGADR_SENSOR_ENABLE  , 16'h0000);
         cmd_write(REGADR_SW_RESET  , 16'h0001);
         #1000;

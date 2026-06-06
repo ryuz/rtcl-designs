@@ -583,6 +583,8 @@ module kv260_rtcl_p3s7_hs
                 .aclken         (1'b1               )
             );
 
+    logic  [15:0]   header_data ;
+    logic           header_valid;
     rtcl_p3s7_hs_dphy_recv
             #(
                 .X_BITS             ($bits(width_t)     ),
@@ -610,8 +612,8 @@ module kv260_rtcl_p3s7_hs
                 .m_axi4s_black      (axi4s_blk          ),
                 .m_axi4s_image      (axi4s_img          ),
 
-                .header_data        (                   ),
-                .header_valid       (                   )
+                .header_data        (header_data        ),
+                .header_valid       (header_valid       )
             );
 
     jelly3_axi4s_debug_monitor
@@ -680,7 +682,7 @@ module kv260_rtcl_p3s7_hs
 
     assign axi4s_wdma_img.tuser  = axi4s_fmtr.tuser ;
     assign axi4s_wdma_img.tlast  = axi4s_fmtr.tlast ;
-    assign axi4s_wdma_img.tdata  = 16'(axi4s_fmtr.tdata) ;
+    assign axi4s_wdma_img.tdata  = axi4s_fmtr.tuser ? {header_data[13:8], axi4s_fmtr.tdata} : 16'(axi4s_fmtr.tdata) ;
     assign axi4s_wdma_img.tvalid = axi4s_fmtr.tvalid;
     assign axi4s_fmtr.tready = axi4s_wdma_img.tready;
 
