@@ -93,7 +93,7 @@ module pmod_control
             2'b01:  ff_trigger[0] <= sync_monitor[1];
             endcase
         end
-        ff_trigger[0] <= ff_trigger[1];
+        ff_trigger[1] <= ff_trigger[0];
     end
 
     // light rotation
@@ -101,13 +101,14 @@ module pmod_control
     logic   [7:0]   light_pattern   ;
     always_ff @( posedge clk ) begin
         if ( reset ) begin
+            pattern_idx   <= 0;
             light_pattern <= 8'h00;
         end
         else begin
             if ( ff_trigger == 2'b01 ) begin
                 pattern_idx <= pattern_idx + 1;
                 if ( pattern_idx >= ptn_len ) begin
-                    light_pattern <= 8'h00;
+                    pattern_idx <= 0;
                 end
             end
             light_pattern <= ptn_tbl[pattern_idx];

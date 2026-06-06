@@ -46,17 +46,20 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    println!("start kv260_rtcl_p3s7_hs");
-    println!("Configuration:");
-    println!("  width:  {}", args.width);
-    println!("  height: {}", args.height);
-    println!("  color:  {}", args.color);
 
     let width = (args.width + 15) & !0xf;  // 16ピクセル境界に合わせる
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
     let trigger_mode = !args.master;
+
+    println!("start kv260_rtcl_p3s7_hs");
+    println!("Configuration:");
+    println!("  width:  {}", width);
+    println!("  height: {}", height);
+    println!("  color:  {}", color);
+    println!("  fps:    {}", fps);
+    println!("  trigger mode: {}", trigger_mode);
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));

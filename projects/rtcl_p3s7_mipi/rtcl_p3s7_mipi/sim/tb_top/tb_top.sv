@@ -499,6 +499,17 @@ module tb_top();
     localparam  REGADR_PMOD_GPIO_IN    = 15'h00b2;
     localparam  REGADR_PMOD_GPIO_OUT   = 15'h00b3;
     localparam  REGADR_PMOD_GPIO_DIR   = 15'h00b4;
+    localparam  REGADR_PMOD_TRG_SEL    = 15'h00b8;
+    localparam  REGADR_PMOD_HDR_SEL    = 15'h00b9;
+    localparam  REGADR_PMOD_PTN_LEN    = 15'h00bc;
+    localparam  REGADR_PMOD_PTN_0_1    = 15'h00c0;
+    localparam  REGADR_PMOD_PTN_2_3    = 15'h00c1;
+    localparam  REGADR_PMOD_PTN_4_5    = 15'h00c2;
+    localparam  REGADR_PMOD_PTN_6_7    = 15'h00c3;
+    localparam  REGADR_PMOD_PTN_8_9    = 15'h00c4;
+    localparam  REGADR_PMOD_PTN_A_B    = 15'h00c5;
+    localparam  REGADR_PMOD_PTN_C_D    = 15'h00c6;
+    localparam  REGADR_PMOD_PTN_E_F    = 15'h00c7;
 
     initial begin
         logic [15:0] rdata;
@@ -549,6 +560,7 @@ module tb_top();
         cmd_read(REGADR_CORE_ID     , rdata);
         cmd_read(REGADR_CORE_VERSION, rdata);
 
+        /*
         #500000;
 //      cmd_write(REGADR_SENSOR_ENABLE  , 16'h0000);
         cmd_write(REGADR_SW_RESET  , 16'h0001);
@@ -558,6 +570,8 @@ module tb_top();
         cmd_write(REGADR_RECV_RESET     , 16'h0000);
         cmd_write(REGADR_ALIGN_RESET    , 16'h0000);
         cmd_write(REGADR_SENSOR_ENABLE  , 16'h0001);
+        */
+        
         #200000;
 
         
