@@ -36,7 +36,7 @@ module system_control
             parameter   bit [7:0]       INIT_PMOD_OUT            = '0                       ,
             parameter   bit [7:0]       INIT_PMOD_DIR            = '0                       ,
             parameter   bit [1:0]       INIT_PMOD_TRG_SEL        = 0                        ,
-            parameter   bit [1:0]       INIT_PMOD_HDR_SEL        = 0                        ,
+            parameter   bit [2:0]       INIT_PMOD_HDR_SEL        = 0                        ,
             parameter   bit [3:0]       INIT_PMOD_PTN_LEN        = 7                        
         )
         (
@@ -71,7 +71,7 @@ module system_control
             output  var logic   [7:0]       out_pmod_dir        ,
             input   var logic   [7:0]       in_pmod_data        ,
             output  var logic   [1:0]       out_pmod_trg_sel    ,
-            output  var logic   [1:0]       out_pmod_hdr_sel    ,
+            output  var logic   [2:0]       out_pmod_hdr_sel    ,
             output  var logic   [3:0]       out_pmod_ptn_len    ,
             output  var logic   [15:0][7:0] out_pmod_ptn_tbl    
         );
@@ -150,7 +150,7 @@ module system_control
     logic   [7:0]           reg_pmod_data           ;
     logic   [7:0]           reg_pmod_dir            ;
     logic   [1:0]           reg_pmod_trg_sel        ;
-    logic   [1:0]           reg_pmod_hdr_sel        ;
+    logic   [2:0]           reg_pmod_hdr_sel        ;
     logic   [3:0]           reg_pmod_ptn_len        ;
     logic   [7:0][1:0][7:0] reg_pmod_ptn_tbl        ;
 
@@ -253,7 +253,7 @@ module system_control
                 REGADR_PMOD_GPIO_OUT      :   reg_pmod_data        <=  8'(write_mask(axi4l_data_t'(reg_pmod_data       ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_GPIO_DIR      :   reg_pmod_dir         <=  8'(write_mask(axi4l_data_t'(reg_pmod_dir        ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_TRG_SEL       :   reg_pmod_trg_sel     <=  2'(write_mask(axi4l_data_t'(reg_pmod_trg_sel    ), s_axi4l.wdata, s_axi4l.wstrb));
-                REGADR_PMOD_HDR_SEL       :   reg_pmod_hdr_sel     <=  2'(write_mask(axi4l_data_t'(reg_pmod_hdr_sel    ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_HDR_SEL       :   reg_pmod_hdr_sel     <=  3'(write_mask(axi4l_data_t'(reg_pmod_hdr_sel    ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_PTN_LEN       :   reg_pmod_ptn_len     <=  4'(write_mask(axi4l_data_t'(reg_pmod_ptn_len    ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_PTN_0_1       :   reg_pmod_ptn_tbl[0]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[0] ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_PTN_2_3       :   reg_pmod_ptn_tbl[1]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[1] ), s_axi4l.wdata, s_axi4l.wstrb));

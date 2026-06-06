@@ -15,11 +15,11 @@ use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 #[command(version, about, long_about = None)]
 struct Args {
     /// Image width in pixels
-    #[arg(short = 'W', long, default_value_t = 256)]
+    #[arg(short = 'W', long, default_value_t = 416)]
     width: usize,
 
     /// Image height in pixels
-    #[arg(short = 'H', long, default_value_t = 256)]
+    #[arg(short = 'H', long, default_value_t = 416)]
     height: usize,
 
     #[arg(short = 'f', long, default_value_t = 1000)]
@@ -36,6 +36,10 @@ struct Args {
     #[arg(short = 'm', long, default_value_t = false)]
     master : bool,
 
+    /// Trigger Mode (External Triggers)
+    #[arg(short = 't', long, default_value_t = false)]
+    trigger : bool,
+
     #[arg(long="pmod-mode", default_value_t = 0x10)]
     pmod_mode: u16,
 
@@ -51,7 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
-    let trigger_mode = false; // !args.master;
+    let trigger_mode = args.trigger;
+
     let multispectral_num : usize = 9;
 
     println!("start kv260_rtcl_p3s7_hs");
@@ -149,7 +154,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("sgain",      0,  200,  10)?;    // センサーゲイン
     create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  900, 800)?;
+    create_cv_trackbar("exposure",  10,  990, 990)?;
     create_cv_trackbar("xsm_delay",  0,  255,   0)?;
     
     // 画像表示ループ
@@ -176,7 +181,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             timgen.set_timing(period_us, exposure_us)?;
         }
         else {
-            cam.set_fr_length(period_us)?;
+            cam.set_frame_period(period_us)?;
             cam.set_exposure(exposure_us)?;
         }
         

@@ -28,7 +28,7 @@ module pmod_control
             input   var logic   [7:0]       gpio_dir    ,
 
             input   var logic   [1:0]       trg_sel     ,
-            input   var logic   [1:0]       hdr_sel     ,
+            input   var logic   [2:0]       hdr_sel     ,
             input   var logic   [3:0]       ptn_len     ,
             input   var logic   [15:0][7:0] ptn_tbl     
         );
@@ -147,14 +147,20 @@ module pmod_control
     end
 
     (* MARK_DEBUG = "true" *)  logic   [7:0]   hdr_pmod  ;
+    (* MARK_DEBUG = "true" *)  logic   [7:0]   hdr_ptn   ;
+    (* MARK_DEBUG = "true" *)  logic   [3:0]   hdr_idx   ;
     always_ff @(posedge clk) begin
         if ( reset ) begin
-            hdr_pmod  <= '0;
+            hdr_pmod <= '0;
+            hdr_ptn  <= '0;
+            hdr_idx  <= '0;
         end
         else begin
             // 露光終了時のPMODの状態をキャプチャ
             if ( ff_trigger == 2'b10 ) begin
                 hdr_pmod <= sync_pmod;
+                hdr_ptn  <= light_pattern;
+                hdr_idx  <= pattern_idx;
             end
         end
     end
@@ -166,10 +172,12 @@ module pmod_control
         end
         else begin
             case ( hdr_sel )
-            2'd0:       pkt_hdr <= hdr_pmod         ;
-            2'd1:       pkt_hdr <= sync_pmod        ;
-            2'd2:       pkt_hdr <= light_pattern    ;
-            2'd3:       pkt_hdr <= 8'(pattern_idx)  ;
+            3'd0:       pkt_hdr <= hdr_pmod         ;
+            3'd1:       pkt_hdr <= hdr_ptn          ;
+            3'd2:       pkt_hdr <= 8'(hdr_idx)      ;
+            3'd4:       pkt_hdr <= sync_pmod        ;
+            3'd5:       pkt_hdr <= light_pattern    ;
+            3'd6:       pkt_hdr <= 8'(pattern_idx)  ;
             default:    pkt_hdr <= '0               ;
             endcase
         end

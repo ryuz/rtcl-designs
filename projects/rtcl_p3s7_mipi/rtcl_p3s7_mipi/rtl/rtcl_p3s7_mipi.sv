@@ -344,7 +344,7 @@ module rtcl_p3s7_mipi
     logic   [7:0]       ctl_pmod_dir        ;
     logic   [7:0]       ctl_pmod_gpio_i     ;
     logic   [1:0]       ctl_pmod_trg_sel    ;
-    logic   [1:0]       ctl_pmod_hdr_sel    ;
+    logic   [2:0]       ctl_pmod_hdr_sel    ;
     logic   [3:0]       ctl_pmod_ptn_len    ;
     logic   [15:0][7:0] ctl_pmod_ptn_tbl    ;
 

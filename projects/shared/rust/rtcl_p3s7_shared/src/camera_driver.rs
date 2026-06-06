@@ -34,9 +34,8 @@ const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
 const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
-const MULT_TIMER_UNIT : f32 = 75.5;
-//const MULT_TIMER_UNIT : f32 = 72.0;
-//const MULT_TIMER_UNIT : f32 = 68.0;
+const MULT_TIME_UNIT : f32 = 1.0 / 72.0; // 72MHz(0.013888 us)
+const FOT_TIME : f32 = 45.4133;          // 実測値より (45.4133 us)
 
 type RtclP3s7ModuleDriverLinux = RtclP3s7ModuleDriver<LinuxI2c>;
 type RegAccess = UdmabufAccessor<usize>;
@@ -387,6 +386,10 @@ where
         Ok(())
     }
 
+    pub fn set_monitor_select(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.set_monitor_select(sel)?;
+        Ok(())
+    }
 
     pub fn set_gain(&mut self, db: f32) -> Result<(), Box<dyn Error>> {
         if self.opend {
@@ -403,7 +406,7 @@ where
     }
 
     pub fn set_exposure(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
-        let unit =  (self.mult_timer as f32) / MULT_TIMER_UNIT;
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
         self.exposure = (us / unit) as u16;
         if self.opend {
             self.cam_i2c.set_exposure0(self.exposure)?;
@@ -412,17 +415,43 @@ where
     }
 
     pub fn exposure(&self) -> Result<f32, Box<dyn Error>> {
-        let unit =  (self.mult_timer as f32) / MULT_TIMER_UNIT;
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
         Ok(self.exposure as f32 * unit)
     }
-    
-    pub fn set_fr_length(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
-        let unit =  MULT_TIMER_UNIT / (self.mult_timer as f32);
-        self.fr_length = (us / unit) as u16;
+
+    pub fn set_frame_period(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
+        self.fr_length = ((us - FOT_TIME) / unit) as u16;
         if self.opend {
             self.cam_i2c.set_fr_length0(self.fr_length)?;
         }
         Ok(())
+    }
+
+    pub fn frame_period(&mut self) -> Result<f32, Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
+        Ok(self.fr_length as f32 * unit + FOT_TIME)
+    }
+
+    pub fn set_frame_rate(&mut self, fps : f32) -> Result<(), Box<dyn Error>> {
+        let frame_period_us = 1_000_000.0 / fps;
+        self.set_frame_period(frame_period_us)
+    }
+
+    pub fn frame_rate(&mut self) -> Result<f32, Box<dyn Error>> {
+        let frame_period_us = self.frame_period()?;
+        if frame_period_us <= 0.0 {
+            return Ok(0.0);
+        }
+        Ok(1_000_000.0 / frame_period_us)
+    }
+
+    pub fn set_fr_length(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        self.set_frame_period(us)
+    }
+
+    pub fn fr_length(&mut self) -> u16 {
+        self.fr_length
     }
 
     /// fps 計測

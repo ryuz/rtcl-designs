@@ -128,6 +128,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // PMODモード設定
     cam.set_pmod_mode(args.pmod_mode)?;
 
+    cam.set_monitor_select(2)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -171,7 +173,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             timgen.set_timing(period_us, exposure_us)?;
         }
         else {
-            cam.set_fr_length(period_us)?;
+            cam.set_frame_period(period_us)?;
             cam.set_exposure(exposure_us)?;
         }
         
@@ -210,6 +212,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("camera sensor id      : {:04x}", cam.sensor_id()?);
                 println!("sensor_ready : {}", cam.sensor_ready()?);
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
+                println!("fr_length    : {}", cam.fr_length());
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
             'x' => {
