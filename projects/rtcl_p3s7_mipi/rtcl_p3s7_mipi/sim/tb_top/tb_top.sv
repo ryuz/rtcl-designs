@@ -8,7 +8,7 @@ module tb_top();
         $dumpfile("tb_top.vcd");
         $dumpvars(0, tb_top);
         
-    #100_000_000
+    #200_000_000
         $finish;
     end
     
@@ -558,7 +558,7 @@ module tb_top();
         cmd_write(REGADR_RECV_RESET     , 16'h0000);
         cmd_write(REGADR_ALIGN_RESET    , 16'h0000);
         cmd_write(REGADR_SENSOR_ENABLE  , 16'h0001);
-        #100000;
+        #200000;
 
         
         $finish();

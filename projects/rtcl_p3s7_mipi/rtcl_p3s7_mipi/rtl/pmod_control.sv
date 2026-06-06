@@ -103,10 +103,12 @@ module pmod_control
         if ( reset ) begin
             light_pattern <= 8'h00;
         end
-        else if ( ff_trigger == 2'b01 ) begin
-            pattern_idx <= pattern_idx + 1;
-            if ( pattern_idx >= ptn_len ) begin
-                light_pattern <= 8'h00;
+        else begin
+            if ( ff_trigger == 2'b01 ) begin
+                pattern_idx <= pattern_idx + 1;
+                if ( pattern_idx >= ptn_len ) begin
+                    light_pattern <= 8'h00;
+                end
             end
             light_pattern <= ptn_tbl[pattern_idx];
         end
@@ -143,6 +145,19 @@ module pmod_control
         end
     end
 
+    logic   [7:0]   hdr_pmod  ;
+    always_ff @(posedge clk) begin
+        if ( reset ) begin
+            hdr_pmod  <= '0;
+        end
+        else begin
+            // 露光終了時のPMODの状態をキャプチャ
+            if ( ff_trigger == 2'b10 ) begin
+                hdr_pmod <= sync_pmod;
+            end
+        end
+    end
+
     // packet header output
     always_ff @(posedge clk) begin
         if ( reset ) begin
@@ -151,8 +166,9 @@ module pmod_control
         else begin
             case ( hdr_sel )
             2'd0:       pkt_hdr <= sync_pmod        ;
-            2'd1:       pkt_hdr <= light_pattern    ;
-            2'd2:       pkt_hdr <= 8'(pattern_idx)  ;
+            2'd1:       pkt_hdr <= hdr_pmod         ;
+            2'd2:       pkt_hdr <= light_pattern    ;
+            2'd3:       pkt_hdr <= 8'(pattern_idx)  ;
             default:    pkt_hdr <= '0               ;
             endcase
         end
@@ -163,6 +179,8 @@ module pmod_control
     
 endmodule
 
+
 `default_nettype wire
+
 
 // end of file
