@@ -12,7 +12,7 @@
 module rtcl_p3s7_mipi
         #(
             parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
-            parameter   bit     [15:0]  MODULE_VERSION = 16'h0107   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0108   ,
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
@@ -319,31 +319,34 @@ module rtcl_p3s7_mipi
     localparam  bit     [15:0]    MODULE_CONFIG = 16'h0000;
 `endif
 
-    logic           ctl_sensor_enable   ;
-    logic           ctl_sensor_ready    ;
-    logic           ctl_sensor_pgood_en ;
-    logic           ctl_receiver_reset  ;
-    logic   [4:0]   ctl_receiver_clk_dly;
-    logic           ctl_align_reset     ;
-    logic   [9:0]   ctl_align_pattern   ;
-    logic           ctl_align_done      ;
-    logic           ctl_align_error     ;
-    logic           ctl_clip_enable     ;
-    logic           ctl_csi_mode        ;
-    logic   [7:0]   ctl_csi_dt          ;
-    logic   [15:0]  ctl_csi_wc          ;
-    logic           ctl_dphy_core_reset ;
-    logic           ctl_dphy_sys_reset  ;
-    logic           ctl_dphy_init_done  ;
-    logic           ctl_mmcm_rst        ;
-    logic           ctl_mmcm_pwrdwn     ;
-    logic           ctl_pll_rst         ;
-    logic           ctl_pll_pwrdwn      ;
-    logic   [15:0]  ctl_pmod_mode       ;
-    logic   [7:0]   ctl_pmod_gpio_o     ;
-    logic   [7:0]   ctl_pmod_dir        ;
-    logic   [7:0]   ctl_pmod_gpio_i     ;
-
+    logic               ctl_sensor_enable   ;
+    logic               ctl_sensor_ready    ;
+    logic               ctl_sensor_pgood_en ;
+    logic               ctl_receiver_reset  ;
+    logic   [4:0]       ctl_receiver_clk_dly;
+    logic               ctl_align_reset     ;
+    logic   [9:0]       ctl_align_pattern   ;
+    logic               ctl_align_done      ;
+    logic               ctl_align_error     ;
+    logic               ctl_clip_enable     ;
+    logic               ctl_csi_mode        ;
+    logic   [7:0]       ctl_csi_dt          ;
+    logic   [15:0]      ctl_csi_wc          ;
+    logic               ctl_dphy_core_reset ;
+    logic               ctl_dphy_sys_reset  ;
+    logic               ctl_dphy_init_done  ;
+    logic               ctl_mmcm_rst        ;
+    logic               ctl_mmcm_pwrdwn     ;
+    logic               ctl_pll_rst         ;
+    logic               ctl_pll_pwrdwn      ;
+    logic   [15:0]      ctl_pmod_mode       ;
+    logic   [7:0]       ctl_pmod_gpio_o     ;
+    logic   [7:0]       ctl_pmod_dir        ;
+    logic   [7:0]       ctl_pmod_gpio_i     ;
+    logic   [1:0]       ctl_pmod_trg_sel    ;
+    logic   [1:0]       ctl_pmod_hdr_sel    ;
+    logic   [3:0]       ctl_pmod_ptn_len    ;
+    logic   [15:0][7:0] ctl_pmod_ptn_tbl    ;
 
     system_control
             #(
@@ -396,7 +399,11 @@ module rtcl_p3s7_mipi
                 .out_pmod_mode          (ctl_pmod_mode          ),
                 .out_pmod_data          (ctl_pmod_gpio_o        ),
                 .out_pmod_dir           (ctl_pmod_dir           ),
-                .in_pmod_data           (ctl_pmod_gpio_i        )
+                .in_pmod_data           (ctl_pmod_gpio_i        ),
+                .out_pmod_trg_sel       (ctl_pmod_trg_sel       ),
+                .out_pmod_hdr_sel       (ctl_pmod_hdr_sel       ),
+                .out_pmod_ptn_len       (ctl_pmod_ptn_len       ),
+                .out_pmod_ptn_tbl       (ctl_pmod_ptn_tbl       )
             );
     
 
@@ -926,6 +933,7 @@ module rtcl_p3s7_mipi
             );
     
     // 将来の照明制御などの為に、撮影時状態をヘッダに付与できるようにしておく
+    /*
     (* ASYNC_REG = "true" *)    logic   [7:0]   pmod_ff0,    pmod_ff1   ;
     (* ASYNC_REG = "true" *)    logic   [1:0]   monitor_ff0, monitor_ff1;
                                 logic   [1:0]   monitor_ff2             ;
@@ -937,28 +945,25 @@ module rtcl_p3s7_mipi
         monitor_ff1 <= monitor_ff0;
         monitor_ff2 <= monitor_ff1;
     end
+    */
     
-    logic   [7:0]   hs_header_pmod  ;
+
     logic   [7:0]   hs_header_count ;
+    logic   [7:0]   hs_header_pmod  ;
     always_ff @(posedge dphy_clk) begin
         if ( dphy_reset ) begin
-            hs_header_pmod  <= '0;
             hs_header_count <= '0;
         end
         else begin
-            // 露光完了時のPMODの状態をラッチ
-            if ( {monitor_ff2[0], monitor_ff1[0]} == 2'b01 ) begin
-                hs_header_pmod <= pmod_ff1;
-            end
-
             // フレームカウント
             if ( hs_header_update ) begin
                 hs_header_count <= hs_header_count + 1;
             end
         end
     end
-    assign hs_header_data[7:0]  = hs_header_count;
-    assign hs_header_data[15:8] = hs_header_pmod;
+
+    assign hs_header_data[7:0]  = hs_header_count   ;
+    assign hs_header_data[15:8] = hs_header_pmod    ;
 
 
     // MIPI-CSI2 TX
@@ -1111,19 +1116,48 @@ module rtcl_p3s7_mipi
     assign test0[6] = dphy_dl0_txreadyhs     ;
     assign test0[7] = sensor_pgood           ;
 
+    logic   [7:0]   pmod_pkt_hdr    ;
+
     pmod_control
         u_pmod_control
             (
-                .reset      (reset          ),
-                .clk        (clk72          ),
-                .pmod       (pmod           ),
-                .mode       (ctl_pmod_mode  ),
-                .gpio_in    (ctl_pmod_gpio_i),
-                .gpio_out   (ctl_pmod_gpio_o),
-                .gpio_dir   (ctl_pmod_dir   ),
-                .trigger    (mipi_gpio1     ),
-                .test0      (test0          )
-        );
+                .reset      (reset                  ),
+                .clk        (clk72                  ),
+
+                .pmod       (pmod                   ),
+                .pkt_hdr    (pmod_pkt_hdr           ),
+
+                .trigger    (mipi_gpio1             ),
+                .monitor    (python_monitor         ),
+                .test0      (test0                  ),
+
+                .mode       (ctl_pmod_mode          ),
+                .gpio_in    (ctl_pmod_gpio_i        ),
+                .gpio_out   (ctl_pmod_gpio_o        ),
+                .gpio_dir   (ctl_pmod_dir           ),
+
+                .trg_sel    (ctl_pmod_trg_sel       ),
+                .hdr_sel    (ctl_pmod_hdr_sel       ),
+                .ptn_len    (ctl_pmod_ptn_len       ),
+                .ptn_tbl    (ctl_pmod_ptn_tbl       )
+            );
+
+    jelly3_cdc_array_single
+            #(
+                .DEST_SYNC_FF       (3              ),
+                .SRC_INPUT_REG      (0              ),
+                .WIDTH              (8              ),
+                .DEVICE             (DEVICE         ),
+                .SIMULATION         (SIMULATION     ),
+                .DEBUG              (DEBUG          )
+            )
+        u_cdc_array_single_hdr
+            (
+                .src_clk            (clk72          ),
+                .src_in             (pmod_pkt_hdr   ),
+                .dest_clk           (dphy_clk       ),
+                .dest_out           (hs_header_pmod )
+            );
 
 endmodule
 

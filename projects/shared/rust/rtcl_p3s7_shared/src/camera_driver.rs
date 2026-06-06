@@ -34,6 +34,10 @@ const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
 const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
 const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
 
+const MULT_TIMER_UNIT : f32 = 75.5;
+//const MULT_TIMER_UNIT : f32 = 72.0;
+//const MULT_TIMER_UNIT : f32 = 68.0;
+
 type RtclP3s7ModuleDriverLinux = RtclP3s7ModuleDriver<LinuxI2c>;
 type RegAccess = UdmabufAccessor<usize>;
 
@@ -387,7 +391,7 @@ where
     }
 
     pub fn set_exposure(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
-        let unit =  (self.mult_timer as f32) / 72.0;
+        let unit =  (self.mult_timer as f32) / MULT_TIMER_UNIT;
         self.exposure = (us / unit) as u16;
         if self.opend {
             self.cam_i2c.set_exposure0(self.exposure)?;
@@ -396,15 +400,15 @@ where
     }
 
     pub fn exposure(&self) -> Result<f32, Box<dyn Error>> {
-        let unit =  (self.mult_timer as f32) / 72.0;
+        let unit =  (self.mult_timer as f32) / MULT_TIMER_UNIT;
         Ok(self.exposure as f32 * unit)
     }
     
     pub fn set_fr_length(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
-        let unit =  72.0 / (self.mult_timer as f32);
+        let unit =  MULT_TIMER_UNIT / (self.mult_timer as f32);
         self.fr_length = (us / unit) as u16;
         if self.opend {
-            self.cam_i2c.set_fr_length0(self.exposure)?;
+            self.cam_i2c.set_fr_length0(self.fr_length)?;
         }
         Ok(())
     }

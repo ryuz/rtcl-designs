@@ -34,39 +34,46 @@ module system_control
             parameter   bit [1:0]       INIT_PLL_CONTROL         = 2'b00                    ,
             parameter   bit [15:0]      INIT_PMOD_MODE           = '0                       ,
             parameter   bit [7:0]       INIT_PMOD_OUT            = '0                       ,
-            parameter   bit [7:0]       INIT_PMOD_DIR            = '0                       
+            parameter   bit [7:0]       INIT_PMOD_DIR            = '0                       ,
+            parameter   bit [1:0]       INIT_PMOD_TRG_SEL        = 0                        ,
+            parameter   bit [1:0]       INIT_PMOD_HDR_SEL        = 0                        ,
+            parameter   bit [3:0]       INIT_PMOD_PTN_LEN        = 7                        
         )
         (
-            jelly3_axi4l_if.s           s_axi4l             ,
+            jelly3_axi4l_if.s               s_axi4l             ,
 
-            input   var logic           in_ext_reset        ,
-            output  var logic           out_sw_reset        ,
+            input   var logic               in_ext_reset        ,
+            output  var logic               out_sw_reset        ,
 
-            output  var logic           out_sensor_enable   ,
-            input   var logic           in_sensor_ready     ,
-            input   var logic           in_sensor_pgood     ,
-            output  var logic           out_sensor_pgood_en ,
-            output  var logic           out_receiver_reset  ,
-            output  var logic   [4:0]   out_receiver_clk_dly,
-            output  var logic           out_align_reset     ,
-            output  var logic   [9:0]   out_align_pattern   ,
-            input   var logic           in_align_done       ,
-            input   var logic           in_align_error      ,
-            output  var logic           out_clip_enable     ,
-            output  var logic           out_csi_mode        ,
-            output  var logic   [7:0]   out_csi_dt          ,
-            output  var logic   [15:0]  out_csi_wc          ,
-            output  var logic           out_dphy_core_reset ,
-            output  var logic           out_dphy_sys_reset  ,
-            input   var logic           in_dphy_init_done   ,
-            output  var logic           out_mmcm_rst        ,
-            output  var logic           out_mmcm_pwrdwn     ,
-            output  var logic           out_pll_rst         ,
-            output  var logic           out_pll_pwrdwn      ,
-            output  var logic   [15:0]  out_pmod_mode       ,
-            output  var logic   [7:0]   out_pmod_data       ,
-            output  var logic   [7:0]   out_pmod_dir        ,
-            input   var logic   [7:0]   in_pmod_data        
+            output  var logic               out_sensor_enable   ,
+            input   var logic               in_sensor_ready     ,
+            input   var logic               in_sensor_pgood     ,
+            output  var logic               out_sensor_pgood_en ,
+            output  var logic               out_receiver_reset  ,
+            output  var logic   [4:0]       out_receiver_clk_dly,
+            output  var logic               out_align_reset     ,
+            output  var logic   [9:0]       out_align_pattern   ,
+            input   var logic               in_align_done       ,
+            input   var logic               in_align_error      ,
+            output  var logic               out_clip_enable     ,
+            output  var logic               out_csi_mode        ,
+            output  var logic   [7:0]       out_csi_dt          ,
+            output  var logic   [15:0]      out_csi_wc          ,
+            output  var logic               out_dphy_core_reset ,
+            output  var logic               out_dphy_sys_reset  ,
+            input   var logic               in_dphy_init_done   ,
+            output  var logic               out_mmcm_rst        ,
+            output  var logic               out_mmcm_pwrdwn     ,
+            output  var logic               out_pll_rst         ,
+            output  var logic               out_pll_pwrdwn      ,
+            output  var logic   [15:0]      out_pmod_mode       ,
+            output  var logic   [7:0]       out_pmod_data       ,
+            output  var logic   [7:0]       out_pmod_dir        ,
+            input   var logic   [7:0]       in_pmod_data        ,
+            output  var logic   [1:0]       out_pmod_trg_sel    ,
+            output  var logic   [1:0]       out_pmod_hdr_sel    ,
+            output  var logic   [3:0]       out_pmod_ptn_len    ,
+            output  var logic   [15:0][7:0] out_pmod_ptn_tbl    
         );
     
     
@@ -106,29 +113,46 @@ module system_control
     localparam  regadr_t REGADR_PMOD_GPIO_IN        = regadr_t'('hb2);
     localparam  regadr_t REGADR_PMOD_GPIO_OUT       = regadr_t'('hb3);
     localparam  regadr_t REGADR_PMOD_GPIO_DIR       = regadr_t'('hb4);
+    localparam  regadr_t REGADR_PMOD_TRG_SEL        = regadr_t'('hb8);
+    localparam  regadr_t REGADR_PMOD_HDR_SEL        = regadr_t'('hb9);
+    localparam  regadr_t REGADR_PMOD_PTN_LEN        = regadr_t'('hbc);
+    localparam  regadr_t REGADR_PMOD_PTN_0_1        = regadr_t'('hc0);
+    localparam  regadr_t REGADR_PMOD_PTN_2_3        = regadr_t'('hc1);
+    localparam  regadr_t REGADR_PMOD_PTN_4_5        = regadr_t'('hc2);
+    localparam  regadr_t REGADR_PMOD_PTN_6_7        = regadr_t'('hc3);
+    localparam  regadr_t REGADR_PMOD_PTN_8_9        = regadr_t'('hc4);
+    localparam  regadr_t REGADR_PMOD_PTN_A_B        = regadr_t'('hc5);
+    localparam  regadr_t REGADR_PMOD_PTN_C_D        = regadr_t'('hc6);
+    localparam  regadr_t REGADR_PMOD_PTN_E_F        = regadr_t'('hc7);
+
+
 
     // registers
-    logic           reg_sensor_enable       ;
-    logic           reg_sensor_ready        ;
-    logic           reg_sensor_pgood        ;
-    logic           reg_sensor_pgood_en     ;
-    logic           reg_receiver_reset      ;
-    logic   [4:0]   reg_receiver_clk_dly    ;
-    logic           reg_align_reset         ;
-    logic   [9:0]   reg_align_pattern       ;
-    logic   [1:0]   reg_align_status        ;
-    logic           reg_clip_enable         ;
-    logic           reg_csi_mode            ;
-    logic   [7:0]   reg_csi_dt              ;
-    logic   [15:0]  reg_csi_wc              ;
-    logic           reg_dphy_core_reset     ;
-    logic           reg_dphy_sys_reset      ;
-    logic           reg_dphy_init_done      ;
-    logic   [1:0]   reg_mmcm_control        ;
-    logic   [1:0]   reg_pll_control         ;
-    logic   [15:0]  reg_pmod_mode           ;
-    logic   [7:0]   reg_pmod_data           ;
-    logic   [7:0]   reg_pmod_dir            ;
+    logic                   reg_sensor_enable       ;
+    logic                   reg_sensor_ready        ;
+    logic                   reg_sensor_pgood        ;
+    logic                   reg_sensor_pgood_en     ;
+    logic                   reg_receiver_reset      ;
+    logic   [4:0]           reg_receiver_clk_dly    ;
+    logic                   reg_align_reset         ;
+    logic   [9:0]           reg_align_pattern       ;
+    logic   [1:0]           reg_align_status        ;
+    logic                   reg_clip_enable         ;
+    logic                   reg_csi_mode            ;
+    logic   [7:0]           reg_csi_dt              ;
+    logic   [15:0]          reg_csi_wc              ;
+    logic                   reg_dphy_core_reset     ;
+    logic                   reg_dphy_sys_reset      ;
+    logic                   reg_dphy_init_done      ;
+    logic   [1:0]           reg_mmcm_control        ;
+    logic   [1:0]           reg_pll_control         ;
+    logic   [15:0]          reg_pmod_mode           ;
+    logic   [7:0]           reg_pmod_data           ;
+    logic   [7:0]           reg_pmod_dir            ;
+    logic   [1:0]           reg_pmod_trg_sel        ;
+    logic   [1:0]           reg_pmod_hdr_sel        ;
+    logic   [3:0]           reg_pmod_ptn_len        ;
+    logic   [7:0][1:0][7:0] reg_pmod_ptn_tbl        ;
 
     always_ff @(posedge s_axi4l.aclk) begin
         reg_sensor_ready   <= in_sensor_ready                   ;
@@ -196,7 +220,17 @@ module system_control
             reg_pmod_mode        <= INIT_PMOD_MODE          ;
             reg_pmod_data        <= INIT_PMOD_OUT           ;
             reg_pmod_dir         <= INIT_PMOD_DIR           ;
-
+            reg_pmod_trg_sel     <= INIT_PMOD_TRG_SEL       ;
+            reg_pmod_hdr_sel     <= INIT_PMOD_HDR_SEL       ;
+            reg_pmod_ptn_len     <= INIT_PMOD_PTN_LEN       ;
+            reg_pmod_ptn_tbl[0]  <= 16'h02_01               ;
+            reg_pmod_ptn_tbl[1]  <= 16'h08_04               ;
+            reg_pmod_ptn_tbl[2]  <= 16'h20_10               ;
+            reg_pmod_ptn_tbl[3]  <= 16'h80_40               ;
+            reg_pmod_ptn_tbl[4]  <= 16'h00_00               ;
+            reg_pmod_ptn_tbl[5]  <= 16'h00_00               ;
+            reg_pmod_ptn_tbl[6]  <= 16'h00_00               ;
+            reg_pmod_ptn_tbl[7]  <= 16'h00_00               ;
         end
         else if ( s_axi4l.aclken ) begin
             if ( s_axi4l.awvalid && s_axi4l.awready && s_axi4l.wvalid && s_axi4l.wready ) begin
@@ -218,6 +252,17 @@ module system_control
                 REGADR_PMOD_MODE          :   reg_pmod_mode        <= 16'(write_mask(axi4l_data_t'(reg_pmod_mode       ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_GPIO_OUT      :   reg_pmod_data        <=  8'(write_mask(axi4l_data_t'(reg_pmod_data       ), s_axi4l.wdata, s_axi4l.wstrb));
                 REGADR_PMOD_GPIO_DIR      :   reg_pmod_dir         <=  8'(write_mask(axi4l_data_t'(reg_pmod_dir        ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_TRG_SEL       :   reg_pmod_trg_sel     <=  2'(write_mask(axi4l_data_t'(reg_pmod_trg_sel    ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_HDR_SEL       :   reg_pmod_hdr_sel     <=  2'(write_mask(axi4l_data_t'(reg_pmod_hdr_sel    ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_LEN       :   reg_pmod_ptn_len     <=  4'(write_mask(axi4l_data_t'(reg_pmod_ptn_len    ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_0_1       :   reg_pmod_ptn_tbl[0]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[0] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_2_3       :   reg_pmod_ptn_tbl[1]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[1] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_4_5       :   reg_pmod_ptn_tbl[2]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[2] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_6_7       :   reg_pmod_ptn_tbl[3]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[3] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_8_9       :   reg_pmod_ptn_tbl[4]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[4] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_A_B       :   reg_pmod_ptn_tbl[5]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[5] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_C_D       :   reg_pmod_ptn_tbl[6]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[6] ), s_axi4l.wdata, s_axi4l.wstrb));
+                REGADR_PMOD_PTN_E_F       :   reg_pmod_ptn_tbl[7]  <= 16'(write_mask(axi4l_data_t'(reg_pmod_ptn_tbl[7] ), s_axi4l.wdata, s_axi4l.wstrb));
                 default: ;
                 endcase
             end
@@ -279,6 +324,17 @@ module system_control
                 REGADR_PMOD_GPIO_IN     :   s_axi4l.rdata <= axi4l_data_t'(in_pmod_data        );
                 REGADR_PMOD_GPIO_OUT    :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_data       );
                 REGADR_PMOD_GPIO_DIR    :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_dir        );
+                REGADR_PMOD_TRG_SEL     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_trg_sel    );
+                REGADR_PMOD_HDR_SEL     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_hdr_sel    );
+                REGADR_PMOD_PTN_LEN     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_len    );
+                REGADR_PMOD_PTN_0_1     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[0] );
+                REGADR_PMOD_PTN_2_3     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[1] );
+                REGADR_PMOD_PTN_4_5     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[2] );
+                REGADR_PMOD_PTN_6_7     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[3] );
+                REGADR_PMOD_PTN_8_9     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[4] );
+                REGADR_PMOD_PTN_A_B     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[5] );
+                REGADR_PMOD_PTN_C_D     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[6] );
+                REGADR_PMOD_PTN_E_F     :   s_axi4l.rdata <= axi4l_data_t'(reg_pmod_ptn_tbl[7] );
                 default                 :   s_axi4l.rdata <= '0;
                 endcase
             end
@@ -325,6 +381,10 @@ module system_control
     assign  out_pmod_mode        = reg_pmod_mode         ;
     assign  out_pmod_data        = reg_pmod_data         ;
     assign  out_pmod_dir         = reg_pmod_dir          ;
+    assign  out_pmod_trg_sel     = reg_pmod_trg_sel      ;
+    assign  out_pmod_hdr_sel     = reg_pmod_hdr_sel      ;
+    assign  out_pmod_ptn_len     = reg_pmod_ptn_len      ;
+    assign  out_pmod_ptn_tbl     = reg_pmod_ptn_tbl      ;
     
 endmodule
 

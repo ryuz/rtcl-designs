@@ -168,6 +168,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             timgen.set_timing(period_us, exposure_us)?;
         }
         else {
+            cam.set_fr_length(period_us)?;
             cam.set_exposure(exposure_us)?;
         }
         
