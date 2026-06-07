@@ -61,6 +61,22 @@ module tb_main
     assign push_sw[0] = reset;
     assign push_sw[1] = 1'b0;
 
+
+    // FPGA側は posedge で出してくるので negedge で受けて遅延させる。 verilator でも使える。
+    logic           dly_ft601_wr_n      ;
+    logic           dly_ft601_rd_n      ;
+    logic           dly_ft601_oe_n      ;
+    logic   [3:0]   dly_ft601_be        ;
+    logic   [31:0]  dly_ft601_data      ;
+    always_ff @(negedge ft601_clk) begin
+        dly_ft601_wr_n <= ft601_wr_n    ;
+        dly_ft601_rd_n <= ft601_rd_n    ;
+        dly_ft601_oe_n <= ft601_oe_n    ;
+        dly_ft601_be   <= ft601_be      ;
+        dly_ft601_data <= ft601_data    ;
+    end
+
+    // 疑似送受信
     int     rd_data_count = '0;
     int     rd_data;
     int     wr_data_count = '0;
@@ -76,7 +92,7 @@ module tb_main
                 rd_data_count <= $urandom_range(16, 32);
             end
 
-            if ( ~ft601_rd_n && rd_data_count > 0 ) begin
+            if ( ~dly_ft601_rd_n && rd_data_count > 0 ) begin
                 rd_data_count <= rd_data_count - 1'b1;
                 rd_data       <= rd_data - 1;
             end
@@ -86,8 +102,7 @@ module tb_main
                 wr_data_count <= 0;
             end
 
-            if ( ~ft601_txe_n && ~ft601_wr_n ) begin
-//              $display("Write: %h", ft601_data);
+            if ( ~ft601_txe_n && ~dly_ft601_wr_n ) begin
                 wr_data_count <= wr_data_count + 1'b1;
             end
         end
@@ -97,7 +112,6 @@ module tb_main
     assign ft601_txe_n = ~(wr_data_count < 64);
     assign ft601_data  = ~ft601_oe_n ? rd_data : 'z;
     assign ft601_be    = ~ft601_oe_n ? '1 : 'z;
-
 
     // logging
     int fp_tx = 0;
@@ -109,21 +123,16 @@ module tb_main
 
     always_ff @(negedge ft601_clk) begin
         if ( ft601_reset_n ) begin
-            if ( ~ft601_rxf_n && ~ft601_rd_n && ~ft601_oe_n ) begin
+            if ( ~ft601_rxf_n && ~dly_ft601_rd_n && ~dly_ft601_oe_n ) begin
                 $fdisplay(fp_rx, "%h", ft601_data);
             end
         end
     end
 
-    logic   [31:0]  delay_data;
-    always_ff @(negedge ft601_clk) begin
-        delay_data <= ft601_data;
-    end
-
     always_ff @(negedge ft601_clk) begin
         if ( ft601_reset_n ) begin
-            if ( ~ft601_txe_n && ~ft601_wr_n ) begin
-                $fdisplay(fp_tx, "%h", delay_data);
+            if ( ~ft601_txe_n && ~dly_ft601_wr_n ) begin
+                $fdisplay(fp_tx, "%h", dly_ft601_data);
             end
         end
     end
