@@ -30,9 +30,6 @@ module tb_main
     logic   [7:0]   pmod            ;
 
     rtcl_tp25k_usb3_fifo_sample
-            #(
-                .USE_FT601_PLL      (0              )
-            )
         u_rtcl_tp25k_usb3_fifo_sample
             (
                 .in_clk50           (clk            ),

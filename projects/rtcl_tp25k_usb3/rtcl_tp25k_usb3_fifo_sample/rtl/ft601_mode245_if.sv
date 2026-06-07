@@ -12,7 +12,6 @@ module ft601_mode245_if
         (
             input   var logic           reset               ,
             input   var logic           clk                 ,
-//          input   var logic           tx_clk              ,
 
             input   var logic           ft601_rxf_n         ,
             input   var logic           ft601_txe_n         ,
@@ -70,8 +69,6 @@ module ft601_mode245_if
 
 
     state_t         state = IDLE;
-//  logic  [7:0]    write_count;
-
     logic           reg_ft601_wr_n   = 1'b1 ;
     logic           reg_ft601_rd_n   = 1'b1 ;
     logic           reg_ft601_oe_n   = 1'b1 ;
