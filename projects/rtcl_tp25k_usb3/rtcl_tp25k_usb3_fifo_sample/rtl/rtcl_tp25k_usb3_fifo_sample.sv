@@ -1,7 +1,18 @@
+// -----------------------------------------------------------------------------
+//  RTC-Lab Designs
+//  Real-Time Computing Lab
+//
+//  Copyright (C) 2025-2026 Ryuji Fuchikami
+//  https://rtc-lab.com/
+// -----------------------------------------------------------------------------
+
 
 `default_nettype none
 
 module rtcl_tp25k_usb3_fifo_sample
+        #(
+            parameter   bit     USE_FT601_PLL = 1
+        )
         (
             input   var logic           in_clk50        ,
 
@@ -46,7 +57,7 @@ module rtcl_tp25k_usb3_fifo_sample
     logic ft601_tx_clk      ;
     logic ft601_pll_locked  ;
 
-    if ( 1 ) begin : blk_t601_pll
+    if ( USE_FT601_PLL ) begin : blk_ft601_pll
         // 送受信の位相をPLLで生成
         ft601_pll
             u_ft601_pll
@@ -60,7 +71,7 @@ module rtcl_tp25k_usb3_fifo_sample
                     .lock       (ft601_pll_locked   )
                 );
     end
-    else begin
+    else begin : blk_no_ft601_pll
         // 66MHz の時はこれでも大丈夫そう
         assign ft601_rx_clk = ft601_clk;
         assign ft601_tx_clk = ~ft601_clk;
@@ -171,65 +182,67 @@ module rtcl_tp25k_usb3_fifo_sample
         end
         else begin
             case ( state )
-                IDLE:
-                    begin
-                        reg_ft601_wr_n   <= 1'b1;
-                        reg_ft601_rd_n   <= 1'b1;
-                        reg_ft601_oe_n   <= 1'b1;
-                        reg_ft601_be_o   <= '0  ;
-                        reg_ft601_be_t   <= '1  ;
-                        reg_ft601_data_o <= '0  ;
-                        reg_ft601_data_t <= '1  ;
-                        if ( ~reg_ft601_rxf_n ) begin
-                            state      <= READ_SETUP;
-                            reg_ft601_oe_n <= 1'b0;
-                        end
-                    end
-
-                READ_SETUP:
-                    begin
-                        state          <= READ_DATA;
-                        reg_ft601_rd_n <= 1'b0;
+            IDLE:
+                begin
+                    reg_ft601_wr_n   <= 1'b1;
+                    reg_ft601_rd_n   <= 1'b1;
+                    reg_ft601_oe_n   <= 1'b1;
+                    reg_ft601_be_o   <= '0  ;
+                    reg_ft601_be_t   <= '1  ;
+                    reg_ft601_data_o <= '0  ;
+                    reg_ft601_data_t <= '1  ;
+                    if ( ~reg_ft601_rxf_n ) begin
+                        state      <= READ_SETUP;
                         reg_ft601_oe_n <= 1'b0;
                     end
+                end
 
-                READ_DATA:
-                    begin
-                        if ( reg_ft601_rxf_n ) begin
-                            state      <= READ_END;
-                            reg_ft601_rd_n <= 1'b1;
-                            reg_ft601_oe_n <= 1'b1;
-                        end
+            READ_SETUP:
+                begin
+                    state          <= READ_DATA;
+                    reg_ft601_rd_n <= 1'b0;
+                    reg_ft601_oe_n <= 1'b0;
+                end
+
+            READ_DATA:
+                begin
+                    if ( reg_ft601_rxf_n ) begin
+                        state      <= READ_END;
+                        reg_ft601_rd_n <= 1'b1;
+                        reg_ft601_oe_n <= 1'b1;
                     end
-                
-                READ_END:
-                    begin
+                end
+            
+            READ_END:
+                begin
 //                      state <= IDLE;
 
-                        state        <= WRITE;
-                        write_count  <= 0;
-                        reg_ft601_wr_n   <= 1'b0;
-                        reg_ft601_be_t   <= '0;
-                        reg_ft601_be_o   <= '1;
-                        reg_ft601_data_t <= '0;
-                        reg_ft601_data_o <= '1;
-                    end
+                    state        <= WRITE;
+                    write_count  <= 0;
+                    reg_ft601_wr_n   <= 1'b0;
+                    reg_ft601_be_t   <= '0;
+                    reg_ft601_be_o   <= '1;
+                    reg_ft601_data_t <= '0;
+                    reg_ft601_data_o <= '1;
+                end
 
-                WRITE:
-                    begin
-                        if ( ~reg_ft601_txe_n ) begin
-                            write_count  <= write_count + 1'b1;
-                            reg_ft601_data_o <= {4{write_count}};
-                            if ( write_count == 8'hff ) begin
-                                state <= IDLE;
-                                reg_ft601_wr_n <= 1'b1;
-                                reg_ft601_be_t   <= '1;
-                                reg_ft601_be_o   <= '0;
-                                reg_ft601_data_t <= '1;
-                                reg_ft601_data_o <= '0;
-                            end
+            WRITE:
+                begin
+                    if ( ~reg_ft601_txe_n ) begin
+                        write_count  <= write_count + 1'b1;
+                        reg_ft601_data_o <= {4{write_count}};
+                        if ( write_count == 8'hff ) begin
+                            state <= IDLE;
+                            reg_ft601_wr_n <= 1'b1;
+                            reg_ft601_be_t   <= '1;
+                            reg_ft601_be_o   <= '0;
+                            reg_ft601_data_t <= '1;
+                            reg_ft601_data_o <= '0;
                         end
                     end
+                end
+            default:
+                state <= IDLE;
             endcase
         end
     end
