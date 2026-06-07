@@ -11,7 +11,7 @@
 
 module rtcl_tp25k_usb3_fifo_sample
         #(
-            parameter   bit     USE_FT601_PLL = 1
+            parameter   bit     USE_FT601_PLL = 0
         )
         (
             input   var logic           in_clk50        ,
@@ -74,7 +74,7 @@ module rtcl_tp25k_usb3_fifo_sample
     else begin : blk_no_ft601_pll
         // 66MHz の時はこれでも大丈夫そう
         assign ft601_rx_clk     = ft601_clk ;
-        assign ft601_tx_clk     = ~ft601_clk;
+        assign ft601_tx_clk     = ft601_clk;
         assign ft601_pll_locked = 1'b1      ;
     end
 
@@ -161,9 +161,8 @@ module rtcl_tp25k_usb3_fifo_sample
             (
                 .reset              (ft601_reset                ),
                 .clk                (ft601_rx_clk               ),
+                .tx_clk             (ft601_tx_clk               ),
 
-                .ft601_rx_clk       (ft601_rx_clk               ),
-                .ft601_tx_clk       (ft601_tx_clk               ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -190,6 +189,7 @@ module rtcl_tp25k_usb3_fifo_sample
     localparam FIFO_PTR_BITS = 12;
     logic  [FIFO_PTR_BITS:0]  fifo_rx_free_size;
 
+    /*
     jelly3_stream_fifo
             #(
                 .ASYNC          (0                  ),
@@ -224,6 +224,105 @@ module rtcl_tp25k_usb3_fifo_sample
                 .m_ready        (ft601_tx_fifo_ready),
                 .m_data_size    ()
             );
+    */
+
+    logic           dbg_first   ;
+    logic   [7:0]   dbg_data    ;
+    logic           dbg_valid   ;
+    logic           dbg_ready   ;
+    always_ff @(posedge ft601_rx_clk) begin
+        if ( ft601_reset ) begin
+            dbg_first <= 1'b1;
+            dbg_data  <= '0;
+            dbg_valid <= 1'b0;
+        end
+        else begin
+            if ( !dbg_valid || dbg_ready ) begin
+                if ( dbg_first && ft601_rx_fifo_valid ) begin
+                    dbg_first <= 1'b0;
+                    dbg_data  <= '1;
+                    dbg_valid <= 1'b1;
+                end
+                else begin
+                    if ( dbg_data == 0 ) begin
+                        dbg_valid <= 1'b0;
+                    end
+                    else begin
+                        dbg_data <= dbg_data - 1'b1;
+                    end
+                end
+            end
+        end
+    end
+
+    jelly3_stream_fifo
+            #(
+                .ASYNC          (0                  ),
+                .PTR_BITS       (FIFO_PTR_BITS      ),
+                .DATA_BITS      (4+32               ),
+                .S_SYNC_FF      (3                  ),
+                .M_SYNC_FF      (3                  ),
+                .RAM_TYPE       ("block"            ),
+                .DOUT_REG       (1                  )
+            )
+        u_stream_fifo
+            (
+                .s_reset        (ft601_reset        ),
+                .s_clk          (ft601_rx_clk       ),
+                .s_cke          (1'b1               ),
+                .s_data         ({4'hf, {4{dbg_data}}}),  // {ft601_rx_fifo_strb, ft601_rx_fifo_data}
+                .s_valid        (dbg_valid          ),
+                .s_ready        (dbg_ready          ),
+                .s_free_size    (fifo_rx_free_size  ),
+
+                .m_reset        (ft601_reset        ),
+                .m_clk          (ft601_rx_clk       ),
+                .m_cke          (1'b1               ),
+                .m_data         ({
+                                    ft601_tx_fifo_strb,
+                                    ft601_tx_fifo_data
+                                }),
+                .m_valid        (ft601_tx_fifo_valid),
+                .m_ready        (ft601_tx_fifo_ready),
+                .m_data_size    ()
+            );
+    
+    /*
+    jelly3_stream_fifo
+            #(
+                .ASYNC          (0                  ),
+                .PTR_BITS       (FIFO_PTR_BITS      ),
+                .DATA_BITS      (4+32               ),
+                .S_SYNC_FF      (3                  ),
+                .M_SYNC_FF      (3                  ),
+                .RAM_TYPE       ("block"            ),
+                .DOUT_REG       (1                  )
+            )
+        u_stream_fifo
+            (
+                .s_reset        (ft601_reset        ),
+                .s_clk          (ft601_rx_clk       ),
+                .s_cke          (1'b1               ),
+                .s_data         ({
+                                    ft601_rx_fifo_strb,
+                                    ft601_rx_fifo_data
+                                }),
+                .s_valid        (ft601_rx_fifo_valid),
+                .s_ready        (),
+                .s_free_size    (fifo_rx_free_size  ),
+
+                .m_reset        (ft601_reset        ),
+                .m_clk          (ft601_rx_clk       ),
+                .m_cke          (1'b1               ),
+                .m_data         ({
+                                    ft601_tx_fifo_strb,
+                                    ft601_tx_fifo_data
+                                }),
+                .m_valid        (ft601_tx_fifo_valid),
+                .m_ready        (ft601_tx_fifo_ready),
+                .m_data_size    ()
+            );
+    */
 
     always_ff @(posedge ft601_rx_clk) begin
         if ( ft601_reset ) begin

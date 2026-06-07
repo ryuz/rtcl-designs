@@ -12,9 +12,8 @@ module ft601_mode245_if
         (
             input   var logic           reset               ,
             input   var logic           clk                 ,
+            input   var logic           tx_clk              ,
 
-            input   var logic           ft601_rx_clk        ,
-            input   var logic           ft601_tx_clk        ,
             input   var logic           ft601_rxf_n         ,
             input   var logic           ft601_txe_n         ,
             output  var logic           ft601_wr_n          ,
@@ -44,7 +43,7 @@ module ft601_mode245_if
     logic           reg_ft601_txe_n  = 1'b1 ;
     logic   [3:0]   reg_ft601_be_i   ;
     logic   [31:0]  reg_ft601_data_i ;
-    always_ff @( posedge ft601_rx_clk or posedge reset) begin
+    always_ff @( posedge clk or posedge reset) begin
         if ( reset ) begin
             reg_ft601_rxf_n  <= 1'b1  ;
             reg_ft601_txe_n  <= 1'b1  ;
@@ -54,7 +53,7 @@ module ft601_mode245_if
             reg_ft601_txe_n  <= ft601_txe_n  ;
         end
     end
-    always_ff @( posedge ft601_rx_clk ) begin
+    always_ff @( posedge clk ) begin
         reg_ft601_be_i   <= ft601_be_i   ;
         reg_ft601_data_i <= ft601_data_i ;
     end
@@ -80,10 +79,13 @@ module ft601_mode245_if
     logic   [3:0]   reg_ft601_be_t   = '1   ;
     logic   [31:0]  reg_ft601_data_o = '0   ;
     logic   [31:0]  reg_ft601_data_t = '1   ;
-    logic           reg_read         = 1'b0 ;
-    logic           reg_write        = 1'b0 ;
 
-    always_ff @( posedge ft601_tx_clk or posedge reset ) begin
+    logic read_start;
+    logic write_start;
+    assign read_start  = (state == IDLE) && ~reg_ft601_rxf_n && !m_fifo_almost_full;
+    assign write_start = (state == IDLE) && ~reg_ft601_txe_n && s_fifo_valid && !read_start;
+
+    always_ff @( posedge tx_clk or posedge reset ) begin
         if ( reset ) begin
             state <= IDLE;
             reg_ft601_wr_n   <= 1'b1    ;
@@ -93,8 +95,6 @@ module ft601_mode245_if
             reg_ft601_be_t   <= '1      ;
             reg_ft601_data_o <= '0      ;
             reg_ft601_data_t <= '1      ;
-            reg_read         <= 1'b0    ;
-            reg_write        <= 1'b0    ;
         end
         else begin
             case ( state )
@@ -120,7 +120,6 @@ module ft601_mode245_if
                             reg_ft601_be_o   <= s_fifo_strb;
                             reg_ft601_data_t <= '0;
                             reg_ft601_data_o <= s_fifo_data;
-                            reg_write        <= 1'b1;
                         end
                     end
 
@@ -129,7 +128,6 @@ module ft601_mode245_if
                         state          <= READ_DATA;
                         reg_ft601_rd_n <= 1'b0;
                         reg_ft601_oe_n <= 1'b0;
-                        reg_read       <= 1'b1;
                     end
 
                 READ_DATA:
@@ -138,7 +136,6 @@ module ft601_mode245_if
                             state      <= READ_END;
                             reg_ft601_rd_n <= 1'b1;
                             reg_ft601_oe_n <= 1'b1;
-                            reg_read       <= 1'b0;
                         end
                     end
                 
@@ -155,7 +152,6 @@ module ft601_mode245_if
                         end
                         else begin
                             state <= IDLE;
-                            reg_write        <= 1'b0;
                             reg_ft601_wr_n   <= 1'b1;
                             reg_ft601_be_t   <= '1;
                             reg_ft601_be_o   <= '0;
@@ -170,19 +166,23 @@ module ft601_mode245_if
         end
     end
 
-    logic   reg_read_i;
+    logic           reg_read     = 1'b0 ;
+    logic           reg_write    = 1'b0 ;
+    always_ff @( posedge clk ) begin
+        reg_read  <= state == READ_DATA;
+        reg_write <= (state == WRITE) || write_start;
+    end
+    
     always_ff @( posedge clk ) begin
         if ( reset ) begin
-            reg_read_i   <= 1'b0;
             m_fifo_strb  <= 'x  ;
             m_fifo_data  <= 'x  ;
             m_fifo_valid <= 1'b0;
         end
         else begin
-            reg_read_i   <= reg_read                    ;
             m_fifo_strb  <= reg_ft601_be_i              ;
             m_fifo_data  <= reg_ft601_data_i            ;
-            m_fifo_valid <= reg_read_i && ~reg_ft601_rxf_n;
+            m_fifo_valid <= reg_read && ~reg_ft601_rxf_n;
         end
     end
 
