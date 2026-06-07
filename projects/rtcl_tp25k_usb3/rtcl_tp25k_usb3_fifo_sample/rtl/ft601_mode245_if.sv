@@ -105,9 +105,7 @@ module ft601_mode245_if
                         reg_ft601_wr_n   <= 1'b1;
                         reg_ft601_rd_n   <= 1'b1;
                         reg_ft601_oe_n   <= 1'b1;
-                        reg_ft601_be_o   <= '0  ;
                         reg_ft601_be_t   <= '1  ;
-                        reg_ft601_data_o <= '0  ;
                         reg_ft601_data_t <= '1  ;
                         if ( ~reg_ft601_rxf_n && !m_fifo_almost_full ) begin
                             // 受信開始

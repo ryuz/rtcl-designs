@@ -110,8 +110,8 @@ module tb_main
     
     assign ft601_rxf_n = ~(rd_data_count > 0);
     assign ft601_txe_n = ~(wr_data_count < 64);
-    assign ft601_data  = ~ft601_oe_n ? rd_data : 'z;
-    assign ft601_be    = ~ft601_oe_n ? '1 : 'z;
+    assign ft601_data  = ~dly_ft601_oe_n ? rd_data : 'z;
+    assign ft601_be    = ~dly_ft601_oe_n ? '1 : 'z;
 
     // logging
     int fp_tx = 0;
