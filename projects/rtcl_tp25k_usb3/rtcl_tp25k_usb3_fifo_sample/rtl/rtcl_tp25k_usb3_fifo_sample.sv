@@ -46,21 +46,25 @@ module rtcl_tp25k_usb3_fifo_sample
     logic ft601_tx_clk      ;
     logic ft601_pll_locked  ;
 
-    ft601_pll
-        u_ft601_pll
-            (
-                .reset      (reset              ),
-                .mdclk      (in_clk50           ),
-                .clkin      (ft601_clk          ),
-                .pllpwd     (1'b0               ),
-                .clkout0    (ft601_rx_clk       ),
-                .clkout1    (ft601_tx_clk       ),
-                .lock       (ft601_pll_locked   )
-            );
-
-//    assign ft601_rx_clk = ft601_clk;
-//    assign ft601_tx_clk = ~ft601_clk;
-
+    if ( 1 ) begin : blk_t601_pll
+        // 送受信の位相をPLLで生成
+        ft601_pll
+            u_ft601_pll
+                (
+                    .reset      (reset              ),
+                    .mdclk      (in_clk50           ),
+                    .clkin      (ft601_clk          ),
+                    .pllpwd     (1'b0               ),
+                    .clkout0    (ft601_rx_clk       ),  // pahse 0
+                    .clkout1    (ft601_tx_clk       ),  // pahse 270
+                    .lock       (ft601_pll_locked   )
+                );
+    end
+    else begin
+        // 66MHz の時はこれでも大丈夫そう
+        assign ft601_rx_clk = ft601_clk;
+        assign ft601_tx_clk = ~ft601_clk;
+    end
 
     logic   [24:0]  clk_counter;
     always_ff @(posedge in_clk50) begin
