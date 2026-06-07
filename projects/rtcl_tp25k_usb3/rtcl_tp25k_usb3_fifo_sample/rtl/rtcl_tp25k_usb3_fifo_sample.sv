@@ -94,13 +94,21 @@ module rtcl_tp25k_usb3_fifo_sample
                 );
     end
 
-    logic           reg_ft601_rxf_n     ;
-    logic           reg_ft601_txe_n     ;
-    logic   [3:0]   reg_ft601_be_i      ;
-    logic   [31:0]  reg_ft601_data_i    ;
+    logic           reg_ft601_rxf_n  = 1'b1 ;
+    logic           reg_ft601_txe_n  = 1'b1 ;
+    logic   [3:0]   reg_ft601_be_i   ;
+    logic   [31:0]  reg_ft601_data_i ;
+    always_ff @( posedge ft601_clk or posedge reset) begin
+        if ( reset ) begin
+            reg_ft601_rxf_n  <= 1'b1  ;
+            reg_ft601_txe_n  <= 1'b1  ;
+        end
+        else begin
+            reg_ft601_rxf_n  <= ft601_rxf_n  ;
+            reg_ft601_txe_n  <= ft601_txe_n  ;
+        end
+    end
     always_ff @( posedge ft601_clk ) begin
-        reg_ft601_rxf_n  <= ft601_rxf_n  ;
-        reg_ft601_txe_n  <= ft601_txe_n  ;
         reg_ft601_be_i   <= ft601_be_i   ;
         reg_ft601_data_i <= ft601_data_i ;
     end
@@ -121,7 +129,7 @@ module rtcl_tp25k_usb3_fifo_sample
     logic   reg_ft601_wr_n = 1'b1   ;
     logic   reg_ft601_rd_n = 1'b1   ;
     logic   reg_ft601_oe_n = 1'b1   ;
-    always_ff @( negedge ft601_clk or posedge reset) begin
+    always_ff @( posedge ft601_clk or posedge reset) begin
         if ( reset ) begin
             state <= IDLE;
             reg_ft601_wr_n   <= 1'b1;
@@ -143,18 +151,17 @@ module rtcl_tp25k_usb3_fifo_sample
                         reg_ft601_be_t   <= '1  ;
                         reg_ft601_data_o <= '0  ;
                         reg_ft601_data_t <= '1  ;
-                        /*
                         if ( ~reg_ft601_rxf_n ) begin
                             state      <= READ_SETUP;
                             reg_ft601_oe_n <= 1'b0;
                         end
-                        */
                     end
 
                 READ_SETUP:
                     begin
-                        reg_ft601_rd_n   <= 1'b0;
-                        reg_ft601_oe_n   <= 1'b0;
+                        state          <= READ_DATA;
+                        reg_ft601_rd_n <= 1'b0;
+                        reg_ft601_oe_n <= 1'b0;
                     end
 
                 READ_DATA:
@@ -208,8 +215,8 @@ module rtcl_tp25k_usb3_fifo_sample
     assign pmod[2] = ft601_oe_n     ;
     assign pmod[3] = ft601_rd_n     ;
     assign pmod[4] = ft601_wr_n     ;
-    assign pmod[5] = '0   ;
-    assign pmod[6] = '0   ;
+    assign pmod[5] = reg_ft601_rxf_n  ;
+    assign pmod[6] = state == IDLE ;
     assign pmod[7] = reset   ;
 
 
