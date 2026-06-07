@@ -42,6 +42,25 @@ module rtcl_tp25k_usb3_fifo_sample
         end
     end
 
+    logic ft601_rx_clk       ;
+    logic ft601_tx_clk      ;
+    logic ft601_pll_locked  ;
+
+    ft601_pll
+        u_ft601_pll
+            (
+                .reset      (reset              ),
+                .mdclk      (in_clk50           ),
+                .clkin      (ft601_clk          ),
+                .pllpwd     (1'b0               ),
+                .clkout0    (ft601_rx_clk       ),
+                .clkout1    (ft601_tx_clk       ),
+                .lock       (ft601_pll_locked   )
+            );
+
+//    assign ft601_rx_clk = ft601_clk;
+//    assign ft601_tx_clk = ~ft601_clk;
+
 
     logic   [24:0]  clk_counter;
     always_ff @(posedge in_clk50) begin
@@ -49,14 +68,20 @@ module rtcl_tp25k_usb3_fifo_sample
     end
 
     logic   [26:0]  usb_counter;
-    always_ff @(posedge ft601_clk) begin
+    always_ff @(posedge ft601_rx_clk) begin
         usb_counter <= usb_counter + 1'b1;
     end
+
+    logic   [26:0]  usb_counter90;
+    always_ff @(posedge ft601_tx_clk) begin
+        usb_counter90 <= usb_counter90 + 1'b1;
+    end
+
 
     assign led[0] = clk_counter[24];
     assign led[1] = usb_counter[26];
     assign led[2] = ft601_wakeup_n;
-    assign led[3] = reset;
+    assign led[3] = usb_counter90[26];
 
 
 
@@ -98,7 +123,7 @@ module rtcl_tp25k_usb3_fifo_sample
     logic           reg_ft601_txe_n  = 1'b1 ;
     logic   [3:0]   reg_ft601_be_i   ;
     logic   [31:0]  reg_ft601_data_i ;
-    always_ff @( posedge ft601_clk or posedge reset) begin
+    always_ff @( posedge ft601_rx_clk or posedge reset) begin
         if ( reset ) begin
             reg_ft601_rxf_n  <= 1'b1  ;
             reg_ft601_txe_n  <= 1'b1  ;
@@ -108,7 +133,7 @@ module rtcl_tp25k_usb3_fifo_sample
             reg_ft601_txe_n  <= ft601_txe_n  ;
         end
     end
-    always_ff @( posedge ft601_clk ) begin
+    always_ff @( posedge ft601_rx_clk ) begin
         reg_ft601_be_i   <= ft601_be_i   ;
         reg_ft601_data_i <= ft601_data_i ;
     end
@@ -129,7 +154,7 @@ module rtcl_tp25k_usb3_fifo_sample
     logic   reg_ft601_wr_n = 1'b1   ;
     logic   reg_ft601_rd_n = 1'b1   ;
     logic   reg_ft601_oe_n = 1'b1   ;
-    always_ff @( posedge ft601_clk or posedge reset) begin
+    always_ff @( posedge ft601_tx_clk or posedge reset) begin
         if ( reset ) begin
             state <= IDLE;
             reg_ft601_wr_n   <= 1'b1;

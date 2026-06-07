@@ -15,7 +15,8 @@ CONSTRAIN_DIR = ../constrain
 
 VLOG_SOURCES = $(RTL_DIR)/rtcl_tp25k_usb3_blinking_led.sv
 
-CST_SOURCES  = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_blinking_led.sdc
+SDC_SOURCES  = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_blinking_led.sdc
+
 CST_SOURCES += $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_blinking_led.cst
 
 # for tcl script
@@ -35,7 +36,7 @@ export WSLENV=DEVICE_PART_NUMBER:DEVICE_NAME:DEVICE_VERSION:TOP_MODULE:OUTPUT_BA
 
 all: $(FS_FILE)
 
-$(FS_FILE): $(VLOG_SOURCES) $(CST_SOURCES)
+$(FS_FILE): $(VLOG_SOURCES) $(SDC_SOURCES) $(CST_SOURCES)
 	gw_sh $(JELLY_DIR)/scripts/gowin_build.tcl
 
 clean:
