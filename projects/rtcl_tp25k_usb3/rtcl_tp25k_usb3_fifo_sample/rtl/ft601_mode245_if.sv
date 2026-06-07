@@ -79,6 +79,7 @@ module ft601_mode245_if
     logic   [3:0]   reg_ft601_be_t   = '1   ;
     logic   [31:0]  reg_ft601_data_o = '0   ;
     logic   [31:0]  reg_ft601_data_t = '1   ;
+    logic           reg_ft601_buf    = 1'b0 ;
 
     logic read_start;
     logic write_start;
@@ -95,8 +96,9 @@ module ft601_mode245_if
             reg_ft601_be_t   <= '1      ;
             reg_ft601_data_o <= '0      ;
             reg_ft601_data_t <= '1      ;
+            reg_ft601_buf    <= 1'b0    ;
         end
-        else begin
+        else begin          
             case ( state )
                 IDLE:
                     begin
@@ -112,14 +114,15 @@ module ft601_mode245_if
                             state      <= READ_SETUP;
                             reg_ft601_oe_n <= 1'b0;
                         end
-                        else if ( ~reg_ft601_txe_n && s_fifo_valid ) begin
+                        else if ( ~reg_ft601_txe_n && (reg_ft601_buf || s_fifo_valid) ) begin
                             // 送信開始
                             state            <= WRITE;
-                            reg_ft601_wr_n   <= 1'b0;
-                            reg_ft601_be_t   <= '0;
-                            reg_ft601_be_o   <= s_fifo_strb;
-                            reg_ft601_data_t <= '0;
-                            reg_ft601_data_o <= s_fifo_data;
+                            if ( reg_ft601_buf ) begin
+                                // 前回の未送信が残っていたらそのまま送信
+                                reg_ft601_wr_n   <= 1'b0;
+                                reg_ft601_be_t   <= '0;
+                                reg_ft601_data_t <= '0;
+                            end
                         end
                     end
 
@@ -133,7 +136,7 @@ module ft601_mode245_if
                 READ_DATA:
                     begin
                         if ( reg_ft601_rxf_n || m_fifo_almost_full ) begin
-                            state      <= READ_END;
+                            state          <= READ_END;
                             reg_ft601_rd_n <= 1'b1;
                             reg_ft601_oe_n <= 1'b1;
                         end
@@ -146,17 +149,22 @@ module ft601_mode245_if
 
                 WRITE:
                     begin
-                        if ( ~reg_ft601_txe_n && s_fifo_valid ) begin
-                            reg_ft601_be_o   <= s_fifo_strb;
-                            reg_ft601_data_o <= s_fifo_data;
+                        if ( ~ft601_txe_n ) begin
+                            reg_ft601_buf <= 1'b0;
+                        end
+                        if ( ~ft601_txe_n && s_fifo_valid ) begin
+                            reg_ft601_wr_n   <= 1'b0        ;
+                            reg_ft601_be_t   <= '0          ;
+                            reg_ft601_data_t <= '0          ;
+                            reg_ft601_be_o   <= s_fifo_strb ;
+                            reg_ft601_data_o <= s_fifo_data ;
+                            reg_ft601_buf    <= 1'b1        ;
                         end
                         else begin
-                            state <= IDLE;
+                            state            <= IDLE;
                             reg_ft601_wr_n   <= 1'b1;
                             reg_ft601_be_t   <= '1;
-                            reg_ft601_be_o   <= '0;
                             reg_ft601_data_t <= '1;
-                            reg_ft601_data_o <= '0;
                         end
                     end
                 
@@ -187,18 +195,16 @@ module ft601_mode245_if
     end
 
 //  assign s_fifo_ready = ~reg_ft601_txe_n && (state == WRITE) || write_start;
-//  assign s_fifo_ready = ~ft601_txe_n && (state == WRITE) || write_start;
-
     assign s_fifo_ready = ~ft601_txe_n && (state == WRITE);
+
+//  assign s_fifo_ready = (!reg_ft601_buf || ~ft601_txe_n) && (state == WRITE || write_start);
 
     assign ft601_wr_n   = reg_ft601_wr_n   ;
     assign ft601_rd_n   = reg_ft601_rd_n   ;
     assign ft601_oe_n   = reg_ft601_oe_n   ;
-//  assign ft601_be_o   = reg_ft601_be_o   ;
-    assign ft601_be_o   = s_fifo_strb      ;
-    assign ft601_be_t   = reg_ft601_be_t   ;
-//  assign ft601_data_o = reg_ft601_data_o ;
-    assign ft601_data_o = s_fifo_data      ;
+    assign ft601_be_o   = reg_ft601_be_o   ;
+    assign ft601_be_t   = reg_ft601_be_t   ; 
+    assign ft601_data_o = reg_ft601_data_o ;
     assign ft601_data_t = reg_ft601_data_t ;
 
 endmodule

@@ -68,7 +68,7 @@ module tb_main
     always_ff @(negedge ft601_clk) begin
         if ( !ft601_reset_n ) begin
             rd_data_count <= '0;
-            rd_data       <= '0;
+            rd_data       <= '1;
         end
         else begin
             // read
@@ -78,7 +78,7 @@ module tb_main
 
             if ( ~ft601_rd_n && rd_data_count > 0 ) begin
                 rd_data_count <= rd_data_count - 1'b1;
-                rd_data       <= rd_data + 1;
+                rd_data       <= rd_data - 1;
             end
 
             // write
@@ -112,9 +112,18 @@ module tb_main
             if ( ~ft601_rxf_n && ~ft601_rd_n && ~ft601_oe_n ) begin
                 $fdisplay(fp_rx, "%h", ft601_data);
             end
+        end
+    end
 
+    logic   [31:0]  delay_data;
+    always_ff @(negedge ft601_clk) begin
+        delay_data <= ft601_data;
+    end
+
+    always_ff @(negedge ft601_clk) begin
+        if ( ft601_reset_n ) begin
             if ( ~ft601_txe_n && ~ft601_wr_n ) begin
-                $fdisplay(fp_tx, "%h", ft601_data);
+                $fdisplay(fp_tx, "%h", delay_data);
             end
         end
     end
