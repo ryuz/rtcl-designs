@@ -80,6 +80,7 @@ module ft601_mode245_if
     logic   [3:0]   reg_ft601_be_t   = '1   ;
     logic   [31:0]  reg_ft601_data_o = '0   ;
     logic   [31:0]  reg_ft601_data_t = '1   ;
+    logic           reg_read         = 1'b0 ;
     logic           reg_write        = 1'b0 ;
 
     always_ff @( posedge ft601_tx_clk or posedge reset ) begin
@@ -92,6 +93,7 @@ module ft601_mode245_if
             reg_ft601_be_t   <= '1      ;
             reg_ft601_data_o <= '0      ;
             reg_ft601_data_t <= '1      ;
+            reg_read         <= 1'b0    ;
             reg_write        <= 1'b0    ;
         end
         else begin
@@ -127,14 +129,16 @@ module ft601_mode245_if
                         state          <= READ_DATA;
                         reg_ft601_rd_n <= 1'b0;
                         reg_ft601_oe_n <= 1'b0;
+                        reg_read       <= 1'b1;
                     end
 
                 READ_DATA:
                     begin
-                        if ( reg_ft601_rxf_n ) begin
+                        if ( reg_ft601_rxf_n || m_fifo_almost_full ) begin
                             state      <= READ_END;
                             reg_ft601_rd_n <= 1'b1;
                             reg_ft601_oe_n <= 1'b1;
+                            reg_read       <= 1'b0;
                         end
                     end
                 
@@ -158,9 +162,28 @@ module ft601_mode245_if
                             reg_ft601_data_o <= '0;
                         end
                     end
+                
+                default:
+                    state <= IDLE;
             endcase
         end
     end
+
+    always_ff @( posedge clk ) begin
+        if ( reset ) begin
+            m_fifo_strb  <= 'x  ;
+            m_fifo_data  <= 'x  ;
+            m_fifo_valid <= 1'b0;
+        end
+        else begin
+            m_fifo_strb  <= reg_ft601_be_i              ;
+            m_fifo_data  <= reg_ft601_data_i            ;
+            m_fifo_valid <= reg_read && ~reg_ft601_rxf_n;
+        end
+    end
+
+    assign s_fifo_ready = ~reg_ft601_txe_n && reg_write;
+
 
     assign ft601_wr_n   = reg_ft601_wr_n   ;
     assign ft601_rd_n   = reg_ft601_rd_n   ;

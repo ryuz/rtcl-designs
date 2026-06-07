@@ -1,5 +1,5 @@
 # jelly
-JELLY_TOP_DIR = ../../../../jelly
+JELLY_TOP_DIR = ../../../../../../jelly
 -include $(JELLY_TOP_DIR)/include/make/def_simulation.inc
 
 # setting

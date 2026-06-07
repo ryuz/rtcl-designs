@@ -65,7 +65,7 @@ module tb_main
     int     rd_data;
     int     wr_data_count = '0;
 
-    always_ff @(posedge ft601_clk) begin
+    always_ff @(negedge ft601_clk) begin
         if ( !ft601_reset_n ) begin
             rd_data_count <= '0;
             rd_data       <= '0;
