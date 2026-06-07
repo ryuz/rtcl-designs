@@ -161,7 +161,7 @@ module rtcl_tp25k_usb3_fifo_sample
             (
                 .reset              (ft601_reset                ),
                 .clk                (ft601_rx_clk               ),
-                .tx_clk             (ft601_tx_clk               ),
+//              .tx_clk             (ft601_tx_clk               ),
 
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
@@ -189,7 +189,7 @@ module rtcl_tp25k_usb3_fifo_sample
     localparam FIFO_PTR_BITS = 12;
     logic  [FIFO_PTR_BITS:0]  fifo_rx_free_size;
 
-    /*
+    
     jelly3_stream_fifo
             #(
                 .ASYNC          (0                  ),
@@ -224,8 +224,8 @@ module rtcl_tp25k_usb3_fifo_sample
                 .m_ready        (ft601_tx_fifo_ready),
                 .m_data_size    ()
             );
-    */
-
+    
+    /*
     logic           dbg_first   ;
     logic   [7:0]   dbg_data    ;
     logic           dbg_valid   ;
@@ -273,42 +273,6 @@ module rtcl_tp25k_usb3_fifo_sample
                 .s_data         ({4'hf, {4{dbg_data}}}),  // {ft601_rx_fifo_strb, ft601_rx_fifo_data}
                 .s_valid        (dbg_valid          ),
                 .s_ready        (dbg_ready          ),
-                .s_free_size    (fifo_rx_free_size  ),
-
-                .m_reset        (ft601_reset        ),
-                .m_clk          (ft601_rx_clk       ),
-                .m_cke          (1'b1               ),
-                .m_data         ({
-                                    ft601_tx_fifo_strb,
-                                    ft601_tx_fifo_data
-                                }),
-                .m_valid        (ft601_tx_fifo_valid),
-                .m_ready        (ft601_tx_fifo_ready),
-                .m_data_size    ()
-            );
-    
-    /*
-    jelly3_stream_fifo
-            #(
-                .ASYNC          (0                  ),
-                .PTR_BITS       (FIFO_PTR_BITS      ),
-                .DATA_BITS      (4+32               ),
-                .S_SYNC_FF      (3                  ),
-                .M_SYNC_FF      (3                  ),
-                .RAM_TYPE       ("block"            ),
-                .DOUT_REG       (1                  )
-            )
-        u_stream_fifo
-            (
-                .s_reset        (ft601_reset        ),
-                .s_clk          (ft601_rx_clk       ),
-                .s_cke          (1'b1               ),
-                .s_data         ({
-                                    ft601_rx_fifo_strb,
-                                    ft601_rx_fifo_data
-                                }),
-                .s_valid        (ft601_rx_fifo_valid),
-                .s_ready        (),
                 .s_free_size    (fifo_rx_free_size  ),
 
                 .m_reset        (ft601_reset        ),

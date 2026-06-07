@@ -12,7 +12,7 @@ module ft601_mode245_if
         (
             input   var logic           reset               ,
             input   var logic           clk                 ,
-            input   var logic           tx_clk              ,
+//          input   var logic           tx_clk              ,
 
             input   var logic           ft601_rxf_n         ,
             input   var logic           ft601_txe_n         ,
@@ -85,7 +85,7 @@ module ft601_mode245_if
     assign read_start  = (state == IDLE) && ~reg_ft601_rxf_n && !m_fifo_almost_full;
     assign write_start = (state == IDLE) && ~reg_ft601_txe_n && s_fifo_valid && !read_start;
 
-    always_ff @( posedge tx_clk or posedge reset ) begin
+    always_ff @( posedge clk or posedge reset ) begin
         if ( reset ) begin
             state <= IDLE;
             reg_ft601_wr_n   <= 1'b1    ;
@@ -172,7 +172,7 @@ module ft601_mode245_if
         reg_read  <= state == READ_DATA;
         reg_write <= (state == WRITE) || write_start;
     end
-    
+
     always_ff @( posedge clk ) begin
         if ( reset ) begin
             m_fifo_strb  <= 'x  ;
@@ -186,15 +186,19 @@ module ft601_mode245_if
         end
     end
 
-    assign s_fifo_ready = ~reg_ft601_txe_n && reg_write;
+//  assign s_fifo_ready = ~reg_ft601_txe_n && (state == WRITE) || write_start;
+//  assign s_fifo_ready = ~ft601_txe_n && (state == WRITE) || write_start;
 
+    assign s_fifo_ready = ~ft601_txe_n && (state == WRITE);
 
     assign ft601_wr_n   = reg_ft601_wr_n   ;
     assign ft601_rd_n   = reg_ft601_rd_n   ;
     assign ft601_oe_n   = reg_ft601_oe_n   ;
-    assign ft601_be_o   = reg_ft601_be_o   ;
+//  assign ft601_be_o   = reg_ft601_be_o   ;
+    assign ft601_be_o   = s_fifo_strb      ;
     assign ft601_be_t   = reg_ft601_be_t   ;
-    assign ft601_data_o = reg_ft601_data_o ;
+//  assign ft601_data_o = reg_ft601_data_o ;
+    assign ft601_data_o = s_fifo_data      ;
     assign ft601_data_t = reg_ft601_data_t ;
 
 endmodule
