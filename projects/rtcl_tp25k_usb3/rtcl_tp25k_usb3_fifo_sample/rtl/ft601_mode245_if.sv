@@ -175,19 +175,15 @@ module ft601_mode245_if
     end
 
     logic           reg_read     = 1'b0 ;
-    logic           reg_write    = 1'b0 ;
-    always_ff @( posedge clk ) begin
-        reg_read  <= state == READ_DATA;
-        reg_write <= (state == WRITE) || write_start;
-    end
-
     always_ff @( posedge clk ) begin
         if ( reset ) begin
+            reg_read     <= 1'b0;
             m_fifo_strb  <= 'x  ;
             m_fifo_data  <= 'x  ;
             m_fifo_valid <= 1'b0;
         end
         else begin
+            reg_read     <= (state == READ_DATA);
             m_fifo_strb  <= reg_ft601_be_i              ;
             m_fifo_data  <= reg_ft601_data_i            ;
             m_fifo_valid <= reg_read && ~reg_ft601_rxf_n;
