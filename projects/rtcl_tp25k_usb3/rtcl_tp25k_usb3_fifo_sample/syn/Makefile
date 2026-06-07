@@ -16,6 +16,11 @@ CONSTRAIN_DIR = ../constrain
 # Verilog Source Files
 VLOG_SOURCES  = $(RTL_DIR)/rtcl_tp25k_usb3_fifo_sample.sv
 VLOG_SOURCES += $(RTL_DIR)/ft601_mode245_if.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_sync.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_sync.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
 VLOG_SOURCES += $(RTL_DIR)/gowin_pll/pll_init.v
 VLOG_SOURCES += $(RTL_DIR)/gowin_pll/ft601_pll/ft601_pll.v
 VLOG_SOURCES += $(RTL_DIR)/gowin_pll/ft601_pll/ft601_pll_mod.v

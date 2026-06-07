@@ -87,7 +87,7 @@ module tb_main
             end
 
             if ( ~ft601_txe_n && ~ft601_wr_n ) begin
-                $display("Write: %h", ft601_data);
+//              $display("Write: %h", ft601_data);
                 wr_data_count <= wr_data_count + 1'b1;
             end
         end
@@ -97,6 +97,27 @@ module tb_main
     assign ft601_txe_n = ~(wr_data_count < 64);
     assign ft601_data  = ~ft601_oe_n ? rd_data : 'z;
     assign ft601_be    = ~ft601_oe_n ? '1 : 'z;
+
+
+    // logging
+    int fp_tx = 0;
+    int fp_rx = 0;
+    initial begin
+        fp_tx = $fopen("tx_log.txt", "w");
+        fp_rx = $fopen("rx_log.txt", "w");
+    end
+
+    always_ff @(negedge ft601_clk) begin
+        if ( ft601_reset_n ) begin
+            if ( ~ft601_rxf_n && ~ft601_rd_n && ~ft601_oe_n ) begin
+                $fdisplay(fp_rx, "%h", ft601_data);
+            end
+
+            if ( ~ft601_txe_n && ~ft601_wr_n ) begin
+                $fdisplay(fp_tx, "%h", ft601_data);
+            end
+        end
+    end
 
 endmodule
 
