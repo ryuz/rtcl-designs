@@ -241,6 +241,29 @@ fn main() -> Result<(), Box<dyn Error>> {
             let mut img_rgb = Mat::default();
             opencv::imgproc::cvt_color(&img_8u, &mut img_rgb, opencv::imgproc::COLOR_GRAY2BGR, 0)?;
 
+            // 白い枠を描画
+            opencv::imgproc::rectangle(
+                &mut img_rgb,
+                Rect::new(0, 0, width as i32, height as i32),
+                Scalar::new(255.0, 255.0, 255.0, 0.0),
+                1,
+                opencv::imgproc::LINE_8,
+                0,
+            )?;
+
+            // タイトルを緑色で描画
+            opencv::imgproc::put_text(
+                &mut img_rgb,
+                titles[i],
+                Point::new(4, 16),
+                opencv::imgproc::FONT_HERSHEY_SIMPLEX,
+                0.5,
+                Scalar::new(0.0, 255.0, 0.0, 0.0),
+                1,
+                opencv::imgproc::LINE_8,
+                false,
+            )?;
+
             let x = (i % 4) as i32;
             let y = (i / 4) as i32;
             let roi = Rect::new(x * width as i32, y * height as i32, width as i32, height as i32);
