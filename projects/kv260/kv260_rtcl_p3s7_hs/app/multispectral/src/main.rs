@@ -159,6 +159,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("xsm_delay",  0,  255,   0)?;
     
     // 画像表示ループ
+    let mut remove_bg = false;
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         // ESC キーで終了
         let key = highgui::wait_key(10).unwrap();
@@ -193,7 +194,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             let src = video_capture.read_image_mat(i as usize)?;
             // 先頭ピクセルの上位6bitにインデックス値が入っているので、画像化前に取り出す
             let idx = (src.at_2d::<u16>(0, 0)? >> 10) as usize;
-            println!("frame {} idx {}", i, idx);
             let mut img = Mat::default();
             src.convert_to(&mut img, CV_16U, 64.0, 0.0)?;
 
@@ -204,22 +204,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         // imgs の0から7までの8枚をタイル状になれべ手 4x2 倍の img を作る
         let mut img = Mat::zeros(height as i32 * 2, width as i32 * 4, CV_16U)?.to_mat()?;
         for i in 0..multispectral_num-1 {
+            if imgs[i].empty() {
+                continue;
+            }
+            
+            let mut img_view = Mat::default();
+            if !imgs[8].empty() && remove_bg {
+                // im から imgs[8] を引く
+                opencv::core::subtract(&imgs[i], &imgs[8], &mut img_view, &Mat::default(), -1)?;
+            }
+            else {
+                img_view = imgs[i].clone();
+            }
+
             let x = (i % 4) as i32;
             let y = (i / 4) as i32;
             let roi = Rect::new(x * width as i32, y * height as i32, width as i32, height as i32);
             let mut dst = img.roi_mut(roi)?;
-            imgs[i].copy_to(&mut dst)?;
+            img_view.copy_to(&mut dst)?;
         }
         highgui::imshow("back ground", &imgs[8])?;
 
-        /*
-        for i in 0..multispectral_num {
-            let win_name = format!("img{}", i);
-            highgui::imshow(win_name.as_str(), &imgs[i])?;
-        }
-        */
-
-//      let mut img = video_capture.read_image_mat(9)?;
 
         // センサーゲインを適用
         cam.set_gain(sgain_db)?;
@@ -232,25 +237,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         highgui::imshow("img", &img)?;
         
-        
-        /*
-        // 10bit 画像なので加工して表示
-        let mut view = Mat::default();
-        img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-
-        if color {
-            let mut view_rgb = Mat::default();
-            imgproc::cvt_color(&view, &mut view_rgb, imgproc::COLOR_BayerBG2BGR, 0)?;
-            highgui::imshow("img", &view_rgb)?;
-        } else {
-            highgui::imshow("img", &view)?;
-        }
-        */
-
         // キーボード操作
         let ch = key as u8 as char;
         match ch {
             'q' => { break; },
+            'b' => { remove_bg = !remove_bg; },
             'p' => {
                 println!("camera module id      : {:04x}", cam.module_id()?);
                 println!("camera module version : {:04x}", cam.module_version()?);
