@@ -16,7 +16,7 @@ module system_control
             parameter   type            regadr_t                 = logic [REGADR_BITS-1:0]  ,
   
             parameter   bit [15:0]      MODULE_ID                = 16'h5254                 ,
-            parameter   bit [15:0]      MODULE_VERSION           = 16'h0100                 ,
+            parameter   bit [15:0]      MODULE_VERSION           = 16'h0108                 ,
             parameter   bit [15:0]      MODULE_CONFIG            = 16'h0000                 ,
             parameter   bit             INIT_SENSOR_ENABLE       = 1'b0                     ,
             parameter   bit             INIT_SENSOR_PGOOD_EN     = 1'b1                     ,
