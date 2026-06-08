@@ -188,54 +188,70 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         
         // CaptureDriver で 1frame キャプチャ
-        let mut imgs = vec![Mat::default(); multispectral_num as usize];
+        let mut cap_imgs = vec![Mat::default(); multispectral_num as usize];
         video_capture.record(width, height, multispectral_num as usize)?;
         for i in 0..multispectral_num {
             let src = video_capture.read_image_mat(i as usize)?;
             // 先頭ピクセルの上位6bitにインデックス値が入っているので、画像化前に取り出す
             let idx = (src.at_2d::<u16>(0, 0)? >> 10) as usize;
             let mut img = Mat::default();
-            src.convert_to(&mut img, CV_16U, 64.0, 0.0)?;
+            src.convert_to(&mut img, CV_16U, 65535.0/1023.0, 0.0)?;
+
+            // センサーゲインの代わりにデジタルゲインを適用
+            let dgain_scale = 10.0_f64.powf(dgain_db as f64 / 20.0);
+            let mut img_dgain = Mat::default();
+            img.convert_to(&mut img_dgain, -1, dgain_scale, 0.0)?;
+            img = img_dgain;
 
             // imgs の対応する番号に格納
-            imgs[idx] = img;
+            cap_imgs[idx] = img;
         }
 
-        // imgs の0から7までの8枚をタイル状になれべ手 4x2 倍の img を作る
-        let mut img = Mat::zeros(height as i32 * 2, width as i32 * 4, CV_16U)?.to_mat()?;
+        let titles =[
+                "625nm (Red)",
+                "530nm (Green)",
+                "465nm (Blue)",
+                "850nm (IR1)",
+                "940nm (IR2)",
+                "733nm (Red Edge)",
+                "590nm (Amber)",
+                "395nm (UV)",
+                "background",
+            ];
+
+        // imgs の0から7までの8枚をタイル状になれべ手 4x2 倍の 表示画像 を作る
+        let mut view_img = Mat::zeros(height as i32 * 2, width as i32 * 4, CV_8UC3)?.to_mat()?;
         for i in 0..multispectral_num-1 {
-            if imgs[i].empty() {
+            if cap_imgs[i].empty() {
                 continue;
             }
             
-            let mut img_view = Mat::default();
-            if !imgs[8].empty() && remove_bg {
+            let mut img = Mat::default();
+            if !cap_imgs[8].empty() && remove_bg {
                 // im から imgs[8] を引く
-                opencv::core::subtract(&imgs[i], &imgs[8], &mut img_view, &Mat::default(), -1)?;
+                opencv::core::subtract(&cap_imgs[i], &cap_imgs[8], &mut img, &Mat::default(), -1)?;
             }
             else {
-                img_view = imgs[i].clone();
+                img = cap_imgs[i].clone();
             }
+
+            // CV_16U のモノクロ画像を CV_8UC3 に変換
+            let mut img_8u = Mat::default();
+            img.convert_to(&mut img_8u, CV_8U, 255.0/65535.0, 0.0)?;
+            let mut img_rgb = Mat::default();
+            opencv::imgproc::cvt_color(&img_8u, &mut img_rgb, opencv::imgproc::COLOR_GRAY2BGR, 0)?;
 
             let x = (i % 4) as i32;
             let y = (i / 4) as i32;
             let roi = Rect::new(x * width as i32, y * height as i32, width as i32, height as i32);
-            let mut dst = img.roi_mut(roi)?;
-            img_view.copy_to(&mut dst)?;
+            let mut dst = view_img.roi_mut(roi)?;
+            img_rgb.copy_to(&mut dst)?;
         }
-        highgui::imshow("back ground", &imgs[8])?;
-
+        highgui::imshow("background", &cap_imgs[8])?;
+        highgui::imshow("img", &view_img)?;
 
         // センサーゲインを適用
         cam.set_gain(sgain_db)?;
-
-        // センサーゲインの代わりにデジタルゲインを適用
-        let dgain_scale = 10.0_f64.powf(dgain_db as f64 / 20.0);
-        let mut img_dgain = Mat::default();
-        img.convert_to(&mut img_dgain, -1, dgain_scale, 0.0)?;
-        img = img_dgain;
-
-        highgui::imshow("img", &img)?;
         
         // キーボード操作
         let ch = key as u8 as char;
@@ -260,7 +276,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             'd' => {
                 println!("write : dump.png");
-                imgcodecs::imwrite("dump.png", &img, &Vector::<i32>::new())?;
+                imgcodecs::imwrite("dump.png", &view_img, &Vector::<i32>::new())?;
             },
             'r' => {  // 動画記録
                 // 日時のディレクトリを生成
