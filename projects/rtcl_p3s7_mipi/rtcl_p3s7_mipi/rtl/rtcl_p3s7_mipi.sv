@@ -552,7 +552,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_recv
             (
@@ -582,7 +582,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_swap
             (
@@ -605,7 +605,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_clip
             (
@@ -836,7 +836,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_fifo [1]
             (
@@ -869,7 +869,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_sw_in [2]
             (
@@ -884,7 +884,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (2*8                ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_sw_out[2]
             (
@@ -900,7 +900,7 @@ module rtcl_p3s7_mipi
                 .DEFAULT_READY  (1'b0               ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_axi4s_switch_in
             (
@@ -921,7 +921,7 @@ module rtcl_p3s7_mipi
                 .DPHY_LANES     (2                  ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_rtcl_hs_tx
             (
@@ -974,7 +974,7 @@ module rtcl_p3s7_mipi
                 .SYNC_FF        (2                  ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_pulse_async
             (
@@ -994,7 +994,7 @@ module rtcl_p3s7_mipi
             #(
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_mipi_csi2_tx
             (
@@ -1015,7 +1015,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (2*8                ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_dphy [1]
             (
@@ -1031,7 +1031,7 @@ module rtcl_p3s7_mipi
                 .DEFAULT_READY  (1'b0               ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_axi4s_switch_out
             (
@@ -1099,7 +1099,6 @@ module rtcl_p3s7_mipi
         led[0] <= !reset || (clk72_counter[25] & clk72_counter[16]) ;
         led[1] <= sensor_ready                                      ;
     end
-//  assign led[1] = sensor_pgood;
 
 
     // --------------------------------
@@ -1149,7 +1148,7 @@ module rtcl_p3s7_mipi
                 .WIDTH              (8              ),
                 .DEVICE             (DEVICE         ),
                 .SIMULATION         (SIMULATION     ),
-                .DEBUG              (DEBUG          )
+                .DEBUG              ("false"        )
             )
         u_cdc_array_single_hdr
             (

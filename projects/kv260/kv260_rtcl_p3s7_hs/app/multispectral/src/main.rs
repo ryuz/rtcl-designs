@@ -66,6 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("  color:  {}", color);
     println!("  fps:    {}", fps);
     println!("  trigger mode: {}", trigger_mode);
+    println!("  pmod mode : 0x{:04x}", args.pmod_mode);
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -136,7 +137,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_pmod_pattern_len(multispectral_num as u16)?;
 
     // ヘッダに設定するのをインデックス値に設定
-    cam.set_pmod_header_select(3)?;
+    cam.set_pmod_header_select(2)?;
 
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
@@ -192,6 +193,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let src = video_capture.read_image_mat(i as usize)?;
             // 先頭ピクセルの上位6bitにインデックス値が入っているので、画像化前に取り出す
             let idx = (src.at_2d::<u16>(0, 0)? >> 10) as usize;
+            println!("frame {} idx {}", i, idx);
             let mut img = Mat::default();
             src.convert_to(&mut img, CV_16U, 64.0, 0.0)?;
 

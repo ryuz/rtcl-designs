@@ -36,6 +36,11 @@ struct Args {
     #[arg(short = 'm', long, default_value_t = false)]
     master : bool,
 
+    /// Trigger Mode (External Triggers)
+    #[arg(short = 't', long, default_value_t = false)]
+    trigger : bool,
+
+    /// PMOD の動作モード (default: 0)
     #[arg(long="pmod-mode", default_value_t = 0)]
     pmod_mode: u16,
 
@@ -51,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
-    let trigger_mode = !args.master;
+    let trigger_mode = args.trigger;
 
     println!("start kv260_rtcl_p3s7_hs");
     println!("Configuration:");
@@ -146,7 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("sgain",      0,  200,  10)?;    // センサーゲイン
     create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  900, 800)?;
+    create_cv_trackbar("exposure",  10, 1000, 950)?;
     create_cv_trackbar("xsm_delay",  0,  255,   0)?;
     
     // 画像表示ループ

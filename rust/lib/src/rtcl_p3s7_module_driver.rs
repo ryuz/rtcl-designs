@@ -229,7 +229,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             usleep,
             general_configuration: 0x084c,
             xsm_delay : 21,
-            black_lines : 0x0102,
+            black_lines : 0x0110,
             analog_gain : 1.0,
             digital_gain : 1.0,
             dphy_speed: 1250000000.0,
