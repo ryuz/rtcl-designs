@@ -306,8 +306,24 @@ where
         Ok(self.cam_i2c.set_pmod_header_select(sel)?)
     }
 
-    pub fn set_pmod_pattern_len(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
-        Ok(self.cam_i2c.set_pmod_pattern_len(sel)?)
+    pub fn set_pmod_slot_len(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_slot_len(sel)?)
+    }
+
+    pub fn set_pmod_slot_pattern(
+        &mut self,
+        index: u16,
+        pattern: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.cam_i2c.set_pmod_slot_pattern(index, pattern)?)
+    }
+
+    pub fn set_pmod_slot_time(
+        &mut self,
+        index: u16,
+        pattern: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.cam_i2c.set_pmod_slot_time(index, pattern)?)
     }
 
     pub fn read_pmod(&mut self) -> Result<u8, Box<dyn Error>> {

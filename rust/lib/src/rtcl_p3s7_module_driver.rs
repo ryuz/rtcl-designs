@@ -101,15 +101,9 @@ const REGADR_PMOD_GPIO_DIR: u16 = 0x00b4;
 
 const REGADR_PMOD_TRG_SEL  : u16 = 0x00b8;
 const REGADR_PMOD_HDR_SEL  : u16 = 0x00b9;
-const REGADR_PMOD_PTN_LEN  : u16 = 0x00bc;
-const REGADR_PMOD_PTN_0_1  : u16 = 0x00c0;
-const REGADR_PMOD_PTN_2_3  : u16 = 0x00c1;
-const REGADR_PMOD_PTN_4_5  : u16 = 0x00c2;
-const REGADR_PMOD_PTN_6_7  : u16 = 0x00c3;
-const REGADR_PMOD_PTN_8_9  : u16 = 0x00c4;
-const REGADR_PMOD_PTN_A_B  : u16 = 0x00c5;
-const REGADR_PMOD_PTN_C_D  : u16 = 0x00c6;
-const REGADR_PMOD_PTN_E_F  : u16 = 0x00c7;
+const REGADR_PMOD_SLOT_LEN  : u16 = 0x00bc;
+const REGADR_PMOD_SLOT0_PTN : u16 = 0x0200;
+const REGADR_PMOD_SLOT0_TIM : u16 = 0x0200;
 
 
 /// MMCM DRP base register
@@ -588,14 +582,33 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         Ok(())
     }
 
-    pub fn set_pmod_pattern_len(
+    pub fn set_pmod_slot_len(
         &mut self,
         len: u16,
     ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
         assert!(len > 0);
-        self.write_i2c(REGADR_PMOD_PTN_LEN, len-1)?;
+        self.write_i2c(REGADR_PMOD_SLOT_LEN, len-1)?;
         Ok(())
     }
+
+    pub fn set_pmod_slot_pattern(
+        &mut self,
+        index: u16,
+        pattern: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REGADR_PMOD_SLOT0_PTN + index, pattern)?;
+        Ok(())
+    }
+
+    pub fn set_pmod_slot_time(
+        &mut self,
+        index: u16,
+        time: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REGADR_PMOD_SLOT0_TIM + index, time)?;
+        Ok(())
+    }
+
 
     /// Read PMOD GPIO input pins
     ///

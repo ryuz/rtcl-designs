@@ -57,7 +57,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let fps = args.fps;
     let trigger_mode = args.trigger;
 
-    let multispectral_num : usize = 9;
+    // 計測する素スペクトル数
+    let multispectrals : usize = 8;
+    // 背景を加えた撮影スロット
+    let slots : usize = multispectrals + 1;
 
     println!("start kv260_rtcl_p3s7_hs");
     println!("Configuration:");
@@ -134,7 +137,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // PMODモード設定
     cam.set_pmod_mode(args.pmod_mode)?;
-    cam.set_pmod_pattern_len(multispectral_num as u16)?;
+    cam.set_pmod_slot_len(slots as u16)?;
 
     // ヘッダに設定するのをインデックス値に設定
     cam.set_pmod_header_select(2)?;
@@ -148,15 +151,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut video_capture = CaptureDriver::new(reg_wdma_img, udmabuf_acc.clone())?;
 
     // ウィンドウ作成
-    highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
-    highgui::resize_window("img", width as i32 + 128, height as i32 + 256)?;
+    let view_winname = "image";
+    let bg_winname = "background";
+    highgui::named_window(view_winname, highgui::WINDOW_AUTOSIZE)?;
+    highgui::resize_window(view_winname, (width*4) as i32 + 128, (height*2) as i32 + 256)?;
+    highgui::named_window(bg_winname, highgui::WINDOW_AUTOSIZE)?;
+    highgui::resize_window(bg_winname, width as i32 + 128, height as i32 + 256)?;
 
     // トラックバー生成
-    create_cv_trackbar("sgain",      0,  200,  10)?;    // センサーゲイン
-    create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
-    create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  990, 990)?;
-    create_cv_trackbar("xsm_delay",  0,  255,   0)?;
+    create_cv_trackbar("sgain",     &view_winname,  0,  200,  10)?;    // センサーゲイン
+    create_cv_trackbar("dgain",     &view_winname,  0,  200,  10)?;    // デジタルゲイン
+    create_cv_trackbar("fps",       &view_winname, 10, 1000, fps)?;
+    create_cv_trackbar("exposure",  &view_winname, 10,  990, 990)?;
+//  create_cv_trackbar("xsm_delay", &view_winname,  0,  255,   0)?;
+
+    for i in 0..multispectrals {
+        let name = format!("time{}", i);
+        create_cv_trackbar(&name, &bg_winname, 0, 1000, 1000)?;
+    }
+    
     
     // 画像表示ループ
     let mut remove_bg = false;
@@ -168,13 +181,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // トラックバー値取得
-        let sgain_db = (get_cv_trackbar_pos("sgain")? as f32 - 10.0) / 10.0;
-        let dgain_db = (get_cv_trackbar_pos("dgain")? as f32 - 10.0) / 10.0;
-        let fps = get_cv_trackbar_pos("fps")? as f32;
-        let exposure = get_cv_trackbar_pos("exposure")? as u16;
+        let sgain_db = (get_cv_trackbar_pos("sgain", &view_winname)? as f32 - 10.0) / 10.0;
+        let dgain_db = (get_cv_trackbar_pos("dgain", &view_winname)? as f32 - 10.0) / 10.0;
+        let fps = get_cv_trackbar_pos("fps", &view_winname)? as f32;
+        let exposure = get_cv_trackbar_pos("exposure", &view_winname)? as u16;
+//      let xsm_delay = get_cv_trackbar_pos("xsm_delay", &view_winname)? as u16;
+//      cam.set_xsm_delay(xsm_delay)?;
 
-        let xsm_delay = get_cv_trackbar_pos("xsm_delay")? as u16;
-        cam.set_xsm_delay(xsm_delay)?;
+        /*
+        for i in 0..multispectral_num {
+            let name = format!("time{}", i);
+            let time = get_cv_trackbar_pos(&name, &bg_winname)? as u16;
+            cam.set_pmod_slot_time(i as u16, time)?;
+        }
+        */
+
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
@@ -188,9 +209,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         
         // CaptureDriver で 1frame キャプチャ
-        let mut cap_imgs = vec![Mat::default(); multispectral_num as usize];
-        video_capture.record(width, height, multispectral_num as usize)?;
-        for i in 0..multispectral_num {
+        let mut cap_imgs = vec![Mat::default(); slots as usize];
+        video_capture.record(width, height, slots as usize)?;
+        for i in 0..slots {
             let src = video_capture.read_image_mat(i as usize)?;
             // 先頭ピクセルの上位6bitにインデックス値が入っているので、画像化前に取り出す
             let idx = (src.at_2d::<u16>(0, 0)? >> 10) as usize;
@@ -206,6 +227,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // imgs の対応する番号に格納
             cap_imgs[idx] = img;
         }
+        let bg_img = cap_imgs[slots-1].clone();
 
         let titles =[
                 "625nm (Red)",
@@ -221,15 +243,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // imgs の0から7までの8枚をタイル状になれべ手 4x2 倍の 表示画像 を作る
         let mut view_img = Mat::zeros(height as i32 * 2, width as i32 * 4, CV_8UC3)?.to_mat()?;
-        for i in 0..multispectral_num-1 {
+        for i in 0..multispectrals {
             if cap_imgs[i].empty() {
                 continue;
             }
             
             let mut img = Mat::default();
-            if !cap_imgs[8].empty() && remove_bg {
-                // im から imgs[8] を引く
-                opencv::core::subtract(&cap_imgs[i], &cap_imgs[8], &mut img, &Mat::default(), -1)?;
+            if !bg_img.empty() && remove_bg {
+                // 背景を引く
+                opencv::core::subtract(&cap_imgs[i], &bg_img, &mut img, &Mat::default(), -1)?;
             }
             else {
                 img = cap_imgs[i].clone();
@@ -270,8 +292,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             let mut dst = view_img.roi_mut(roi)?;
             img_rgb.copy_to(&mut dst)?;
         }
-        highgui::imshow("background", &cap_imgs[8])?;
-        highgui::imshow("img", &view_img)?;
+        highgui::imshow(&view_winname, &view_img)?;
+        highgui::imshow(&bg_winname, &bg_img)?;
 
         // センサーゲインを適用
         cam.set_gain(sgain_db)?;
@@ -300,6 +322,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             'd' => {
                 println!("write : dump.png");
                 imgcodecs::imwrite("dump.png", &view_img, &Vector::<i32>::new())?;
+                for i in 0..slots {
+                    if cap_imgs[i].empty() {
+                        continue;
+                    }
+                    let file_name = format!("dump_{}.png", i);
+                    imgcodecs::imwrite(&file_name, &cap_imgs[i], &Vector::<i32>::new())?;
+                }
             },
             'r' => {  // 動画記録
                 // 日時のディレクトリを生成
@@ -311,7 +340,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 
                 // 100フレーム録画
                 let frames = args.rec_frames;
-                video_capture.record(width, height, frames)?;
+                video_capture.record(width, height, (frames+1) * slots)?;
+                let mut f = 0;
+                // idx 0 のフレームまで読み飛ばす
+                let img = video_capture.read_image_mat(f)?;
+
+
+
                 for f in 0..frames {
                    let img = video_capture.read_image_mat(f)?;
                     let mut view = Mat::default();
@@ -334,17 +369,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 
-fn create_cv_trackbar(trackbarname: &str, minval: i32, maxval: i32, inival: i32) -> opencv::Result<()> {
-    let winname = "img";
-    highgui::create_trackbar(trackbarname, &winname, None, maxval, None)?;
-    highgui::set_trackbar_min(trackbarname, &winname, minval)?;
-    highgui::set_trackbar_max(trackbarname, &winname, maxval)?;
-    highgui::set_trackbar_pos(trackbarname, &winname, inival)?;
+fn create_cv_trackbar(trackbarname: &str, winname: &str, minval: i32, maxval: i32, inival: i32) -> opencv::Result<()> {
+    highgui::create_trackbar(trackbarname, winname, None, maxval, None)?;
+    highgui::set_trackbar_min(trackbarname, winname, minval)?;
+    highgui::set_trackbar_max(trackbarname, winname, maxval)?;
+    highgui::set_trackbar_pos(trackbarname, winname, inival)?;
     Ok(())
 }
 
-fn get_cv_trackbar_pos(trackbarname: &str) -> opencv::Result<i32> {
-    let winname = "img";
+fn get_cv_trackbar_pos(trackbarname: &str, winname: &str) -> opencv::Result<i32> {
     let val = highgui::get_trackbar_pos(trackbarname, &winname)?;
     Ok(val)
 }
