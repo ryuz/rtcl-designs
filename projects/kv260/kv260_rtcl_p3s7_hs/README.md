@@ -10,6 +10,9 @@ Kria KV260 で [グローバルシャッターMIPI高速度カメラ](https://rt
 
 本ドキュメントでは、カメラモジュール側の Spartan-7 には [こちら](https://github.com/ryuz/rtcl-designs/tree/main/projects/rtcl_p3s7_mipi/rtcl_p3s7_mipi)のデザインが書き込まれている前提で、KV260 側で FPGAデザインについて説明します。
 
+また、`app/multispectral` には [RTCL-LED-PMOD](https://rtc-lab.com/products/rtcl-led-pmod/) のマルチバンド LED 照明ボードを使い、照明波長を切り替えながら撮影するマルチバンド撮影アプリを用意しています。
+8 波長の撮影スロットと背景用スロットを順番に取得し、OpenCV の表示画面からゲインや露光、各スロットの照明時間を調整できます。
+
 
 ## 環境構築
 
@@ -290,6 +293,61 @@ RTCL-P3S7-MIPI グローバルシャッター高速度カメラは KV260 の 3.3
 
 電力が不足している場合は、RTCL-P3S7-MIPI ボードの電源を MIPIケーブルから供給するのではなく、外部から 3.3V 電源を供給する方法もあります。
 具体的には R1 チップ抵抗を取り外したのちに、J3 コネクタから 3.3V 電源を供給します。
+
+
+## multispectral アプリの使い方
+
+`app/multispectral` には、RTCL-LED-PMOD のマルチバンド LED 照明ボードを使って波長を切り替えながら撮影するアプリがあります。
+
+モノクロカメラに https://rtc-lab.com/products/rtcl-led-pmod/ のマルチバンド LED 照明ボードが取り付けられている前提となります。
+
+8 波長の撮影スロットと背景用スロットを順番に取得し、OpenCV の画面からゲイン、露光、各スロットの照明時間を調整できます。
+
+### KV260 でPSソフトをセルフコンパイルして実行
+
+KV260 側で本リポジトリを clone したら、次のように実行します。
+
+```bash
+cd projects/kv260/kv260_rtcl_p3s7_hs/app/multispectral
+make run
+```
+
+`make run` は必要な FPGA アクセラレータのロードを行ったあと、Rust 版のアプリを起動します。
+X-Window の設定が正しくできていれば、マルチバンド撮影結果のウィンドウが開きます。
+
+`RUN_OPT` 変数を使うと、解像度や FPS、モノクロ/カラー、トリガーモードなどを指定できます。
+
+```bash
+make run RUN_OPT="--width 320 --height 320 --fps 1000"
+```
+
+必要に応じて、`--pmod-mode` で PMOD モードを切り替えたり、電圧監視を無効にする場合は `--pgood-off` を指定できます。
+
+### PCでPSソフトをクロスコンパイルして実行
+
+cross が使える環境であれば、次のようにしてクロスコンパイル後に KV260 へ転送して実行できます。
+
+```bash
+cd projects/kv260/kv260_rtcl_p3s7_hs/app/multispectral
+make remote_run
+```
+
+この際、環境変数 `KV260_SSH_ADDRESS` と `KV260_SERVER_ADDRESS` に、それぞれ KV260 の SSH アドレスと jelly-fpga-loader の接続先を設定しておいてください。
+
+例えば
+
+```bash
+KV260_SERVER_ADDRESS="192.168.16.1:8051"
+KV260_SSH_ADDRESS="kria-kv260"
+```
+
+といった形式になります。
+
+また、`RUN_OPT` で起動時のオプションも渡せます。
+
+```bash
+make remote_run RUN_OPT="--width 320 --height 320 --fps 1000 --pgood-off"
+```
 
 
 ## 参考情報
