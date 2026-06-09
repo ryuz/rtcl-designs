@@ -503,15 +503,27 @@ module tb_top();
     localparam  REGADR_PMOD_GPIO_DIR   = 15'h00b4;
     localparam  REGADR_PMOD_TRG_SEL    = 15'h00b8;
     localparam  REGADR_PMOD_HDR_SEL    = 15'h00b9;
-    localparam  REGADR_PMOD_PTN_LEN    = 15'h00bc;
-    localparam  REGADR_PMOD_PTN_0_1    = 15'h00c0;
-    localparam  REGADR_PMOD_PTN_2_3    = 15'h00c1;
-    localparam  REGADR_PMOD_PTN_4_5    = 15'h00c2;
-    localparam  REGADR_PMOD_PTN_6_7    = 15'h00c3;
-    localparam  REGADR_PMOD_PTN_8_9    = 15'h00c4;
-    localparam  REGADR_PMOD_PTN_A_B    = 15'h00c5;
-    localparam  REGADR_PMOD_PTN_C_D    = 15'h00c6;
-    localparam  REGADR_PMOD_PTN_E_F    = 15'h00c7;
+    localparam  REGADR_PMOD_SLOT_LEN   = 15'h00bc;
+    localparam  REGADR_PMOD_SLOT0_PAT  = 15'h0200;
+    localparam  REGADR_PMOD_SLOT1_PAT  = 15'h0201;
+    localparam  REGADR_PMOD_SLOT2_PAT  = 15'h0202;
+    localparam  REGADR_PMOD_SLOT3_PAT  = 15'h0203;
+    localparam  REGADR_PMOD_SLOT4_PAT  = 15'h0204;
+    localparam  REGADR_PMOD_SLOT5_PAT  = 15'h0205;
+    localparam  REGADR_PMOD_SLOT6_PAT  = 15'h0206;
+    localparam  REGADR_PMOD_SLOT7_PAT  = 15'h0207;
+    localparam  REGADR_PMOD_SLOT8_PAT  = 15'h0208;
+    localparam  REGADR_PMOD_SLOT9_PAT  = 15'h0209;
+    localparam  REGADR_PMOD_SLOT0_TIM  = 15'h0300;
+    localparam  REGADR_PMOD_SLOT1_TIM  = 15'h0301;
+    localparam  REGADR_PMOD_SLOT2_TIM  = 15'h0302;
+    localparam  REGADR_PMOD_SLOT3_TIM  = 15'h0303;
+    localparam  REGADR_PMOD_SLOT4_TIM  = 15'h0304;
+    localparam  REGADR_PMOD_SLOT5_TIM  = 15'h0305;
+    localparam  REGADR_PMOD_SLOT6_TIM  = 15'h0306;
+    localparam  REGADR_PMOD_SLOT7_TIM  = 15'h0307;
+    localparam  REGADR_PMOD_SLOT8_TIM  = 15'h0308;
+    localparam  REGADR_PMOD_SLOT9_TIM  = 15'h0309;
 
     initial begin
         logic [15:0] rdata;
@@ -532,6 +544,7 @@ module tb_top();
         */
 
         cmd_write(REGADR_PMOD_MODE, 16'h0010);
+        cmd_write(REGADR_PMOD_SLOT1_TIM, 10);
 
 //      cmd_write(REGADR_CSI_MODE, 1);
         cmd_write(REGADR_CSI_MODE, 0);

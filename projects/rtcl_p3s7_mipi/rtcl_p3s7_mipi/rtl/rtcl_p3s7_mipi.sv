@@ -1147,28 +1147,44 @@ module rtcl_p3s7_mipi
     logic   [7:0]   pmod_pkt_hdr    ;
 
     pmod_control
+            #(
+                .TIME_DIV       (72                     ),
+                .PMOD_BITS      ($bits(pmod_t)          ),
+                .pmod_t         (pmod_t                 ),
+                .MODE_BITS      ($bits(pmod_t)          ),
+                .mode_t         (pmod_mode_t            ),
+                .SLOTS          (SLOTS                  ),
+                .SLOT_BITS      ($bits(slot_t)          ),
+                .slot_t         (slot_t                 ),
+                .TIMER_BITS     ($bits(timer_t)         ),
+                .timer_t        (timer_t                ),
+                .TRG_SEL_BITS   ($bits(trg_sel_t)       ),
+                .trg_sel_t      (trg_sel_t              ),
+                .HDR_SEL_BITS   ($bits(hdr_sel_t)       ),
+                .hdr_sel_t      (hdr_sel_t              )
+            )
         u_pmod_control
             (
-                .reset      (reset                  ),
-                .clk        (clk72                  ),
+                .reset          (reset                  ),
+                .clk            (clk72                  ),
 
-                .pmod       (pmod                   ),
-                .pkt_hdr    (pmod_pkt_hdr           ),
+                .pmod           (pmod                   ),
+                .pkt_hdr        (pmod_pkt_hdr           ),
 
-                .trigger    (mipi_gpio1             ),
-                .monitor    (python_monitor         ),
-                .test0      (test0                  ),
+                .trigger        (mipi_gpio1             ),
+                .monitor        (python_monitor         ),
+                .test0          (test0                  ),
 
-                .mode       (ctl_pmod_mode          ),
-                .gpio_in    (ctl_pmod_gpio_i        ),
-                .gpio_out   (ctl_pmod_gpio_o        ),
-                .gpio_dir   (ctl_pmod_dir           ),
+                .mode           (ctl_pmod_mode          ),
+                .gpio_in        (ctl_pmod_gpio_i        ),
+                .gpio_out       (ctl_pmod_gpio_o        ),
+                .gpio_dir       (ctl_pmod_dir           ),
 
-                .trg_sel    (ctl_pmod_trg_sel       ),
-                .hdr_sel    (ctl_pmod_hdr_sel       ),
-                .slot_len   (ctl_pmod_slot_len      ),
-                .slot_ptn   (ctl_pmod_slot_ptn      ),
-                .slot_tim   (ctl_pmod_slot_tim      )
+                .trg_sel        (ctl_pmod_trg_sel       ),
+                .hdr_sel        (ctl_pmod_hdr_sel       ),
+                .slot_len       (ctl_pmod_slot_len      ),
+                .slot_ptn       (ctl_pmod_slot_ptn      ),
+                .slot_tim       (ctl_pmod_slot_tim      )
             );
 
     jelly3_cdc_array_single
