@@ -36,6 +36,11 @@ struct Args {
     #[arg(short = 'm', long, default_value_t = false)]
     master : bool,
 
+    /// Trigger Mode (External Triggers)
+    #[arg(short = 't', long, default_value_t = false)]
+    trigger : bool,
+
+    /// PMOD の動作モード (default: 0)
     #[arg(long="pmod-mode", default_value_t = 0)]
     pmod_mode: u16,
 
@@ -46,17 +51,20 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    println!("start kv260_rtcl_p3s7_hs");
-    println!("Configuration:");
-    println!("  width:  {}", args.width);
-    println!("  height: {}", args.height);
-    println!("  color:  {}", args.color);
 
     let width = (args.width + 15) & !0xf;  // 16ピクセル境界に合わせる
     let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
-    let trigger_mode = !args.master;
+    let trigger_mode = args.trigger;
+
+    println!("start kv260_rtcl_p3s7_hs");
+    println!("Configuration:");
+    println!("  width:  {}", width);
+    println!("  height: {}", height);
+    println!("  color:  {}", color);
+    println!("  fps:    {}", fps);
+    println!("  trigger mode: {}", trigger_mode);
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -125,6 +133,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // PMODモード設定
     cam.set_pmod_mode(args.pmod_mode)?;
 
+    cam.set_monitor_select(2)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -141,7 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("sgain",      0,  200,  10)?;    // センサーゲイン
     create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  900, 800)?;
+    create_cv_trackbar("exposure",  10, 1000, 950)?;
     create_cv_trackbar("xsm_delay",  0,  255,   0)?;
     
     // 画像表示ループ
@@ -168,6 +178,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             timgen.set_timing(period_us, exposure_us)?;
         }
         else {
+            cam.set_frame_period(period_us)?;
             cam.set_exposure(exposure_us)?;
         }
         
@@ -206,6 +217,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("camera sensor id      : {:04x}", cam.sensor_id()?);
                 println!("sensor_ready : {}", cam.sensor_ready()?);
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
+                println!("fr_length    : {}", cam.fr_length());
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
             'x' => {
