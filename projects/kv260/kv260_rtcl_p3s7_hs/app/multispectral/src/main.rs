@@ -155,7 +155,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut video_capture = CaptureDriver::new(reg_wdma_img, udmabuf_acc.clone())?;
 
     // ウィンドウ作成
-    let view_winname = "image";
+    let view_winname = "multispectral";
     let bg_winname = "background";
     highgui::named_window(view_winname, highgui::WINDOW_AUTOSIZE)?;
     highgui::resize_window(view_winname, (width*4) as i32 + 128, (height*2) as i32 + 256)?;
@@ -163,15 +163,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     highgui::resize_window(bg_winname, width as i32 + 128, height as i32 + 256)?;
 
     // トラックバー生成
-    create_cv_trackbar("sgain",     &view_winname,  0,  200,  10)?;    // センサーゲイン
-    create_cv_trackbar("dgain",     &view_winname,  0,  200,  10)?;    // デジタルゲイン
-    create_cv_trackbar("fps",       &view_winname, 10, 1000, fps)?;
-    create_cv_trackbar("exposure",  &view_winname, 10,  990, 990)?;
-//  create_cv_trackbar("xsm_delay", &view_winname,  0,  255,   0)?;
+    create_cv_trackbar("sgain",     &bg_winname,  0,  200,  10)?;    // センサーゲイン
+    create_cv_trackbar("dgain",     &bg_winname,  0,  200,  10)?;    // デジタルゲイン
+    create_cv_trackbar("fps",       &bg_winname, 10, 1000, fps)?;
+    create_cv_trackbar("exposure",  &bg_winname, 10,  990, 990)?;
 
     for i in 0..spectrals {
         let name = format!("time{}", i);
-        create_cv_trackbar(&name, &bg_winname, 0, 1000, 1000)?;
+        create_cv_trackbar(&name, &view_winname, 0, 1000, 1000)?;
     }
     
     
@@ -185,19 +184,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // トラックバー値取得
-        let sgain_db = (get_cv_trackbar_pos("sgain", &view_winname)? as f32 - 10.0) / 10.0;
-        let dgain_db = (get_cv_trackbar_pos("dgain", &view_winname)? as f32 - 10.0) / 10.0;
-        let fps = get_cv_trackbar_pos("fps", &view_winname)? as f32;
-        let exposure = get_cv_trackbar_pos("exposure", &view_winname)? as u16;
-//      let xsm_delay = get_cv_trackbar_pos("xsm_delay", &view_winname)? as u16;
-//      cam.set_xsm_delay(xsm_delay)?;
+        let sgain_db = (get_cv_trackbar_pos("sgain",    &bg_winname)? as f32 - 10.0) / 10.0;
+        let dgain_db = (get_cv_trackbar_pos("dgain",    &bg_winname)? as f32 - 10.0) / 10.0;
+        let fps      =  get_cv_trackbar_pos("fps",      &bg_winname)? as f32;
+        let exposure =  get_cv_trackbar_pos("exposure", &bg_winname)? as u16;
 
         for i in 0..spectrals {
             let name = format!("time{}", i);
-            let time = get_cv_trackbar_pos(&name, &bg_winname)? as u16;
+            let time = get_cv_trackbar_pos(&name, &view_winname)? as u16;
             cam.set_pmod_slot_time(i as u16, time)?;
         }
-
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
