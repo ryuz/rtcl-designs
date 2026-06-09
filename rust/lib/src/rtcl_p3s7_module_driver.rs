@@ -103,7 +103,7 @@ const REGADR_PMOD_TRG_SEL  : u16 = 0x00b8;
 const REGADR_PMOD_HDR_SEL  : u16 = 0x00b9;
 const REGADR_PMOD_SLOT_LEN  : u16 = 0x00bc;
 const REGADR_PMOD_SLOT0_PTN : u16 = 0x0200;
-const REGADR_PMOD_SLOT0_TIM : u16 = 0x0200;
+const REGADR_PMOD_SLOT0_TIM : u16 = 0x0300;
 
 
 /// MMCM DRP base register

@@ -57,10 +57,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let fps = args.fps;
     let trigger_mode = args.trigger;
 
-    // 計測する素スペクトル数
-    let multispectrals : usize = 8;
-    // 背景を加えた撮影スロット
-    let slots : usize = multispectrals + 1;
+    let spectrals : usize = 8;              // 計測する素スペクトル数
+    let slots : usize = spectrals + 1;      // 背景を加えた撮影スロット
 
     println!("start kv260_rtcl_p3s7_hs");
     println!("Configuration:");
@@ -138,6 +136,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // PMODモード設定
     cam.set_pmod_mode(args.pmod_mode)?;
     cam.set_pmod_slot_len(slots as u16)?;
+    for i in 0..spectrals {
+        // スロット番号の波長を発光
+        cam.set_pmod_slot_pattern(i as u16, (1 << i) as u16)?;
+    }
+    // 最後のスロットは背景用に全て消灯
+    cam.set_pmod_slot_pattern(spectrals as u16, 0)?;
 
     // ヘッダに設定するのをインデックス値に設定
     cam.set_pmod_header_select(2)?;
@@ -165,7 +169,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("exposure",  &view_winname, 10,  990, 990)?;
 //  create_cv_trackbar("xsm_delay", &view_winname,  0,  255,   0)?;
 
-    for i in 0..multispectrals {
+    for i in 0..spectrals {
         let name = format!("time{}", i);
         create_cv_trackbar(&name, &bg_winname, 0, 1000, 1000)?;
     }
@@ -188,13 +192,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 //      let xsm_delay = get_cv_trackbar_pos("xsm_delay", &view_winname)? as u16;
 //      cam.set_xsm_delay(xsm_delay)?;
 
-        /*
-        for i in 0..multispectral_num {
+        for i in 0..spectrals {
             let name = format!("time{}", i);
             let time = get_cv_trackbar_pos(&name, &bg_winname)? as u16;
             cam.set_pmod_slot_time(i as u16, time)?;
         }
-        */
 
 
         // us 単位に変換
@@ -243,7 +245,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // imgs の0から7までの8枚をタイル状になれべ手 4x2 倍の 表示画像 を作る
         let mut view_img = Mat::zeros(height as i32 * 2, width as i32 * 4, CV_8UC3)?.to_mat()?;
-        for i in 0..multispectrals {
+        for i in 0..spectrals {
             if cap_imgs[i].empty() {
                 continue;
             }
