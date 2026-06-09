@@ -100,7 +100,7 @@ module pmod_control
             );
 
     // trigger select
-    (* MARK_DEBUG = "true" *)   logic   [1:0]   ff_trigger;
+    logic   [2:0]   ff_trigger;
     always_ff @( posedge clk ) begin
         if ( reset ) begin
             ff_trigger <= '0;
@@ -114,6 +114,7 @@ module pmod_control
             endcase
         end
         ff_trigger[1] <= ff_trigger[0];
+        ff_trigger[2] <= ff_trigger[1];
     end
 
     // light control time slot
@@ -139,7 +140,7 @@ module pmod_control
             end
 
             // trigger
-            if ( ff_trigger == 2'b01 ) begin
+            if ( ff_trigger[1:0] == 2'b01 ) begin
                 tim_divider <= '0;
                 tim_counter <= '0;
                 slot_idx <= slot_idx + 1;
@@ -173,7 +174,7 @@ module pmod_control
                 begin
                     pmod_z <= 8'h00 ;
                     pmod_o <= '0    ;
-                    if ( ff_trigger[1] && tim_counter < pmod_tim ) begin
+                    if ( &ff_trigger && tim_counter < pmod_tim ) begin
                         pmod_o <= pmod_ptn;
                     end
                 end
@@ -198,7 +199,7 @@ module pmod_control
         end
         else begin
             // 露光終了時のPMODの状態をキャプチャ
-            if ( ff_trigger == 2'b10 ) begin
+            if ( ff_trigger[1:0] == 2'b10 ) begin
                 hdr_pmod <= sync_pmod;
                 hdr_ptn  <= pmod_ptn;
                 hdr_idx  <= slot_idx;
@@ -217,8 +218,8 @@ module pmod_control
             3'd1:       pkt_hdr <= hdr_ptn          ;
             3'd2:       pkt_hdr <= 8'(hdr_idx)      ;
             3'd4:       pkt_hdr <= sync_pmod        ;
-            3'd5:       pkt_hdr <= pmod_ptn    ;
-            3'd6:       pkt_hdr <= 8'(slot_idx)  ;
+            3'd5:       pkt_hdr <= pmod_ptn         ;
+            3'd6:       pkt_hdr <= 8'(slot_idx)     ;
             default:    pkt_hdr <= '0               ;
             endcase
         end
