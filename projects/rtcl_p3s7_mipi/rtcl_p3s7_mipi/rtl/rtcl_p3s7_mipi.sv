@@ -313,6 +313,20 @@ module rtcl_p3s7_mipi
     //  System Controller
     // ----------------------------------------
 
+    localparam  int     PMOD_BITS       = 8                         ;
+    localparam  type    pmod_t          = logic [PMOD_BITS-1:0]     ;
+    localparam  int     PMOD_MODE_BITS  = 16                        ;
+    localparam  type    pmod_mode_t     = logic [PMOD_MODE_BITS-1:0];
+    localparam  int     SLOTS           = 16                        ;
+    localparam  int     SLOT_BITS       = $clog2(SLOTS)             ;
+    localparam  type    slot_t          = logic [SLOT_BITS-1:0]     ;
+    localparam  int     TIMER_BITS      = 16                        ;
+    localparam  type    timer_t         = logic [TIMER_BITS-1:0]    ;
+    localparam  int     TRG_SEL_BITS    = 2                         ;
+    localparam  type    trg_sel_t       = logic [TRG_SEL_BITS-1:0]  ;
+    localparam  int     HDR_SEL_BITS    = 3                         ;
+    localparam  type    hdr_sel_t       = logic [HDR_SEL_BITS-1:0]  ;
+
 `ifdef GOLDEN_IMAGE
     localparam  bit     [15:0]    MODULE_CONFIG = 16'h0001;
 `else
@@ -343,13 +357,27 @@ module rtcl_p3s7_mipi
     logic   [7:0]       ctl_pmod_gpio_o     ;
     logic   [7:0]       ctl_pmod_dir        ;
     logic   [7:0]       ctl_pmod_gpio_i     ;
-    logic   [1:0]       ctl_pmod_trg_sel    ;
-    logic   [2:0]       ctl_pmod_hdr_sel    ;
-    logic   [3:0]       ctl_pmod_ptn_len    ;
-    logic   [15:0][7:0] ctl_pmod_ptn_tbl    ;
+    trg_sel_t           ctl_pmod_trg_sel    ;
+    hdr_sel_t           ctl_pmod_hdr_sel    ;
+    slot_t              ctl_pmod_slot_len   ;
+    pmod_t  [SLOTS-1:0] ctl_pmod_slot_ptn   ;
+    timer_t [SLOTS-1:0] ctl_pmod_slot_tim   ;
 
     system_control
             #(
+                .PMOD_BITS              ($bits(pmod_t)          ),
+                .pmod_t                 (pmod_t                 ),
+                .PMOD_MODE_BITS         ($bits(pmod_t)          ),
+                .pmod_mode_t            (pmod_mode_t            ),
+                .SLOTS                  (SLOTS                  ),
+                .SLOT_BITS              ($bits(slot_t)          ),
+                .slot_t                 (slot_t                 ),
+                .TIMER_BITS             ($bits(timer_t)         ),
+                .timer_t                (timer_t                ),
+                .TRG_SEL_BITS           ($bits(trg_sel_t)       ),
+                .trg_sel_t              (trg_sel_t              ),
+                .HDR_SEL_BITS           ($bits(hdr_sel_t)       ),
+                .hdr_sel_t              (hdr_sel_t              ),
                 .MODULE_ID              (MODULE_ID              ),
                 .MODULE_VERSION         (MODULE_VERSION         ),
                 .MODULE_CONFIG          (MODULE_CONFIG          ),
@@ -402,8 +430,9 @@ module rtcl_p3s7_mipi
                 .in_pmod_data           (ctl_pmod_gpio_i        ),
                 .out_pmod_trg_sel       (ctl_pmod_trg_sel       ),
                 .out_pmod_hdr_sel       (ctl_pmod_hdr_sel       ),
-                .out_pmod_ptn_len       (ctl_pmod_ptn_len       ),
-                .out_pmod_ptn_tbl       (ctl_pmod_ptn_tbl       )
+                .out_pmod_slot_len      (ctl_pmod_slot_len      ),
+                .out_pmod_slot_ptn      (ctl_pmod_slot_ptn      ),
+                .out_pmod_slot_tim      (ctl_pmod_slot_tim      )
             );
     
 
@@ -1137,8 +1166,9 @@ module rtcl_p3s7_mipi
 
                 .trg_sel    (ctl_pmod_trg_sel       ),
                 .hdr_sel    (ctl_pmod_hdr_sel       ),
-                .ptn_len    (ctl_pmod_ptn_len       ),
-                .ptn_tbl    (ctl_pmod_ptn_tbl       )
+                .slot_len   (ctl_pmod_slot_len      ),
+                .slot_ptn   (ctl_pmod_slot_ptn      ),
+                .slot_tim   (ctl_pmod_slot_tim      )
             );
 
     jelly3_cdc_array_single
