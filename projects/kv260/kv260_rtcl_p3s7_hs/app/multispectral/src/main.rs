@@ -25,7 +25,7 @@ struct Args {
     #[arg(short = 'f', long, default_value_t = 1000)]
     fps: i32,
 
-    #[arg(short = 'r', long, default_value_t = 100)]
+    #[arg(short = 'r', long, default_value_t = 50)]
     rec_frames: usize,
 
     /// Enable color mode (default: monochrome)
@@ -336,21 +336,30 @@ fn main() -> Result<(), Box<dyn Error>> {
                 std::fs::create_dir(&dir_name).expect("Failed to create directory");
                 println!("record to {}", dir_name);
                 
-                // 100フレーム録画
+                // 複数フレーム録画
                 let frames = args.rec_frames;
                 video_capture.record(width, height, (frames+1) * slots)?;
-                let mut f = 0;
+
                 // idx 0 のフレームまで読み飛ばす
-                let img = video_capture.read_image_mat(f)?;
+                let mut start_frame = 0;
+                for i in 0..slots {
+                     let src = video_capture.read_image_mat(i as usize)?;
+                     let idx = (src.at_2d::<u16>(0, 0)? >> 10) as usize;
+                     if idx == 0 {
+                         start_frame = i as usize;
+                         break;
+                     }
+                }
 
-
-
-                for f in 0..frames {
-                   let img = video_capture.read_image_mat(f)?;
-                    let mut view = Mat::default();
-                    img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
-                    let file_name = format!("{}/img{:04}.png", dir_name, f);
-                    imgcodecs::imwrite(&file_name, &view, &Vector::<i32>::new())?;
+                // 録画したフレームを保存
+                for i in 0..frames {
+                    for j in 0..slots {
+                        let src = video_capture.read_image_mat(start_frame +  i * slots + j)?;
+                        let mut img = Mat::default();
+                        src.convert_to(&mut img, CV_16U, 65535.0/1023.0, 0.0)?;
+                        let file_name = format!("{}/img{:04}_{}.png", dir_name, i, j);
+                        imgcodecs::imwrite(&file_name, &img, &Vector::<i32>::new())?;
+                    }
                 }
                 println!("record done");
             },
