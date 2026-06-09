@@ -1,0 +1,537 @@
+#![allow(dead_code)]
+
+use std::error::Error;
+use std::result::Result;
+
+use jelly_lib::i2c_hal::I2cHal;
+use jelly_lib::linux_i2c::LinuxI2c;
+use jelly_mem_access::*;
+use rtcl_lib::rtcl_p3s7_module_driver::*;
+
+const SYSREG_ID: usize = 0x0000;
+const SYSREG_DPHY_SW_RESET: usize = 0x0001;
+const SYSREG_CAM_ENABLE: usize = 0x0002;
+const SYSREG_CSI_DATA_TYPE: usize = 0x0003;
+const SYSREG_DPHY_INIT_DONE: usize = 0x0004;
+const SYSREG_FPS_COUNT: usize = 0x0006;
+const SYSREG_FRAME_COUNT: usize = 0x0007;
+const SYSREG_IMAGE_WIDTH: usize = 0x0008;
+const SYSREG_IMAGE_HEIGHT: usize = 0x0009;
+const SYSREG_BLACK_WIDTH: usize = 0x000a;
+const SYSREG_BLACK_HEIGHT: usize = 0x000b;
+
+// Video format regularizer
+const REG_VIDEO_FMTREG_CORE_ID: usize = 0x00;
+const REG_VIDEO_FMTREG_CORE_VERSION: usize = 0x01;
+const REG_VIDEO_FMTREG_CTL_CONTROL: usize = 0x04;
+const REG_VIDEO_FMTREG_CTL_STATUS: usize = 0x05;
+const REG_VIDEO_FMTREG_CTL_INDEX: usize = 0x07;
+const REG_VIDEO_FMTREG_CTL_SKIP: usize = 0x08;
+const REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN: usize = 0x0a;
+const REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT: usize = 0x0b;
+const REG_VIDEO_FMTREG_PARAM_WIDTH: usize = 0x10;
+const REG_VIDEO_FMTREG_PARAM_HEIGHT: usize = 0x11;
+const REG_VIDEO_FMTREG_PARAM_FILL: usize = 0x12;
+const REG_VIDEO_FMTREG_PARAM_TIMEOUT: usize = 0x13;
+
+const MULT_TIME_UNIT : f32 = 1.0 / 72.0; // 72MHz(0.013888 us)
+const FOT_TIME : f32 = 45.4133;          // 実測値より (45.4133 us)
+
+type RtclP3s7ModuleDriverLinux = RtclP3s7ModuleDriver<LinuxI2c>;
+type RegAccess = UdmabufAccessor<usize>;
+
+pub struct CameraDriver<I2C, U>
+where
+    I2C: I2cHal,
+    <I2C as I2cHal>::Error: std::error::Error + 'static,
+    U: Copy + Clone,
+{
+    cam_i2c: RtclP3s7ModuleDriver<I2C>,
+    reg_sys: UioAccessor<U>,
+    reg_fmtr: UioAccessor<U>,
+
+    opend: bool,
+    pgood_enable: bool,
+    color : bool,
+    width: usize,
+    height: usize,
+    slave_mode: bool,
+    trigger_mode: bool,
+    dphy_speed : f64,
+    fps_counter_clock_hz: f32,
+    gain: f32,
+    mult_timer: u16,
+    fr_length: u16,
+    exposure: u16,
+}
+
+impl<I2C, U> CameraDriver<I2C, U>
+where
+    I2C: I2cHal,
+    <I2C as I2cHal>::Error: std::error::Error + 'static,
+    U: Copy + Clone,
+{
+    pub fn new(i2c: I2C, reg_sys: UioAccessor<U>, reg_fmtr: UioAccessor<U>) -> Self {
+        unsafe {
+            reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+        Self {
+            cam_i2c: RtclP3s7ModuleDriver::new(i2c),
+            reg_sys,
+            reg_fmtr,
+            opend: false,
+            pgood_enable: true,
+            color : false,
+            width: 640,
+            height: 480,
+            slave_mode: false,
+            dphy_speed : 1250000000.0,
+            fps_counter_clock_hz: 250_000_000.0,
+            trigger_mode: false,
+            gain: 0.0,
+            mult_timer: 72,
+            fr_length: 0,
+            exposure: 10000,
+        }
+    }
+
+    pub fn cam_i2c_mut(&mut self) -> &mut RtclP3s7ModuleDriver<I2C> {
+        &mut self.cam_i2c
+    }
+
+    pub fn ensor_pgood_enable(&mut self) -> bool {
+        self.pgood_enable
+    }
+
+    pub fn set_sensor_pgood_enable(&mut self, enable: bool) {
+        self.pgood_enable = enable;
+    }
+
+    pub fn sensor_ready(&mut self) -> Result<bool, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_ready()?)
+    }
+
+    pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_pgood()?)
+    }
+
+    pub fn set_color(&mut self, color: bool) {
+        self.color = color;
+    }
+
+    pub fn set_dphy_speed(&mut self, dphy_speed: f64) {
+        self.dphy_speed = dphy_speed;
+    }
+
+    pub fn dphy_speed(&self) -> f64 {
+        self.dphy_speed
+    }
+
+    pub fn set_fps_counter_clock_hz(&mut self, clock_hz: f32) {
+        self.fps_counter_clock_hz = clock_hz;
+    }
+
+    pub fn fps_counter_clock_hz(&self) -> f32 {
+        self.fps_counter_clock_hz
+    }
+
+    pub fn set_black_lines(&mut self, lines: usize) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.set_black_lines(lines as u16)?;
+        Ok(())
+    }
+
+    pub fn opend(&self) -> bool {
+        self.opend
+    }
+
+    pub fn open(&mut self) -> Result<(), Box<dyn Error>>
+    {
+        if self.opend {
+            return Ok(());
+        }
+
+        // カメラモジュールリセット
+        /*
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセットON
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 1); // モジュールリセットOFF
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        */
+
+        // カメラモジュールソフトウェアリセット
+//      self.cam_i2c.softeare_reset()?;
+
+        // MMCM 設定
+        self.cam_i2c.set_dphy_speed(self.dphy_speed)?;
+
+        // 受信側 DPHY リセット
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 1);
+        }
+
+        // カメラ基板初期化
+        self.cam_i2c.set_sensor_pgood_enable(self.pgood_enable)?;
+        self.cam_i2c.set_sensor_power_enable(false)?;
+        self.cam_i2c.set_dphy_reset(true)?;
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        // 受信側 DPHY 解除 (必ずこちらを先に解除)
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 0);
+        }
+        // 高速モード設定
+        self.cam_i2c.set_camera_mode(CameraMode::HighSpeed)?;
+
+        // センサー電源ON
+        self.cam_i2c.set_sensor_power_enable(true)?;
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        // センサー基板 DPHY-TX リセット解除
+        self.cam_i2c.set_dphy_reset(false)?;
+        if !self.cam_i2c.dphy_init_done()? {
+            return Err("CAM DPHY TX init_done = 0".into());
+        }
+
+        // ここで RX 側も init_done が来る
+        if unsafe { self.reg_sys.read_reg(SYSREG_DPHY_INIT_DONE) } == 0 {
+            return Err("KV260 DPHY RX init_done = 0".into());
+        }
+
+        // 受信画像サイズ設定
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
+            self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
+            self.reg_sys.write_reg(SYSREG_BLACK_WIDTH, 1280);
+            self.reg_sys.write_reg(SYSREG_BLACK_HEIGHT, self.cam_i2c.black_lines() as usize);
+        }
+        
+        // xsm_delay
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+        self.cam_i2c.set_zero_rot_enable(true)?;
+
+        // センサー起動
+        self.cam_i2c.set_color(self.color)?;
+        self.cam_i2c.set_sensor_enable(true)?;
+
+        // ROI 設定
+        self.cam_i2c
+            .set_roi0(self.width as u16, self.height as u16, None, None)?;
+        self.cam_i2c.set_gain_db(self.gain)?;
+
+        self.cam_i2c.set_mult_timer0(self.mult_timer)?;  // 68MHz
+        self.cam_i2c.set_fr_length0(self.fr_length)?;
+        self.cam_i2c.set_exposure0(self.exposure)?;
+
+        // video input start
+        unsafe {
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMER_EN, 1);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_CTL_FRM_TIMEOUT, 20000000);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_PARAM_FILL, 0x0);
+            self.reg_fmtr
+                .write_reg(REG_VIDEO_FMTREG_PARAM_TIMEOUT, 100000);
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
+        }
+        std::thread::sleep(std::time::Duration::from_micros(1000));
+
+        // スレーブモード、トリガーモード設定
+        self.cam_i2c.set_slave_mode(self.slave_mode)?;
+        self.cam_i2c.set_triggered_mode(self.trigger_mode)?;
+
+        // 動作開始
+        self.cam_i2c.set_sequencer_enable(true)?;
+
+        self.opend = true;
+        Ok(())
+    }
+
+    // カメラ停止
+    pub fn close(&mut self) -> Result<(), Box<dyn Error>>
+    {
+        if !self.opend {
+            return Ok(());
+        }
+
+        // video input stop
+        unsafe {
+            self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x00);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        // センサー停止
+        self.cam_i2c.set_sequencer_enable(false)?;
+        self.cam_i2c.set_sensor_enable(false)?;
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        // センサー電源OFF
+        self.cam_i2c.set_sensor_power_enable(false)?;
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        self.opend = false;
+
+        Ok(())
+    }
+
+    pub fn module_id(&mut self) -> Result<u16, Box<dyn Error>> {
+        Ok(self.cam_i2c.module_id()?)
+    }
+
+    pub fn module_version(&mut self) -> Result<u16, Box<dyn Error>> {
+        Ok(self.cam_i2c.module_version()?)
+    }
+
+    pub fn sensor_id(&mut self) -> Result<u16, Box<dyn Error>> {
+        Ok(self.cam_i2c.sensor_id()?)
+    }
+
+    pub fn set_pmod_mode(&mut self, mode: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_mode(mode)?)
+    }
+
+    pub fn set_pmod_trigger_select(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_trigger_select(sel)?)
+    }
+
+    pub fn set_pmod_header_select(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_header_select(sel)?)
+    }
+
+    pub fn set_pmod_slot_len(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_pmod_slot_len(sel)?)
+    }
+
+    pub fn set_pmod_slot_pattern(
+        &mut self,
+        index: u16,
+        pattern: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.cam_i2c.set_pmod_slot_pattern(index, pattern)?)
+    }
+
+    pub fn set_pmod_slot_time(
+        &mut self,
+        index: u16,
+        pattern: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        Ok(self.cam_i2c.set_pmod_slot_time(index, pattern)?)
+    }
+
+    pub fn read_pmod(&mut self) -> Result<u8, Box<dyn Error>> {
+        Ok(self.cam_i2c.read_pmod()?)
+    }
+
+    pub fn set_gpio_out(&mut self, value: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_out(value)?)
+    }
+
+    pub fn set_gpio_dir(&mut self, dir: u8) -> Result<(), Box<dyn Error>> {
+        Ok(self.cam_i2c.set_gpio_dir(dir)?)
+    }
+
+    /// スレーブモード設定
+    pub fn set_slave_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
+        self.slave_mode = enable;
+        if self.opend {
+            self.cam_i2c.set_slave_mode(enable)?;
+        }
+        Ok(())
+    }
+    
+    /// トリガーモード設定
+    pub fn set_trigger_mode(&mut self, enable: bool) -> Result<(), Box<dyn Error>> {
+        self.trigger_mode = enable;
+        if self.opend {
+            self.cam_i2c.set_triggered_mode(enable)?;
+        }
+        Ok(())
+    }
+
+    pub fn set_image_size(&mut self, width: usize, height: usize) -> Result<(), Box<dyn Error>> {
+        if self.opend() {
+            unsafe {
+                self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x00);
+            }
+            self.cam_i2c.set_sequencer_enable(false)?;
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            self.width = width;
+            self.height = height;
+            self.cam_i2c
+                .set_roi0(self.width as u16, self.height as u16, None, None)?;
+            unsafe {
+                self.reg_sys.write_reg(SYSREG_IMAGE_WIDTH, self.width);
+                self.reg_sys.write_reg(SYSREG_IMAGE_HEIGHT, self.height);
+                self.reg_fmtr
+                    .write_reg(REG_VIDEO_FMTREG_PARAM_WIDTH, self.width);
+                self.reg_fmtr
+                    .write_reg(REG_VIDEO_FMTREG_PARAM_HEIGHT, self.height);
+                self.reg_fmtr.write_reg(REG_VIDEO_FMTREG_CTL_CONTROL, 0x03);
+            }
+            let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width);
+            self.cam_i2c.set_xsm_delay(xsm_delay)?;
+            self.cam_i2c.set_nzrot_xsm_delay_enable(true)?;
+            self.cam_i2c.set_zero_rot_enable(true)?;
+            self.cam_i2c.set_sequencer_enable(true)?;
+        } else {
+            self.width = width;
+            self.height = height;
+        }
+        Ok(())
+    }
+
+    pub fn image_width(&self) -> usize {
+        self.width
+    }
+    pub fn image_height(&self) -> usize {
+        self.height
+    }
+
+
+    pub fn set_xsm_delay(&mut self, delay: u16) -> Result<(), Box<dyn Error>> {
+        let xsm_delay = self.cam_i2c.calc_xsm_delay(self.width).max(delay);
+        self.cam_i2c.set_xsm_delay(xsm_delay)?;
+        Ok(())
+    }
+
+    pub fn set_monitor_select(&mut self, sel: u16) -> Result<(), Box<dyn Error>> {
+        self.cam_i2c.set_monitor_select(sel)?;
+        Ok(())
+    }
+
+    pub fn set_gain(&mut self, db: f32) -> Result<(), Box<dyn Error>> {
+        if self.opend {
+            self.cam_i2c.set_gain_db(db)?;
+            self.gain = self.cam_i2c.gain_db();
+        } else {
+            self.gain = db;
+        }
+        Ok(())
+    }
+
+    pub fn gain(&self) -> f32 {
+        self.gain
+    }
+
+    pub fn set_exposure(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
+        self.exposure = (us / unit) as u16;
+        if self.opend {
+            self.cam_i2c.set_exposure0(self.exposure)?;
+        }
+        Ok(())
+    }
+
+    pub fn exposure(&self) -> Result<f32, Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
+        Ok(self.exposure as f32 * unit)
+    }
+
+    pub fn set_frame_period(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
+        self.fr_length = ((us - FOT_TIME) / unit) as u16;
+        if self.opend {
+            self.cam_i2c.set_fr_length0(self.fr_length)?;
+        }
+        Ok(())
+    }
+
+    pub fn frame_period(&mut self) -> Result<f32, Box<dyn Error>> {
+        let unit =  (self.mult_timer as f32) * MULT_TIME_UNIT;
+        Ok(self.fr_length as f32 * unit + FOT_TIME)
+    }
+
+    pub fn set_frame_rate(&mut self, fps : f32) -> Result<(), Box<dyn Error>> {
+        let frame_period_us = 1_000_000.0 / fps;
+        self.set_frame_period(frame_period_us)
+    }
+
+    pub fn frame_rate(&mut self) -> Result<f32, Box<dyn Error>> {
+        let frame_period_us = self.frame_period()?;
+        if frame_period_us <= 0.0 {
+            return Ok(0.0);
+        }
+        Ok(1_000_000.0 / frame_period_us)
+    }
+
+    pub fn set_fr_length(&mut self, us : f32) -> Result<(), Box<dyn Error>> {
+        self.set_frame_period(us)
+    }
+
+    pub fn fr_length(&mut self) -> u16 {
+        self.fr_length
+    }
+
+    /// fps 計測
+    pub fn measure_fps(&self) -> f32 {
+        let fps_count   = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
+        if fps_count == 0 {
+            return 0.0;
+        }
+        self.fps_counter_clock_hz / fps_count as f32
+    }
+
+    pub fn measure_frame_period(&self) -> f32 {
+        let fps_count = unsafe{self.reg_sys.read_reg(SYSREG_FPS_COUNT)};
+        if self.fps_counter_clock_hz <= 0.0 {
+            return 0.0;
+        }
+        fps_count as f32 * (1_000_000_000.0f32 / self.fps_counter_clock_hz)
+    }
+
+    pub fn print_sensor_register(&mut self) {
+        self.cam_i2c.sensor_reg_dump().unwrap();
+    }
+
+    // debug用
+    pub fn print_timing_status(&mut self) {
+        for i in 1..5 {
+            let mult = 10*i;
+            let fr_length = 1000;
+            let exposure  = 1000-i;
+            self.cam_i2c.set_mult_timer0(mult).unwrap();
+            self.cam_i2c.set_fr_length0(fr_length).unwrap();
+            self.cam_i2c.set_exposure0(exposure).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            println!("-----------");
+            println!("mult={} fr_length={} exposure={}", mult, fr_length, exposure);
+            println!("fps: {}  {}[ns]", self.measure_fps(), self.measure_frame_period());
+
+            let mult_timer_status   =  self.cam_i2c.mult_timer_status().unwrap();
+            let reset_length_status =  self.cam_i2c.reset_length_status().unwrap();
+            let exposure_status     =  self.cam_i2c.exposure_status().unwrap();
+            println!("mult_timer   : {}", self.cam_i2c.mult_timer_status().unwrap());
+            println!("reset_length : {}", self.cam_i2c.reset_length_status().unwrap());
+            println!("exposure     : {}", self.cam_i2c.exposure_status().unwrap());
+            println!("time : {}", (mult_timer_status as f32 * (exposure_status as f32 + reset_length_status as f32)) as f32 * 13.888888);
+            let measure_ns = self.measure_frame_period() as f32;
+            let calc_ns = (mult_timer_status as f32 * (exposure_status as f32 + reset_length_status as f32)) as f32 * 13.888888;
+            println!("diff : {} ns", measure_ns - calc_ns);
+        }
+    }
+}
+
+
+// オブジェクト解放時にクローズ
+impl<I2C, U> Drop for CameraDriver<I2C, U>
+where
+    I2C: I2cHal,
+    <I2C as I2cHal>::Error: std::error::Error + 'static,
+    U: Copy + Clone,
+{
+    fn drop(&mut self) {
+        let _ = self.close();
+        unsafe {
+            self.reg_sys.write_reg(SYSREG_CAM_ENABLE, 0); // モジュールリセット
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+}

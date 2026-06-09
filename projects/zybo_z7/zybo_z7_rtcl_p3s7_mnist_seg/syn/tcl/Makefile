@@ -35,9 +35,9 @@ export HLS_IP
 
 # sources
 SOURCES  = $(PRJ_DIR)/rtl/zybo_z7_rtcl_p3s7_mnist_seg.sv
-SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_dphy_recv.sv
-SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
-SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/rtcl_p3s7_hs_dphy_recv.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/timing_generator.sv
 SOURCES += $(PRJ_DIR)/rtl/video_lpf_ram_core.sv
 SOURCES += $(PRJ_DIR)/rtl/video_lpf_ram.sv
 SOURCES += $(PRJ_DIR)/rtl/video_tbl_modulator_core.sv

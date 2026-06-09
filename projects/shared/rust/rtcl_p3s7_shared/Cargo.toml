@@ -1,0 +1,14 @@
+[package]
+name = "rtcl_p3s7_shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jelly-mem_access = "0.2.5"
+jelly-lib = { path = "../../../../jelly/rust/lib" }
+rtcl-lib = { path = "../../../../rust/lib" }
+opencv = { version = "0.93.5", optional = true }
+
+[features]
+default = ["std", "opencv"]
+std = []

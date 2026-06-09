@@ -6,13 +6,13 @@ use jelly_lib::i2c_hal::I2cHal;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 //use rtcl_lib::rtcl_p3s7_module_driver::*;
-use kv260_rtcl_p3s7_hs::*;
+use rtcl_p3s7_shared::*;
 
 type UioAccessor = jelly_mem_access::UioAccessor<usize>;
 type UdmabufAccessor = jelly_mem_access::UdmabufAccessor<usize>;
 type CameraDriver = camera_driver::CameraDriver<LinuxI2c, usize>;
 type CaptureDriver =  capture_driver::CaptureDriver<UioAccessor, UdmabufAccessor>;
-type TimingGeneratorDriver = kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver<UioAccessor>;
+type TimingGeneratorDriver = rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver<UioAccessor>;
 
 pub struct RtclP3s7Mng {
     uio_acc : UioAccessor,

@@ -1124,7 +1124,6 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     
         
 
-
     // ----------------------------------------
     //  HUB-75E
     // ----------------------------------------
@@ -1283,7 +1282,7 @@ module zybo_z7_rtcl_p3s7_mnist_seg
                 .s_axi4l            (axi4l_dec[DEC_HUB75].s         )
         );
 
-    
+
     // ----------------------------------------
     //  Debug
     // ----------------------------------------
@@ -1340,7 +1339,6 @@ module zybo_z7_rtcl_p3s7_mnist_seg
     assign pmod_a[2]   = reg_counter_clk200[5];
     assign pmod_a[3]   = reg_counter_clk100[5];
     assign pmod_a[7:4] = 0;
-    
     
 endmodule
 

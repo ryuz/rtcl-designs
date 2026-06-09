@@ -12,10 +12,19 @@
   - `kv260/` : KV260 用
     - `kv260_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
     - `kv260_rtcl_p3s7_csi2/` : RTCL-P3S70-MIPI CSI2 仕様実験版
+    - `kv260_rtcl_p3s7_hs/app/multispectral/` : RTCL-LED-PMOD のマルチバンド LED 照明ボードを使ったマルチバンド撮影アプリ
     - `kv260_rtcl_p3s7_mnist_seg/` : 1000fps MNISTセマンティックセグメンテーションサンプル
     - `kv260_rtcl_p3s7_optical_flow/` : 1000fps オプティカルフロー計測サンプル
   - `zybo_z7/` : ZYBO Z7用
     - `zybo_z7_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
+
+
+## 利用言語など
+
+本システムは主に RTL は SystemVerilog、CPU側のソフトウェアは Rust を用いて開発しております。
+一部で C++ のサンプルも用意しておりますが、 Rust 版が先行している点をご了承ください。
+
+特に Rust の cross によって仮想環境を用いたクロスコンパイルなどを利用すると、セルフコンパイル環境を作る苦労が緩和され、高速にビルドできる場合があります。
 
 
 ## ライセンス

@@ -99,6 +99,13 @@ const REGADR_PMOD_GPIO_OUT: u16 = 0x00b3;
 /// PMOD GPIO direction register (drives `out_pmod_dir`, 8-bit)
 const REGADR_PMOD_GPIO_DIR: u16 = 0x00b4;
 
+const REGADR_PMOD_TRG_SEL  : u16 = 0x00b8;
+const REGADR_PMOD_HDR_SEL  : u16 = 0x00b9;
+const REGADR_PMOD_SLOT_LEN  : u16 = 0x00bc;
+const REGADR_PMOD_SLOT0_PTN : u16 = 0x0200;
+const REGADR_PMOD_SLOT0_TIM : u16 = 0x0300;
+
+
 /// MMCM DRP base register
 const REG_P3S7_MMCM_DRP: u16 = 0x1000;
 
@@ -216,7 +223,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
             usleep,
             general_configuration: 0x084c,
             xsm_delay : 21,
-            black_lines : 0x0102,
+            black_lines : 0x0110,
             analog_gain : 1.0,
             digital_gain : 1.0,
             dphy_speed: 1250000000.0,
@@ -558,6 +565,50 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_i2c(REGADR_PMOD_MODE, mode)?;
         Ok(())
     }
+
+    pub fn set_pmod_trigger_select(
+        &mut self,
+        sel: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REGADR_PMOD_TRG_SEL, sel)?;
+        Ok(())
+    }
+
+    pub fn set_pmod_header_select(
+        &mut self,
+        sel: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REGADR_PMOD_HDR_SEL, sel)?;
+        Ok(())
+    }
+
+    pub fn set_pmod_slot_len(
+        &mut self,
+        len: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        assert!(len > 0);
+        self.write_i2c(REGADR_PMOD_SLOT_LEN, len-1)?;
+        Ok(())
+    }
+
+    pub fn set_pmod_slot_pattern(
+        &mut self,
+        index: u16,
+        pattern: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REGADR_PMOD_SLOT0_PTN + index, pattern)?;
+        Ok(())
+    }
+
+    pub fn set_pmod_slot_time(
+        &mut self,
+        index: u16,
+        time: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REGADR_PMOD_SLOT0_TIM + index, time)?;
+        Ok(())
+    }
+
 
     /// Read PMOD GPIO input pins
     ///

@@ -35,9 +35,9 @@ export HLS_IP
 
 # sources
 SOURCES  = $(PRJ_DIR)/rtl/kv260_rtcl_p3s7_mnist_seg.sv
-SOURCES += $(PRJ_DIR)/rtl/timing_generator.sv
-SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_dphy_recv.sv
-SOURCES += $(PRJ_DIR)/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/timing_generator.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/rtcl_p3s7_hs_dphy_recv.sv
+SOURCES += $(TOP_DIR)/projects/shared/rtl/rtcl_p3s7_hs_cnv_axi4s.sv
 SOURCES += $(PRJ_DIR)/rtl/video_lpf_ram_core.sv
 SOURCES += $(PRJ_DIR)/rtl/video_lpf_ram.sv
 SOURCES += $(PRJ_DIR)/rtl/video_tbl_modulator_core.sv
@@ -45,6 +45,9 @@ SOURCES += $(PRJ_DIR)/rtl/video_tbl_modulator.sv
 SOURCES += $(PRJ_DIR)/rtl/video_argmax.sv
 SOURCES += $(PRJ_DIR)/rtl/mnist_seg.v
 SOURCES += $(PRJ_DIR)/rtl/bb_lut.v
+SOURCES += $(PRJ_DIR)/rtl/hub75_driver.sv
+SOURCES += $(PRJ_DIR)/rtl/hub75_driver_core.sv
+SOURCES += $(PRJ_DIR)/rtl/rtcl_hub75e_pmod.sv
 
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
