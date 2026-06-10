@@ -2,7 +2,7 @@
 <Project>
     <Template>FPGA</Template>
     <Version>5</Version>
-    <Device name="GW5A-25B" pn="GW5A-LV25MG121NC1/I0">gw5a25b-003</Device>
+    <Device name="GW5A-25A" pn="GW5A-LV25MG121NC1/I0">gw5a25a-002</Device>
     <FileList>
         <File path="../../rtl/rtcl_tp25k_usb3_blinking_led.sv" type="file.verilog" enable="1" />
         <File path="../../constrain/rtcl_tp25k_usb3_blinking_led.cst" type="file.cst" enable="1" />
