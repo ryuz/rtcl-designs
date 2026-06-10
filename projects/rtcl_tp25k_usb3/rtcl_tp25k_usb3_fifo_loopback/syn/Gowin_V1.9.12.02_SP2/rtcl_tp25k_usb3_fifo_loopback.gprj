@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW5A-25A" pn="GW5A-LV25MG121NC1/I0">gw5a25a-002</Device>
+    <FileList>
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_fifo_fwft_read.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_fifo_sync.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_ram_simple_dualport.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_reset_async.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_stream_fifo.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_stream_fifo_sync.sv" type="file.verilog" enable="1" />
+        <File path="../../rtl/ft601_mode245_if.sv" type="file.verilog" enable="1" />
+        <File path="../../rtl/rtcl_tp25k_usb3_fifo_loopback.sv" type="file.verilog" enable="1" />
+        <File path="../../constrain/rtcl_tp25k_usb3_fifo_loopback.cst" type="file.cst" enable="1" />
+        <File path="../../constrain/rtcl_tp25k_usb3_fifo_loopback.sdc" type="file.sdc" enable="1" />
+    </FileList>
+</Project>

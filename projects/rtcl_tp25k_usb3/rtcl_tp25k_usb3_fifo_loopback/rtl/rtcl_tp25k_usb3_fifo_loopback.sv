@@ -9,7 +9,7 @@
 
 `default_nettype none
 
-module rtcl_tp25k_usb3_fifo_sample
+module rtcl_tp25k_usb3_fifo_loopback
         (
             input   var logic           in_clk50        ,
 
