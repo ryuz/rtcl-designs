@@ -2,16 +2,16 @@
 
 
 DEVICE_PART_NUMBER=GW5A-LV25MG121NC1/I0
-DEVICE_NAME=GW5A-25B
+DEVICE_NAME=GW5A-25A
 
 TOP_MODULE = rtcl_tp25k_usb3_fifo_sample
 OUTPUT_BASE_NAME = $(TOP_MODULE)
 
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
 
-JELLY_DIR = ../../../../jelly
-RTL_DIR = ../rtl
-CONSTRAIN_DIR = ../constrain
+JELLY_DIR = ../../../../../jelly
+RTL_DIR = ../../rtl
+CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
 VLOG_SOURCES  = $(RTL_DIR)/rtcl_tp25k_usb3_fifo_sample.sv
