@@ -8,7 +8,7 @@ module tb_top();
         $dumpfile("tb_top.vcd");
         $dumpvars(0, tb_top);
         
-    #100_000_000
+    #200_000_000
         $finish;
     end
     
@@ -153,6 +153,8 @@ module tb_top();
             );
     
     assign spi_flash_miso = spi_flash_mosi;
+
+    assign python_monitor[0] = python_trigger[0];
 
     assign mipi_gpio0 = ~reset;
 
@@ -499,6 +501,29 @@ module tb_top();
     localparam  REGADR_PMOD_GPIO_IN    = 15'h00b2;
     localparam  REGADR_PMOD_GPIO_OUT   = 15'h00b3;
     localparam  REGADR_PMOD_GPIO_DIR   = 15'h00b4;
+    localparam  REGADR_PMOD_TRG_SEL    = 15'h00b8;
+    localparam  REGADR_PMOD_HDR_SEL    = 15'h00b9;
+    localparam  REGADR_PMOD_SLOT_LEN   = 15'h00bc;
+    localparam  REGADR_PMOD_SLOT0_PAT  = 15'h0200;
+    localparam  REGADR_PMOD_SLOT1_PAT  = 15'h0201;
+    localparam  REGADR_PMOD_SLOT2_PAT  = 15'h0202;
+    localparam  REGADR_PMOD_SLOT3_PAT  = 15'h0203;
+    localparam  REGADR_PMOD_SLOT4_PAT  = 15'h0204;
+    localparam  REGADR_PMOD_SLOT5_PAT  = 15'h0205;
+    localparam  REGADR_PMOD_SLOT6_PAT  = 15'h0206;
+    localparam  REGADR_PMOD_SLOT7_PAT  = 15'h0207;
+    localparam  REGADR_PMOD_SLOT8_PAT  = 15'h0208;
+    localparam  REGADR_PMOD_SLOT9_PAT  = 15'h0209;
+    localparam  REGADR_PMOD_SLOT0_TIM  = 15'h0300;
+    localparam  REGADR_PMOD_SLOT1_TIM  = 15'h0301;
+    localparam  REGADR_PMOD_SLOT2_TIM  = 15'h0302;
+    localparam  REGADR_PMOD_SLOT3_TIM  = 15'h0303;
+    localparam  REGADR_PMOD_SLOT4_TIM  = 15'h0304;
+    localparam  REGADR_PMOD_SLOT5_TIM  = 15'h0305;
+    localparam  REGADR_PMOD_SLOT6_TIM  = 15'h0306;
+    localparam  REGADR_PMOD_SLOT7_TIM  = 15'h0307;
+    localparam  REGADR_PMOD_SLOT8_TIM  = 15'h0308;
+    localparam  REGADR_PMOD_SLOT9_TIM  = 15'h0309;
 
     initial begin
         logic [15:0] rdata;
@@ -519,6 +544,7 @@ module tb_top();
         */
 
         cmd_write(REGADR_PMOD_MODE, 16'h0010);
+        cmd_write(REGADR_PMOD_SLOT2_TIM, 10);
 
 //      cmd_write(REGADR_CSI_MODE, 1);
         cmd_write(REGADR_CSI_MODE, 0);
@@ -550,6 +576,7 @@ module tb_top();
         cmd_read(REGADR_CORE_VERSION, rdata);
 
         #500000;
+        /*
 //      cmd_write(REGADR_SENSOR_ENABLE  , 16'h0000);
         cmd_write(REGADR_SW_RESET  , 16'h0001);
         #1000;
@@ -558,7 +585,9 @@ module tb_top();
         cmd_write(REGADR_RECV_RESET     , 16'h0000);
         cmd_write(REGADR_ALIGN_RESET    , 16'h0000);
         cmd_write(REGADR_SENSOR_ENABLE  , 16'h0001);
-        #100000;
+        */
+        
+        #200000;
 
         
         $finish();
