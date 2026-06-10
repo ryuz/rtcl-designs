@@ -9,9 +9,9 @@ OUTPUT_BASE_NAME = $(TOP_MODULE)
 
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
 
-JELLY_DIR = ../../../../jelly
-RTL_DIR = ../rtl
-CONSTRAIN_DIR = ../constrain
+JELLY_DIR = ../../../../../jelly
+RTL_DIR = ../../rtl
+CONSTRAIN_DIR = ../../constrain
 
 VLOG_SOURCES = $(RTL_DIR)/rtcl_tp25k_usb3_blinking_led.sv
 
