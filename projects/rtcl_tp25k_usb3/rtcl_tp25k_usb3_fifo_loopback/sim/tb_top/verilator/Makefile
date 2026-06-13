@@ -17,7 +17,7 @@ FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
 SRCS += ../../../rtl/rtcl_tp25k_usb3_fifo_loopback.sv
-SRCS += ../../../rtl/ft601_mode245_if.sv
+SRCS += ../../../../../shared/rtl/ft601_mode245_transceiver.sv
 
 all: build run
 

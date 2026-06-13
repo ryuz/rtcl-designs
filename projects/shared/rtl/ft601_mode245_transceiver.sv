@@ -8,7 +8,7 @@
 
 `default_nettype none
 
-module ft601_mode245_if
+module ft601_mode245_transceiver
         (
             input   var logic           reset               ,
             input   var logic           clk                 ,

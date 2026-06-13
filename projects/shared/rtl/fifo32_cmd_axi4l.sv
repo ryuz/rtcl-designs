@@ -9,7 +9,7 @@
 
 `default_nettype none
 
-module rtcl_fifo32_axi4l
+module fifo32_cmd_axi4l
         (
             input   var logic           reset           ,
             input   var logic           clk             ,
@@ -84,10 +84,10 @@ module rtcl_fifo32_axi4l
             m_axi4l.arvalid <= 1'b0 ;
         end
         else if ( cke ) begin
-            if ( m_axi4l.awready ) m_axi4l.awvalid <= 1'b0 ;
-            if ( m_axi4l.wready )  m_axi4l.wvalid <= 1'b0;
+            if ( m_axi4l.awready ) m_axi4l.awvalid <= 1'b0;
+            if ( m_axi4l.wready  ) m_axi4l.wvalid  <= 1'b0;
             if ( m_axi4l.arready ) m_axi4l.arvalid <= 1'b0;
-
+            
             case ( rx_state )
             RX_IDLE:
                 begin
@@ -176,24 +176,24 @@ module rtcl_fifo32_axi4l
                         if ( m_axi4l.bvalid && m_axi4l.bready ) begin
                             tx_state <= TX_IDLE;
                             m_tx_data        <= '0              ;
-                            m_tx_data[7:0]   <= 8'h02           ;
-                            m_tx_data[9:8]   <= m_axi4l.bresp   ;
-                            m_tx_data[31:16] <= 16'd0           ;
+                            m_tx_data[7:0]   <= 8'h02           ;   // id
+                            m_tx_data[9:8]   <= m_axi4l.bresp   ;   // op
+                            m_tx_data[31:16] <= 16'd0           ;   // len
                             m_tx_valid       <= 1'b1            ;
                         end
                         if ( m_axi4l.rvalid && m_axi4l.rready ) begin
                             tx_state <= TX_RDATA;
                             m_tx_data        <= '0              ;
-                            m_tx_data[7:0]   <= 8'h02           ;
-                            m_tx_data[9:8]   <= m_axi4l.rresp   ;
-                            m_tx_data[31:16] <= 16'd4           ;
+                            m_tx_data[7:0]   <= 8'h03           ;   // id
+                            m_tx_data[9:8]   <= m_axi4l.rresp   ;   // op
+                            m_tx_data[31:16] <= 16'd4           ;   // len
                             m_tx_valid       <= 1'b1            ;
                         end
                     end
                 
                 TX_RDATA:
                     begin
-                        tx_state <= TX_IDLE;
+                        tx_state   <= TX_IDLE;
                         m_tx_data  <= 32'(m_axi4l.rdata);
                         m_tx_valid <= 1'b1              ;
                     end
@@ -206,5 +206,5 @@ module rtcl_fifo32_axi4l
 
  endmodule
 
-
 `default_nettype wire
+

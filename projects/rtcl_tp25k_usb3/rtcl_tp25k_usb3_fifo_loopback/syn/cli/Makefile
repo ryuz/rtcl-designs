@@ -10,12 +10,13 @@ OUTPUT_BASE_NAME = $(TOP_MODULE)
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
 
 JELLY_DIR = ../../../../../jelly
-RTL_DIR = ../../rtl
+PRJ_DIR = ../..
+SHARED_DIR = ../../../../shared
 CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
-VLOG_SOURCES  = $(RTL_DIR)/rtcl_tp25k_usb3_fifo_loopback.sv
-VLOG_SOURCES += $(RTL_DIR)/ft601_mode245_if.sv
+VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_fifo_loopback.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_mode245_transceiver.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_sync.sv

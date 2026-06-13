@@ -137,8 +137,8 @@ module rtcl_tp25k_usb3_fifo_loopback
     logic   [31:0]  ft601_rx_fifo_data       ;
     logic           ft601_rx_fifo_valid      ;
     
-    ft601_mode245_if
-        u_ft601_mode245_if
+    ft601_mode245_transceiver
+        u_ft601_mode245_transceiver
             (
                 .reset              (ft601_reset                ),
                 .clk                (ft601_clk                  ),
