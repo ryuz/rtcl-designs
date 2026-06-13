@@ -104,12 +104,7 @@ module ft601_mode245_if
                         reg_ft601_oe_n   <= 1'b1;
                         reg_ft601_be_t   <= '1  ;
                         reg_ft601_data_t <= '1  ;
-                        if ( ~reg_ft601_rxf_n && !m_fifo_almost_full ) begin
-                            // 受信開始
-                            state          <= READ_SETUP;
-                            reg_ft601_oe_n <= 1'b0;
-                        end
-                        else if ( ~reg_ft601_txe_n && (reg_ft601_buf || s_fifo_valid) ) begin
+                        if ( ~reg_ft601_txe_n && (reg_ft601_buf || s_fifo_valid) ) begin
                             // 送信開始
                             state            <= WRITE;
                             if ( reg_ft601_buf ) begin
@@ -118,6 +113,11 @@ module ft601_mode245_if
                                 reg_ft601_be_t   <= '0;
                                 reg_ft601_data_t <= '0;
                             end
+                        end
+                        else if ( ~reg_ft601_rxf_n && !m_fifo_almost_full ) begin
+                            // 受信開始
+                            state          <= READ_SETUP;
+                            reg_ft601_oe_n <= 1'b0;
                         end
                     end
 

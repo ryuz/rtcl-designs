@@ -166,7 +166,7 @@ module rtcl_tp25k_usb3_fifo_loopback
                 .m_fifo_valid       (ft601_rx_fifo_valid        )
             );
 
-    localparam FIFO_PTR_BITS = 12;
+    localparam FIFO_PTR_BITS = 14;
     logic  [FIFO_PTR_BITS:0]  fifo_rx_free_size;
 
     
