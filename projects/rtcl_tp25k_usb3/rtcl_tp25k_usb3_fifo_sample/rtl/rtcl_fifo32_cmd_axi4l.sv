@@ -53,20 +53,25 @@ module rtcl_fifo32_axi4l
     logic       rvalid      ;
     logic       rready      ;
 
-    typedef enum {
-        IDLE,
-        WADDR,
-        WDATA,
-        WRITE,
-        RADDR,
-        READ
-    } state_t;
 
-    state_t     state;
+    // -------------------------------------
+    //  RX
+    // -------------------------------------
+
+    typedef enum {
+        RX_IDLE,
+        RX_WADDR,
+        RX_WDATA,
+        RX_WRITE,
+        RX_RADDR,
+        RX_READ
+    } rx_state_t;
+
+    rx_state_t  rx_state;
 
     always_ff @(posedge clk) begin
         if ( reset ) begin
-            state <= IDLE;
+            rx_state <= RX_IDLE;
 
             m_axi4l.awaddr  <= 'x   ;
             m_axi4l.awprot  <= 'x   ;
@@ -79,15 +84,13 @@ module rtcl_fifo32_axi4l
             m_axi4l.arvalid <= 1'b0 ;
         end
         else if ( cke ) begin
-            if ( m_axi4l.awready ) m_axi4l.awvalid <= 1'b0;
-            if ( m_axi4l.wready )  m_axi4l.wvalid  <= 1'b0;
+            if ( m_axi4l.awready ) m_axi4l.awvalid <= 1'b0 ;
+            if ( m_axi4l.wready )  m_axi4l.wvalid <= 1'b0;
             if ( m_axi4l.arready ) m_axi4l.arvalid <= 1'b0;
-            case ( state )
-            IDLE:
+
+            case ( rx_state )
+            RX_IDLE:
                 begin
-                    m_axi4l.awaddr  <= 'x   ;
-                    m_axi4l.awprot  <= 'x   ;
-                    m_axi4l.awvalid <= 1'b0 ;
                     m_axi4l.wdata   <= 'x   ;
                     m_axi4l.wstrb   <= 'x   ;
                     m_axi4l.wvalid  <= 1'b0 ;
@@ -95,44 +98,46 @@ module rtcl_fifo32_axi4l
                     m_axi4l.arprot  <= 'x   ;
                     m_axi4l.arvalid <= 1'b0 ;
                     if ( s_rx_valid && s_rx_ready ) begin
-                        if ( s_rx_data[7:0] == 8'h02 && s_rx_data[31:16] == 16'd7 ) begin
-                            state <= WADDR;
+                        if ( s_rx_data[7:0] == 8'h02 && s_rx_data[31:16] == 16'd8 ) begin
+                            rx_state <= RX_WADDR;
                             m_axi4l.awprot <= s_rx_data[10:8];
                             m_axi4l.wstrb  <= s_rx_data[15:12];
                         end
-                        if ( s_rx_data[7:0] == 8'h03 && s_rx_data[31:16] == 16'd3 ) begin
-                            state <= RADDR;
+                        if ( s_rx_data[7:0] == 8'h03 && s_rx_data[31:16] == 16'd4 ) begin
+                            rx_state <= RX_RADDR;
                             m_axi4l.arprot <= s_rx_data[10:8];
                         end
                     end
                 end
             
-            WADDR:
+            RX_WADDR:
                 begin
                     if ( s_rx_valid && s_rx_ready ) begin
-                        state <= WDATA;
+                        rx_state <= RX_WDATA;
                         m_axi4l.awaddr <= s_rx_data[31:0];
                     end
                 end
 
-            WDATA:
+            RX_WDATA:
                 begin
                     if ( s_rx_valid && s_rx_ready ) begin
-                        state <= IDLE;
+                        rx_state <= RX_IDLE;
                         m_axi4l.awvalid <= 1'b1;
                         m_axi4l.wdata   <= s_rx_data[31:0];
                         m_axi4l.wvalid  <= 1'b1;
                     end
                 end
 
-            RADDR:
+            RX_RADDR:
                 begin
                     if ( s_rx_valid && s_rx_ready ) begin
-                        state <= IDLE;
+                        rx_state <= RX_IDLE;
                         m_axi4l.araddr  <= s_rx_data[31:0];
                         m_axi4l.arvalid <= 1'b1;
                     end
                 end
+            
+            default:     rx_state <= RX_IDLE;
             endcase
         end
     end
@@ -142,6 +147,62 @@ module rtcl_fifo32_axi4l
                      && (!m_axi4l.arvalid || m_axi4l.arready);
 
 
+    // -------------------------------------
+    //  TX
+    // -------------------------------------
+
+    typedef enum {
+        TX_IDLE,
+        TX_RDATA
+    } tx_state_t;
+
+    tx_state_t  tx_state;
+
+    always_ff @(posedge clk) begin
+        if ( reset ) begin
+            tx_state <= TX_IDLE;
+            m_tx_data  <= 'x    ;
+            m_tx_valid <= 1'b0  ;
+        end
+        else if ( cke ) begin
+            if ( m_tx_ready ) begin
+                m_tx_valid <= 1'b0;
+            end
+
+            if ( !m_tx_valid || m_tx_ready ) begin
+                case ( tx_state )
+                TX_IDLE:
+                    begin
+                        if ( m_axi4l.bvalid && m_axi4l.bready ) begin
+                            tx_state <= TX_IDLE;
+                            m_tx_data        <= '0              ;
+                            m_tx_data[7:0]   <= 8'h02           ;
+                            m_tx_data[9:8]   <= m_axi4l.bresp   ;
+                            m_tx_data[31:16] <= 16'd0           ;
+                            m_tx_valid       <= 1'b1            ;
+                        end
+                        if ( m_axi4l.rvalid && m_axi4l.rready ) begin
+                            tx_state <= TX_RDATA;
+                            m_tx_data        <= '0              ;
+                            m_tx_data[7:0]   <= 8'h02           ;
+                            m_tx_data[9:8]   <= m_axi4l.rresp   ;
+                            m_tx_data[31:16] <= 16'd4           ;
+                            m_tx_valid       <= 1'b1            ;
+                        end
+                    end
+                
+                TX_RDATA:
+                    begin
+                        tx_state <= TX_IDLE;
+                        m_tx_data  <= 32'(m_axi4l.rdata);
+                        m_tx_valid <= 1'b1              ;
+                    end
+                
+                default: tx_state <= TX_IDLE;
+                endcase
+            end
+        end
+    end
 
  endmodule
 
