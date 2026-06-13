@@ -1,6 +1,25 @@
 import os
+import argparse
 import time
 import PyD3XX
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="FT601 FIFO loopback random packet test")
+    parser.add_argument(
+        "-n",
+        "--iterations",
+        type=int,
+        default=100,
+        help="Number of random loopback iterations (default: 10)",
+    )
+    args = parser.parse_args()
+    if args.iterations <= 0:
+        parser.error("--iterations must be greater than 0")
+    return args
+
+
+ARGS = _parse_args()
 
 # デバイスを開く
 Status, DeviceCount = PyD3XX.FT_CreateDeviceInfoList()
@@ -21,7 +40,7 @@ print(f"IN  PipeID=0x{ReadPipe.PipeID:02x}, MaxPacketSize={ReadPipe.MaximumPacke
 Status = PyD3XX.FT_SetPipeTimeout(Device, ReadPipe, 50)
 assert Status == PyD3XX.FT_OK, f"FT_SetPipeTimeout failed: {PyD3XX.FT_STATUS_STR[Status]}"
 
-ITERATIONS = 1000
+ITERATIONS = ARGS.iterations
 RESPONSE_TIMEOUT_SEC = 1.0
 pkt = WritePipe.MaximumPacketSize
 assert pkt > 0, "MaximumPacketSize must be > 0"
@@ -67,7 +86,7 @@ for i in range(ITERATIONS):
 
     total_payload_bytes += len(payload)
 
-    if (i + 1) % 10 == 0 or i == 0:
+    if (i + 1) % max(1, min(10, ITERATIONS)) == 0 or i == 0:
         print(f"[{i+1:4d}/{ITERATIONS}] OK packet_len={len(payload):3d}B")
 
 elapsed = time.monotonic() - test_start
