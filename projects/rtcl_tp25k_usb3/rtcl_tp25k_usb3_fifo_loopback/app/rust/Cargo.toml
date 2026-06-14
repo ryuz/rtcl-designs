@@ -1,0 +1,7 @@
+[package]
+name = "rtcl_tp25k_usb3_fifo_loopback"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+d3xx = "0.0.3"
