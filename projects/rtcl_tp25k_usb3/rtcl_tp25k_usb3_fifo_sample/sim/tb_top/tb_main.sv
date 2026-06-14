@@ -58,6 +58,14 @@ module tb_main
     assign push_sw[0] = reset;
     assign push_sw[1] = 1'b0;
 
+    logic [31:0] rx_fifo [$];
+
+    initial begin
+        rx_fifo.push_back(32'h0008_f0_02);
+        rx_fifo.push_back(32'h0000_0100);
+        rx_fifo.push_back(32'h1234_5678);
+    end
+
 
     // FPGA側は posedge で出してくるので negedge で受けて遅延させる。 verilator でも使える。
     logic           dly_ft601_wr_n      ;
@@ -85,29 +93,20 @@ module tb_main
         end
         else begin
             // read
-            if ( rd_data_count == 0 && $urandom_range(0, 99) < 2 ) begin
-                rd_data_count <= $urandom_range(16, 32);
-            end
-
-            if ( ~dly_ft601_rd_n && rd_data_count > 0 ) begin
-                rd_data_count <= rd_data_count - 1'b1;
-                rd_data       <= rd_data - 1;
+            if ( ~dly_ft601_rd_n && rx_fifo.size() > 0 ) begin
+//              rd_data <= rx_fifo[0];
+                rx_fifo.pop_front();
             end
 
             // write
-            if ( wr_data_count > 0 && $urandom_range(0, 99) < 2 ) begin
-                wr_data_count <= 0;
-            end
-
             if ( ~ft601_txe_n && ~dly_ft601_wr_n ) begin
-                wr_data_count <= wr_data_count + 1'b1;
             end
         end
     end
     
-    assign ft601_rxf_n = ~(rd_data_count > 0);
-    assign ft601_txe_n = ~(wr_data_count < 64);
-    assign ft601_data  = ~dly_ft601_oe_n ? rd_data : 'z;
+    assign ft601_rxf_n = ~(rx_fifo.size() > 0);
+    assign ft601_txe_n = 1'b0;
+    assign ft601_data  = ~dly_ft601_oe_n ? rx_fifo[0] : 'z;
     assign ft601_be    = ~dly_ft601_oe_n ? '1 : 'z;
 
     // logging

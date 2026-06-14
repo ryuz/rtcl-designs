@@ -36,10 +36,13 @@ module rtcl_tp25k_usb3_fifo_sample
     logic in_reset;
     assign in_reset = push_sw[0];
 
+    logic   clk;
+    assign clk = in_clk50;
+
     // generate reset
     logic           reset       = 1'b1;
     logic   [7:0]   reset_count = '1;
-    always_ff @(posedge in_clk50 or posedge in_reset) begin
+    always_ff @(posedge clk or posedge in_reset) begin
         if ( in_reset ) begin
             reset       <= 1'b1;
             reset_count <= '1;
@@ -137,8 +140,8 @@ module rtcl_tp25k_usb3_fifo_sample
     logic   [31:0]  ft601_rx_fifo_data       ;
     logic           ft601_rx_fifo_valid      ;
     
-    ft601_mode245_if
-        u_ft601_mode245_if
+    ft601_mode245_transceiver
+        u_ft601_mode245_transceiver
             (
                 .reset              (ft601_reset                ),
                 .clk                (ft601_clk                  ),
@@ -166,21 +169,33 @@ module rtcl_tp25k_usb3_fifo_sample
                 .m_fifo_valid       (ft601_rx_fifo_valid        )
             );
 
-    localparam FIFO_PTR_BITS = 12;
-    logic  [FIFO_PTR_BITS:0]  fifo_rx_free_size;
 
-    
+    // -------------------------------
+    //  Command FIFO
+    // -------------------------------
+
+    localparam RX_FIFO_PTR_BITS = 8;
+    localparam TX_FIFO_PTR_BITS = 8;
+
+    // RX FIFO
+    logic  [RX_FIFO_PTR_BITS:0] fifo_rx_free_size   ;
+
+    logic   [3:0]               cmd_rx_fifo_strb    ;
+    logic   [31:0]              cmd_rx_fifo_data    ;
+    logic                       cmd_rx_fifo_valid   ;
+    logic                       cmd_rx_fifo_ready   ;
+
     jelly3_stream_fifo
             #(
-                .ASYNC          (0                  ),
-                .PTR_BITS       (FIFO_PTR_BITS      ),
+                .ASYNC          (1                  ),
+                .PTR_BITS       (RX_FIFO_PTR_BITS   ),
                 .DATA_BITS      (4+32               ),
                 .S_SYNC_FF      (3                  ),
                 .M_SYNC_FF      (3                  ),
                 .RAM_TYPE       ("block"            ),
                 .DOUT_REG       (1                  )
             )
-        u_stream_fifo
+        u_stream_fifo_rx
             (
                 .s_reset        (ft601_reset        ),
                 .s_clk          (ft601_clk          ),
@@ -193,16 +208,16 @@ module rtcl_tp25k_usb3_fifo_sample
                 .s_ready        (),
                 .s_free_size    (fifo_rx_free_size  ),
 
-                .m_reset        (ft601_reset        ),
-                .m_clk          (ft601_clk          ),
+                .m_reset        (reset        ),
+                .m_clk          (clk          ),
                 .m_cke          (1'b1               ),
                 .m_data         ({
-                                    ft601_tx_fifo_strb,
-                                    ft601_tx_fifo_data
+                                    cmd_rx_fifo_strb,
+                                    cmd_rx_fifo_data
                                 }),
-                .m_valid        (ft601_tx_fifo_valid),
-                .m_ready        (ft601_tx_fifo_ready),
-                .m_data_size    ()
+                .m_valid        (cmd_rx_fifo_valid  ),
+                .m_ready        (cmd_rx_fifo_ready  ),
+                .m_data_size    (                   )
             );
 
     always_ff @(posedge ft601_clk) begin
@@ -213,6 +228,97 @@ module rtcl_tp25k_usb3_fifo_sample
             ft601_rx_fifo_almost_full <= fifo_rx_free_size < 64;
         end
     end
+
+    // TX FIFO
+    logic   [3:0]   cmd_tx_fifo_strb    ;
+    logic   [31:0]  cmd_tx_fifo_data    ;
+    logic           cmd_tx_fifo_valid   ;
+    logic           cmd_tx_fifo_ready   ;
+
+    jelly3_stream_fifo
+            #(
+                .ASYNC          (1                  ),
+                .PTR_BITS       (TX_FIFO_PTR_BITS   ),
+                .DATA_BITS      (4+32               ),
+                .S_SYNC_FF      (3                  ),
+                .M_SYNC_FF      (3                  ),
+                .RAM_TYPE       ("block"            ),
+                .DOUT_REG       (1                  )
+            )
+        u_stream_fifo_tx
+            (
+                .s_reset        (reset              ),
+                .s_clk          (clk                ),
+                .s_cke          (1'b1               ),
+                .s_data         ({
+                                    cmd_tx_fifo_strb,
+                                    cmd_tx_fifo_data
+                                }),
+                .s_valid        (cmd_tx_fifo_valid  ),
+                .s_ready        (cmd_tx_fifo_ready  ),
+                .s_free_size    (                   ),
+
+                .m_reset        (ft601_reset        ),
+                .m_clk          (ft601_clk          ),
+                .m_cke          (1'b1               ),
+                .m_data         ({
+                                    ft601_tx_fifo_strb,
+                                    ft601_tx_fifo_data
+                                }),
+                .m_valid        (ft601_tx_fifo_valid),
+                .m_ready        (ft601_tx_fifo_ready),
+                .m_data_size    (                   )
+            );
+    
+    // --------------------------------
+    //  Commnand processing
+    // --------------------------------
+
+    jelly3_axi4l_if
+            #(
+                .ADDR_BITS      (32     ),
+                .DATA_BITS      (32     )
+            )
+        axi4l
+            (
+                .aresetn        (~reset ),
+                .aclk           (clk    ),
+                .aclken         (1'b1   )
+            );
+
+    fifo32_cmd_axi4l
+        u_fifo32_cmd_axi4l
+            (
+                .reset          (reset              ),
+                .clk            (clk                ),
+                .cke            (1'b1               ),
+
+                .s_rx_data      (cmd_rx_fifo_data   ),
+                .s_rx_valid     (cmd_rx_fifo_valid  ),
+                .s_rx_ready     (cmd_rx_fifo_ready  ),
+
+                .m_tx_data      (cmd_tx_fifo_data   ),
+                .m_tx_valid     (cmd_tx_fifo_valid  ),
+                .m_tx_ready     (cmd_tx_fifo_ready  ),
+                
+                .m_axi4l        (axi4l              )
+            );
+    assign cmd_tx_fifo_strb = '1;
+
+    jelly3_i2c
+            #(
+                .DIVIDER_BITS   (16                 )
+            )
+        u_i2c
+            (
+                .i2c_scl_t      (                   ),
+                .i2c_scl_i      (                   ),
+                .i2c_sda_t      (                   ),
+                .i2c_sda_i      (                   ),
+
+                .s_axi4l        (axi4l              ),
+                .irq            (                   )
+            );
 
 
     assign pmod[7:0] = 0   ;

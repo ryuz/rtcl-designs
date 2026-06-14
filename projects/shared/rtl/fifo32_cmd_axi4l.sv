@@ -33,27 +33,6 @@ module fifo32_cmd_axi4l
     localparam type  prot_t = logic [m_axi4l.PROT_BITS-1:0];
     localparam type  resp_t = logic [m_axi4l.RESP_BITS-1:0];
 
-    addr_t      awaddr      ;
-    prot_t      awprot      ;
-    logic       awvalid     ;
-    logic       awready     ;
-    data_t      wdata       ;
-    strb_t      wstrb       ;
-    logic       wvalid      ;
-    logic       wready      ;
-    resp_t      bresp       ;
-    logic       bvalid      ;
-    logic       bready      ;
-    addr_t      araddr      ;
-    prot_t      arprot      ;
-    logic       arvalid     ;
-    logic       arready     ;
-    data_t      rdata       ;
-    resp_t      rresp       ;
-    logic       rvalid      ;
-    logic       rready      ;
-
-
     // -------------------------------------
     //  RX
     // -------------------------------------
@@ -203,6 +182,9 @@ module fifo32_cmd_axi4l
             end
         end
     end
+
+    assign m_axi4l.bready = (tx_state == TX_IDLE);
+    assign m_axi4l.rready = (tx_state == TX_RDATA);
 
  endmodule
 
