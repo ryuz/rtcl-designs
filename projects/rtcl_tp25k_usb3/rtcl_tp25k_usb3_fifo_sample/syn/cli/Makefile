@@ -10,18 +10,27 @@ OUTPUT_BASE_NAME = $(TOP_MODULE)
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
 
 JELLY_DIR = ../../../../../jelly
-RTL_DIR = ../../rtl
+PRJ_DIR = ../..
+SHARED_DIR = ../../../../shared
 CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
-VLOG_SOURCES  = $(RTL_DIR)/rtcl_tp25k_usb3_fifo_sample.sv
-VLOG_SOURCES += $(RTL_DIR)/ft601_mode245_if.sv
+VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_fifo_sample.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_mode245_transceiver.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4l.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_sync.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_sync.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_if.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_gray.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_i2c.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/peripheral/jelly_i2c_core.v
 
 # SDC File
 SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_sample.sdc

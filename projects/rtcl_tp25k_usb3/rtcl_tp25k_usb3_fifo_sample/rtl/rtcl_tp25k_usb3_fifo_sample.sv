@@ -349,7 +349,7 @@ module rtcl_tp25k_usb3_fifo_sample
 
 
     assign mipi_pwr_en_n = 1'b0 ;
-    assign mipi_gpio[0]  = 1'b1 ;
+    assign mipi_gpio[0]  = 1'b0 ;
     assign mipi_gpio[1]  = 1'bz ;
 
 
