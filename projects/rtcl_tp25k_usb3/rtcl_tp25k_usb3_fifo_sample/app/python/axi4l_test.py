@@ -70,7 +70,8 @@ def read_axi4l(addr):
     return ReadBuffer.Value()[:8]
 
 a = read_axi4l(0x00)
-print(a)
+for i in range(8):
+    print(f"{a[i]:02x}")
 
 PyD3XX.FT_Close(Device)
 

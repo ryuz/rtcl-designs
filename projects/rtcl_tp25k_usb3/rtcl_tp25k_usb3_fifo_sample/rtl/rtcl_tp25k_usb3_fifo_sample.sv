@@ -284,7 +284,7 @@ module rtcl_tp25k_usb3_fifo_sample
                 .ADDR_BITS      (32     ),
                 .DATA_BITS      (32     )
             )
-        axi4l
+        axi4l_host
             (
                 .aresetn        (~reset ),
                 .aclk           (clk    ),
@@ -306,9 +306,117 @@ module rtcl_tp25k_usb3_fifo_sample
                 .m_tx_valid     (cmd_tx_fifo_valid  ),
                 .m_tx_ready     (cmd_tx_fifo_ready  ),
                 
-                .m_axi4l        (axi4l              )
+                .m_axi4l        (axi4l_host         )
             );
     assign cmd_tx_fifo_strb = '1;
+
+
+    // ----------------------------------------
+    //  Address decoder
+    // ----------------------------------------
+
+    localparam DEC_CTL = 0;
+    localparam DEC_I2C = 1;
+    localparam DEC_NUM = 2;
+
+    jelly3_axi4l_if
+            #(
+                .ADDR_BITS      (32         ),
+                .DATA_BITS      (32         )
+            )
+        axi4l_dec [DEC_NUM]
+            (
+                .aresetn        (~reset     ),
+                .aclk           (clk        ),
+                .aclken         (1'b1       )
+            );
+    
+    // address map
+    assign {axi4l_dec[DEC_CTL].addr_base, axi4l_dec[DEC_CTL].addr_high} = {32'h0000_0000, 32'h0000_ffff};
+    assign {axi4l_dec[DEC_I2C].addr_base, axi4l_dec[DEC_I2C].addr_high} = {32'h0001_0000, 32'h0001_ffff};
+
+    jelly3_axi4l_addr_decoder
+            #(
+                .NUM            (DEC_NUM    ),
+                .DEC_ADDR_BITS  (28         )
+            )
+        u_axi4l_addr_decoder
+            (
+                .s_axi4l        (axi4l_host ),
+                .m_axi4l        (axi4l_dec  )
+            );
+
+    
+    // ----------------------------------------
+    //  System Control
+    // ----------------------------------------
+
+    localparam  SYSREG_ID             = 4'h0;
+    localparam  SYSREG_SW_RESET       = 4'h1;
+    localparam  SYSREG_CAM_ENABLE     = 4'h2;
+    localparam  SYSREG_PWR_ENABLE     = 4'h5;
+ 
+    logic               reg_sw_reset        ;
+    logic               reg_cam_enable      ;
+    logic               reg_pwr_enable      ;
+    always_ff @(posedge axi4l_dec[DEC_CTL].aclk) begin
+        if ( ~axi4l_dec[DEC_CTL].aresetn ) begin
+            axi4l_dec[DEC_CTL].bvalid <= 1'b0   ;
+            axi4l_dec[DEC_CTL].rdata  <= '0     ;
+            axi4l_dec[DEC_CTL].rvalid <= 1'b0   ;
+
+            reg_sw_reset      <= 1'b0       ;
+            reg_cam_enable    <= 1'b0       ;
+            reg_pwr_enable    <= 1'h0       ;
+        end
+        else begin
+            // write
+            if ( axi4l_dec[DEC_CTL].bready ) begin
+                axi4l_dec[DEC_CTL].bvalid <= 1'b0;
+            end
+            if ( axi4l_dec[DEC_CTL].awvalid && axi4l_dec[DEC_CTL].awready 
+                    && axi4l_dec[DEC_CTL].wvalid && axi4l_dec[DEC_CTL].wready
+                    && axi4l_dec[DEC_CTL].wstrb[0] ) begin
+                case ( axi4l_dec[DEC_CTL].awaddr[6:3] )
+                SYSREG_SW_RESET  :   reg_sw_reset   <= 1'(axi4l_dec[DEC_CTL].wdata);
+                SYSREG_CAM_ENABLE:   reg_cam_enable <= 1'(axi4l_dec[DEC_CTL].wdata);
+                SYSREG_PWR_ENABLE:   reg_pwr_enable <= 1'(axi4l_dec[DEC_CTL].wdata);
+                default:;
+                endcase
+                axi4l_dec[DEC_CTL].bvalid <= 1'b1;
+            end
+
+            // read
+            if ( axi4l_dec[DEC_CTL].rready ) begin
+                axi4l_dec[DEC_CTL].rdata  <= '0;
+                axi4l_dec[DEC_CTL].rvalid <= 1'b0;
+            end
+            if ( axi4l_dec[DEC_CTL].arvalid && axi4l_dec[DEC_CTL].arready ) begin
+                case ( axi4l_dec[DEC_CTL].araddr[6:3] )
+                SYSREG_ID            :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(32'h01234567)      ;
+                SYSREG_SW_RESET      :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_sw_reset)      ;
+                SYSREG_CAM_ENABLE    :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_cam_enable)    ;
+                SYSREG_PWR_ENABLE    :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_pwr_enable)    ;
+                default:    axi4l_dec[DEC_CTL].rdata  <= '0    ;
+                endcase
+                axi4l_dec[DEC_CTL].rvalid <= 1'b1;
+            end
+        end
+    end
+    assign axi4l_dec[DEC_CTL].awready = axi4l_dec[DEC_CTL].wvalid  && !axi4l_dec[DEC_CTL].bvalid;
+    assign axi4l_dec[DEC_CTL].wready  = axi4l_dec[DEC_CTL].awvalid && !axi4l_dec[DEC_CTL].bvalid;
+    assign axi4l_dec[DEC_CTL].bresp   = '0;
+    assign axi4l_dec[DEC_CTL].arready = !axi4l_dec[DEC_CTL].rvalid;
+    assign axi4l_dec[DEC_CTL].rresp   = '0;
+
+    assign mipi_pwr_en_n = ~reg_pwr_enable  ;
+    assign mipi_gpio[0]  = reg_cam_enable   ;
+    assign mipi_gpio[1]  = 1'bz             ;
+
+
+    // ----------------------------------------
+    //  I2C
+    // ----------------------------------------
 
     logic       i2c_scl_t   ;
     logic       i2c_scl_i   ;
@@ -316,47 +424,46 @@ module rtcl_tp25k_usb3_fifo_sample
     logic       i2c_sda_i   ;
     jelly3_i2c
             #(
-                .DIVIDER_BITS   (16         )
+                .DIVIDER_BITS   (16                 )
             )
         u_i2c
             (
-                .i2c_scl_t      (i2c_scl_t  ),
-                .i2c_scl_i      (i2c_scl_i  ),
-                .i2c_sda_t      (i2c_sda_t  ),
-                .i2c_sda_i      (i2c_sda_i  ),
+                .i2c_scl_t      (i2c_scl_t          ),
+                .i2c_scl_i      (i2c_scl_i          ),
+                .i2c_sda_t      (i2c_sda_t          ),
+                .i2c_sda_i      (i2c_sda_i          ),
 
-                .s_axi4l        (axi4l      ),
-                .irq            (           )
+                .s_axi4l        (axi4l_dec[DEC_I2C] ),
+                .irq            (                   )
             );
     
-        IOBUF
-            u_iobuf_scl
-                (
-                    .O          (i2c_scl_i  ),
-                    .IO         (mipi_scl   ),
-                    .I          (1'b0       ),
-                    .OEN        (i2c_scl_t  )
-                );
+    IOBUF
+        u_iobuf_scl
+            (
+                .O          (i2c_scl_i  ),
+                .IO         (mipi_scl   ),
+                .I          (1'b0       ),
+                .OEN        (i2c_scl_t  )
+            );
 
-        IOBUF
-            u_iobuf_sda
-                (
-                    .O          (i2c_sda_i  ),
-                    .IO         (mipi_sda   ),
-                    .I          (1'b0       ),
-                    .OEN        (i2c_sda_t  )
-                );
-
-
-    assign mipi_pwr_en_n = 1'b0 ;
-    assign mipi_gpio[0]  = 1'b0 ;
-    assign mipi_gpio[1]  = 1'bz ;
+    IOBUF
+        u_iobuf_sda
+            (
+                .O          (i2c_sda_i  ),
+                .IO         (mipi_sda   ),
+                .I          (1'b0       ),
+                .OEN        (i2c_sda_t  )
+            );
 
 
+
+    // ----------------------------------------
+    //  PMOD
+    // ----------------------------------------
 
     assign pmod[7:0] = 0   ;
 
 endmodule
 
-
 `default_nettype wire
+
