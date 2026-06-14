@@ -61,9 +61,14 @@ module tb_main
     logic [31:0] rx_fifo [$];
 
     initial begin
+        // write
         rx_fifo.push_back(32'h0008_f0_02);
         rx_fifo.push_back(32'h0000_0100);
         rx_fifo.push_back(32'h1234_5678);
+
+        // read
+        rx_fifo.push_back(32'h0004_00_03);
+        rx_fifo.push_back(32'h0000_0200);
     end
 
 

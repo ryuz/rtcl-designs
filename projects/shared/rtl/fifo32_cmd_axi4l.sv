@@ -152,7 +152,7 @@ module fifo32_cmd_axi4l
                 case ( tx_state )
                 TX_IDLE:
                     begin
-                        if ( m_axi4l.bvalid && m_axi4l.bready ) begin
+                        if ( m_axi4l.bvalid ) begin
                             tx_state <= TX_IDLE;
                             m_tx_data        <= '0              ;
                             m_tx_data[7:0]   <= 8'h02           ;   // id
@@ -160,7 +160,7 @@ module fifo32_cmd_axi4l
                             m_tx_data[31:16] <= 16'd0           ;   // len
                             m_tx_valid       <= 1'b1            ;
                         end
-                        if ( m_axi4l.rvalid && m_axi4l.rready ) begin
+                        if ( m_axi4l.rvalid ) begin
                             tx_state <= TX_RDATA;
                             m_tx_data        <= '0              ;
                             m_tx_data[7:0]   <= 8'h03           ;   // id
