@@ -33,6 +33,7 @@ module tb_main
         u_rtcl_tp25k_usb3_fifo_sample
             (
                 .in_clk50           (clk            ),
+
                 .ft601_reset_n      (ft601_reset_n  ),
                 .ft601_wakeup_n     (ft601_wakeup_n ),
                 .ft601_clk          (ft601_clk      ),
@@ -45,6 +46,12 @@ module tb_main
                 .ft601_be           (ft601_be       ),
                 .ft601_data         (ft601_data     ),
                 .ft601_gpio         (ft601_gpio     ),
+
+                .mipi_pwr_en_n      (               ),
+                .mipi_gpio          (               ),
+                .mipi_scl           (               ),
+                .mipi_sda           (               ),
+
                 .push_sw            (push_sw        ),
                 .dip_sw             (dip_sw         ),
                 .led                (led            ),

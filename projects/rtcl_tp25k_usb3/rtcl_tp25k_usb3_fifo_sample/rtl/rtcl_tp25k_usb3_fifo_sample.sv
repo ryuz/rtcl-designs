@@ -26,6 +26,11 @@ module rtcl_tp25k_usb3_fifo_sample
             inout   tri logic   [31:0]  ft601_data      ,
             inout   tri logic   [1:0]   ft601_gpio      ,
 
+            output  var logic           mipi_pwr_en_n   ,
+            inout   tri logic   [1:0]   mipi_gpio       ,
+            inout   tri logic           mipi_scl        ,
+            inout   tri logic           mipi_sda        ,
+
             input   var logic   [1:0]   push_sw         ,
             input   var logic   [1:0]   dip_sw          ,
             output  var logic   [3:0]   led             ,
@@ -305,20 +310,48 @@ module rtcl_tp25k_usb3_fifo_sample
             );
     assign cmd_tx_fifo_strb = '1;
 
+    logic       i2c_scl_t   ;
+    logic       i2c_scl_i   ;
+    logic       i2c_sda_t   ;
+    logic       i2c_sda_i   ;
     jelly3_i2c
             #(
-                .DIVIDER_BITS   (16                 )
+                .DIVIDER_BITS   (16         )
             )
         u_i2c
             (
-                .i2c_scl_t      (                   ),
-                .i2c_scl_i      (                   ),
-                .i2c_sda_t      (                   ),
-                .i2c_sda_i      (                   ),
+                .i2c_scl_t      (i2c_scl_t  ),
+                .i2c_scl_i      (i2c_scl_i  ),
+                .i2c_sda_t      (i2c_sda_t  ),
+                .i2c_sda_i      (i2c_sda_i  ),
 
-                .s_axi4l        (axi4l              ),
-                .irq            (                   )
+                .s_axi4l        (axi4l      ),
+                .irq            (           )
             );
+    
+        IOBUF
+            u_iobuf_scl
+                (
+                    .O          (i2c_scl_i  ),
+                    .IO         (mipi_scl   ),
+                    .I          (1'b0       ),
+                    .OEN        (i2c_scl_t  )
+                );
+
+        IOBUF
+            u_iobuf_sda
+                (
+                    .O          (i2c_sda_i  ),
+                    .IO         (mipi_sda   ),
+                    .I          (1'b0       ),
+                    .OEN        (i2c_sda_t  )
+                );
+
+
+    assign mipi_pwr_en_n = 1'b0 ;
+    assign mipi_gpio[0]  = 1'b1 ;
+    assign mipi_gpio[1]  = 1'bz ;
+
 
 
     assign pmod[7:0] = 0   ;
