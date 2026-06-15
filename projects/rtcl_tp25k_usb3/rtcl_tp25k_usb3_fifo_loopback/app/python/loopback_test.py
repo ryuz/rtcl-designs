@@ -54,7 +54,11 @@ for i in range(ITERATIONS):
     payload = os.urandom(payload_len)
     tx_buf = PyD3XX.FT_Buffer.from_bytes(payload)
 
-    Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(payload), PyD3XX.NULL)
+    if (PyD3XX.Platform == "linux") or (PyD3XX.Platform == "darwin"):
+        Status, BytesWrote = PyD3XX.FT_WritePipe(Device, int("0x02", 16), tx_buf, len(payload), 0)
+    else:
+        Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(payload), PyD3XX.NULL)
+
     assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed at iter {i+1}: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesWrote == len(payload), f"Short write at iter {i+1}: {BytesWrote}/{len(payload)}"
 
@@ -68,7 +72,11 @@ for i in range(ITERATIONS):
             PyD3XX.FT_Close(Device)
             raise SystemExit(1)
 
-        Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, ReadPipe.MaximumPacketSize, PyD3XX.NULL)
+        if (PyD3XX.Platform == "linux") or (PyD3XX.Platform == "darwin"):
+            Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, int("0x82", 16), len(payload), 0)
+        else:
+            Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, len(payload), PyD3XX.NULL)
+
         if Status == PyD3XX.FT_TIMEOUT:
             continue
         assert Status == PyD3XX.FT_OK, f"FT_ReadPipe failed at iter {i+1}: {PyD3XX.FT_STATUS_STR[Status]}"
