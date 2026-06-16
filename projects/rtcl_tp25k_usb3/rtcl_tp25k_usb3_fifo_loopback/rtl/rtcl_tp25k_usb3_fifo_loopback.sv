@@ -215,7 +215,9 @@ module rtcl_tp25k_usb3_fifo_loopback
     end
 
 
-    assign pmod[7:0] = 0   ;
+    assign pmod[0]   = ft601_rx_fifo_valid  ;
+    assign pmod[1]   = ft601_tx_fifo_valid & ft601_tx_fifo_ready ;
+    assign pmod[7:2] = '0;
 
 endmodule
 
