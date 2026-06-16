@@ -41,12 +41,17 @@ def write_axi4l(addr, data, strb=0xf):
             (data >> 24) & 0xff,
         ])
     tx_buf = PyD3XX.FT_Buffer.from_bytes(packet)
-    Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(packet), PyD3XX.NULL)
+    if (PyD3XX.Platform == "linux") or (PyD3XX.Platform == "darwin"):
+        Status, BytesWrote = PyD3XX.FT_WritePipe(Device, int("0x02", 16), tx_buf, len(packet), 0)
+    else:
+        Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(packet), PyD3XX.NULL)
     assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesWrote == len(packet), f"Short write : {BytesWrote}/{len(packet)}"
     time.sleep(0.02)  # デバイス側で処理されるのを待つ
-    Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 4, PyD3XX.NULL)
-#   Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 4, 200)
+    if (PyD3XX.Platform == "linux") or (PyD3XX.Platform == "darwin"):
+        Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, int("0x82", 16), 4, 0)
+    else:
+       Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 4, PyD3XX.NULL)
     assert Status == PyD3XX.FT_OK, f"FT_ReadPipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesRead == 4, f"Short read : {BytesRead}/4"
     return int.from_bytes(ReadBuffer.Value()[:4], "little")
@@ -63,10 +68,16 @@ def read_axi4l(addr):
             (addr >> 24) & 0xff,
         ])
     tx_buf = PyD3XX.FT_Buffer.from_bytes(packet)
-    Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(packet), PyD3XX.NULL)
+    if (PyD3XX.Platform == "linux") or (PyD3XX.Platform == "darwin"):
+        Status, BytesWrote = PyD3XX.FT_WritePipe(Device, int("0x02", 16), tx_buf, len(packet), 0)
+    else:
+        Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(packet), PyD3XX.NULL)
     assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesWrote == len(packet), f"Short write : {BytesWrote}/{len(packet)}"
-    Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 8, PyD3XX.NULL)
+    if (PyD3XX.Platform == "linux") or (PyD3XX.Platform == "darwin"):
+        Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, int("0x82", 16), 8, 0)
+    else:
+        Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 8, PyD3XX.NULL)
     assert Status == PyD3XX.FT_OK, f"FT_ReadPipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesRead == 8, f"Short read : {BytesRead}/4"
     rx_buf = ReadBuffer.Value()[:8]
