@@ -355,10 +355,12 @@ module rtcl_tp25k_usb3_fifo_sample
     localparam  SYSREG_SW_RESET       = 4'h1;
     localparam  SYSREG_CAM_ENABLE     = 4'h2;
     localparam  SYSREG_PWR_ENABLE     = 4'h5;
+    localparam  SYSREG_SCRATCH        = 4'hf;
  
     logic               reg_sw_reset        ;
     logic               reg_cam_enable      ;
     logic               reg_pwr_enable      ;
+    logic   [31:0]      reg_scratch         ;
     always_ff @(posedge axi4l_dec[DEC_CTL].aclk) begin
         if ( ~axi4l_dec[DEC_CTL].aresetn ) begin
             axi4l_dec[DEC_CTL].bvalid <= 1'b0   ;
@@ -368,6 +370,7 @@ module rtcl_tp25k_usb3_fifo_sample
             reg_sw_reset      <= 1'b0       ;
             reg_cam_enable    <= 1'b0       ;
             reg_pwr_enable    <= 1'h0       ;
+            reg_scratch       <= 32'h0      ;
         end
         else begin
             // write
@@ -377,10 +380,11 @@ module rtcl_tp25k_usb3_fifo_sample
             if ( axi4l_dec[DEC_CTL].awvalid && axi4l_dec[DEC_CTL].awready 
                     && axi4l_dec[DEC_CTL].wvalid && axi4l_dec[DEC_CTL].wready
                     && axi4l_dec[DEC_CTL].wstrb[0] ) begin
-                case ( axi4l_dec[DEC_CTL].awaddr[6:3] )
-                SYSREG_SW_RESET  :   reg_sw_reset   <= 1'(axi4l_dec[DEC_CTL].wdata);
-                SYSREG_CAM_ENABLE:   reg_cam_enable <= 1'(axi4l_dec[DEC_CTL].wdata);
-                SYSREG_PWR_ENABLE:   reg_pwr_enable <= 1'(axi4l_dec[DEC_CTL].wdata);
+                case ( axi4l_dec[DEC_CTL].awaddr[5:2] )
+                SYSREG_SW_RESET  :   reg_sw_reset   <=  1'(axi4l_dec[DEC_CTL].wdata);
+                SYSREG_CAM_ENABLE:   reg_cam_enable <=  1'(axi4l_dec[DEC_CTL].wdata);
+                SYSREG_PWR_ENABLE:   reg_pwr_enable <=  1'(axi4l_dec[DEC_CTL].wdata);
+                SYSREG_SCRATCH   :   reg_scratch    <= 32'(axi4l_dec[DEC_CTL].wdata);
                 default:;
                 endcase
                 axi4l_dec[DEC_CTL].bvalid <= 1'b1;
@@ -392,11 +396,12 @@ module rtcl_tp25k_usb3_fifo_sample
                 axi4l_dec[DEC_CTL].rvalid <= 1'b0;
             end
             if ( axi4l_dec[DEC_CTL].arvalid && axi4l_dec[DEC_CTL].arready ) begin
-                case ( axi4l_dec[DEC_CTL].araddr[6:3] )
+                case ( axi4l_dec[DEC_CTL].araddr[5:2] )
                 SYSREG_ID            :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(32'h01234567)      ;
                 SYSREG_SW_RESET      :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_sw_reset)      ;
                 SYSREG_CAM_ENABLE    :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_cam_enable)    ;
                 SYSREG_PWR_ENABLE    :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_pwr_enable)    ;
+                SYSREG_SCRATCH       :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_scratch)       ;
                 default:    axi4l_dec[DEC_CTL].rdata  <= '0    ;
                 endcase
                 axi4l_dec[DEC_CTL].rvalid <= 1'b1;

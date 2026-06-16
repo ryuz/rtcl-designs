@@ -23,6 +23,8 @@ print(f"IN  PipeID=0x{ReadPipe.PipeID:02x}, MaxPacketSize={ReadPipe.MaximumPacke
 Status = PyD3XX.FT_SetPipeTimeout(Device, ReadPipe, 50)
 assert Status == PyD3XX.FT_OK, f"FT_SetPipeTimeout failed: {PyD3XX.FT_STATUS_STR[Status]}"
 
+#Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 64, PyD3XX.NULL)
+
 def write_axi4l(addr, data, strb=0xf):
     packet = bytes([
             0x02, 
@@ -40,10 +42,11 @@ def write_axi4l(addr, data, strb=0xf):
         ])
     tx_buf = PyD3XX.FT_Buffer.from_bytes(packet)
     Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(packet), PyD3XX.NULL)
-    assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed at iter {i+1}: {PyD3XX.FT_STATUS_STR[Status]}"
+    assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesWrote == len(packet), f"Short write : {BytesWrote}/{len(packet)}"
-
-    Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 4, 100)
+    time.sleep(0.02)  # デバイス側で処理されるのを待つ
+    Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 4, PyD3XX.NULL)
+#   Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 4, 200)
     assert Status == PyD3XX.FT_OK, f"FT_ReadPipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesRead == 4, f"Short read : {BytesRead}/4"
     return int.from_bytes(ReadBuffer.Value()[:4], "little")
@@ -61,17 +64,21 @@ def read_axi4l(addr):
         ])
     tx_buf = PyD3XX.FT_Buffer.from_bytes(packet)
     Status, BytesWrote = PyD3XX.FT_WritePipe(Device, WritePipe, tx_buf, len(packet), PyD3XX.NULL)
-    assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed at iter {i+1}: {PyD3XX.FT_STATUS_STR[Status]}"
+    assert Status == PyD3XX.FT_OK, f"FT_WritePipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesWrote == len(packet), f"Short write : {BytesWrote}/{len(packet)}"
-    time.sleep(0.01)  # デバイス側で処理されるのを待つ
     Status, ReadBuffer, BytesRead = PyD3XX.FT_ReadPipe(Device, ReadPipe, 8, PyD3XX.NULL)
     assert Status == PyD3XX.FT_OK, f"FT_ReadPipe failed: {PyD3XX.FT_STATUS_STR[Status]}"
     assert BytesRead == 8, f"Short read : {BytesRead}/4"
-    return ReadBuffer.Value()[:8]
+    rx_buf = ReadBuffer.Value()[:8]
+    v = rx_buf[4] + rx_buf[5]*256 + rx_buf[6]*256**2 + rx_buf[7]*256**3
+    return v
 
-a = read_axi4l(0x00)
-for i in range(8):
-    print(f"{a[i]:02x}")
+id = read_axi4l(0x00*4)
+print(f"id : {id:04x}")
+scratch = read_axi4l(0x0f*4)
+print(f"scratch : {scratch:04x}")
+write_axi4l(0x0f*4, 0xabcd55aa)
+scratch = read_axi4l(0x0f*4)
+print(f"scratch : {scratch:04x}")
 
 PyD3XX.FT_Close(Device)
-
