@@ -1,4 +1,6 @@
 use std::io::{Read, Result, Write};
+use std::thread;
+use std::time::Duration;
 
 use d3xx::{list_devices, Device, Pipe};
 
@@ -10,6 +12,15 @@ impl Axi4LiteD3xx {
     fn new(device: Device) -> Self {
         Self { device }
     }
+
+    /*
+    fn init(&self) -> Result<()> {
+        let packet = [0; 4];
+        for _ in 0..128 {
+            self.device.pipe(Pipe::Out0).write_all(&packet)?;
+        }
+        Ok(())
+    }*/
 
     fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<u32> {
         let packet = [
@@ -28,13 +39,14 @@ impl Axi4LiteD3xx {
         ];
 
         self.device.pipe(Pipe::Out0).write_all(&packet)?;
+        thread::sleep(Duration::from_millis(20));
 
         let mut resp = [0u8; 4];
         self.device.pipe(Pipe::In0).read_exact(&mut resp)?;
         Ok(u32::from_le_bytes(resp))
     }
 
-    fn read_axi4l(&self, addr: u32) -> Result<[u8; 8]> {
+    fn read_axi4l(&self, addr: u32) -> Result<u32> {
         let packet = [
             0x03,
             0x00,
@@ -50,7 +62,7 @@ impl Axi4LiteD3xx {
 
         let mut resp = [0u8; 8];
         self.device.pipe(Pipe::In0).read_exact(&mut resp)?;
-        Ok(resp)
+        Ok(u32::from_le_bytes([resp[4], resp[5], resp[6], resp[7]]))
     }
 }
 
@@ -64,14 +76,28 @@ fn main() {
     let device = all_devices[0].open().expect("failed to open device");
     let axi = Axi4LiteD3xx::new(device);
 
-    let read_data = axi.read_axi4l(0x00).expect("read_axi4l failed");
-    println!("read_axi4l(0x0000_0000):");
-    for b in read_data {
-        println!("{b:02x}");
-    }
+    let id = axi.read_axi4l(0x00 * 4).expect("read_axi4l(id) failed");
+    println!("id : {id:04x}");
 
-    let wr_resp = axi
-        .write_axi4l(0x04, 0x1234_5678, 0xF)
-        .expect("write_axi4l failed");
-    println!("write response: 0x{wr_resp:08x}");
+    let scratch = axi
+        .read_axi4l(0x13 * 4)
+        .expect("read_axi4l(scratch before) failed");
+    println!("scratch : {scratch:04x}");
+
+    axi.write_axi4l(0x13 * 4, 0xabcd55aa, 0xF)
+        .expect("write_axi4l(scratch) failed");
+
+    let scratch = axi
+        .read_axi4l(0x13 * 4)
+        .expect("read_axi4l(scratch after) failed");
+    println!("scratch : {scratch:04x}");
+
+    axi.write_axi4l(0x13 * 4, 0x87654321, 0xe)
+        .expect("write_axi4l(scratch) failed");
+
+    let scratch = axi
+        .read_axi4l(0x13 * 4)
+        .expect("read_axi4l(scratch after) failed");
+    println!("scratch : {scratch:04x}");
 }
+

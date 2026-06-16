@@ -351,6 +351,7 @@ module rtcl_tp25k_usb3_fifo_sample
     //  System Control
     // ----------------------------------------
 
+    /*
     localparam  SYSREG_ID             = 4'h0;
     localparam  SYSREG_SW_RESET       = 4'h1;
     localparam  SYSREG_CAM_ENABLE     = 4'h2;
@@ -417,6 +418,51 @@ module rtcl_tp25k_usb3_fifo_sample
     assign mipi_pwr_en_n = ~reg_pwr_enable  ;
     assign mipi_gpio[0]  = reg_cam_enable   ;
     assign mipi_gpio[1]  = 1'bz             ;
+    */
+
+    logic   [31:0]      control0;
+    logic   [31:0]      control1;
+    logic   [31:0]      control2;
+    jelly3_system_control
+        #(
+                .DATA_BITS          (32                 ),
+                .CORE_ID            (32'h527a_0001      ),
+                .CORE_VERSION       (32'h0003_0001      ),
+                .INIT_CONTROL0      ('0                 ),
+                .INIT_CONTROL1      ('0                 ),
+                .INIT_CONTROL2      ('0                 ),
+                .INIT_CONTROL3      ('0                 ),
+                .INIT_CONTROL4      ('0                 ),
+                .INIT_CONTROL5      ('0                 ),
+                .INIT_CONTROL6      ('0                 ),
+                .INIT_CONTROL7      ('0                 )
+            )
+        u_system_control
+            (
+                .s_axi4l            (axi4l_dec[DEC_CTL] ),
+
+                .control0           (control0           ),
+                .control1           (control1           ),
+                .control2           (control2           ),
+                .control3           (                   ),
+                .control4           (                   ),
+                .control5           (                   ),
+                .control6           (                   ),
+                .control7           (                   ),
+
+                .monitor0           (                   ),
+                .monitor1           (                   ),
+                .monitor2           (                   ),
+                .monitor3           (                   ),
+                .monitor4           (                   ),
+                .monitor5           (                   ),
+                .monitor6           (                   ),
+                .monitor7           (                   )
+            );
+
+    assign mipi_pwr_en_n = ~control0[0]  ;
+    assign mipi_gpio[0]  = control1[0]   ;
+    assign mipi_gpio[1]  = 1'bz          ;
 
 
     // ----------------------------------------

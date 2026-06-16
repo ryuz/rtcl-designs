@@ -70,12 +70,6 @@ module fifo32_cmd_axi4l
             case ( rx_state )
             RX_IDLE:
                 begin
-                    m_axi4l.wdata   <= 'x   ;
-                    m_axi4l.wstrb   <= 'x   ;
-                    m_axi4l.wvalid  <= 1'b0 ;
-                    m_axi4l.araddr  <= 'x   ;
-                    m_axi4l.arprot  <= 'x   ;
-                    m_axi4l.arvalid <= 1'b0 ;
                     if ( s_rx_valid && s_rx_ready ) begin
                         if ( s_rx_data[7:0] == 8'h02 && s_rx_data[31:16] == 16'd8 ) begin
                             rx_state <= RX_WADDR;
