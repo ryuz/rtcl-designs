@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 d3xx = "0.0.3"
+jelly-mem_access = { path = "../../../../../jelly/rust/mem_access" }
+

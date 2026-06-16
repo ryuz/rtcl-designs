@@ -2,6 +2,9 @@ use std::io::{Read, Result, Write};
 use std::thread;
 use std::time::Duration;
 
+use jelly_mem_access::*;
+use jelly_mem_access::bus_accessor::LittleEndian;
+
 use d3xx::{list_devices, Device, Pipe};
 
 struct Axi4LiteD3xx {
@@ -66,6 +69,21 @@ impl Axi4LiteD3xx {
     }
 }
 
+impl Bus<u32, u32, u8> for Axi4LiteD3xx {
+    type Error = std::io::Error;
+
+    fn write(&mut self, addr: u32, data: u32, strb: u8) -> Result<()> {
+        self.write_axi4l(addr, data, strb)?;
+        Ok(())
+    }
+
+    fn read(&mut self, addr: u32) -> Result<u32> {
+        self.read_axi4l(addr)
+    }
+}
+
+
+
 fn main() {
     println!("FT601 AXI4-Lite access test");
 
@@ -99,5 +117,16 @@ fn main() {
         .read_axi4l(0x13 * 4)
         .expect("read_axi4l(scratch after) failed");
     println!("scratch : {scratch:04x}");
+
+
+    let accessor: SharedBusAccessor<Axi4LiteD3xx, u32, u32, u8, LittleEndian> = SharedBusAccessor::new(axi);
+    unsafe {
+        accessor.try_write_reg_u32(0x13, 0xdeadbeef).expect("try_write_mem_u32 failed");
+        let val = accessor.try_read_reg_u32(0x13).expect("try_read_reg_u32 failed");
+        println!("scratch : {val:04x}");
+        accessor.try_write_reg_u32(0x13, 0x11223344).expect("try_write_mem_u32 failed");
+        let val = accessor.try_read_reg_u32(0x13).expect("try_read_reg_u32 failed");
+        println!("scratch : {val:04x}");
+    }
 }
 
