@@ -26,17 +26,21 @@ module rtcl_tp25k_usb3_fifo_sample
             inout   tri logic   [31:0]  ft601_data      ,
             inout   tri logic   [1:0]   ft601_gpio      ,
 
-            output  var logic           mipi_pwr_en_n   ,
-            inout   tri logic   [1:0]   mipi_gpio       ,
+            inout   tri logic           mipi_ck_p       ,
+            inout   tri logic           mipi_ck_n       ,
+            inout   tri logic   [3:0]   mipi_d_p        ,
+            inout   tri logic   [3:0]   mipi_d_n        ,
             inout   tri logic           mipi_scl        ,
             inout   tri logic           mipi_sda        ,
+            inout   tri logic   [1:0]   mipi_gpio       ,
+            output  var logic           mipi_pwr_en_n   ,
 
             input   var logic   [1:0]   push_sw         ,
             input   var logic   [1:0]   dip_sw          ,
             output  var logic   [3:0]   led             ,
             output  var logic   [7:0]   pmod            
         );
-    
+
     // reset switch
     logic in_reset;
     assign in_reset = push_sw[0];
@@ -60,6 +64,142 @@ module rtcl_tp25k_usb3_fifo_sample
         end
     end
 
+
+    // ----------------------------------------
+    //  D-PHY
+    // ----------------------------------------
+
+    logic           dphy_clk            ;
+    logic   [7:0]   dphy_d0ln_hsrxd     ;
+    logic   [7:0]   dphy_d1ln_hsrxd     ;
+    logic   [7:0]   dphy_d2ln_hsrxd     ;
+    logic   [7:0]   dphy_d3ln_hsrxd     ;
+    logic           dphy_d0ln_hsrxd_vld ;
+    logic           dphy_d1ln_hsrxd_vld ;
+    logic           dphy_d2ln_hsrxd_vld ;
+    logic           dphy_d3ln_hsrxd_vld ;
+    logic           dphy_di_lprx0_n     ;
+    logic           dphy_di_lprx0_p     ;
+    logic           dphy_di_lprx1_n     ;
+    logic           dphy_di_lprx1_p     ;
+    logic           dphy_di_lprx2_n     ;
+    logic           dphy_di_lprx2_p     ;
+    logic           dphy_di_lprx3_n     ;
+    logic           dphy_di_lprx3_p     ;
+
+    logic           dphy_lptxen_ln0     ;
+    logic           dphy_lptxen_ln1     ;
+    logic           dphy_lptxen_ln2     ;
+    logic           dphy_lptxen_ln3     ;
+    logic           dphy_do_lptx0_n     ;
+    logic           dphy_do_lptx1_n     ;
+    logic           dphy_do_lptx2_n     ;
+    logic           dphy_do_lptx3_n     ;
+    logic           dphy_do_lptx0_p     ;
+    logic           dphy_do_lptx1_p     ;
+    logic           dphy_do_lptx2_p     ;
+    logic           dphy_do_lptx3_p     ;
+    logic           dphy_hsrx_en_d0     ;
+    logic           dphy_hsrx_en_d1     ;
+    logic           dphy_hsrx_en_d2     ;
+    logic           dphy_hsrx_en_d3     ;
+    logic           dphy_hsrx_odten_d0  ;
+    logic           dphy_hsrx_odten_d1  ;
+    logic           dphy_hsrx_odten_d2  ;
+    logic           dphy_hsrx_odten_d3  ;
+    logic           dphy_lprx_en_d0     ;
+    logic           dphy_lprx_en_d1     ;
+    logic           dphy_lprx_en_d2     ;
+    logic           dphy_lprx_en_d3     ;
+
+    Gowin_MIPI_DPHY
+        u_mipi_dphy
+            (
+                .rx_clk_o       (dphy_clk               ), //output rx_clk_o
+                .d0ln_hsrxd     (dphy_d0ln_hsrxd        ), //output [7:0] d0ln_hsrxd
+                .d1ln_hsrxd     (dphy_d1ln_hsrxd        ), //output [7:0] d1ln_hsrxd
+                .d2ln_hsrxd     (dphy_d2ln_hsrxd        ), //output [7:0] d2ln_hsrxd
+                .d3ln_hsrxd     (dphy_d3ln_hsrxd        ), //output [7:0] d3ln_hsrxd
+                .d0ln_hsrxd_vld (dphy_d0ln_hsrxd_vld    ), //output d0ln_hsrxd_vld
+                .d1ln_hsrxd_vld (dphy_d1ln_hsrxd_vld    ), //output d1ln_hsrxd_vld
+                .d2ln_hsrxd_vld (dphy_d2ln_hsrxd_vld    ), //output d2ln_hsrxd_vld
+                .d3ln_hsrxd_vld (dphy_d3ln_hsrxd_vld    ), //output d3ln_hsrxd_vld
+                .di_lprx0_n     (dphy_di_lprx0_n        ), //output di_lprx0_n
+                .di_lprx0_p     (dphy_di_lprx0_p        ), //output di_lprx0_p
+                .di_lprx1_n     (dphy_di_lprx1_n        ), //output di_lprx1_n
+                .di_lprx1_p     (dphy_di_lprx1_p        ), //output di_lprx1_p
+                .di_lprx2_n     (dphy_di_lprx2_n        ), //output di_lprx2_n
+                .di_lprx2_p     (dphy_di_lprx2_p        ), //output di_lprx2_p
+                .di_lprx3_n     (dphy_di_lprx3_n        ), //output di_lprx3_n
+                .di_lprx3_p     (dphy_di_lprx3_p        ), //output di_lprx3_p
+                .ck_n           (mipi_ck_n              ), //inout ck_n
+                .ck_p           (mipi_ck_p              ), //inout ck_p
+                .d0_n           (mipi_d_n[0]            ), //inout d0_n
+                .d0_p           (mipi_d_p[0]            ), //inout d0_p
+                .d1_n           (mipi_d_n[1]            ), //inout d1_n
+                .d1_p           (mipi_d_p[1]            ), //inout d1_p
+                .d2_n           (mipi_d_n[2]            ), //inout d2_n
+                .d2_p           (mipi_d_p[2]            ), //inout d2_p
+                .d3_n           (mipi_d_n[3]            ), //inout d3_n
+                .d3_p           (mipi_d_p[3]            ), //inout d3_p
+                .lptxen_ln0     (dphy_lptxen_ln0        ), //input lptxen_ln0
+                .lptxen_ln1     (dphy_lptxen_ln1        ), //input lptxen_ln1
+                .lptxen_ln2     (dphy_lptxen_ln2        ), //input lptxen_ln2
+                .lptxen_ln3     (dphy_lptxen_ln3        ), //input lptxen_ln3
+                .do_lptx0_n     (dphy_do_lptx0_n        ), //input do_lptx0_n
+                .do_lptx1_n     (dphy_do_lptx1_n        ), //input do_lptx1_n
+                .do_lptx2_n     (dphy_do_lptx2_n        ), //input do_lptx2_n
+                .do_lptx3_n     (dphy_do_lptx3_n        ), //input do_lptx3_n
+                .do_lptx0_p     (dphy_do_lptx0_p        ), //input do_lptx0_p
+                .do_lptx1_p     (dphy_do_lptx1_p        ), //input do_lptx1_p
+                .do_lptx2_p     (dphy_do_lptx2_p        ), //input do_lptx2_p
+                .do_lptx3_p     (dphy_do_lptx3_p        ), //input do_lptx3_p
+                .hsrx_en_d0     (dphy_hsrx_en_d0        ), //input hsrx_en_d0
+                .hsrx_en_d1     (dphy_hsrx_en_d1        ), //input hsrx_en_d1
+                .hsrx_en_d2     (dphy_hsrx_en_d2        ), //input hsrx_en_d2
+                .hsrx_en_d3     (dphy_hsrx_en_d3        ), //input hsrx_en_d3
+                .hsrx_odten_d0  (dphy_hsrx_odten_d0     ), //input hsrx_odten_d0
+                .hsrx_odten_d1  (dphy_hsrx_odten_d1     ), //input hsrx_odten_d1
+                .hsrx_odten_d2  (dphy_hsrx_odten_d2     ), //input hsrx_odten_d2
+                .hsrx_odten_d3  (dphy_hsrx_odten_d3     ), //input hsrx_odten_d3
+                .lprx_en_d0     (dphy_lprx_en_d0        ), //input lprx_en_d0
+                .lprx_en_d1     (dphy_lprx_en_d1        ), //input lprx_en_d1
+                .lprx_en_d2     (dphy_lprx_en_d2        ), //input lprx_en_d2
+                .lprx_en_d3     (dphy_lprx_en_d3        ), //input lprx_en_d3
+                .rx_drst_n      (~reset                 )  //input rx_drst_n
+            );
+
+    assign dphy_lptxen_ln0    = 0;
+    assign dphy_lptxen_ln1    = 0;
+    assign dphy_lptxen_ln2    = 0;
+    assign dphy_lptxen_ln3    = 0;
+    assign dphy_do_lptx0_n    = 0;
+    assign dphy_do_lptx1_n    = 0;
+    assign dphy_do_lptx2_n    = 0;
+    assign dphy_do_lptx3_n    = 0;
+    assign dphy_do_lptx0_p    = 0;
+    assign dphy_do_lptx1_p    = 0;
+    assign dphy_do_lptx2_p    = 0;
+    assign dphy_do_lptx3_p    = 0;
+
+    assign dphy_hsrx_en_d0    = 0;
+    assign dphy_hsrx_en_d1    = 1;
+    assign dphy_hsrx_en_d2    = 0;
+    assign dphy_hsrx_en_d3    = 0;
+    assign dphy_hsrx_odten_d0 = 0;
+    assign dphy_hsrx_odten_d1 = 1;
+    assign dphy_hsrx_odten_d2 = 0;
+    assign dphy_hsrx_odten_d3 = 0;
+    assign dphy_lprx_en_d0    = 1;
+    assign dphy_lprx_en_d1    = 0;
+    assign dphy_lprx_en_d2    = 1;
+    assign dphy_lprx_en_d3    = 1;
+
+
+
+    // ----------------------------------------
+    //  FT601
+    // ----------------------------------------
 
     logic ft601_reset;
     jelly3_reset_async
@@ -443,7 +583,21 @@ module rtcl_tp25k_usb3_fifo_sample
     //  PMOD
     // ----------------------------------------
 
-    assign pmod[7:0] = 0   ;
+//  assign pmod[7:0] = 0   ;
+
+    logic  [7:0]   count;
+    always_ff @(posedge dphy_clk) begin
+        count <= count + 1'b1;
+    end
+
+    assign pmod[0] = dphy_di_lprx0_n     ;
+    assign pmod[1] = dphy_di_lprx0_p     ;
+    assign pmod[2] = dphy_di_lprx1_n     ;
+    assign pmod[3] = dphy_di_lprx1_p     ;
+    assign pmod[4] = dphy_di_lprx2_n     ;
+    assign pmod[5] = dphy_di_lprx2_p     ;
+    assign pmod[6] = dphy_di_lprx3_n     ;
+    assign pmod[7] = count[7]            ;
 
 endmodule
 

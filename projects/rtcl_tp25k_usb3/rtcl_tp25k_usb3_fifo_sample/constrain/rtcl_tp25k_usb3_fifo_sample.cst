@@ -38,6 +38,17 @@ IO_PORT "pmod[5]" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
 IO_PORT "pmod[6]" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
 IO_PORT "pmod[7]" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
 
+IO_LOC "mipi_ck_p" A7;
+IO_LOC "mipi_ck_n" B7;
+IO_LOC "mipi_d_p[0]" A9;
+IO_LOC "mipi_d_n[0]" B9;
+IO_LOC "mipi_d_p[1]" A8;
+IO_LOC "mipi_d_n[1]" B8;
+IO_LOC "mipi_d_p[2]" A6;
+IO_LOC "mipi_d_n[2]" B6;
+IO_LOC "mipi_d_p[3]" A5;
+IO_LOC "mipi_d_n[3]" B5;
+
 IO_LOC "mipi_gpio[0]" A1;
 IO_LOC "mipi_gpio[1]" E3;
 IO_LOC "mipi_pwr_en_n" G10;
@@ -48,6 +59,7 @@ IO_PORT "mipi_gpio[1]" IO_TYPE=LVCMOS33 PULL_MODE=DOWN DRIVE=8 BANK_VCCIO=3.3;
 IO_PORT "mipi_pwr_en_n" IO_TYPE=LVCMOS18 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=1.8;
 IO_PORT "mipi_scl" IO_TYPE=LVCMOS18 PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
 IO_PORT "mipi_sda" IO_TYPE=LVCMOS18 PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
+
 
 IO_LOC "ft601_reset_n"  L2;
 IO_LOC "ft601_wakeup_n" H4;

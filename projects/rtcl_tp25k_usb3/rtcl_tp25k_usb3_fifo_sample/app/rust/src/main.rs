@@ -177,5 +177,12 @@ fn main() {
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
     imx219.start().unwrap();
+
+    // キー入力待ち
+    print!("進むには Enter キーを押してください...");
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+
 }
 
