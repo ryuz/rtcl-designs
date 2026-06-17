@@ -6,9 +6,9 @@
 //Part Number: GW5A-LV25MG121NC1/I0
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Wed Jun 17 21:53:18 2026
+//Created Time: Wed Jun 17 22:41:19 2026
 
-module Gowin_MIPI_DPHY (rx_clk_o, d0ln_hsrxd, d1ln_hsrxd, d2ln_hsrxd, d3ln_hsrxd, d0ln_hsrxd_vld, d1ln_hsrxd_vld, d2ln_hsrxd_vld, d3ln_hsrxd_vld, di_lprx0_n, di_lprx0_p, di_lprx1_n, di_lprx1_p, di_lprx2_n, di_lprx2_p, di_lprx3_n, di_lprx3_p, ck_n, ck_p, d0_n, d0_p, d1_n, d1_p, d2_n, d2_p, d3_n, d3_p, lptxen_ln0, lptxen_ln1, lptxen_ln2, lptxen_ln3, do_lptx0_n, do_lptx1_n, do_lptx2_n, do_lptx3_n, do_lptx0_p, do_lptx1_p, do_lptx2_p, do_lptx3_p, hsrx_en_d0, hsrx_en_d1, hsrx_en_d2, hsrx_en_d3, hsrx_odten_d0, hsrx_odten_d1, hsrx_odten_d2, hsrx_odten_d3, lprx_en_d0, lprx_en_d1, lprx_en_d2, lprx_en_d3, rx_drst_n);
+module Gowin_MIPI_DPHY (rx_clk_o, d0ln_hsrxd, d1ln_hsrxd, d2ln_hsrxd, d3ln_hsrxd, d0ln_hsrxd_vld, d1ln_hsrxd_vld, d2ln_hsrxd_vld, d3ln_hsrxd_vld, di_lprx0_n, di_lprx0_p, di_lprx1_n, di_lprx1_p, di_lprx2_n, di_lprx2_p, di_lprx3_n, di_lprx3_p, di_lprxck_n, di_lprxck_p, ck_n, ck_p, d0_n, d0_p, d1_n, d1_p, d2_n, d2_p, d3_n, d3_p, lptxen_ln0, lptxen_ln1, lptxen_ln2, lptxen_ln3, lptxen_lnck, do_lptx0_n, do_lptx1_n, do_lptx2_n, do_lptx3_n, do_lptxck_n, do_lptx0_p, do_lptx1_p, do_lptx2_p, do_lptx3_p, do_lptxck_p, hsrx_en_ck, hsrx_en_d0, hsrx_en_d1, hsrx_en_d2, hsrx_en_d3, hsrx_odten_ck, hsrx_odten_d0, hsrx_odten_d1, hsrx_odten_d2, hsrx_odten_d3, lprx_en_ck, lprx_en_d0, lprx_en_d1, lprx_en_d2, lprx_en_d3, rx_drst_n);
 
 output rx_clk_o;
 output [7:0] d0ln_hsrxd;
@@ -27,6 +27,8 @@ output di_lprx2_n;
 output di_lprx2_p;
 output di_lprx3_n;
 output di_lprx3_p;
+output di_lprxck_n;
+output di_lprxck_p;
 inout ck_n;
 inout ck_p;
 inout d0_n;
@@ -41,22 +43,28 @@ input lptxen_ln0;
 input lptxen_ln1;
 input lptxen_ln2;
 input lptxen_ln3;
+input lptxen_lnck;
 input do_lptx0_n;
 input do_lptx1_n;
 input do_lptx2_n;
 input do_lptx3_n;
+input do_lptxck_n;
 input do_lptx0_p;
 input do_lptx1_p;
 input do_lptx2_p;
 input do_lptx3_p;
+input do_lptxck_p;
+input hsrx_en_ck;
 input hsrx_en_d0;
 input hsrx_en_d1;
 input hsrx_en_d2;
 input hsrx_en_d3;
+input hsrx_odten_ck;
 input hsrx_odten_d0;
 input hsrx_odten_d1;
 input hsrx_odten_d2;
 input hsrx_odten_d3;
+input lprx_en_ck;
 input lprx_en_d0;
 input lprx_en_d1;
 input lprx_en_d2;
@@ -70,8 +78,6 @@ wire [7:0] d0ln_hsrxd_w;
 wire [7:0] d1ln_hsrxd_w;
 wire [7:0] d2ln_hsrxd_w;
 wire [7:0] d3ln_hsrxd_w;
-wire di_lprxck_n;
-wire di_lprxck_p;
 wire [7:0] mrdata;
 wire alpedo_lane0;
 wire alpedo_lane1;
@@ -149,7 +155,7 @@ MIPI_DPHY mipi_dphy_inst (
     .LPTXEN_LN1(lptxen_ln1),
     .LPTXEN_LN2(lptxen_ln2),
     .LPTXEN_LN3(lptxen_ln3),
-    .LPTXEN_LNCK(gw_gnd),
+    .LPTXEN_LNCK(lptxen_lnck),
     .PWRON_RX(gw_vcc),
     .PWRON_TX(gw_vcc),
     .RESET(gw_gnd),
@@ -175,23 +181,23 @@ MIPI_DPHY mipi_dphy_inst (
     .DO_LPTX1_N(do_lptx1_n),
     .DO_LPTX2_N(do_lptx2_n),
     .DO_LPTX3_N(do_lptx3_n),
-    .DO_LPTXCK_N(gw_gnd),
+    .DO_LPTXCK_N(do_lptxck_n),
     .DO_LPTX0_P(do_lptx0_p),
     .DO_LPTX1_P(do_lptx1_p),
     .DO_LPTX2_P(do_lptx2_p),
     .DO_LPTX3_P(do_lptx3_p),
-    .DO_LPTXCK_P(gw_gnd),
-    .HSRX_EN_CK(gw_gnd),
+    .DO_LPTXCK_P(do_lptxck_p),
+    .HSRX_EN_CK(hsrx_en_ck),
     .HSRX_EN_D0(hsrx_en_d0),
     .HSRX_EN_D1(hsrx_en_d1),
     .HSRX_EN_D2(hsrx_en_d2),
     .HSRX_EN_D3(hsrx_en_d3),
-    .HSRX_ODTEN_CK(gw_gnd),
+    .HSRX_ODTEN_CK(hsrx_odten_ck),
     .HSRX_ODTEN_D0(hsrx_odten_d0),
     .HSRX_ODTEN_D1(hsrx_odten_d1),
     .HSRX_ODTEN_D2(hsrx_odten_d2),
     .HSRX_ODTEN_D3(hsrx_odten_d3),
-    .LPRX_EN_CK(gw_gnd),
+    .LPRX_EN_CK(lprx_en_ck),
     .LPRX_EN_D0(lprx_en_d0),
     .LPRX_EN_D1(lprx_en_d1),
     .LPRX_EN_D2(lprx_en_d2),
@@ -244,10 +250,12 @@ defparam mipi_dphy_inst.RX_HS_8BIT_MODE = 1'b1;
 defparam mipi_dphy_inst.RX_LANE_ALIGN_EN = 1'b0;
 defparam mipi_dphy_inst.HSRX_EN = 1'b1;
 defparam mipi_dphy_inst.HSRX_LANESEL = 4'b1111;
+defparam mipi_dphy_inst.HSRX_LANESEL_CK = 1'b1;
 defparam mipi_dphy_inst.LPTX_EN_LN0 = 1'b1;
 defparam mipi_dphy_inst.LPTX_EN_LN1 = 1'b1;
 defparam mipi_dphy_inst.LPTX_EN_LN2 = 1'b1;
 defparam mipi_dphy_inst.LPTX_EN_LN3 = 1'b1;
+defparam mipi_dphy_inst.LPTX_EN_LNCK = 1'b1;
 defparam mipi_dphy_inst.RX_ONE_BYTE0_MATCH = 1'b0;
 defparam mipi_dphy_inst.EQ_CS_LANE0 = 3'b100;
 defparam mipi_dphy_inst.EQ_CS_LANE1 = 3'b100;

@@ -6,7 +6,7 @@
 //Part Number: GW5A-LV25MG121NC1/I0
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Wed Jun 17 21:53:18 2026
+//Created Time: Wed Jun 17 22:41:19 2026
 
 //Change the instance name and port connections to the signal names
 //--------Copy here to design--------
@@ -29,6 +29,8 @@
         .di_lprx2_p(di_lprx2_p), //output di_lprx2_p
         .di_lprx3_n(di_lprx3_n), //output di_lprx3_n
         .di_lprx3_p(di_lprx3_p), //output di_lprx3_p
+        .di_lprxck_n(di_lprxck_n), //output di_lprxck_n
+        .di_lprxck_p(di_lprxck_p), //output di_lprxck_p
         .ck_n(ck_n), //inout ck_n
         .ck_p(ck_p), //inout ck_p
         .d0_n(d0_n), //inout d0_n
@@ -43,22 +45,28 @@
         .lptxen_ln1(lptxen_ln1), //input lptxen_ln1
         .lptxen_ln2(lptxen_ln2), //input lptxen_ln2
         .lptxen_ln3(lptxen_ln3), //input lptxen_ln3
+        .lptxen_lnck(lptxen_lnck), //input lptxen_lnck
         .do_lptx0_n(do_lptx0_n), //input do_lptx0_n
         .do_lptx1_n(do_lptx1_n), //input do_lptx1_n
         .do_lptx2_n(do_lptx2_n), //input do_lptx2_n
         .do_lptx3_n(do_lptx3_n), //input do_lptx3_n
+        .do_lptxck_n(do_lptxck_n), //input do_lptxck_n
         .do_lptx0_p(do_lptx0_p), //input do_lptx0_p
         .do_lptx1_p(do_lptx1_p), //input do_lptx1_p
         .do_lptx2_p(do_lptx2_p), //input do_lptx2_p
         .do_lptx3_p(do_lptx3_p), //input do_lptx3_p
+        .do_lptxck_p(do_lptxck_p), //input do_lptxck_p
+        .hsrx_en_ck(hsrx_en_ck), //input hsrx_en_ck
         .hsrx_en_d0(hsrx_en_d0), //input hsrx_en_d0
         .hsrx_en_d1(hsrx_en_d1), //input hsrx_en_d1
         .hsrx_en_d2(hsrx_en_d2), //input hsrx_en_d2
         .hsrx_en_d3(hsrx_en_d3), //input hsrx_en_d3
+        .hsrx_odten_ck(hsrx_odten_ck), //input hsrx_odten_ck
         .hsrx_odten_d0(hsrx_odten_d0), //input hsrx_odten_d0
         .hsrx_odten_d1(hsrx_odten_d1), //input hsrx_odten_d1
         .hsrx_odten_d2(hsrx_odten_d2), //input hsrx_odten_d2
         .hsrx_odten_d3(hsrx_odten_d3), //input hsrx_odten_d3
+        .lprx_en_ck(lprx_en_ck), //input lprx_en_ck
         .lprx_en_d0(lprx_en_d0), //input lprx_en_d0
         .lprx_en_d1(lprx_en_d1), //input lprx_en_d1
         .lprx_en_d2(lprx_en_d2), //input lprx_en_d2

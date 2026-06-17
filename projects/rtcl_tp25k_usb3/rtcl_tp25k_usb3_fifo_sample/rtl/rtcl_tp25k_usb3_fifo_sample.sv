@@ -86,7 +86,8 @@ module rtcl_tp25k_usb3_fifo_sample
     logic           dphy_di_lprx2_p     ;
     logic           dphy_di_lprx3_n     ;
     logic           dphy_di_lprx3_p     ;
-
+    logic           dphy_di_lprxck_n    ;
+    logic           dphy_di_lprxck_p    ;
     logic           dphy_lptxen_ln0     ;
     logic           dphy_lptxen_ln1     ;
     logic           dphy_lptxen_ln2     ;
@@ -99,6 +100,8 @@ module rtcl_tp25k_usb3_fifo_sample
     logic           dphy_do_lptx1_p     ;
     logic           dphy_do_lptx2_p     ;
     logic           dphy_do_lptx3_p     ;
+
+    logic           dphy_lprx_en_ck     ;
     logic           dphy_hsrx_en_d0     ;
     logic           dphy_hsrx_en_d1     ;
     logic           dphy_hsrx_en_d2     ;
@@ -132,6 +135,8 @@ module rtcl_tp25k_usb3_fifo_sample
                 .di_lprx2_p     (dphy_di_lprx2_p        ), //output di_lprx2_p
                 .di_lprx3_n     (dphy_di_lprx3_n        ), //output di_lprx3_n
                 .di_lprx3_p     (dphy_di_lprx3_p        ), //output di_lprx3_p
+                .di_lprxck_n    (dphy_di_lprxck_n       ), //output di_lprxck_n
+                .di_lprxck_p    (dphy_di_lprxck_p       ), //output di_lprxck_p
                 .ck_n           (mipi_ck_n              ), //inout ck_n
                 .ck_p           (mipi_ck_p              ), //inout ck_p
                 .d0_n           (mipi_d_n[0]            ), //inout d0_n
@@ -142,26 +147,33 @@ module rtcl_tp25k_usb3_fifo_sample
                 .d2_p           (mipi_d_p[2]            ), //inout d2_p
                 .d3_n           (mipi_d_n[3]            ), //inout d3_n
                 .d3_p           (mipi_d_p[3]            ), //inout d3_p
-                .lptxen_ln0     (dphy_lptxen_ln0        ), //input lptxen_ln0
-                .lptxen_ln1     (dphy_lptxen_ln1        ), //input lptxen_ln1
-                .lptxen_ln2     (dphy_lptxen_ln2        ), //input lptxen_ln2
-                .lptxen_ln3     (dphy_lptxen_ln3        ), //input lptxen_ln3
-                .do_lptx0_n     (dphy_do_lptx0_n        ), //input do_lptx0_n
-                .do_lptx1_n     (dphy_do_lptx1_n        ), //input do_lptx1_n
-                .do_lptx2_n     (dphy_do_lptx2_n        ), //input do_lptx2_n
-                .do_lptx3_n     (dphy_do_lptx3_n        ), //input do_lptx3_n
-                .do_lptx0_p     (dphy_do_lptx0_p        ), //input do_lptx0_p
-                .do_lptx1_p     (dphy_do_lptx1_p        ), //input do_lptx1_p
-                .do_lptx2_p     (dphy_do_lptx2_p        ), //input do_lptx2_p
-                .do_lptx3_p     (dphy_do_lptx3_p        ), //input do_lptx3_p
+                .lptxen_ln0     (1'b0                   ), //input lptxen_ln0
+                .lptxen_ln1     (1'b0                   ), //input lptxen_ln1
+                .lptxen_ln2     (1'b0                   ), //input lptxen_ln2
+                .lptxen_ln3     (1'b0                   ), //input lptxen_ln3
+                .lptxen_lnck    (1'b0                   ), //input lptxen_lnck
+                .do_lptx0_n     (1'b0                   ), //input do_lptx0_n
+                .do_lptx1_n     (1'b0                   ), //input do_lptx1_n
+                .do_lptx2_n     (1'b0                   ), //input do_lptx2_n
+                .do_lptx3_n     (1'b0                   ), //input do_lptx3_n
+                .do_lptxck_n    (1'b0                   ), //input do_lptxck_n
+                .do_lptx0_p     (1'b0                   ), //input do_lptx0_p
+                .do_lptx1_p     (1'b0                   ), //input do_lptx1_p
+                .do_lptx2_p     (1'b0                   ), //input do_lptx2_p
+                .do_lptx3_p     (1'b0                   ), //input do_lptx3_p
+                .do_lptxck_p    (1'b0                   ), //input do_lptxck_p
+
+                .hsrx_en_ck     (1'b1                   ), //input hsrx_en_ck
                 .hsrx_en_d0     (dphy_hsrx_en_d0        ), //input hsrx_en_d0
                 .hsrx_en_d1     (dphy_hsrx_en_d1        ), //input hsrx_en_d1
                 .hsrx_en_d2     (dphy_hsrx_en_d2        ), //input hsrx_en_d2
                 .hsrx_en_d3     (dphy_hsrx_en_d3        ), //input hsrx_en_d3
+                .hsrx_odten_ck  (1'b1                   ), //input hsrx_odten_ck
                 .hsrx_odten_d0  (dphy_hsrx_odten_d0     ), //input hsrx_odten_d0
                 .hsrx_odten_d1  (dphy_hsrx_odten_d1     ), //input hsrx_odten_d1
                 .hsrx_odten_d2  (dphy_hsrx_odten_d2     ), //input hsrx_odten_d2
                 .hsrx_odten_d3  (dphy_hsrx_odten_d3     ), //input hsrx_odten_d3
+                .lprx_en_ck     (1'b1                   ), //input lprx_en_ck
                 .lprx_en_d0     (dphy_lprx_en_d0        ), //input lprx_en_d0
                 .lprx_en_d1     (dphy_lprx_en_d1        ), //input lprx_en_d1
                 .lprx_en_d2     (dphy_lprx_en_d2        ), //input lprx_en_d2
@@ -594,8 +606,8 @@ module rtcl_tp25k_usb3_fifo_sample
     assign pmod[1] = dphy_di_lprx0_p     ;
     assign pmod[2] = dphy_di_lprx1_n     ;
     assign pmod[3] = dphy_di_lprx1_p     ;
-    assign pmod[4] = dphy_di_lprx2_n     ;
-    assign pmod[5] = dphy_di_lprx2_p     ;
+    assign pmod[4] = dphy_di_lprxck_n     ;
+    assign pmod[5] = dphy_di_lprxck_p     ;
     assign pmod[6] = dphy_di_lprx3_n     ;
     assign pmod[7] = count[7]            ;
 

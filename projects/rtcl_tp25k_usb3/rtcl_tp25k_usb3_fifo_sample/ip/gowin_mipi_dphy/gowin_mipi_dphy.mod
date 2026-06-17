@@ -13,6 +13,7 @@
 -ip_version 1.0
 -rx enable
 -rx_mode 1
+-lnck enable
 -ln0 enable
 -ln1 enable
 -ln2 enable
