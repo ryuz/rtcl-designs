@@ -351,75 +351,6 @@ module rtcl_tp25k_usb3_fifo_sample
     //  System Control
     // ----------------------------------------
 
-    /*
-    localparam  SYSREG_ID             = 4'h0;
-    localparam  SYSREG_SW_RESET       = 4'h1;
-    localparam  SYSREG_CAM_ENABLE     = 4'h2;
-    localparam  SYSREG_PWR_ENABLE     = 4'h5;
-    localparam  SYSREG_SCRATCH        = 4'hf;
- 
-    logic               reg_sw_reset        ;
-    logic               reg_cam_enable      ;
-    logic               reg_pwr_enable      ;
-    logic   [31:0]      reg_scratch         ;
-    always_ff @(posedge axi4l_dec[DEC_CTL].aclk) begin
-        if ( ~axi4l_dec[DEC_CTL].aresetn ) begin
-            axi4l_dec[DEC_CTL].bvalid <= 1'b0   ;
-            axi4l_dec[DEC_CTL].rdata  <= '0     ;
-            axi4l_dec[DEC_CTL].rvalid <= 1'b0   ;
-
-            reg_sw_reset      <= 1'b0       ;
-            reg_cam_enable    <= 1'b0       ;
-            reg_pwr_enable    <= 1'h0       ;
-            reg_scratch       <= 32'h0      ;
-        end
-        else begin
-            // write
-            if ( axi4l_dec[DEC_CTL].bready ) begin
-                axi4l_dec[DEC_CTL].bvalid <= 1'b0;
-            end
-            if ( axi4l_dec[DEC_CTL].awvalid && axi4l_dec[DEC_CTL].awready 
-                    && axi4l_dec[DEC_CTL].wvalid && axi4l_dec[DEC_CTL].wready
-                    && axi4l_dec[DEC_CTL].wstrb[0] ) begin
-                case ( axi4l_dec[DEC_CTL].awaddr[5:2] )
-                SYSREG_SW_RESET  :   reg_sw_reset   <=  1'(axi4l_dec[DEC_CTL].wdata);
-                SYSREG_CAM_ENABLE:   reg_cam_enable <=  1'(axi4l_dec[DEC_CTL].wdata);
-                SYSREG_PWR_ENABLE:   reg_pwr_enable <=  1'(axi4l_dec[DEC_CTL].wdata);
-                SYSREG_SCRATCH   :   reg_scratch    <= 32'(axi4l_dec[DEC_CTL].wdata);
-                default:;
-                endcase
-                axi4l_dec[DEC_CTL].bvalid <= 1'b1;
-            end
-
-            // read
-            if ( axi4l_dec[DEC_CTL].rready ) begin
-                axi4l_dec[DEC_CTL].rdata  <= '0;
-                axi4l_dec[DEC_CTL].rvalid <= 1'b0;
-            end
-            if ( axi4l_dec[DEC_CTL].arvalid && axi4l_dec[DEC_CTL].arready ) begin
-                case ( axi4l_dec[DEC_CTL].araddr[5:2] )
-                SYSREG_ID            :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(32'h01234567)      ;
-                SYSREG_SW_RESET      :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_sw_reset)      ;
-                SYSREG_CAM_ENABLE    :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_cam_enable)    ;
-                SYSREG_PWR_ENABLE    :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_pwr_enable)    ;
-                SYSREG_SCRATCH       :  axi4l_dec[DEC_CTL].rdata  <= axi4l_dec[DEC_CTL].DATA_BITS'(reg_scratch)       ;
-                default:    axi4l_dec[DEC_CTL].rdata  <= '0    ;
-                endcase
-                axi4l_dec[DEC_CTL].rvalid <= 1'b1;
-            end
-        end
-    end
-    assign axi4l_dec[DEC_CTL].awready = axi4l_dec[DEC_CTL].wvalid  && !axi4l_dec[DEC_CTL].bvalid;
-    assign axi4l_dec[DEC_CTL].wready  = axi4l_dec[DEC_CTL].awvalid && !axi4l_dec[DEC_CTL].bvalid;
-    assign axi4l_dec[DEC_CTL].bresp   = '0;
-    assign axi4l_dec[DEC_CTL].arready = !axi4l_dec[DEC_CTL].rvalid;
-    assign axi4l_dec[DEC_CTL].rresp   = '0;
-
-    assign mipi_pwr_en_n = ~reg_pwr_enable  ;
-    assign mipi_gpio[0]  = reg_cam_enable   ;
-    assign mipi_gpio[1]  = 1'bz             ;
-    */
-
     logic   [31:0]      control0;
     logic   [31:0]      control1;
     logic   [31:0]      control2;
@@ -450,14 +381,14 @@ module rtcl_tp25k_usb3_fifo_sample
                 .control6           (                   ),
                 .control7           (                   ),
 
-                .monitor0           (                   ),
-                .monitor1           (                   ),
-                .monitor2           (                   ),
-                .monitor3           (                   ),
-                .monitor4           (                   ),
-                .monitor5           (                   ),
-                .monitor6           (                   ),
-                .monitor7           (                   )
+                .monitor0           ('0                 ),
+                .monitor1           ('0                 ),
+                .monitor2           ('0                 ),
+                .monitor3           ('0                 ),
+                .monitor4           ('0                 ),
+                .monitor5           ('0                 ),
+                .monitor6           ('0                 ),
+                .monitor7           ('0                 )
             );
 
     assign mipi_pwr_en_n = ~control0[0]  ;
