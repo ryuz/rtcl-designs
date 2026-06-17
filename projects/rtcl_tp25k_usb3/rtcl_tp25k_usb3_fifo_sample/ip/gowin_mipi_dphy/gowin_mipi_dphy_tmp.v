@@ -6,7 +6,7 @@
 //Part Number: GW5A-LV25MG121NC1/I0
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Wed Jun 17 22:41:19 2026
+//Created Time: Wed Jun 17 22:52:46 2026
 
 //Change the instance name and port connections to the signal names
 //--------Copy here to design--------
@@ -31,6 +31,14 @@
         .di_lprx3_p(di_lprx3_p), //output di_lprx3_p
         .di_lprxck_n(di_lprxck_n), //output di_lprxck_n
         .di_lprxck_p(di_lprxck_p), //output di_lprxck_p
+        .d0ln_deskew_done(d0ln_deskew_done), //output d0ln_deskew_done
+        .d1ln_deskew_done(d1ln_deskew_done), //output d1ln_deskew_done
+        .d2ln_deskew_done(d2ln_deskew_done), //output d2ln_deskew_done
+        .d3ln_deskew_done(d3ln_deskew_done), //output d3ln_deskew_done
+        .d0ln_deskew_error(d0ln_deskew_error), //output d0ln_deskew_error
+        .d1ln_deskew_error(d1ln_deskew_error), //output d1ln_deskew_error
+        .d2ln_deskew_error(d2ln_deskew_error), //output d2ln_deskew_error
+        .d3ln_deskew_error(d3ln_deskew_error), //output d3ln_deskew_error
         .ck_n(ck_n), //inout ck_n
         .ck_p(ck_p), //inout ck_p
         .d0_n(d0_n), //inout d0_n
@@ -71,7 +79,11 @@
         .lprx_en_d1(lprx_en_d1), //input lprx_en_d1
         .lprx_en_d2(lprx_en_d2), //input lprx_en_d2
         .lprx_en_d3(lprx_en_d3), //input lprx_en_d3
-        .rx_drst_n(rx_drst_n) //input rx_drst_n
+        .rx_drst_n(rx_drst_n), //input rx_drst_n
+        .d0ln_deskew_req(d0ln_deskew_req), //input d0ln_deskew_req
+        .d1ln_deskew_req(d1ln_deskew_req), //input d1ln_deskew_req
+        .d2ln_deskew_req(d2ln_deskew_req), //input d2ln_deskew_req
+        .d3ln_deskew_req(d3ln_deskew_req) //input d3ln_deskew_req
     );
 
 //--------Copy end-------------------

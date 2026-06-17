@@ -6,9 +6,9 @@
 //Part Number: GW5A-LV25MG121NC1/I0
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Wed Jun 17 22:41:19 2026
+//Created Time: Wed Jun 17 22:52:46 2026
 
-module Gowin_MIPI_DPHY (rx_clk_o, d0ln_hsrxd, d1ln_hsrxd, d2ln_hsrxd, d3ln_hsrxd, d0ln_hsrxd_vld, d1ln_hsrxd_vld, d2ln_hsrxd_vld, d3ln_hsrxd_vld, di_lprx0_n, di_lprx0_p, di_lprx1_n, di_lprx1_p, di_lprx2_n, di_lprx2_p, di_lprx3_n, di_lprx3_p, di_lprxck_n, di_lprxck_p, ck_n, ck_p, d0_n, d0_p, d1_n, d1_p, d2_n, d2_p, d3_n, d3_p, lptxen_ln0, lptxen_ln1, lptxen_ln2, lptxen_ln3, lptxen_lnck, do_lptx0_n, do_lptx1_n, do_lptx2_n, do_lptx3_n, do_lptxck_n, do_lptx0_p, do_lptx1_p, do_lptx2_p, do_lptx3_p, do_lptxck_p, hsrx_en_ck, hsrx_en_d0, hsrx_en_d1, hsrx_en_d2, hsrx_en_d3, hsrx_odten_ck, hsrx_odten_d0, hsrx_odten_d1, hsrx_odten_d2, hsrx_odten_d3, lprx_en_ck, lprx_en_d0, lprx_en_d1, lprx_en_d2, lprx_en_d3, rx_drst_n);
+module Gowin_MIPI_DPHY (rx_clk_o, d0ln_hsrxd, d1ln_hsrxd, d2ln_hsrxd, d3ln_hsrxd, d0ln_hsrxd_vld, d1ln_hsrxd_vld, d2ln_hsrxd_vld, d3ln_hsrxd_vld, di_lprx0_n, di_lprx0_p, di_lprx1_n, di_lprx1_p, di_lprx2_n, di_lprx2_p, di_lprx3_n, di_lprx3_p, di_lprxck_n, di_lprxck_p, d0ln_deskew_done, d1ln_deskew_done, d2ln_deskew_done, d3ln_deskew_done, d0ln_deskew_error, d1ln_deskew_error, d2ln_deskew_error, d3ln_deskew_error, ck_n, ck_p, d0_n, d0_p, d1_n, d1_p, d2_n, d2_p, d3_n, d3_p, lptxen_ln0, lptxen_ln1, lptxen_ln2, lptxen_ln3, lptxen_lnck, do_lptx0_n, do_lptx1_n, do_lptx2_n, do_lptx3_n, do_lptxck_n, do_lptx0_p, do_lptx1_p, do_lptx2_p, do_lptx3_p, do_lptxck_p, hsrx_en_ck, hsrx_en_d0, hsrx_en_d1, hsrx_en_d2, hsrx_en_d3, hsrx_odten_ck, hsrx_odten_d0, hsrx_odten_d1, hsrx_odten_d2, hsrx_odten_d3, lprx_en_ck, lprx_en_d0, lprx_en_d1, lprx_en_d2, lprx_en_d3, rx_drst_n, d0ln_deskew_req, d1ln_deskew_req, d2ln_deskew_req, d3ln_deskew_req);
 
 output rx_clk_o;
 output [7:0] d0ln_hsrxd;
@@ -29,6 +29,14 @@ output di_lprx3_n;
 output di_lprx3_p;
 output di_lprxck_n;
 output di_lprxck_p;
+output d0ln_deskew_done;
+output d1ln_deskew_done;
+output d2ln_deskew_done;
+output d3ln_deskew_done;
+output d0ln_deskew_error;
+output d1ln_deskew_error;
+output d2ln_deskew_error;
+output d3ln_deskew_error;
 inout ck_n;
 inout ck_p;
 inout d0_n;
@@ -70,6 +78,10 @@ input lprx_en_d1;
 input lprx_en_d2;
 input lprx_en_d3;
 input rx_drst_n;
+input d0ln_deskew_req;
+input d1ln_deskew_req;
+input d2ln_deskew_req;
+input d3ln_deskew_req;
 
 wire rx_clk_o_o;
 wire tx_clk_o;
@@ -84,18 +96,18 @@ wire alpedo_lane1;
 wire alpedo_lane2;
 wire alpedo_lane3;
 wire alpedo_laneck;
-wire d0ln_deskew_done;
-wire d1ln_deskew_done;
-wire d2ln_deskew_done;
-wire d3ln_deskew_done;
-wire d0ln_deskew_error;
-wire d1ln_deskew_error;
-wire d2ln_deskew_error;
-wire d3ln_deskew_error;
 wire gw_vcc;
 wire gw_gnd;
 
-assign walign_dvld = d0ln_deskew_done & d1ln_deskew_done & d2ln_deskew_done & d3ln_deskew_done;
+wire d0ln_deskew_done_o;
+wire d1ln_deskew_done_o;
+wire d2ln_deskew_done_o;
+wire d3ln_deskew_done_o;
+assign d0ln_deskew_done = d0ln_deskew_done_o;
+assign d1ln_deskew_done = d1ln_deskew_done_o;
+assign d2ln_deskew_done = d2ln_deskew_done_o;
+assign d3ln_deskew_done = d3ln_deskew_done_o;
+assign walign_dvld = d0ln_deskew_done_o & d1ln_deskew_done_o & d2ln_deskew_done_o & d3ln_deskew_done_o;
 assign rx_clk_o = rx_clk_o_o;
 assign gw_vcc = 1'b1;
 assign gw_gnd = 1'b0;
@@ -127,10 +139,10 @@ MIPI_DPHY mipi_dphy_inst (
     .ALPEDO_LANE2(alpedo_lane2),
     .ALPEDO_LANE3(alpedo_lane3),
     .ALPEDO_LANECK(alpedo_laneck),
-    .D0LN_DESKEW_DONE(d0ln_deskew_done),
-    .D1LN_DESKEW_DONE(d1ln_deskew_done),
-    .D2LN_DESKEW_DONE(d2ln_deskew_done),
-    .D3LN_DESKEW_DONE(d3ln_deskew_done),
+    .D0LN_DESKEW_DONE(d0ln_deskew_done_o),
+    .D1LN_DESKEW_DONE(d1ln_deskew_done_o),
+    .D2LN_DESKEW_DONE(d2ln_deskew_done_o),
+    .D3LN_DESKEW_DONE(d3ln_deskew_done_o),
     .D0LN_DESKEW_ERROR(d0ln_deskew_error),
     .D1LN_DESKEW_ERROR(d1ln_deskew_error),
     .D2LN_DESKEW_ERROR(d2ln_deskew_error),
@@ -209,10 +221,10 @@ MIPI_DPHY mipi_dphy_inst (
     .MCLK(gw_gnd),
     .MOPCODE({gw_gnd,gw_gnd}),
     .MWDATA({gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd}),
-    .D0LN_DESKEW_REQ(gw_gnd),
-    .D1LN_DESKEW_REQ(gw_gnd),
-    .D2LN_DESKEW_REQ(gw_gnd),
-    .D3LN_DESKEW_REQ(gw_gnd),
+    .D0LN_DESKEW_REQ(d0ln_deskew_req),
+    .D1LN_DESKEW_REQ(d1ln_deskew_req),
+    .D2LN_DESKEW_REQ(d2ln_deskew_req),
+    .D3LN_DESKEW_REQ(d3ln_deskew_req),
     .HSRX_DLYDIR_LANE0(gw_gnd),
     .HSRX_DLYDIR_LANE1(gw_gnd),
     .HSRX_DLYDIR_LANE2(gw_gnd),
@@ -257,6 +269,7 @@ defparam mipi_dphy_inst.LPTX_EN_LN2 = 1'b1;
 defparam mipi_dphy_inst.LPTX_EN_LN3 = 1'b1;
 defparam mipi_dphy_inst.LPTX_EN_LNCK = 1'b1;
 defparam mipi_dphy_inst.RX_ONE_BYTE0_MATCH = 1'b0;
+defparam mipi_dphy_inst.RX_WORD_ALIGN_DATA_VLD_SRC_SEL = 1'b1;
 defparam mipi_dphy_inst.EQ_CS_LANE0 = 3'b100;
 defparam mipi_dphy_inst.EQ_CS_LANE1 = 3'b100;
 defparam mipi_dphy_inst.EQ_CS_LANE2 = 3'b100;
@@ -267,6 +280,11 @@ defparam mipi_dphy_inst.EQ_RS_LANE1 = 3'b100;
 defparam mipi_dphy_inst.EQ_RS_LANE2 = 3'b100;
 defparam mipi_dphy_inst.EQ_RS_LANE3 = 3'b100;
 defparam mipi_dphy_inst.EQ_RS_LANECK = 3'b100;
+defparam mipi_dphy_inst.HSRX_DLY_SEL_LANE0 = 1'b1;
+defparam mipi_dphy_inst.HSRX_DLY_SEL_LANE1 = 1'b1;
+defparam mipi_dphy_inst.HSRX_DLY_SEL_LANE2 = 1'b1;
+defparam mipi_dphy_inst.HSRX_DLY_SEL_LANE3 = 1'b1;
+defparam mipi_dphy_inst.HSRX_DLY_SEL_LANECK = 1'b1;
 defparam mipi_dphy_inst.HSRX_EQ_EN_LANE0 = 1'b1;
 defparam mipi_dphy_inst.HSRX_EQ_EN_LANE1 = 1'b1;
 defparam mipi_dphy_inst.HSRX_EQ_EN_LANE2 = 1'b1;

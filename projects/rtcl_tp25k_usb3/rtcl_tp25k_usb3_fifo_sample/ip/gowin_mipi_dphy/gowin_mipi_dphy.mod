@@ -18,3 +18,4 @@
 -ln1 enable
 -ln2 enable
 -ln3 enable
+-rx_deskew enable
