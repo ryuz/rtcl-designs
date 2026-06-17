@@ -228,7 +228,7 @@ module rtcl_tp25k_usb3_fifo_sample
     assign dphy_hsrx_odten_d2 = 0;
     assign dphy_hsrx_odten_d3 = 0;
     assign dphy_lprx_en_d0    = 1;
-    assign dphy_lprx_en_d1    = 0;
+    assign dphy_lprx_en_d1    = 1;
     assign dphy_lprx_en_d2    = 1;
     assign dphy_lprx_en_d3    = 1;
 
