@@ -66,13 +66,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "jelly-lib"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80f21f700b48f4b5f2a7ce8b121d039c75f0bb9b4b72808e81424142d2ec5809"
+dependencies = [
+ "jelly-mem_access",
+ "libc",
+ "libm",
+ "nix 0.31.3",
+]
+
+[[package]]
 name = "jelly-mem_access"
-version = "0.2.6"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5319f50cc9812e44c49917da7f1afa0a8ec3c3b5b9b267c6fb0ed1477e8b4eb6"
 dependencies = [
  "delegate",
  "libc",
- "nix",
+ "nix 0.29.0",
  "thiserror",
+]
+
+[[package]]
+name = "jelly-pac"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ada020ac35f7790d5966e545e3e5e467088bba35f9abd3a1bf01f485745930d"
+dependencies = [
+ "delegate",
+ "jelly-lib",
+ "jelly-mem_access",
 ]
 
 [[package]]
@@ -91,6 +116,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "libm"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
+
+[[package]]
 name = "memchr"
 version = "2.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -101,6 +132,18 @@ name = "nix"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -162,7 +205,9 @@ name = "rtcl_tp25k_usb3_fifo_sample"
 version = "0.1.0"
 dependencies = [
  "d3xx",
+ "jelly-lib",
  "jelly-mem_access",
+ "jelly-pac",
 ]
 
 [[package]]

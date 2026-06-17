@@ -4,6 +4,9 @@ use std::time::Duration;
 
 use jelly_mem_access::*;
 use jelly_mem_access::bus_accessor::LittleEndian;
+use jelly_pac::i2c::*;
+use jelly_pac::i2c_device::*;
+use jelly_lib::imx219_sensor_driver::Imx219SensorDriver;
 
 use d3xx::{list_devices, Device, Pipe};
 
@@ -73,15 +76,24 @@ impl Bus<u32, u32, u8> for Axi4LiteD3xx {
     type Error = std::io::Error;
 
     fn write(&mut self, addr: u32, data: u32, strb: u8) -> Result<()> {
+//      println!("write: addr=0x{:08x}, data=0x{:08x}, strb=0x{:02x}", addr, data, strb);
         self.write_axi4l(addr, data, strb)?;
         Ok(())
     }
 
     fn read(&mut self, addr: u32) -> Result<u32> {
-        self.read_axi4l(addr)
+        let v = self.read_axi4l(addr)?;
+//      println!("read: addr=0x{:08x}, data=0x{:08x}", addr, v);
+        Ok(v)
     }
 }
 
+type UsbAccessor = SharedBusAccessor<Axi4LiteD3xx, u32, u32, u8, LittleEndian>;
+
+const REGADR_SYSCTL_CONTROL0 : usize = 0x10;
+const REGADR_SYSCTL_CONTROL1 : usize = 0x11;
+const REGADR_SYSCTL_CONTROL2 : usize = 0x12;
+const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
 
 
 fn main() {
@@ -119,7 +131,8 @@ fn main() {
     println!("scratch : {scratch:04x}");
 
 
-    let accessor: SharedBusAccessor<Axi4LiteD3xx, u32, u32, u8, LittleEndian> = SharedBusAccessor::new(axi);
+//  let accessor: SharedBusAccessor<Axi4LiteD3xx, u32, u32, u8, LittleEndian> = SharedBusAccessor::new(axi);
+    let accessor = UsbAccessor::new(axi);
     unsafe {
         accessor.try_write_reg_u32(0x13, 0xdeadbeef).expect("try_write_mem_u32 failed");
         let val = accessor.try_read_reg_u32(0x13).expect("try_read_reg_u32 failed");
@@ -128,5 +141,41 @@ fn main() {
         let val = accessor.try_read_reg_u32(0x13).expect("try_read_reg_u32 failed");
         println!("scratch : {val:04x}");
     }
+
+    let ctl_acc = accessor.subclone(0x0000_0000, 0x1000);
+    let i2c_acc = accessor.subclone(0x0001_0000, 0x1000);
+
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 1);
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 1);
+    }
+
+    const IMX219_DEVADR: u8 =     0x10;    // 7bit address
+    let i2c = JellyI2c::<UsbAccessor>::new(i2c_acc, None);
+    let mut model_id: [u8; 2] = [0u8; 2];
+    i2c.write(IMX219_DEVADR, &[0x00, 0x00]);
+    i2c.read(IMX219_DEVADR, &mut model_id);
+    println!("model_id: 0x{:02x}{:02x}", model_id[0], model_id[1]);
+    let i2c = JellyI2cDevice::<IMX219_DEVADR, UsbAccessor>::new(i2c);
+
+    let mut imx219 = Imx219SensorDriver::new(i2c);
+    println!("sensor model ID:{:04x}", imx219.get_model_id().unwrap());
+
+    // camera 設定
+    let pixel_clock: f64 = 91000000.0;
+    let binning =  true;
+    let width: i32 = 1280;
+    let height: i32 = 720;
+//    let frame_rate: i32 = 30;
+//    let exposure: i32 = 33;
+//    let a_gain: i32 = args.a_gain;
+//    let d_gain: i32 = args.d_gain;
+    let aoi_x: i32 = -1;
+    let aoi_y: i32 = -1;
+    let flip_h: bool = false;
+    let flip_v: bool = false;
+    imx219.set_pixel_clock(pixel_clock).unwrap();
+    imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
+    imx219.start().unwrap();
 }
 
