@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------------
 
 
+`timescale 1ns / 1ps
 `default_nettype none
 
 module fifo32_cmd_axi4l

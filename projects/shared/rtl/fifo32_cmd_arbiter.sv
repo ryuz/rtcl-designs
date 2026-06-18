@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------------
 
 
+`timescale 1ns / 1ps
 `default_nettype none
 
 module fifo32_cmd_arbiter
@@ -14,8 +15,8 @@ module fifo32_cmd_arbiter
             parameter  int N  = 2
         )
         (
-            jelly3_axi4s.s  s_axi4s   [N]   ,
-            jelly3_axi4s.m  m_axi4s         
+            jelly3_axi4s_if.s  s_axi4s  [N]   ,
+            jelly3_axi4s_if.m  m_axi4s         
         );
 
     localparam  int     SEL_BITS = N > 1 ? $clog2(N) : 1;

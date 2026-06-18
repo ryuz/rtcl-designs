@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------------
 
 
+`timescale 1ns / 1ps
 `default_nettype none
 
 
@@ -18,8 +19,8 @@ module fifo32_cmd_axi4s_tx
             parameter   int     BUF_SIZE = 1024     
         )
         (
-            jelly3_axi4s.s      s_axi4s     ,
-            jelly3_axi4s.m      m_axi4s     ,
+            jelly3_axi4s_if.s   s_axi4s     ,
+            jelly3_axi4s_if.m   m_axi4s     
         );
     
     localparam int   PTR_BITS  = $clog2(BUF_SIZE)       ;
@@ -58,8 +59,8 @@ module fifo32_cmd_axi4s_tx
                 .s_clk           (s_axi4s.aclk      ),
                 .s_cke           (s_axi4s.aclken    ),
                 .s_data          ({
-                                    cmd_wr_strb,
-                                    cmd_wr_data
+                                    cmd_wr_last,
+                                    cmd_wr_len
                                 }),
                 .s_valid        (cmd_wr_valid       ),
                 .s_ready        (cmd_wr_ready       ),
@@ -69,8 +70,8 @@ module fifo32_cmd_axi4s_tx
                 .m_clk          (m_axi4s.aclk       ),
                 .m_cke          (m_axi4s.aclken     ),
                 .m_data         ({
-                                    cmd_rd_strb,
-                                    cmd_rd_data
+                                    cmd_rd_last,
+                                    cmd_rd_len
                                 }),
                 .m_valid        (cmd_rd_valid       ),
                 .m_ready        (cmd_rd_ready       ),
@@ -130,10 +131,10 @@ module fifo32_cmd_axi4s_tx
 
     assign buf_wr_strb  = s_axi4s.tstrb ;
     assign buf_wr_data  = s_axi4s.tdata ;
-    assign buf_wr_valid = s_axi4s.valid && (!cmd_wr_valid || cmd_wr_ready);
-    assign s_axi4s.ready = buf_wr_ready && (!cmd_wr_valid || cmd_wr_ready);
+    assign buf_wr_valid = s_axi4s.tvalid && (!cmd_wr_valid || cmd_wr_ready);
+    assign s_axi4s.tready = buf_wr_ready && (!cmd_wr_valid || cmd_wr_ready);
 
-    size_t  buf_counter ;
+    len_t   buf_counter ;
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
             buf_counter <= '0   ;
@@ -169,7 +170,7 @@ module fifo32_cmd_axi4s_tx
     len_t       send_len    ;
     always_ff @(posedge m_axi4s.aclk) begin
         if ( ~m_axi4s.aresetn ) begin
-            busy           <= 1'b0 ;
+            send_busy      <= 1'b0 ;
             send_len       <= 'x   ;
             m_axi4s.tlast  <= 1'bx ;
             m_axi4s.tdata  <= 'x   ;
@@ -182,16 +183,16 @@ module fifo32_cmd_axi4s_tx
             end
 
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
-                if ( !busy ) begin
+                if ( !send_busy ) begin
                     if ( cmd_rd_valid ) begin
                         send_busy <= 1'b1        ;
                         send_len  <= cmd_rd_len  ;
 
                         m_axi4s.tlast        <= 1'b0                    ;
-                        m_axi4s.tdata[7:0]   <= 8'h0x10                 ;   // opcode
+                        m_axi4s.tdata[7:0]   <= 8'h10                   ;   // opcode
                         m_axi4s.tdata[14:8]  <= 7'(CH_ID)               ;   // channel ID
                         m_axi4s.tdata[15]    <= cmd_rd_last             ;   // last
-                        m_axi4s.tdata[31:16] <= 32'({cmd_rd_len, 2'b00});   // length
+                        m_axi4s.tdata[31:16] <= 16'({cmd_rd_len, 2'b00});   // length
                         m_axi4s.tstrb        <= '1                      ;
                         m_axi4s.tvalid       <= 1'b1                    ;
                     end
@@ -202,7 +203,7 @@ module fifo32_cmd_axi4s_tx
                         send_busy <= 1'b0;
                     end
 
-                    m_axi4s.tlast  <= buf_rd_last   ;
+                    m_axi4s.tlast  <= send_len == '0;
                     m_axi4s.tdata  <= buf_rd_data   ;
                     m_axi4s.tstrb  <= buf_rd_strb   ;
                     m_axi4s.tvalid <= buf_rd_valid  ;
@@ -211,8 +212,8 @@ module fifo32_cmd_axi4s_tx
         end
     end
 
-    assign cmd_rd_ready = !busy && (!m_axi4s.tvalid || m_axi4s.tready);
-    assign buf_rd_ready =  busy && (!m_axi4s.tvalid || m_axi4s.tready);
+    assign cmd_rd_ready = !send_busy && (!m_axi4s.tvalid || m_axi4s.tready);
+    assign buf_rd_ready =  send_busy && (!m_axi4s.tvalid || m_axi4s.tready);
 
 
  endmodule
