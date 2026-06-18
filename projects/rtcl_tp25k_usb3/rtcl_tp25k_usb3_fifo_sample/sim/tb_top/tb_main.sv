@@ -47,10 +47,14 @@ module tb_main
                 .ft601_data         (ft601_data     ),
                 .ft601_gpio         (ft601_gpio     ),
 
-                .mipi_pwr_en_n      (               ),
-                .mipi_gpio          (               ),
+                .mipi_ck_p          (               ),
+                .mipi_ck_n          (               ),
+                .mipi_d_p           (               ),
+                .mipi_d_n           (               ),
                 .mipi_scl           (               ),
                 .mipi_sda           (               ),
+                .mipi_gpio          (               ),
+                .mipi_pwr_en_n      (               ),
 
                 .push_sw            (push_sw        ),
                 .dip_sw             (dip_sw         ),

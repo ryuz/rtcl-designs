@@ -27,8 +27,8 @@ module fifo32_cmd_axi4l
         );
 
 
-    parameter  type  addr_t = logic [m_axi4l.DATA_BITS-1:0];
-    parameter  type  data_t = logic [m_axi4l.DATA_BITS-1:0];
+    localparam type  addr_t = logic [m_axi4l.DATA_BITS-1:0];
+    localparam type  data_t = logic [m_axi4l.DATA_BITS-1:0];
     localparam type  strb_t = logic [m_axi4l.STRB_BITS-1:0];
     localparam type  prot_t = logic [m_axi4l.PROT_BITS-1:0];
     localparam type  resp_t = logic [m_axi4l.RESP_BITS-1:0];
