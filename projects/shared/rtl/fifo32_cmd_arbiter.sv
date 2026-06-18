@@ -39,54 +39,45 @@ module fifo32_cmd_arbiter
         assign s_axi4s[i].tready = s_axi4s_tready [i] ;
     end
 
-    typedef enum logic [1:0] {
-        STATE_IDLE,
-        STATE_BUSY
-    } state_t;
 
-    state_t     state   ;
+    logic       busy    ;
     sel_t       sel     ;
     len_t       count   ;
 
     always_ff @( posedge m_axi4s.aclk ) begin
         if ( ~m_axi4s.aresetn ) begin
-            state <= STATE_IDLE;
+            busy  <= 1'b0;
             sel   <= 'x;
             count <= 'x;
         end
         else if ( m_axi4s.aclken )  begin
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
-                case ( state )
-                STATE_IDLE:
-                    begin
-                        for ( int i = 0; i < N; i++ ) begin
-                            if ( s_axi4s_tvalid[i] ) begin
-                                m_axi4s.tlast  <= s_axi4s_tlast [i];
-                                m_axi4s.tdata  <= s_axi4s_tdata [i];
-                                m_axi4s.tstrb  <= s_axi4s_tstrb [i];
-                                m_axi4s.tvalid <= 1'b1;
-                                if ( s_axi4s_tdata[i][31:16] > 0 ) begin
-                                    state <= STATE_BUSY             ;
-                                    count <= s_axi4s_tdata[i][31:16];
-                                end
+                if ( !busy ) begin
+                    for ( int i = 0; i < N; i++ ) begin
+                        if ( s_axi4s_tvalid[i] ) begin
+                            m_axi4s.tlast  <= s_axi4s_tlast [i];
+                            m_axi4s.tdata  <= s_axi4s_tdata [i];
+                            m_axi4s.tstrb  <= s_axi4s_tstrb [i];
+                            m_axi4s.tvalid <= 1'b1;
+                            if ( s_axi4s_tdata[i][31:16] > 0 ) begin
+                                busy  <= 1'b1;
+                                count <= s_axi4s_tdata[i][31:16];
                             end
                         end
                     end
-
-                STATE_BUSY:
-                    begin
-                        m_axi4s.tlast  <= s_axi4s_tlast [sel];
-                        m_axi4s.tdata  <= s_axi4s_tdata [sel];
-                        m_axi4s.tstrb  <= s_axi4s_tstrb [sel];
-                        m_axi4s.tvalid <= s_axi4s_valid [sel];
-                        if ( count > 4 ) begin
-                            count <= count - len_t'(4);
-                        end
-                        else begin
-                            state <= STATE_IDLE;
-                        end
+                end
+                else begin
+                    m_axi4s.tlast  <= s_axi4s_tlast [sel];
+                    m_axi4s.tdata  <= s_axi4s_tdata [sel];
+                    m_axi4s.tstrb  <= s_axi4s_tstrb [sel];
+                    m_axi4s.tvalid <= s_axi4s_tvalid[sel];
+                    if ( count > 4 ) begin
+                        count <= count - len_t'(4);
                     end
-                endcase
+                    else begin
+                        busy <= 1'b0;
+                    end
+                end
             end
         end
     end

@@ -316,30 +316,6 @@ module rtcl_tp25k_usb3_fifo_sample
             );
 
 
-    // LED
-    logic   [24:0]  clk_counter;
-    always_ff @(posedge in_clk50) begin
-        clk_counter <= clk_counter + 1'b1;
-    end
-
-    logic   [26:0]  usb_counter;
-    always_ff @(posedge ft601_clk) begin
-        usb_counter <= usb_counter + 1'b1;
-    end
-
-
-
-    assign led[0] = clk_counter[24] ;
-    assign led[1] = usb_counter[26] ;
-    assign led[2] = ft601_wakeup_n  ;
-    assign led[3] = reset           ;
-
-
-
-    // -------------------------------
-    //  FT601
-    // -------------------------------
-
     assign ft601_reset_n  = ~reset  ;
     assign ft601_wakeup_n = 1'bz    ;
     assign ft601_gpio     = 2'b00   ;   // 245 Synchrounous FIFO Mode
@@ -374,6 +350,60 @@ module rtcl_tp25k_usb3_fifo_sample
     end
 
 
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1      ),
+                .USE_LAST   (0      ),
+                .DATA_BITS  (32     )
+            )
+        axi4s_ft601_rx
+            (
+                .aresetn    (~reset ),
+                .aclk       (clk    ),
+                .aclken     (1'b1   )
+            );
+
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1      ),
+                .USE_LAST   (0      ),
+                .DATA_BITS  (32     )
+            )
+        axi4s_ft601_tx
+            (
+                .aresetn    (~reset ),
+                .aclk       (clk    ),
+                .aclken     (1'b1   )
+            );
+
+    ft601_mode245
+            #(
+                .ASYNC              (1                  ),
+                .RX_FIFO_PTR_BITS   (8                  ),
+                .TX_FIFO_PTR_BITS   (8                  )
+            )
+        u_ft601_mode245
+            (
+                .ft601_reset        (ft601_reset        ),
+                .ft601_clk          (ft601_clk          ),
+                .ft601_rxf_n        (ft601_rxf_n        ),
+                .ft601_txe_n        (ft601_txe_n        ),
+                .ft601_wr_n         (ft601_wr_n         ),
+                .ft601_rd_n         (ft601_rd_n         ),
+                .ft601_oe_n         (ft601_oe_n         ),
+                .ft601_be_i         (ft601_be_i         ),
+                .ft601_be_o         (ft601_be_o         ),
+                .ft601_be_t         (ft601_be_t         ),
+                .ft601_data_i       (ft601_data_i       ),
+                .ft601_data_o       (ft601_data_o       ),
+                .ft601_data_t       (ft601_data_t       ),
+
+                .s_axi4s_tx         (axi4s_ft601_tx.s   ),
+                .m_axi4s_rx         (axi4s_ft601_rx.m   )
+        );
+
+
+    /*
     logic   [3:0]   ft601_tx_fifo_strb       ;
     logic   [31:0]  ft601_tx_fifo_data       ;
     logic           ft601_tx_fifo_valid      ;
@@ -513,6 +543,9 @@ module rtcl_tp25k_usb3_fifo_sample
                 .m_ready        (ft601_tx_fifo_ready),
                 .m_data_size    (                   )
             );
+    */
+
+
     
     // --------------------------------
     //  Commnand processing
@@ -537,17 +570,21 @@ module rtcl_tp25k_usb3_fifo_sample
                 .clk            (clk                ),
                 .cke            (1'b1               ),
 
+                .s_axi4s_rx     (axi4s_ft601_rx.s   ),
+                .m_axi4s_tx     (axi4s_ft601_tx.m   ),
+
+                /*
                 .s_rx_data      (cmd_rx_fifo_data   ),
                 .s_rx_valid     (cmd_rx_fifo_valid  ),
                 .s_rx_ready     (cmd_rx_fifo_ready  ),
-
                 .m_tx_data      (cmd_tx_fifo_data   ),
                 .m_tx_valid     (cmd_tx_fifo_valid  ),
                 .m_tx_ready     (cmd_tx_fifo_ready  ),
+                */
                 
                 .m_axi4l        (axi4l_host         )
             );
-    assign cmd_tx_fifo_strb = '1;
+//  assign cmd_tx_fifo_strb = '1;
 
 
     // ----------------------------------------
@@ -676,6 +713,29 @@ module rtcl_tp25k_usb3_fifo_sample
                 .OEN        (i2c_sda_t  )
             );
 
+
+
+
+    // ----------------------------------------
+    //  LED
+    // ----------------------------------------
+
+    logic   [24:0]  clk_counter;
+    always_ff @(posedge in_clk50) begin
+        clk_counter <= clk_counter + 1'b1;
+    end
+
+    logic   [26:0]  usb_counter;
+    always_ff @(posedge ft601_clk) begin
+        usb_counter <= usb_counter + 1'b1;
+    end
+
+
+
+    assign led[0] = clk_counter[24] ;
+    assign led[1] = usb_counter[26] ;
+    assign led[2] = ft601_wakeup_n  ;
+    assign led[3] = reset           ;
 
 
     // ----------------------------------------
