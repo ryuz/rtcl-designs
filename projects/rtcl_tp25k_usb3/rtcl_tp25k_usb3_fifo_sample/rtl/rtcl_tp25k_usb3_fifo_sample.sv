@@ -749,6 +749,7 @@ module rtcl_tp25k_usb3_fifo_sample
         count <= count + 1'b1;
     end
 
+    /*
     assign pmod[0] = dphy_di_lprx0[0]    ;
     assign pmod[1] = dphy_di_lprx0[1]    ;
     assign pmod[2] = dphy_di_lprx1[0]    ;
@@ -757,6 +758,16 @@ module rtcl_tp25k_usb3_fifo_sample
     assign pmod[5] = dphy_di_lprxck[1]   ;
     assign pmod[6] = dphy_hsrxd_vld[0]   ;
     assign pmod[7] = dphy_byte_ready     ;
+    */
+
+    assign pmod[0] = ft601_rxf_n;
+    assign pmod[1] = ft601_txe_n;
+    assign pmod[2] = ft601_wr_n;
+    assign pmod[3] = ft601_rd_n;
+    assign pmod[4] = ft601_oe_n;
+    assign pmod[5] = clk_counter[7];
+    assign pmod[6] = ft601_reset_n;
+    assign pmod[7] = ft601_wakeup_n;
 
 endmodule
 

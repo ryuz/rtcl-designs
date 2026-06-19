@@ -19,14 +19,13 @@ impl Axi4LiteD3xx {
         Self { device }
     }
 
-    /*
     fn init(&self) -> Result<()> {
         let packet = [0; 4];
         for _ in 0..128 {
             self.device.pipe(Pipe::Out0).write_all(&packet)?;
         }
         Ok(())
-    }*/
+    }
 
     fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<u32> {
         let packet = [
@@ -105,6 +104,8 @@ fn main() {
 
     let device = all_devices[0].open().expect("failed to open device");
     let axi = Axi4LiteD3xx::new(device);
+
+//    axi.init().expect("failed to init device");
 
     let id = axi.read_axi4l(0x00 * 4).expect("read_axi4l(id) failed");
     println!("id : {id:04x}");
