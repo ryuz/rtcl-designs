@@ -12,10 +12,10 @@ once_cell = "1.21.4"
 clap = { version = "4.5", features = ["derive"] }
 rtcl_p3s7_shared = { path = "../../../../../shared/rust/rtcl_p3s7_shared", features = ["std"], default-features = false }
 
-#jelly-mem_access = {path = "../../../../../../rust/mem_access" }
-jelly-mem_access = "0.2.5"
-jelly-lib        = {path = "../../../../../../jelly/rust/lib" }
-jelly-pac        = {path = "../../../../../../jelly/rust/pac" }
+jelly-mem_access = "0.2.7"
+jelly-lib = "0.2.2"
+jelly-pac = "0.1.2"
+
 
 [build-dependencies]
 tonic-prost-build = "0.14.5"
