@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
+jelly-lib = "0.2.2"
 rtcl-lib  = { path = "../../../../../rust/lib" }
-jelly-lib = {path = "../../../../../jelly/rust/lib" }

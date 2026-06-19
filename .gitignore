@@ -10,6 +10,7 @@
 !.readthedocs.yaml
 
 # private file
+~*
 _*
 *_
 *_.*
