@@ -181,6 +181,8 @@ module fifo32_cmd_axi4l
         end
     end
 
+    assign m_axi4s_tx.tstrb = '1;
+
     assign m_axi4l.bready = (tx_state == TX_IDLE);
     assign m_axi4l.rready = (tx_state == TX_RDATA);
 
