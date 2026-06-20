@@ -1,0 +1,271 @@
+<?xml version="1" encoding="UTF-8"?>
+<GAO_CONFIG>
+    <Version>3.0</Version>
+    <Mode>Standard</Mode>
+    <AoCore index="0" sample_clock="clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_imx219" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+        <SignalList>
+            <Bus capture_enable="true" name="u_fifo32_cmd_axi4s_tx/cmd_rd_len[6:0]">
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[6]</Signal>
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[5]</Signal>
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[4]</Signal>
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[3]</Signal>
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[2]</Signal>
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[1]</Signal>
+                <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">u_fifo32_cmd_axi4s_tx/cmd_rd_last</Signal>
+            <Signal capture_enable="true">u_fifo32_cmd_axi4s_tx/cmd_rd_valid</Signal>
+            <Signal capture_enable="true">u_fifo32_cmd_axi4s_tx/cmd_rd_ready</Signal>
+            <Bus capture_enable="true" name="axi4s_arb_tx[1].tdata[31:0]">
+                <Signal>axi4s_arb_tx[1].tdata[31]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[30]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[29]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[28]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[27]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[26]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[25]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[24]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[23]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[22]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[21]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[20]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[19]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[18]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[17]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[16]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[15]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[14]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[13]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[12]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[11]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[10]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[9]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[8]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[7]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[6]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[5]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[4]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[3]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[2]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[1]</Signal>
+                <Signal>axi4s_arb_tx[1].tdata[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">axi4s_arb_tx[1].tlast</Signal>
+            <Signal capture_enable="true">axi4s_arb_tx[1].tvalid</Signal>
+            <Signal capture_enable="true">axi4s_arb_tx[1].tready</Signal>
+        </SignalList>
+        <Triggers>
+            <Trigger index="0">
+                <SignalList>
+                    <Bus restorename="u_fifo32_cmd_axi4s_tx/cmd_rd_len[6:0]">
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[6]</Signal>
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[5]</Signal>
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[4]</Signal>
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[3]</Signal>
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[2]</Signal>
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[1]</Signal>
+                        <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_len[0]</Signal>
+                    </Bus>
+                    <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_last</Signal>
+                    <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_valid</Signal>
+                    <Signal>u_fifo32_cmd_axi4s_tx/cmd_rd_ready</Signal>
+                </SignalList>
+            </Trigger>
+            <Trigger index="1"/>
+            <Trigger index="2"/>
+            <Trigger index="3"/>
+            <Trigger index="4"/>
+            <Trigger index="5"/>
+            <Trigger index="6"/>
+            <Trigger index="7"/>
+            <Trigger index="8"/>
+            <Trigger index="9"/>
+            <Trigger index="10"/>
+            <Trigger index="11"/>
+            <Trigger index="12"/>
+            <Trigger index="13"/>
+            <Trigger index="14"/>
+            <Trigger index="15"/>
+        </Triggers>
+        <MatchUnits>
+            <MatchUnit index="0" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="XXXXXXXX1X" value1="0000000000" trigger="0"/>
+            <MatchUnit index="1" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="5" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="6" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="7" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="8" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="9" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="10" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="11" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="12" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="13" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="14" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="15" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+        </MatchUnits>
+        <Expressions type="Static">
+            <Expression>M0</Expression>
+        </Expressions>
+    </AoCore>
+    <AoCore index="1" sample_clock="ft601_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_imx219" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+        <SignalList>
+            <Signal capture_enable="true">ft601_rxf_n</Signal>
+            <Signal capture_enable="true">ft601_txe_n</Signal>
+            <Signal capture_enable="true">ft601_wr_n</Signal>
+            <Signal capture_enable="true">ft601_rd_n</Signal>
+            <Signal capture_enable="true">ft601_oe_n</Signal>
+            <Bus capture_enable="true" name="ft601_data_i[31:0]">
+                <Signal>ft601_data_i[31]</Signal>
+                <Signal>ft601_data_i[30]</Signal>
+                <Signal>ft601_data_i[29]</Signal>
+                <Signal>ft601_data_i[28]</Signal>
+                <Signal>ft601_data_i[27]</Signal>
+                <Signal>ft601_data_i[26]</Signal>
+                <Signal>ft601_data_i[25]</Signal>
+                <Signal>ft601_data_i[24]</Signal>
+                <Signal>ft601_data_i[23]</Signal>
+                <Signal>ft601_data_i[22]</Signal>
+                <Signal>ft601_data_i[21]</Signal>
+                <Signal>ft601_data_i[20]</Signal>
+                <Signal>ft601_data_i[19]</Signal>
+                <Signal>ft601_data_i[18]</Signal>
+                <Signal>ft601_data_i[17]</Signal>
+                <Signal>ft601_data_i[16]</Signal>
+                <Signal>ft601_data_i[15]</Signal>
+                <Signal>ft601_data_i[14]</Signal>
+                <Signal>ft601_data_i[13]</Signal>
+                <Signal>ft601_data_i[12]</Signal>
+                <Signal>ft601_data_i[11]</Signal>
+                <Signal>ft601_data_i[10]</Signal>
+                <Signal>ft601_data_i[9]</Signal>
+                <Signal>ft601_data_i[8]</Signal>
+                <Signal>ft601_data_i[7]</Signal>
+                <Signal>ft601_data_i[6]</Signal>
+                <Signal>ft601_data_i[5]</Signal>
+                <Signal>ft601_data_i[4]</Signal>
+                <Signal>ft601_data_i[3]</Signal>
+                <Signal>ft601_data_i[2]</Signal>
+                <Signal>ft601_data_i[1]</Signal>
+                <Signal>ft601_data_i[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="ft601_data_o[31:0]">
+                <Signal>ft601_data_o[31]</Signal>
+                <Signal>ft601_data_o[30]</Signal>
+                <Signal>ft601_data_o[29]</Signal>
+                <Signal>ft601_data_o[28]</Signal>
+                <Signal>ft601_data_o[27]</Signal>
+                <Signal>ft601_data_o[26]</Signal>
+                <Signal>ft601_data_o[25]</Signal>
+                <Signal>ft601_data_o[24]</Signal>
+                <Signal>ft601_data_o[23]</Signal>
+                <Signal>ft601_data_o[22]</Signal>
+                <Signal>ft601_data_o[21]</Signal>
+                <Signal>ft601_data_o[20]</Signal>
+                <Signal>ft601_data_o[19]</Signal>
+                <Signal>ft601_data_o[18]</Signal>
+                <Signal>ft601_data_o[17]</Signal>
+                <Signal>ft601_data_o[16]</Signal>
+                <Signal>ft601_data_o[15]</Signal>
+                <Signal>ft601_data_o[14]</Signal>
+                <Signal>ft601_data_o[13]</Signal>
+                <Signal>ft601_data_o[12]</Signal>
+                <Signal>ft601_data_o[11]</Signal>
+                <Signal>ft601_data_o[10]</Signal>
+                <Signal>ft601_data_o[9]</Signal>
+                <Signal>ft601_data_o[8]</Signal>
+                <Signal>ft601_data_o[7]</Signal>
+                <Signal>ft601_data_o[6]</Signal>
+                <Signal>ft601_data_o[5]</Signal>
+                <Signal>ft601_data_o[4]</Signal>
+                <Signal>ft601_data_o[3]</Signal>
+                <Signal>ft601_data_o[2]</Signal>
+                <Signal>ft601_data_o[1]</Signal>
+                <Signal>ft601_data_o[0]</Signal>
+            </Bus>
+        </SignalList>
+        <Triggers>
+            <Trigger index="0">
+                <SignalList>
+                    <Signal>ft601_rxf_n</Signal>
+                    <Signal>ft601_txe_n</Signal>
+                    <Signal>ft601_wr_n</Signal>
+                    <Signal>ft601_rd_n</Signal>
+                    <Signal>ft601_oe_n</Signal>
+                    <Bus restorename="ft601_data_o[31:0]">
+                        <Signal>ft601_data_o[31]</Signal>
+                        <Signal>ft601_data_o[30]</Signal>
+                        <Signal>ft601_data_o[29]</Signal>
+                        <Signal>ft601_data_o[28]</Signal>
+                        <Signal>ft601_data_o[27]</Signal>
+                        <Signal>ft601_data_o[26]</Signal>
+                        <Signal>ft601_data_o[25]</Signal>
+                        <Signal>ft601_data_o[24]</Signal>
+                        <Signal>ft601_data_o[23]</Signal>
+                        <Signal>ft601_data_o[22]</Signal>
+                        <Signal>ft601_data_o[21]</Signal>
+                        <Signal>ft601_data_o[20]</Signal>
+                        <Signal>ft601_data_o[19]</Signal>
+                        <Signal>ft601_data_o[18]</Signal>
+                        <Signal>ft601_data_o[17]</Signal>
+                        <Signal>ft601_data_o[16]</Signal>
+                        <Signal>ft601_data_o[15]</Signal>
+                        <Signal>ft601_data_o[14]</Signal>
+                        <Signal>ft601_data_o[13]</Signal>
+                        <Signal>ft601_data_o[12]</Signal>
+                        <Signal>ft601_data_o[11]</Signal>
+                        <Signal>ft601_data_o[10]</Signal>
+                        <Signal>ft601_data_o[9]</Signal>
+                        <Signal>ft601_data_o[8]</Signal>
+                        <Signal>ft601_data_o[7]</Signal>
+                        <Signal>ft601_data_o[6]</Signal>
+                        <Signal>ft601_data_o[5]</Signal>
+                        <Signal>ft601_data_o[4]</Signal>
+                        <Signal>ft601_data_o[3]</Signal>
+                        <Signal>ft601_data_o[2]</Signal>
+                        <Signal>ft601_data_o[1]</Signal>
+                        <Signal>ft601_data_o[0]</Signal>
+                    </Bus>
+                </SignalList>
+            </Trigger>
+            <Trigger index="1"/>
+            <Trigger index="2"/>
+            <Trigger index="3"/>
+            <Trigger index="4"/>
+            <Trigger index="5"/>
+            <Trigger index="6"/>
+            <Trigger index="7"/>
+            <Trigger index="8"/>
+            <Trigger index="9"/>
+            <Trigger index="10"/>
+            <Trigger index="11"/>
+            <Trigger index="12"/>
+            <Trigger index="13"/>
+            <Trigger index="14"/>
+            <Trigger index="15"/>
+        </Triggers>
+        <MatchUnits>
+            <MatchUnit index="0" enabled="1" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="XX0XX0000000XXXXXXXXXXXXXXXXXXXXXXXXX" value1="0000000000000000000000000000000000000" trigger="0"/>
+            <MatchUnit index="1" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="4" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="5" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="6" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="7" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="8" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="9" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="10" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="11" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="12" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="13" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="14" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+            <MatchUnit index="15" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
+        </MatchUnits>
+        <Expressions type="Static">
+            <Expression>M0</Expression>
+        </Expressions>
+    </AoCore>
+    <GAO_ID>0110000000001111</GAO_ID>
+</GAO_CONFIG>
