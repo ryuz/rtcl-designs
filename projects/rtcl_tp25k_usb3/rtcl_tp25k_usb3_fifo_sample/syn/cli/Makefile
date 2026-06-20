@@ -36,7 +36,6 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_i2c.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_system_control.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/peripheral/jelly_i2c_core.v
-VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_mipi_dphy/gowin_mipi_dphy.v
 
 # SDC File
 SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_sample.sdc
