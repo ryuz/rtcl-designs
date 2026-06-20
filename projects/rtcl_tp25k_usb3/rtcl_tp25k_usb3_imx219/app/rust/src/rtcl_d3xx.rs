@@ -54,7 +54,7 @@ impl RtclD3xx {
         let opcode = header[0];
         let operand = header[1];
         let length = u16::from_le_bytes([header[2], header[3]]) as usize;
-        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = {}", opcode, operand, length);
+        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", opcode, operand, length);
 
         let mut payload = vec![0u8; length as usize];
         if length > 0 {

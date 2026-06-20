@@ -718,8 +718,8 @@ module rtcl_tp25k_usb3_imx219
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = ft601_wakeup_n  ;
-    assign led[3] = reset           ;
+    assign led[2] = 1;//ft601_wakeup_n  ;
+    assign led[3] = 1;//reset           ;
 
 
     // ----------------------------------------
