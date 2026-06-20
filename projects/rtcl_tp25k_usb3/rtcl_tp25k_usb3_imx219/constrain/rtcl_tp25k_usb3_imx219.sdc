@@ -1,11 +1,20 @@
 # 50MHz
-create_clock -name in_clk50 -period 20.000 -waveform {0 10.000} [get_ports {in_clk50}] -add
+create_clock -name in_clk50 -period 20.0000 -waveform {0 10.0000} [get_ports {in_clk50}] -add
 
 # FT601(100MHz or 66MHz)
-create_clock -name ft601_clk -period 10.000 -waveform {0 5.000} [get_ports {ft601_clk}] -add
+create_clock -name ft601_clk -period 10.0000 -waveform {0 5.0000} [get_ports {ft601_clk}] -add
+
+# 458MHz (916Mbps/DDR)
+create_clock -name mipi_ck_p -period 2.1834 -waveform {0 1.0917} [get_ports {mipi_ck_p}] -add
+
+# 114MHz
+create_clock -name dphy_clk -period 8.7719 -waveform {0 4.3860} [get_net {dphy_clk}] -add
+
+
+create_generated_clock -name clk100 -source [get_ports in_clk50] -multiply_by 2 [get_pins u_gowin_pll/clkout0]
 
 # clock_groups
-set_clock_groups -asynchronous -group [get_clocks {in_clk50}] -group [get_clocks {ft601_clk}]
+set_clock_groups -asynchronous -group [get_clocks {in_clk50 clk100}] -group [get_clocks {ft601_clk}] -group [get_clocks {dphy_clk}]
 
 #create_generated_clock -name ft601_rx_clk -source [get_ports {ft601_clk}] -phase   0 [get_nets {ft601_rx_clk}]
 #create_generated_clock -name ft601_tx_clk -source [get_ports {ft601_clk}] -phase 270 [get_nets {ft601_tx_clk}]

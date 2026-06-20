@@ -22,6 +22,7 @@ SRCS += ../../../rtl/rtcl_tp25k_usb3_imx219.sv
 SRCS += ../../../../../shared/rtl/ft601_mode245_transceiver.sv
 SRCS += ../../../../../shared/rtl/fifo32_cmd_axi4l.sv
 SRCS += ../../stub/gowin_mipi_dphy.v
+SRCS += ../../stub/gowin_pll.v
 
 all: build run
 

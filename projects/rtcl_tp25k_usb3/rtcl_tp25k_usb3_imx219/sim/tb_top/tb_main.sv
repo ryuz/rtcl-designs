@@ -5,7 +5,8 @@
 module tb_main
         (
             input   var logic   reset       ,
-            input   var logic   clk         ,
+            input   var logic   clk50       ,
+            input   var logic   clk100      ,
             input   var logic   ft601_clk   
         );
 
@@ -32,7 +33,7 @@ module tb_main
     rtcl_tp25k_usb3_imx219
         u_rtcl_tp25k_usb3_imx219
             (
-                .in_clk50           (clk            ),
+                .in_clk50           (clk50          ),
 
                 .ft601_reset_n      (ft601_reset_n  ),
                 .ft601_wakeup_n     (ft601_wakeup_n ),
@@ -61,6 +62,9 @@ module tb_main
                 .led                (led            ),
                 .pmod               (pmod           )
             );
+    
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_gowin_pll.clkout0 = clk100;
+
 
     // -------------------------
     //  Simulation
