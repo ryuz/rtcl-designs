@@ -188,13 +188,13 @@ module fifo32_cmd_axi4s_tx
                         send_busy <= 1'b1        ;
                         send_len  <= cmd_rd_len  ;
 
-                        m_axi4s.tlast        <= 1'b0                    ;
-                        m_axi4s.tdata[7:0]   <= 8'h10                   ;   // opcode
-                        m_axi4s.tdata[14:8]  <= 7'(CH_ID)               ;   // channel ID
-                        m_axi4s.tdata[15]    <= cmd_rd_last             ;   // last
-                        m_axi4s.tdata[31:16] <= 16'({cmd_rd_len, 2'b00});   // length
-                        m_axi4s.tstrb        <= '1                      ;
-                        m_axi4s.tvalid       <= 1'b1                    ;
+                        m_axi4s.tlast        <= 1'b0                            ;
+                        m_axi4s.tdata[7:0]   <= 8'h10                           ;   // opcode
+                        m_axi4s.tdata[14:8]  <= 7'(CH_ID)                       ;   // channel ID
+                        m_axi4s.tdata[15]    <= cmd_rd_last                     ;   // last
+                        m_axi4s.tdata[31:16] <= 16'({cmd_rd_len, 2'b00}) + 16'd4;   // length
+                        m_axi4s.tstrb        <= '1                              ;
+                        m_axi4s.tvalid       <= 1'b1                            ;
                     end
                 end
                 else begin
