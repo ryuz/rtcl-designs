@@ -51,6 +51,10 @@ module fifo32_cmd_arbiter
             count <= 'x;
         end
         else if ( m_axi4s.aclken )  begin
+            if ( m_axi4s.tready ) begin
+                m_axi4s.tvalid <= 1'b0;
+            end
+
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 if ( !busy ) begin
                     for ( int i = 0; i < N; i++ ) begin
@@ -63,6 +67,7 @@ module fifo32_cmd_arbiter
                                 busy  <= 1'b1;
                                 count <= s_axi4s_tdata[i][31:16];
                             end
+                            break;
                         end
                     end
                 end
@@ -82,7 +87,25 @@ module fifo32_cmd_arbiter
         end
     end
 
+    always_comb begin
+        s_axi4s_tready = '0;
+        if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
+            if ( !busy ) begin
+                for ( int i = 0; i < N; i++ ) begin
+                    if ( s_axi4s_tvalid[i] ) begin
+                        s_axi4s_tready[i] = 1'b1;
+                        break;
+                    end
+                end
+            end
+            else begin
+                s_axi4s_tready[sel] = 1'b1;
+            end
+        end
+    end
+
  endmodule
+
 
 `default_nettype wire
 
