@@ -9,7 +9,7 @@
 
 `default_nettype none
 
-module rtcl_tp25k_usb3_fifo_sample
+module rtcl_tp25k_usb3_imx219
         (
             input   var logic           in_clk50        ,
 
@@ -508,7 +508,7 @@ module rtcl_tp25k_usb3_fifo_sample
                 dphy_valid <= 1'b1;
             end
             else begin
-                if ( dphy_valid & dphy_valid.last ) begin
+                if ( dphy_valid & dphy_last ) begin
                     dphy_phase <= 0;
                     dphy_data  <= '0;
                     dphy_valid <= 1'b0;

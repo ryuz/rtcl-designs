@@ -29,8 +29,8 @@ module tb_main
     logic   [3:0]   led             ;
     logic   [7:0]   pmod            ;
 
-    rtcl_tp25k_usb3_fifo_sample
-        u_rtcl_tp25k_usb3_fifo_sample
+    rtcl_tp25k_usb3_imx219
+        u_rtcl_tp25k_usb3_imx219
             (
                 .in_clk50           (clk            ),
 

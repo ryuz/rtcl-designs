@@ -18,7 +18,7 @@ FLAGS += $(addprefix -y ,$(SIM_LIB_DIRS))
 FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
-SRCS += ../../../rtl/rtcl_tp25k_usb3_fifo_sample.sv
+SRCS += ../../../rtl/rtcl_tp25k_usb3_imx219.sv
 SRCS += ../../../../../shared/rtl/ft601_mode245_transceiver.sv
 SRCS += ../../../../../shared/rtl/fifo32_cmd_axi4l.sv
 SRCS += ../../stub/gowin_mipi_dphy.v
