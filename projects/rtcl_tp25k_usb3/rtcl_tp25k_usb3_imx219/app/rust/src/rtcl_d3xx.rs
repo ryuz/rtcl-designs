@@ -101,7 +101,7 @@ impl RtclD3xx {
         let mut payload = Vec::<u8>::with_capacity(8);
         payload.extend_from_slice(addr.to_le_bytes().as_ref());
         payload.extend_from_slice(data.to_le_bytes().as_ref());
-        self.send_packet(OPCODE_AXI4L_WRITE, strb, &payload)?;
+        self.send_packet(OPCODE_AXI4L_WRITE, strb << 4, &payload)?;
 
         // 応答受信
         let (opcode, operand, payload) = self.recv_command()?;
