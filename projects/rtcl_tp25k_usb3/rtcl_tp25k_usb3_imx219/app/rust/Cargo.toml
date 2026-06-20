@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 d3xx = "0.0.3"
 jelly-mem_access = { version="0.2.7" }
+#jelly-mem_access = { git="https://github.com/ryuz/jelly-mem_access.git", branch="develop" }
 jelly-pac = { version="0.1.2" }
 jelly-lib = { version="0.2.2" }
 

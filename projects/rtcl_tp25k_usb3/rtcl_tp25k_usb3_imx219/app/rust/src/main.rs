@@ -10,6 +10,26 @@ use jelly_lib::imx219_sensor_driver::Imx219SensorDriver;
 
 use d3xx::{list_devices, Device, Pipe};
 
+mod rtcl_d3xx;
+use rtcl_d3xx::RtclD3xx;
+
+fn main() {
+    println!("FT601 AXI4-Lite access test");
+
+    let all_devices = list_devices().expect("failed to list devices");
+    assert!(!all_devices.is_empty(), "No FT601 device found");
+    println!("Found {} devices", all_devices.len());
+
+    let device = all_devices[0].open().expect("failed to open device");
+    let mut d3xx = RtclD3xx::new(device);
+
+    let id = d3xx.read_axi4l(0x00 * 4).expect("read_axi4l(id) failed");
+    println!("id : {id:04x}");
+}
+
+
+
+/*
 struct Axi4LiteD3xx {
     device: Device,
 }
@@ -70,12 +90,13 @@ impl Axi4LiteD3xx {
         Ok(u32::from_le_bytes([resp[4], resp[5], resp[6], resp[7]]))
     }
 
-    fn read_data(&self, addr: u32) -> Result<Vec<u8>> {
+    fn read_data(&self) -> Result<Vec<u8>> {
         let mut resp = [0u8; 64];
         self.device.pipe(Pipe::In0).read_exact(&mut resp)?;
         Ok(resp.to_vec())
     }
 }
+
 
 impl Bus<u32, u32, u8> for Axi4LiteD3xx {
     type Error = std::io::Error;
@@ -185,13 +206,13 @@ fn main() {
     imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
     imx219.start().unwrap();
 
-
+//  let a = axi.read_data();
 
     // キー入力待ち
     print!("進むには Enter キーを押してください...");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
-
 }
 
+*/
