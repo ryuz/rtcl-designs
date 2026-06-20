@@ -103,6 +103,14 @@ fn main() {
 
     }
 
+    // カメラOFF
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
+        std::thread::sleep(Duration::from_millis(100));
+    }
+
     // カメラ電源ON
     unsafe {
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 1);
@@ -122,7 +130,24 @@ fn main() {
     let mut imx219 = Imx219SensorDriver::new(i2c);
     println!("sensor model ID:{:04x}", imx219.get_model_id().unwrap());
 
-
+    // camera 設定
+    let pixel_clock: f64 = 91000000.0;
+    let binning =  true;
+//    let width: i32 = 1280;
+//    let height: i32 = 720;
+    let width: i32 = 256;
+    let height: i32 = 256;
+//    let frame_rate: i32 = 30;
+//    let exposure: i32 = 33;
+//    let a_gain: i32 = args.a_gain;
+//    let d_gain: i32 = args.d_gain;
+    let aoi_x: i32 = -1;
+    let aoi_y: i32 = -1;
+    let flip_h: bool = false;
+    let flip_v: bool = false;
+    imx219.set_pixel_clock(pixel_clock).unwrap();
+    imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
+    imx219.start().unwrap();
 }
 
 

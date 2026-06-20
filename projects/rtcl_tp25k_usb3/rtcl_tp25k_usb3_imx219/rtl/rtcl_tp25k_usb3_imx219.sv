@@ -554,7 +554,7 @@ module rtcl_tp25k_usb3_imx219
             #(
                 .ASYNC      (1                  ),
                 .CH_ID      (0                  ),
-                .MAX_LEN    (512                ),
+                .MAX_LEN    (128                ),
                 .BUF_SIZE   (1024               )
             )
         u_fifo32_cmd_axi4s_tx

@@ -50,15 +50,16 @@ impl RtclD3xx {
     fn recv_packet(&mut self) -> Result<(u8, u8, Vec<u8>)> {
         let mut header = [0u8; 4];
         self.device.pipe(Pipe::In0).read_exact(&mut header)?;
-//      println!("recv_packet: header = {:?}", header);
+        println!("recv_packet: header = {:?}", header);
         let opcode = header[0];
         let operand = header[1];
         let length = u16::from_le_bytes([header[2], header[3]]) as usize;
+        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = {}", opcode, operand, length);
 
         let mut payload = vec![0u8; length as usize];
         if length > 0 {
             self.device.pipe(Pipe::In0).read_exact(&mut payload)?;
-//          println!("recv_packet: payload = {:?}", payload);
+            println!("recv_packet: payload = {:?}", payload);
         }
         Ok((opcode, operand, payload))
     }
@@ -67,6 +68,7 @@ impl RtclD3xx {
         loop {
             let (opcode, operand, payload) = self.recv_packet()?;
             if opcode == OPCODE_AXI4S_TRANS {
+                println!("recv_command: AXI4S packet received, opcode = {}, operand = {}, payload length = {}", opcode, operand, payload.len());
                 self.axi4s_buf.extend_from_slice(&payload);
                 if operand & 0x80 != 0 {
                     self.axi4s_packets.push(self.axi4s_buf.clone());
