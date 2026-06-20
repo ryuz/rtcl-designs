@@ -508,7 +508,7 @@ module rtcl_tp25k_usb3_fifo_sample
                 dphy_valid <= 1'b1;
             end
             else begin
-                if ( dphy_valid & dphy_valid.last ) begin
+                if ( dphy_valid & dphy_last ) begin
                     dphy_phase <= 0;
                     dphy_data  <= '0;
                     dphy_valid <= 1'b0;
@@ -526,11 +526,22 @@ module rtcl_tp25k_usb3_fifo_sample
     assign axi4s_dphy.tvalid = dphy_valid && (dphy_phase || dphy_last);
 
 
-    assign axi4s_arb_tx[1].tdata  = '0;
-    assign axi4s_arb_tx[1].tstrb  = '1;
-    assign axi4s_arb_tx[1].tvalid = 1'b0;
+//    assign axi4s_arb_tx[1].tdata  = '0;
+//    assign axi4s_arb_tx[1].tstrb  = '1;
+//    assign axi4s_arb_tx[1].tvalid = 1'b0;
 
-
+    fifo32_cmd_axi4s_tx
+            #(
+                .ASYNC      (1              ),
+                .CH_ID      (0              ),
+                .MAX_LEN    (512            ),
+                .BUF_SIZE   (1024           )
+            )
+        u_fifo32_cmd_axi4s_tx
+            (
+                .s_axi4s    (axi4s_dphy     ),
+                .m_axi4s    (axi4s_arb_tx[1])
+            );
 
 
 
