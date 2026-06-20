@@ -1,6 +1,7 @@
 use std::io::{Read, Result, Write};
 use std::thread;
 use std::time::Duration;
+use std::sync::{Arc, Condvar, Mutex};
 
 use jelly_mem_access::*;
 use jelly_mem_access::bus_accessor::LittleEndian;
@@ -13,6 +14,49 @@ use d3xx::{list_devices, Device, Pipe};
 mod rtcl_d3xx;
 use rtcl_d3xx::RtclD3xx;
 
+struct RtclD3xxAxi4lBus {
+    d3xx: Arc<Mutex<RtclD3xx>>,
+}
+
+impl RtclD3xxAxi4lBus {
+    fn new(d3xx: Arc<Mutex<RtclD3xx>>) -> Self {
+        Self { d3xx }
+    }
+
+    fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<()> {
+        if let Ok(mut d3xx_guard) = self.d3xx.lock() {
+            d3xx_guard.write_axi4l(addr, data, strb)
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx"))
+        }
+    }
+
+    fn read_axi4l(&self, addr: u32) -> Result<u32> {
+        if let Ok(mut d3xx_guard) = self.d3xx.lock() {
+            d3xx_guard.read_axi4l(addr)
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx"))
+        }
+    }
+}
+
+impl Bus<u32, u32, u8> for RtclD3xxAxi4lBus {
+    type Error = std::io::Error;
+
+    fn write(&mut self, addr: u32, data: u32, strb: u8) -> Result<()> {
+        self.write_axi4l(addr, data, strb)?;
+        Ok(())
+    }
+
+    fn read(&mut self, addr: u32) -> Result<u32> {
+        let v = self.read_axi4l(addr)?;
+        Ok(v)
+    }
+}
+
+
+
+
 fn main() {
     println!("FT601 AXI4-Lite access test");
 
@@ -22,9 +66,30 @@ fn main() {
 
     let device = all_devices[0].open().expect("failed to open device");
     let mut d3xx = RtclD3xx::new(device);
-
     let id = d3xx.read_axi4l(0x00 * 4).expect("read_axi4l(id) failed");
     println!("id : {id:04x}");
+
+    let d3xx_arc = Arc::new(Mutex::new(d3xx));
+    let axi4l_bus = RtclD3xxAxi4lBus::new(d3xx_arc.clone());
+    let mut accessor = SharedBusAccessor::<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>::new(axi4l_bus);
+
+    unsafe {
+        let id = accessor
+            .try_read_reg_u32(0)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {id:04x}");
+
+        let scratch = accessor
+            .try_read_reg_u32(0x13)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
+
+        accessor
+            .try_write_reg_u32(0x13, 0x1234)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
+
+    }
 }
 
 

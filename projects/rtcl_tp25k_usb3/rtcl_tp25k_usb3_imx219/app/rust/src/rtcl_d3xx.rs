@@ -5,8 +5,9 @@ use std::time::Duration;
 
 use d3xx::{Device, Pipe};
 
-const OPCODE_AXI4L: u8 = 0x03;
-const OPCODE_AXI4S: u8 = 0x10;
+const OPCODE_AXI4L_WRITE: u8 = 0x02;
+const OPCODE_AXI4L_READ: u8 = 0x03;
+const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
 #[derive(Debug, Clone)]
 pub struct RtclPacket {
@@ -40,6 +41,7 @@ impl RtclD3xx {
         packet.push(operand);
         packet.extend_from_slice(&length.to_le_bytes());
         packet.extend_from_slice(payload);
+//      println!("send_packet: packet = {:?}", packet);
         self.device.pipe(Pipe::Out0).write_all(&packet)?;
         Ok(())
     }
@@ -48,19 +50,23 @@ impl RtclD3xx {
     fn recv_packet(&mut self) -> Result<(u8, u8, Vec<u8>)> {
         let mut header = [0u8; 4];
         self.device.pipe(Pipe::In0).read_exact(&mut header)?;
+//      println!("recv_packet: header = {:?}", header);
         let opcode = header[0];
         let operand = header[1];
         let length = u16::from_le_bytes([header[2], header[3]]) as usize;
 
         let mut payload = vec![0u8; length as usize];
-        self.device.pipe(Pipe::In0).read_exact(&mut payload)?;
+        if length > 0 {
+            self.device.pipe(Pipe::In0).read_exact(&mut payload)?;
+//          println!("recv_packet: payload = {:?}", payload);
+        }
         Ok((opcode, operand, payload))
     }
 
     fn recv_command(&mut self) -> Result<(u8, u8, Vec<u8>)> {
         loop {
             let (opcode, operand, payload) = self.recv_packet()?;
-            if opcode == OPCODE_AXI4S {
+            if opcode == OPCODE_AXI4S_TRANS {
                 self.axi4s_buf.extend_from_slice(&payload);
                 if operand & 0x80 != 0 {
                     self.axi4s_packets.push(self.axi4s_buf.clone());
@@ -77,7 +83,7 @@ impl RtclD3xx {
         if self.axi4s_buf.is_empty() {
             loop {
                 let (opcode, operand, payload) = self.recv_packet()?;
-                assert!(opcode == OPCODE_AXI4S, "Expected AXI4S packet");
+                assert!(opcode == OPCODE_AXI4S_TRANS, "Expected AXI4S packet");
                 self.axi4s_buf.extend_from_slice(&payload);
                 if operand & 0x80 != 0 {
                     self.axi4s_packets.push(self.axi4s_buf.clone());
@@ -95,13 +101,13 @@ impl RtclD3xx {
         let mut payload = Vec::<u8>::with_capacity(8);
         payload.extend_from_slice(addr.to_le_bytes().as_ref());
         payload.extend_from_slice(data.to_le_bytes().as_ref());
-        self.send_packet(OPCODE_AXI4L, strb, &payload)?;
+        self.send_packet(OPCODE_AXI4L_WRITE, strb, &payload)?;
 
         // 応答受信
         let (opcode, operand, payload) = self.recv_command()?;
-        assert!(opcode == OPCODE_AXI4L, "Expected AXI4L response");
+        assert!(opcode == OPCODE_AXI4L_WRITE, "Expected AXI4L_WRITE response");
         assert!(operand == 0, "Expected AXI4L response");
-        assert!(payload.len() == 4, "Expected 4 bytes in AXI4L response");
+        assert!(payload.len() == 0, "Expected 04 bytes in AXI4L_WRITE response");
         Ok(())
     }
 
@@ -109,13 +115,13 @@ impl RtclD3xx {
         // コマンド送信
         let mut payload = Vec::<u8>::with_capacity(4);
         payload.extend_from_slice(addr.to_le_bytes().as_ref());
-        self.send_packet(OPCODE_AXI4L, 0, &payload)?;
+        self.send_packet(OPCODE_AXI4L_READ, 0, &payload)?;
 
         // 応答受信
         let (opcode, operand, payload) = self.recv_command()?;
-        assert!(opcode == OPCODE_AXI4L, "Expected AXI4L response");
+        assert!(opcode == OPCODE_AXI4L_READ, "Expected AXI4L_READ response");
         assert!(operand == 0, "Expected AXI4L response");
-        assert!(payload.len() == 4, "Expected 4 bytes in AXI4L response");
+        assert!(payload.len() == 4, "Expected 4 bytes in AXI4L_READ response");
         let data = u32::from_le_bytes(payload[0..4].try_into().unwrap());
         Ok(data)
     }
