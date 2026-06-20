@@ -103,7 +103,7 @@ module tb_main
                 end
             end
             2'b00: begin
-                if ( dphy_count >= 1400 ) begin
+                if ( dphy_count >= 256/4 ) begin
                     dphy_state <= 2'b11;
                     dphy_count <= '0;
                 end
