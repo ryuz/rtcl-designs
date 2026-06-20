@@ -147,7 +147,7 @@ module fifo32_cmd_axi4s_tx
                 cmd_wr_valid <= 1'b0    ;
             end
             if ( s_axi4s.tvalid && s_axi4s.tready ) begin
-                if ( s_axi4s.tlast || (buf_counter + 1) >= MAX_LEN ) begin
+                if ( s_axi4s.tlast || buf_counter >= len_t'(MAX_LEN-1) ) begin
                     buf_counter  <= '0;
                     cmd_wr_last  <= s_axi4s.tlast   ;
                     cmd_wr_len   <= buf_counter     ;
