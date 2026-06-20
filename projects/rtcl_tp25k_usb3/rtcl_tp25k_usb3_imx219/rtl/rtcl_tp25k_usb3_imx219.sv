@@ -554,8 +554,8 @@ module rtcl_tp25k_usb3_imx219
             #(
                 .ASYNC      (1                  ),
                 .CH_ID      (0                  ),
-                .MAX_LEN    (128                ),
-                .BUF_SIZE   (1024               )
+                .MAX_LEN    (256                ),
+                .BUF_SIZE   (1024*16             )
             )
         u_fifo32_cmd_axi4s_tx
             (
@@ -736,11 +736,13 @@ module rtcl_tp25k_usb3_imx219
     
     assign pmod[0] = dphy_di_lprx0[0]    ;
     assign pmod[1] = dphy_di_lprx0[1]    ;
-    assign pmod[2] = dphy_di_lprx1[0]    ;
-    assign pmod[3] = dphy_di_lprx1[1]    ;
+//    assign pmod[2] = dphy_di_lprx1[0]    ;
+//    assign pmod[3] = dphy_di_lprx1[1]    ;
+    assign pmod[2] = ft601_txe_n  ;
+    assign pmod[3] = ft601_wr_n   ; //axi4s_arb_tx[1].tready ;
     assign pmod[4] = dphy_di_lprxck[0]   ;
     assign pmod[5] = dphy_di_lprxck[1]   ;
-    assign pmod[6] = dphy_hsrxd_vld[0]   ;
+    assign pmod[6] = ft601_rd_n ; // dphy_hsrxd_vld[0]   ;
     assign pmod[7] = dphy_byte_ready     ;
     
     /*
