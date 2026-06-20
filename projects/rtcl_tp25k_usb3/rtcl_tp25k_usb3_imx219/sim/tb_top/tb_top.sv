@@ -15,6 +15,7 @@ module tb_top();
     localparam CLK50_RATE  = 1000.0/50.0;
     localparam CLK100_RATE = 1000.0/100.0;
     localparam FT601_RATE  = 1000.0/100.0;
+    localparam DPHY_RATE   = 1000.0/114.0;
 
 
     logic   reset = 1'b1;
@@ -29,6 +30,9 @@ module tb_top();
     logic   ft601_clk = 1'b1;
     initial forever #(FT601_RATE/2.0)   ft601_clk = ~ft601_clk;
 
+    logic   dphy_clk = 1'b1;
+    initial forever #(DPHY_RATE/2.0)    dphy_clk = ~dphy_clk;
+
 
     tb_main
         u_tb_main
@@ -36,7 +40,8 @@ module tb_top();
                 .reset      (reset      ),
                 .clk50      (clk50      ),
                 .clk100     (clk100     ),
-                .ft601_clk  (ft601_clk  )
+                .ft601_clk  (ft601_clk  ),
+                .dphy_clk   (dphy_clk   )
             );
 
 endmodule

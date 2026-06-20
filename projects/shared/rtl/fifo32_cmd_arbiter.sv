@@ -59,6 +59,7 @@ module fifo32_cmd_arbiter
                 if ( !busy ) begin
                     for ( int i = 0; i < N; i++ ) begin
                         if ( s_axi4s_tvalid[i] ) begin
+                            sel <= sel_t'(i);
                             m_axi4s.tlast  <= s_axi4s_tlast [i];
                             m_axi4s.tdata  <= s_axi4s_tdata [i];
                             m_axi4s.tstrb  <= s_axi4s_tstrb [i];

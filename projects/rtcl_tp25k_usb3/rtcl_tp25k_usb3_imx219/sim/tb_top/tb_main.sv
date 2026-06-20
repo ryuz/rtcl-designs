@@ -7,7 +7,8 @@ module tb_main
             input   var logic   reset       ,
             input   var logic   clk50       ,
             input   var logic   clk100      ,
-            input   var logic   ft601_clk   
+            input   var logic   ft601_clk   ,
+            input   var logic   dphy_clk    
         );
 
     // -------------------------
@@ -70,6 +71,64 @@ module tb_main
     //  Simulation
     // -------------------------
 
+
+    // DPHY
+    logic   [1:0]    dphy_state;
+    logic   [31:0]   dphy_count;
+    always @(posedge dphy_clk) begin
+        if ( reset ) begin
+            dphy_state <= 2'b11;
+            dphy_count <= '0;
+        end
+        else begin
+            dphy_count <= dphy_count + 1;
+
+            case ( dphy_state )
+            2'b11: begin
+                if ( dphy_count >= 200 ) begin
+                    dphy_state <= 2'b01;
+                    dphy_count <= '0;
+                end
+            end
+            2'b01: begin
+                if ( dphy_count >= 10 ) begin
+                    dphy_state <= 2'b00;
+                    dphy_count <= '0;
+                end
+            end
+            2'b10: begin
+                if ( dphy_count >= 1 ) begin
+                    dphy_state <= 2'b11;
+                    dphy_count <= '0;
+                end
+            end
+            2'b00: begin
+                if ( dphy_count >= 100 ) begin
+                    dphy_state <= 2'b11;
+                    dphy_count <= '0;
+                end
+            end
+            default: begin
+                dphy_state <= 2'b11;
+                dphy_count <= '0;
+            end
+            endcase
+        end
+    end
+
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.rx_clk_o = dphy_clk;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d0ln_hsrxd =  dphy_count[7:0];
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d1ln_hsrxd = ~dphy_count[7:0];
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d0ln_hsrxd_vld = dphy_state == 0;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d1ln_hsrxd_vld = dphy_state == 0;
+
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx0_n = dphy_state[0];
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx0_p = dphy_state[1];
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx1_n = dphy_state[0];
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx1_p = dphy_state[1];
+
+
+    /// FT601 command
     logic   [31:0]  cmd_data    ;
     logic           cmd_valid   ;
     logic           cmd_ready   ;
