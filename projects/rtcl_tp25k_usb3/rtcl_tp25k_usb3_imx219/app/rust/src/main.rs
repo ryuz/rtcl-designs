@@ -70,6 +70,10 @@ fn main() {
     println!("Found {} devices", all_devices.len());
 
     let device = all_devices[0].open().expect("failed to open device");
+
+//  device.pipe(Pipe::In0).set_stream_size(Some(4*1024*1024)).expect("failed to set stream size");
+//  device.pipe(Pipe::In0).set_stream_size(None).expect("failed to set stream size");
+
     let mut d3xx = RtclD3xx::new(device);
     let id = d3xx.read_axi4l(0x00 * 4).expect("read_axi4l(id) failed");
     println!("id : {id:04x}");
@@ -130,13 +134,16 @@ fn main() {
     let mut imx219 = Imx219SensorDriver::new(i2c);
     println!("sensor model ID:{:04x}", imx219.get_model_id().unwrap());
 
+    imx219.reset().unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+
     // camera 設定
     let pixel_clock: f64 = 91000000.0;
-    let binning =  true;
-//    let width: i32 = 1280;
-//    let height: i32 = 720;
+    let binning =  false;
     let width: i32 = 256;
     let height: i32 = 256;
+//  let width: i32 = 256;
+//  let height: i32 = 256;
 //    let frame_rate: i32 = 30;
 //    let exposure: i32 = 33;
 //    let a_gain: i32 = args.a_gain;
@@ -147,7 +154,42 @@ fn main() {
     let flip_v: bool = false;
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
+    imx219.set_frame_rate(30.0).unwrap();
+    imx219.set_exposure_time(33.0).unwrap();
+
+    imx219.set_gain(3.0).unwrap();
+    imx219.set_digital_gain(1.0).unwrap();
+
     imx219.start().unwrap();
+
+
+    let mut img_list = Vec::<Vec<u8>>::new();
+    if let Ok(mut d3xx_guard) = d3xx_arc.lock() {
+        for _ in 0..256+1 {
+            let pkt = d3xx_guard.recv_axi4s().unwrap();
+            img_list.push(pkt);
+//          println!("Received AXI4S packet: {:?}", pkt);
+        }
+    }
+
+    for (i, img) in img_list.iter().enumerate() {
+        // ファイルに保存
+        let filename = format!("rec/image_{:03}.bin", i);
+        std::fs::write(&filename, img).expect("Failed to write image file");
+    }
+
+    if let Ok(mut d3xx_guard) = d3xx_arc.lock() {
+        loop {
+            let pkt = d3xx_guard.recv_axi4s().unwrap();
+        }
+    }
+
+    return;
+    // キー入力待ち
+    print!("進むには Enter キーを押してください...");
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();   
 }
 
 
