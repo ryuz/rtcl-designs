@@ -45,24 +45,48 @@ module rtcl_tp25k_usb3_imx219
     logic in_reset;
     assign in_reset = push_sw[0];
 
-    logic   clk;
-    assign clk = in_clk50;
-
     // generate reset
-    logic           reset       = 1'b1;
-    logic   [7:0]   reset_count = '1;
-    always_ff @(posedge clk or posedge in_reset) begin
+    logic           self_reset       = 1'b1;
+    logic   [7:0]   self_reset_count = '1;
+    always_ff @(posedge in_clk50 or posedge in_reset) begin
         if ( in_reset ) begin
-            reset       <= 1'b1;
-            reset_count <= '1;
+            self_reset       <= 1'b1;
+            self_reset_count <= '1;
         end
         else begin
-            if ( reset_count > 0 ) begin
-                reset_count <= reset_count - 1'b1;
+            if ( self_reset_count > 0 ) begin
+                self_reset_count <= self_reset_count - 1'b1;
             end
-            reset <= reset_count != 0;
+            self_reset <= self_reset_count != 0;
         end
     end
+
+    logic       clk     ;
+    logic       lock    ;
+    Gowin_PLL
+        u_gowin_pll
+            (
+                .clkin      (in_clk50   ),
+                .clkout0    (clk        ),
+                .lock       (lock       ),
+                .mdclk      (in_clk50   ),
+                .reset      (self_reset )
+            );
+
+    logic       reset   ;
+    jelly3_reset_sync
+            #(
+                .IN_LOW_ACTIVE      (0                  ),
+                .OUT_LOW_ACTIVE     (0                  )
+            )
+        u_reset_async
+            (
+                .clk                (clk                ),
+                .cke                (1'b1               ),
+                .in_reset           (self_reset || ~lock),
+                .out_reset          (reset              )
+            );
+
 
 
     // ----------------------------------------

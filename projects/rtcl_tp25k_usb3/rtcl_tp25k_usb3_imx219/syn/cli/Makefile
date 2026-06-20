@@ -21,6 +21,7 @@ VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_mode245_transceiver.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4l.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_arbiter.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_sync.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_sync.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_async.sv
@@ -36,13 +37,16 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_i2c.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_system_control.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/peripheral/jelly_i2c_core.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/pll_init.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_mod.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_mipi_dphy/gowin_mipi_dphy.v
 
 # SDC File
-SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_sample.sdc
+SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_imx219.sdc
 
 # CST File
-CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_sample.cst
+CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_imx219.cst
 
 # for tcl script
 export DEVICE_PART_NUMBER

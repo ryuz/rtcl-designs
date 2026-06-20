@@ -23,6 +23,9 @@
         <File path="/home/ryuji/git-work/rtcl-designs/jelly/rtl/v3/primitive/jelly3_cdc_gray.sv" type="file.verilog" enable="1"/>
         <File path="/home/ryuji/git-work/rtcl-designs/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219/rtl/rtcl_tp25k_usb3_imx219.sv" type="file.verilog" enable="1"/>
         <File path="src/gowin_mipi_dphy/gowin_mipi_dphy.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1"/>
+        <File path="src/pll_init.v" type="file.verilog" enable="1"/>
         <File path="/home/ryuji/git-work/rtcl-designs/projects/shared/rtl/fifo32_cmd_arbiter.sv" type="file.verilog" enable="1"/>
         <File path="/home/ryuji/git-work/rtcl-designs/projects/shared/rtl/fifo32_cmd_axi4l.sv" type="file.verilog" enable="1"/>
         <File path="/home/ryuji/git-work/rtcl-designs/projects/shared/rtl/ft601_mode245.sv" type="file.verilog" enable="1"/>
