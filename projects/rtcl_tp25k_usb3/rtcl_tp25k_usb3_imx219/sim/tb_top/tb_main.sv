@@ -169,18 +169,20 @@ module tb_main
     initial begin
         cmd_valid = 1'b0;
 
-        #10000;
-        $display("write");
-        @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0008_f0_02;
-        @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0000_0100;
-        @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h1234_5678;
-        @(negedge ft601_clk); cmd_valid = 1'b0;
+        for ( int i = 0; i < 10; i++ ) begin
+            #10000;
+            $display("write");
+            @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0008_f0_02;
+            @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0000_0100;
+            @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h1234_5678;
+            @(negedge ft601_clk); cmd_valid = 1'b0;
 
-        #2000;
-        $display("read");
-        @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0004_00_03;
-        @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0000_0000;
-        @(negedge ft601_clk); cmd_valid = 1'b0;
+            #2000;
+            $display("read");
+            @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0004_00_03;
+            @(negedge ft601_clk); cmd_valid = 1'b1; cmd_data = 32'h0000_0000;
+            @(negedge ft601_clk); cmd_valid = 1'b0;
+        end
     end
 
 
