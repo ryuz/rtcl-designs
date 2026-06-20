@@ -19,6 +19,7 @@ VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_fifo_sample.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_mode245.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_mode245_transceiver.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4l.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_arbiter.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_sync.sv
@@ -74,4 +75,4 @@ run2:
 
 rom_write:
 #	openFPGALoader -c digilent_hs2 -b tangprimer25k -f $(FS_FILE)
-	openFPGALoader -c digilent_hs2 -f $(FS_FILE)
+	openFPGALoader -c digilent_hs2 --freq 1000000 -f $(FS_FILE)

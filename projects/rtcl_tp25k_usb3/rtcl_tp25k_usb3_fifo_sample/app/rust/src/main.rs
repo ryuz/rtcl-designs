@@ -69,6 +69,12 @@ impl Axi4LiteD3xx {
         self.device.pipe(Pipe::In0).read_exact(&mut resp)?;
         Ok(u32::from_le_bytes([resp[4], resp[5], resp[6], resp[7]]))
     }
+
+    fn read_data(&self, addr: u32) -> Result<Vec<u8>> {
+        let mut resp = [0u8; 64];
+        self.device.pipe(Pipe::In0).read_exact(&mut resp)?;
+        Ok(resp.to_vec())
+    }
 }
 
 impl Bus<u32, u32, u8> for Axi4LiteD3xx {
@@ -178,6 +184,8 @@ fn main() {
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
     imx219.start().unwrap();
+
+
 
     // キー入力待ち
     print!("進むには Enter キーを押してください...");

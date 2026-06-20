@@ -468,6 +468,64 @@ module rtcl_tp25k_usb3_fifo_sample
     //  Stream
     // --------------------------------
 
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1      ),
+                .USE_LAST   (1      ),
+                .DATA_BITS  (32     ),
+                .STRB_BITS  (4      )
+            )
+        axi4s_dphy
+            (
+                .aresetn    (~reset ),
+                .aclk       (clk    ),
+                .aclken     (1'b1   )
+            );
+    
+    logic           dphy_phase  ;
+    logic           dphy_last   ;
+    logic   [31:0]  dphy_data   ;
+    logic           dphy_valid  ;
+
+    always_ff @(posedge dphy_clk or posedge reset ) begin
+        if ( reset ) begin
+            dphy_phase        <= 0;
+            dphy_last         <= 0;
+            dphy_data         <= '0;
+            dphy_valid        <= 1'b0;
+        end
+        else begin
+            if ( dphy_byte_ready ) begin
+                dphy_phase <= dphy_phase + 1;
+                dphy_last  <= 1'b0;
+                if ( dphy_phase == 0 ) begin
+                    dphy_data[15:0]  <= {dphy_byte_d1, dphy_byte_d0};
+                    dphy_data[31:16] <= '0;
+                end
+                else begin
+                    dphy_data[31:16] <= {dphy_byte_d1, dphy_byte_d0};
+                end
+                dphy_valid <= 1'b1;
+            end
+            else begin
+                if ( dphy_valid & dphy_valid.last ) begin
+                    dphy_phase <= 0;
+                    dphy_data  <= '0;
+                    dphy_valid <= 1'b0;
+                end
+                else begin
+                    dphy_last  <= 1'b1;
+                end
+            end
+        end
+    end
+
+    assign axi4s_dphy.tlast  = dphy_last;
+    assign axi4s_dphy.tdata  = dphy_data;
+    assign axi4s_dphy.tstrb  = '1;
+    assign axi4s_dphy.tvalid = dphy_valid && (dphy_phase || dphy_last);
+
+
     assign axi4s_arb_tx[1].tdata  = '0;
     assign axi4s_arb_tx[1].tstrb  = '1;
     assign axi4s_arb_tx[1].tvalid = 1'b0;
@@ -638,7 +696,7 @@ module rtcl_tp25k_usb3_fifo_sample
         count <= count + 1'b1;
     end
 
-    /*
+    
     assign pmod[0] = dphy_di_lprx0[0]    ;
     assign pmod[1] = dphy_di_lprx0[1]    ;
     assign pmod[2] = dphy_di_lprx1[0]    ;
@@ -647,8 +705,8 @@ module rtcl_tp25k_usb3_fifo_sample
     assign pmod[5] = dphy_di_lprxck[1]   ;
     assign pmod[6] = dphy_hsrxd_vld[0]   ;
     assign pmod[7] = dphy_byte_ready     ;
-    */
-
+    
+    /*
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
     assign pmod[2] = ft601_wr_n;
@@ -657,6 +715,7 @@ module rtcl_tp25k_usb3_fifo_sample
     assign pmod[5] = clk_counter[7];
     assign pmod[6] = ft601_reset_n;
     assign pmod[7] = ft601_wakeup_n;
+    */
 
 endmodule
 
