@@ -201,7 +201,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rtcl_tp25k_usb3_fifo_sample"
+name = "rtcl_tp25k_usb3_imx219"
 version = "0.1.0"
 dependencies = [
  "d3xx",
