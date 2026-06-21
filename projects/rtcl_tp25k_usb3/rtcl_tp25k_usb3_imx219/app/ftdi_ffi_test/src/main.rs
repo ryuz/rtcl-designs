@@ -64,14 +64,15 @@ fn main() -> Result<(), Box<dyn Error>>
 
     let mut read_buf = vec![0u8; 8];
     let mut bytes_read : DWORD = 0;
-//  let status = unsafe{FT_ReadPipe(handle, PIPE_ID_IN0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, std::ptr::null_mut())};
-    let status = unsafe{FT_ReadPipeEx(handle, 0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, 1000)};//std::ptr::null_mut())};
+    let status = unsafe{FT_ReadPipe(handle, PIPE_ID_IN0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, std::ptr::null_mut())};
+//  let status = unsafe{FT_ReadPipeEx(handle, 0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, 1000)};//std::ptr::null_mut())};
     println!("FT_ReadPipe status: {}, bytes_read: {}, read_buf: {:?}", status, bytes_read, read_buf);
     std::thread::sleep(std::time::Duration::from_millis(100));
 
     let mut read_buf = vec![0u8; 8];
     let mut bytes_read : DWORD = 0;
-    let status = unsafe{FT_ReadPipeEx(handle, 0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, 1000)};//, std::ptr::null_mut())};
+    let status = unsafe{FT_ReadPipe(handle, PIPE_ID_IN0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, std::ptr::null_mut())};
+//  let status = unsafe{FT_ReadPipeEx(handle, 0, read_buf.as_mut_ptr(), read_buf.len() as u32, &mut bytes_read, 1000)};//, std::ptr::null_mut())};
     println!("FT_ReadPipe status: {}, bytes_read: {}, read_buf: {:?}", status, bytes_read, read_buf);
 
     unsafe {FT_Close(handle)};

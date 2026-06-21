@@ -123,16 +123,6 @@ unsafe extern "C" {
         dwTimeout: DWORD
     ) -> FT_STATUS;
 
-    #[cfg(target_os = "windows")]
-    pub fn FT_ReadPipeEx(
-        ftHandle: FT_HANDLE,
-        ucPipeID: u8,
-        pucBuffer: *mut u8,
-        ulBufferLength: ULONG,
-        pulBytesTransferred: *mut ULONG,
-        pOverlapped: *mut OVERLAPPED
-    ) -> FT_STATUS;
-
     // FT_STATUS FT_SetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, ULONG TimeoutInMs);
     pub fn FT_SetPipeTimeout(ftHandle: FT_HANDLE, ucPipeID: u8, TimeoutInMs: ULONG) -> FT_STATUS;
 
