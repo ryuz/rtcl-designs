@@ -70,7 +70,7 @@ fn main() {
     println!("Found {} devices", all_devices.len());
 
     let device = all_devices[0].open().expect("failed to open device");
-    let devide : Arc<Mutex<Device>> = Arc::new(Mutex::new(device));
+    let device: Arc<Mutex<Device>> = Arc::new(Mutex::new(device));
 
 //  device.pipe(Pipe::In0).set_stream_size(Some(4*1024*1024)).expect("failed to set stream size");
 //  device.pipe(Pipe::In0).set_stream_size(None).expect("failed to set stream size");

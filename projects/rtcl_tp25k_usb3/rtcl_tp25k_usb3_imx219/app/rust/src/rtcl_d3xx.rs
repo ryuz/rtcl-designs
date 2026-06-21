@@ -31,21 +31,26 @@ impl RtclD3xx {
     pub fn new(device: Arc<Mutex<Device>>) -> Self {
         let (tx_command, rx_command) = mpsc::channel::<RtclPacket>();
         let (tx_stream, rx_stream) = mpsc::channel::<RtclPacket>();
+        let device_rx = Arc::clone(&device);
 
-        std::thread::spawn(|| {
+        std::thread::spawn(move || {
 //          let all_devices = d3xx::list_devices().expect("failed to list devices");
 //          let device = all_devices[0].open().expect("failed to open device");
-            let mut recv_pipe = device.lock().unwrap().pipe(Pipe::In0).clone();
-
-            recv_pipe.set_timeout(1).expect("failed to set timeout");
-            let mut buf = vec![0u8; 4096];
+            let mut buf = vec![0u8; 4];
             let mut header = true;
             let mut packet = RtclPacket { opcode : 0, operand: 0, payload: Vec::new() };
             let mut pkt_len = 0;
             loop {
                 // 受信
+                println!("start recv");
                 let mut offset = 0;
-                let ret = recv_pipe.read(&mut buf);
+                let ret = {
+                    let device_guard = device_rx.lock().unwrap();
+                    let mut recv_pipe = device_guard.pipe(Pipe::In0).clone();
+                    recv_pipe.set_timeout(1).expect("failed to set timeout");
+                    recv_pipe.read(&mut buf)
+                };
+                println!("end recv");
 
                 // パケット分析
                 if let Ok(mut size) = ret {
@@ -117,7 +122,11 @@ impl RtclD3xx {
         packet.extend_from_slice(&length.to_le_bytes());
         packet.extend_from_slice(payload);
 //      println!("send_packet: packet = {:?}", packet);
-        self.device.pipe(Pipe::Out0).write_all(&packet)?;
+        {
+            let device_guard = self.device.lock().unwrap();
+            let mut send_pipe = device_guard.pipe(Pipe::Out0).clone();
+            send_pipe.write_all(&packet)?;
+        }
         Ok(())
     }
 
