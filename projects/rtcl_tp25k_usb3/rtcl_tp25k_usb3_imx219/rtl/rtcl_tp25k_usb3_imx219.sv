@@ -715,11 +715,40 @@ module rtcl_tp25k_usb3_imx219
     end
 
 
+    logic  size_error;
+    always_ff @(posedge axi4s_arb_tx[1].aclk) begin
+        if ( ~axi4s_arb_tx[1].aresetn ) begin
+            size_error <= 1'b0;
+        end
+        else begin
+            if ( axi4s_arb_tx[1].tvalid && axi4s_arb_tx[1].tready && axi4s_arb_tx[1].tuser[0] ) begin
+                if ( axi4s_arb_tx[1].tdata[31:16] > 16'd1024 ) begin
+                    size_error <= 1'b1;
+                end
+            end
+        end
+    end
+
+    logic  size_error2;
+    always_ff @(posedge ft601_clk) begin
+        if ( ft601_reset ) begin
+            size_error2 <= 1'b0;
+        end
+        else begin
+            if ( ~ft601_wr_n && ft601_data_o[15:0] == 16'h8010 ) begin
+                if ( ft601_data_o[31:16] > 16'd1024 ) begin
+                    size_error2 <= 1'b1;
+                end
+            end
+        end
+    end
+
+
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = 1;//ft601_wakeup_n  ;
-    assign led[3] = 1;//reset           ;
+    assign led[2] = size_error2;//ft601_wakeup_n  ;
+    assign led[3] = size_error;//reset           ;
 
 
     // ----------------------------------------
@@ -733,7 +762,7 @@ module rtcl_tp25k_usb3_imx219
         count <= count + 1'b1;
     end
 
-    
+    /*
     assign pmod[0] = dphy_di_lprx0[0]    ;
     assign pmod[1] = dphy_di_lprx0[1]    ;
 //    assign pmod[2] = dphy_di_lprx1[0]    ;
@@ -744,7 +773,8 @@ module rtcl_tp25k_usb3_imx219
     assign pmod[5] = dphy_di_lprxck[1]   ;
     assign pmod[6] = ft601_rd_n ; // dphy_hsrxd_vld[0]   ;
     assign pmod[7] = dphy_byte_ready     ;
-    
+    */
+
     /*
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
@@ -755,6 +785,15 @@ module rtcl_tp25k_usb3_imx219
     assign pmod[6] = ft601_reset_n;
     assign pmod[7] = ft601_wakeup_n;
     */
+
+    assign pmod[0] = ft601_rxf_n;
+    assign pmod[1] = ft601_txe_n;
+    assign pmod[2] = ft601_wr_n;
+    assign pmod[3] = ft601_rd_n;
+    assign pmod[4] = ft601_oe_n;
+    assign pmod[5] = axi4s_arb_tx[1].tready;
+    assign pmod[6] = dphy_byte_ready;
+    assign pmod[7] = dphy_di_lprxck[0];
 
 endmodule
 

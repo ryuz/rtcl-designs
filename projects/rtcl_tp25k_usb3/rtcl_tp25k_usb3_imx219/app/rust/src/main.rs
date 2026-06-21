@@ -70,6 +70,7 @@ fn main() {
     println!("Found {} devices", all_devices.len());
 
     let device = all_devices[0].open().expect("failed to open device");
+    let devide : Arc<Mutex<Device>> = Arc::new(Mutex::new(device));
 
 //  device.pipe(Pipe::In0).set_stream_size(Some(4*1024*1024)).expect("failed to set stream size");
 //  device.pipe(Pipe::In0).set_stream_size(None).expect("failed to set stream size");
@@ -160,6 +161,11 @@ fn main() {
     imx219.set_gain(3.0).unwrap();
     imx219.set_digital_gain(1.0).unwrap();
 
+    print!("wait key : start camera...");
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();   
+
     imx219.start().unwrap();
 
 
@@ -178,11 +184,13 @@ fn main() {
         std::fs::write(&filename, img).expect("Failed to write image file");
     }
 
+    /*
     if let Ok(mut d3xx_guard) = d3xx_arc.lock() {
         loop {
             let pkt = d3xx_guard.recv_axi4s().unwrap();
         }
     }
+    */
 
     return;
     // キー入力待ち

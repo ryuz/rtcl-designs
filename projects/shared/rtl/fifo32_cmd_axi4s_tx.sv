@@ -51,6 +51,8 @@ module fifo32_cmd_axi4s_tx
                 .ASYNC          (ASYNC              ),
                 .PTR_BITS       (4                  ),
                 .DATA_BITS      (1 + $bits(len_t)   ),
+                .S_SYNC_FF      (4                  ),
+                .M_SYNC_FF      (4                  ),
                 .RAM_TYPE       ("distributed"      )
             )
         u_stream_fifo_cmd
@@ -166,18 +168,26 @@ module fifo32_cmd_axi4s_tx
     //  Packet send
     // --------------------------------
 
-    logic       send_busy   ;
-    len_t       send_len    ;
+    logic   [15:0]  packet_len  ;
+    always_comb begin
+        packet_len = (16'(cmd_rd_len) + 16'd1) * 16'd4;
+    end
+
+    logic           send_busy   ;
+    len_t           send_len    ;
     always_ff @(posedge m_axi4s.aclk) begin
         if ( ~m_axi4s.aresetn ) begin
             send_busy      <= 1'b0 ;
             send_len       <= 'x   ;
+            m_axi4s.tuser  <= '0   ;
             m_axi4s.tlast  <= 1'bx ;
             m_axi4s.tdata  <= 'x   ;
             m_axi4s.tstrb  <= 'x   ;
             m_axi4s.tvalid <= 1'b0 ;
         end
         else if ( m_axi4s.aclken ) begin
+            m_axi4s.tuser  <= '0   ;
+
             if ( m_axi4s.tready ) begin
                 m_axi4s.tvalid <= 1'b0;
             end
@@ -188,13 +198,15 @@ module fifo32_cmd_axi4s_tx
                         send_busy <= 1'b1        ;
                         send_len  <= cmd_rd_len  ;
 
-                        m_axi4s.tlast        <= 1'b0                            ;
-                        m_axi4s.tdata[7:0]   <= 8'h10                           ;   // opcode
-                        m_axi4s.tdata[14:8]  <= 7'(CH_ID)                       ;   // channel ID
-                        m_axi4s.tdata[15]    <= cmd_rd_last                     ;   // last
-                        m_axi4s.tdata[31:16] <= 16'({cmd_rd_len, 2'b00}) + 16'd4;   // length
-                        m_axi4s.tstrb        <= '1                              ;
-                        m_axi4s.tvalid       <= 1'b1                            ;
+                        m_axi4s.tuser[0]     <= 1'b1        ;
+                        m_axi4s.tlast        <= 1'b0        ;
+                        m_axi4s.tdata[7:0]   <= 8'h10       ;   // opcode
+                        m_axi4s.tdata[14:8]  <= 7'(CH_ID)   ;   // channel ID
+                        m_axi4s.tdata[15]    <= cmd_rd_last ;   // last
+                        m_axi4s.tdata[31:16] <= packet_len  ;   // length
+                        m_axi4s.tdata[31:28] <= 4'h0        ;   // reserved
+                        m_axi4s.tstrb        <= '1          ;
+                        m_axi4s.tvalid       <= 1'b1        ;
                     end
                 end
                 else begin
@@ -214,7 +226,6 @@ module fifo32_cmd_axi4s_tx
 
     assign cmd_rd_ready = !send_busy && (!m_axi4s.tvalid || m_axi4s.tready);
     assign buf_rd_ready =  send_busy && (!m_axi4s.tvalid || m_axi4s.tready);
-
 
  endmodule
 
