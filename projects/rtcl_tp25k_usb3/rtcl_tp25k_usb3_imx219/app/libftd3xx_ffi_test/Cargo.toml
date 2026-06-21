@@ -1,5 +1,5 @@
 [package]
-name = "ftdi_test"
+name = "libftd3xx_ffi_test"
 version = "0.1.0"
 edition = "2024"
 
