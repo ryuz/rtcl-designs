@@ -3,6 +3,11 @@ use std::error::Error;
 mod ffi;
 use ffi::*;
 
+const OPCODE_AXI4L_WRITE: u8 = 0x02;
+const OPCODE_AXI4L_READ: u8 = 0x03;
+const OPCODE_AXI4S_TRANS: u8 = 0x10;
+
+
 fn main() -> Result<(), Box<dyn Error>>
 {
     println!("Hello, world!");
@@ -42,6 +47,17 @@ fn main() -> Result<(), Box<dyn Error>>
         )
     };
     println!("FT_Create status: {}, handle: {:?}", status, handle);
+
+    let mut write_buf = Vec::<u8>::with_capacity(8);
+    write_buf.push(OPCODE_AXI4L_READ);
+    write_buf.push(0);
+    write_buf.extend_from_slice(&4u16.to_le_bytes());
+    write_buf.extend_from_slice(&0u32.to_le_bytes());
+
+    let mut bytes_written : DWORD = 0;
+    let status = unsafe{FT_WritePipe(handle, PIPE_ID_OUT0, write_buf.as_ptr(), write_buf.len() as u32, &mut bytes_written, std::ptr::null_mut())};
+    println!("FT_WritePipe status: {}, bytes_written: {}", status, bytes_written);
+
 
     unsafe {FT_Close(handle)};
 
