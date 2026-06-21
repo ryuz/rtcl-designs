@@ -68,14 +68,15 @@ pub const FT_OPEN_BY_LOCATION      : DWORD = 0x00000004;
 pub const FT_OPEN_BY_GUID          : DWORD = 0x00000008;
 pub const FT_OPEN_BY_INDEX	       : DWORD = 0x00000010;
 
-pub const PIPE_ID_IN0  : u8 = 0x82;
-pub const PIPE_ID_IN1  : u8 = 0x83;
-pub const PIPE_ID_IN2  : u8 = 0x84;
-pub const PIPE_ID_IN3  : u8 = 0x85;
-pub const PIPE_ID_OUT0 : u8  = 0x02;
-pub const PIPE_ID_OUT1 : u8  = 0x03;
-pub const PIPE_ID_OUT2 : u8  = 0x04;
-pub const PIPE_ID_OUT3 : u8  = 0x05;
+// Endpoint IDs
+pub const EP_ID_IN0  : u8 = 0x82;
+pub const EP_ID_IN1  : u8 = 0x83;
+pub const EP_ID_IN2  : u8 = 0x84;
+pub const EP_ID_IN3  : u8 = 0x85;
+pub const EP_ID_OUT0 : u8  = 0x02;
+pub const EP_ID_OUT1 : u8  = 0x03;
+pub const EP_ID_OUT2 : u8  = 0x04;
+pub const EP_ID_OUT3 : u8  = 0x05;
 
 
 // 共通の関数定義（リンク指定なしの extern "C" ブロック）
