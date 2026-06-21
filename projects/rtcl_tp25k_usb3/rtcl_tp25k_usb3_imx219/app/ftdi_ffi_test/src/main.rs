@@ -10,8 +10,7 @@ const OPCODE_AXI4L_WRITE: u8 = 0x02;
 const OPCODE_AXI4L_READ: u8 = 0x03;
 const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
-fn main() -> Result<(), Box<dyn Error>>
-{
+fn main() -> Result<(), Box<dyn Error>> {
     println!("Hello, world!");
 
     let (mut usb_tx, mut usb_rx) = D3xxDevice::new(0)?;
@@ -19,12 +18,11 @@ fn main() -> Result<(), Box<dyn Error>>
     usb_tx.set_timeout(1000)?;
     usb_rx.set_timeout(500)?;
 
-    
     std::thread::spawn(move || {
         loop {
-//            std::thread::sleep(std::time::Duration::from_millis(1000));
-//            println!("Read");
-//            std::thread::sleep(std::time::Duration::from_millis(1000));
+            //            std::thread::sleep(std::time::Duration::from_millis(1000));
+            //            println!("Read");
+            //            std::thread::sleep(std::time::Duration::from_millis(1000));
             let result = usb_rx.read(4);
 
             match result {
@@ -39,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>>
             }
         }
     });
-    
+
     std::thread::sleep(std::time::Duration::from_millis(5000));
 
     // write
@@ -51,14 +49,13 @@ fn main() -> Result<(), Box<dyn Error>>
     usb_tx.write(&write_buf)?;
 
     // read
-//  let read_data = usb_rx.read(8)?;
-//  println!("Read data: {:?}", read_data);
+    //  let read_data = usb_rx.read(8)?;
+    //  println!("Read data: {:?}", read_data);
 
     std::thread::sleep(std::time::Duration::from_millis(10000));
 
     Ok(())
 }
-
 
 /*
 fn main() -> Result<(), Box<dyn Error>>
@@ -67,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>>
 
     // デバイスの初期化
     // ここで FT_CreateDeviceInfoList を呼び出す
-    let mut num_devs: DWORD = 0;   
+    let mut num_devs: DWORD = 0;
     let status = unsafe {FT_CreateDeviceInfoList(&mut num_devs as *mut DWORD)};
     if status != 0 {
         panic!("Failed to create device info list: status = {}", status);
@@ -82,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>>
         return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to get device info list")));
     }
     unsafe { devices.set_len(table_len.min(num_devs) as usize) };
-    
+
     println!("{:?} (status = {})", devices, status);
     println!("Table length: {}", table_len);
     println!("Devices: {:?}", devices);

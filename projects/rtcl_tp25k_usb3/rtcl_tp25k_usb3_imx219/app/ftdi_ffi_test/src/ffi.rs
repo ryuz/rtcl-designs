@@ -2,8 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use std::os::raw::c_char;
 use std::ffi::c_void;
+use std::os::raw::c_char;
 
 // Windowsの場合は FTD3XXWU をリンク
 #[cfg(target_os = "windows")]
@@ -21,8 +21,33 @@ pub type PVOID = *mut c_void;
 pub type LPVOID = PVOID;
 pub type HANDLE = *mut c_void;
 
-pub type FT_STATUS = ULONG;
 pub type FT_HANDLE = *mut c_void;
+pub type FT_STATUS = ULONG;
+
+pub const FT_OK: FT_STATUS = 0;
+pub const FT_INVALID_HANDLE: FT_STATUS = 1;
+pub const FT_DEVICE_NOT_FOUND: FT_STATUS = 2;
+pub const FT_DEVICE_NOT_OPENED: FT_STATUS = 3;
+pub const FT_IO_ERROR: FT_STATUS = 4;
+pub const FT_INSUFFICIENT_RESOURCES: FT_STATUS = 5;
+pub const FT_INVALID_PARAMETER: FT_STATUS = 6;
+pub const FT_INVALID_ARGS: FT_STATUS = 16;
+pub const FT_NOT_SUPPORTED: FT_STATUS = 17;
+pub const FT_NO_MORE_ITEMS: FT_STATUS = 18;
+pub const FT_TIMEOUT: FT_STATUS = 19;
+pub const FT_OPERATION_ABORTED: FT_STATUS = 20;
+pub const FT_RESERVED_PIPE: FT_STATUS = 21;
+pub const FT_INVALID_CONTROL_REQUEST_DIRECTION: FT_STATUS = 22;
+pub const FT_INVALID_CONTROL_REQUEST_TYPE: FT_STATUS = 23;
+pub const FT_IO_PENDING: FT_STATUS = 24;
+pub const FT_IO_INCOMPLETE: FT_STATUS = 25;
+pub const FT_HANDLE_EOF: FT_STATUS = 26;
+pub const FT_BUSY: FT_STATUS = 27;
+pub const FT_NO_SYSTEM_RESOURCES: FT_STATUS = 28;
+pub const FT_DEVICE_LIST_NOT_READY: FT_STATUS = 29;
+pub const FT_DEVICE_NOT_CONNECTED: FT_STATUS = 30;
+pub const FT_INCORRECT_DEVICE_PATH: FT_STATUS = 31;
+pub const FT_OTHER_ERROR: FT_STATUS = 32;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -44,11 +69,9 @@ pub union OVERLAPPED_UNION {
 pub struct OVERLAPPED {
     pub Internal: DWORD,
     pub InternalHigh: DWORD,
-    pub u: OVERLAPPED_UNION,       // 無名unionだった部分に名前（uなど）を付ける
+    pub u: OVERLAPPED_UNION, // 無名unionだった部分に名前（uなど）を付ける
     pub hEvent: HANDLE,
 }
-
-
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -62,22 +85,21 @@ pub struct FT_DEVICE_LIST_INFO_NODE {
     pub ftHandle: FT_HANDLE,
 }
 
-pub const FT_OPEN_BY_SERIAL_NUMBER : DWORD = 0x00000001;
-pub const FT_OPEN_BY_DESCRIPTION   : DWORD = 0x00000002;
-pub const FT_OPEN_BY_LOCATION      : DWORD = 0x00000004;
-pub const FT_OPEN_BY_GUID          : DWORD = 0x00000008;
-pub const FT_OPEN_BY_INDEX	       : DWORD = 0x00000010;
+pub const FT_OPEN_BY_SERIAL_NUMBER: DWORD = 0x00000001;
+pub const FT_OPEN_BY_DESCRIPTION: DWORD = 0x00000002;
+pub const FT_OPEN_BY_LOCATION: DWORD = 0x00000004;
+pub const FT_OPEN_BY_GUID: DWORD = 0x00000008;
+pub const FT_OPEN_BY_INDEX: DWORD = 0x00000010;
 
 // Endpoint IDs
-pub const EP_ID_IN0  : u8 = 0x82;
-pub const EP_ID_IN1  : u8 = 0x83;
-pub const EP_ID_IN2  : u8 = 0x84;
-pub const EP_ID_IN3  : u8 = 0x85;
-pub const EP_ID_OUT0 : u8  = 0x02;
-pub const EP_ID_OUT1 : u8  = 0x03;
-pub const EP_ID_OUT2 : u8  = 0x04;
-pub const EP_ID_OUT3 : u8  = 0x05;
-
+pub const EP_ID_IN0: u8 = 0x82;
+pub const EP_ID_IN1: u8 = 0x83;
+pub const EP_ID_IN2: u8 = 0x84;
+pub const EP_ID_IN3: u8 = 0x85;
+pub const EP_ID_OUT0: u8 = 0x02;
+pub const EP_ID_OUT1: u8 = 0x03;
+pub const EP_ID_OUT2: u8 = 0x04;
+pub const EP_ID_OUT3: u8 = 0x05;
 
 // 共通の関数定義（リンク指定なしの extern "C" ブロック）
 unsafe extern "C" {
@@ -85,7 +107,10 @@ unsafe extern "C" {
     pub fn FT_CreateDeviceInfoList(lpdwNumDevs: *mut DWORD) -> FT_STATUS;
 
     // FT_STATUS FT_GetDeviceInfoList(FT_DEVICE_LIST_INFO_NODE *ptDest, LPDWORD lpdwNumDevs);
-    pub fn FT_GetDeviceInfoList(ptDest: *mut FT_DEVICE_LIST_INFO_NODE, lpdwNumDevs: *mut DWORD) -> FT_STATUS;
+    pub fn FT_GetDeviceInfoList(
+        ptDest: *mut FT_DEVICE_LIST_INFO_NODE,
+        lpdwNumDevs: *mut DWORD,
+    ) -> FT_STATUS;
 
     // FT_STATUS FT_Create(PVOID pvArg, DWORD dwFlags, FT_HANDLE *pftHandle;
     pub fn FT_Create(pvArg: PVOID, dwFlags: DWORD, pftHandle: *mut FT_HANDLE) -> FT_STATUS;
@@ -93,14 +118,14 @@ unsafe extern "C" {
     // FT_STATUS FT_Close(FT_HANDLE ftHandle);
     pub fn FT_Close(ftHandle: FT_HANDLE) -> FT_STATUS;
 
-   // FT_STATUS FT_WritePipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
-   pub fn FT_WritePipe(
-       ftHandle: FT_HANDLE,
-       ucPipeID: u8,
-       pucBuffer: *const u8,
-       ulBufferLength: ULONG,
-       pulBytesTransferred: *mut ULONG,
-       pOverlapped: *mut OVERLAPPED, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
+    // FT_STATUS FT_WritePipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    pub fn FT_WritePipe(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *const u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
     ) -> FT_STATUS;
 
     // FT_STATUS FT_ReadPipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
@@ -110,7 +135,7 @@ unsafe extern "C" {
         pucBuffer: *mut u8,
         ulBufferLength: ULONG,
         pulBytesTransferred: *mut ULONG,
-        pOverlapped: *mut OVERLAPPED // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
+        pOverlapped: *mut OVERLAPPED, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
     ) -> FT_STATUS;
 
     // FT_STATUS WINAPI FT_ReadPipeEx(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
@@ -121,7 +146,7 @@ unsafe extern "C" {
         pucBuffer: *mut u8,
         ulBufferLength: ULONG,
         pulBytesTransferred: *mut ULONG,
-        dwTimeout: DWORD
+        dwTimeout: DWORD,
     ) -> FT_STATUS;
 
     // FT_STATUS FT_SetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, ULONG TimeoutInMs);
@@ -129,6 +154,9 @@ unsafe extern "C" {
 
     // FT_STATUS WINAPI FT_GetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, PULONG pTimeoutInMs);
     #[cfg(target_os = "windows")]
-    pub fn FT_GetPipeTimeout(ftHandle: FT_HANDLE, ucPipeID: u8, pTimeoutInMs: *mut ULONG) -> FT_STATUS;
+    pub fn FT_GetPipeTimeout(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pTimeoutInMs: *mut ULONG,
+    ) -> FT_STATUS;
 }
-

@@ -26,8 +26,7 @@ fn main() {
                     );
                 }
             }
-        }
-        else {
+        } else {
             match env::var("FTD3XX_X64_DYNAMIC_LIB_DIR") {
                 Ok(dir) => {
                     // 環境変数が見つかったら、そのパスをCargoの検索パスに追加
@@ -51,4 +50,3 @@ fn main() {
         }
     }
 }
-
