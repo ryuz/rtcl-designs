@@ -49,6 +49,7 @@ pub struct OVERLAPPED {
 }
 
 
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct FT_DEVICE_LIST_INFO_NODE {
@@ -98,9 +99,45 @@ unsafe extern "C" {
        pucBuffer: *const u8,
        ulBufferLength: ULONG,
        pulBytesTransferred: *mut ULONG,
-       pOverlapped: *mut std::ffi::c_void, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
+       pOverlapped: *mut OVERLAPPED, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
     ) -> FT_STATUS;
 
     // FT_STATUS FT_ReadPipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    pub fn FT_ReadPipe(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *mut u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
+    ) -> FT_STATUS;
 
+    // FT_STATUS WINAPI FT_ReadPipeEx(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "linux")]
+    pub fn FT_ReadPipeEx(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *mut u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        dwTimeout: DWORD
+    ) -> FT_STATUS;
+
+    #[cfg(target_os = "windows")]
+    pub fn FT_ReadPipeEx(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *mut u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_SetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, ULONG TimeoutInMs);
+    pub fn FT_SetPipeTimeout(ftHandle: FT_HANDLE, ucPipeID: u8, TimeoutInMs: ULONG) -> FT_STATUS;
+
+    // FT_STATUS WINAPI FT_GetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, PULONG pTimeoutInMs);
+    #[cfg(target_os = "windows")]
+    pub fn FT_GetPipeTimeout(ftHandle: FT_HANDLE, ucPipeID: u8, pTimeoutInMs: *mut ULONG) -> FT_STATUS;
 }
+
