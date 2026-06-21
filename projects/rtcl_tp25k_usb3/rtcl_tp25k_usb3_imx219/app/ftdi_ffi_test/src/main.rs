@@ -1,15 +1,16 @@
-use core::panic;
+//use core::panic;
 use std::error::Error;
 
 //mod ffi;
 //use ffi::*;
 
 // lib.rs の定義を使えるようにする
-use ftdi_ffi_test::*;
+//use ftdi_ffi_test::*;
+use rtcl_d3xx::*;
 
-const OPCODE_AXI4L_WRITE: u8 = 0x02;
+//const OPCODE_AXI4L_WRITE: u8 = 0x02;
 const OPCODE_AXI4L_READ: u8 = 0x03;
-const OPCODE_AXI4S_TRANS: u8 = 0x10;
+//const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("Hello, world!");
@@ -17,11 +18,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (mut usb_tx, mut usb_rx) = D3xxDevice::new(0)?;
 
     usb_tx.set_timeout(1000)?;
-    usb_rx.set_timeout(500)?;
+    usb_rx.set_timeout(1000)?;
 
     std::thread::spawn(move || {
         loop {
-            let result = usb_rx.read(8*2);
+            let result = usb_rx.read(1024);
             match result {
                 Ok(data) => {
                     println!("Read data: {:?}", data);
