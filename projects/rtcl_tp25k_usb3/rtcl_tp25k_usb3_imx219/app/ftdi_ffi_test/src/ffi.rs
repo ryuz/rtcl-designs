@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
 
 // Windowsの場合は FTD3XXWU をリンク
 #[cfg(target_os = "windows")]
