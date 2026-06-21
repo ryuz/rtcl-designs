@@ -23,5 +23,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Table length: {}", table_len);
     println!("Devices: {:?}", devices);
 
+    /*
+    let mut handle: FT_HANDLE = std::ptr::null_mut();
+    unsafe {
+        FT_Create(
+                &mut devices[0].SerialNumber as PVOID,
+                FT_OPEN_BY_SERIAL_NUMBER,
+                &mut handle,
+            );
+    }
+    */
+
     Ok(())
 }
