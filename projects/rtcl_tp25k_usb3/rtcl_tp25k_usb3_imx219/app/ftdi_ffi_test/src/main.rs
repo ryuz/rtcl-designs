@@ -1,3 +1,4 @@
+use core::panic;
 use std::error::Error;
 
 //mod ffi;
@@ -20,18 +21,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     std::thread::spawn(move || {
         loop {
-            //            std::thread::sleep(std::time::Duration::from_millis(1000));
-            //            println!("Read");
-            //            std::thread::sleep(std::time::Duration::from_millis(1000));
-            let result = usb_rx.read(4);
-
+            let result = usb_rx.read(8);
             match result {
-                Err(e) => {
-                    eprintln!("Error reading data: {}", e);
-                    continue;
-                }
                 Ok(data) => {
                     println!("Read data: {:?}", data);
+                    break;
+                }
+                Err(D3xxError::Timeout) => {
+                    eprintln!("Read Timeout");
+                    continue;
+                }
+                Err(e) => {
+                    eprintln!("Error reading data: {}", e);
                     break;
                 }
             }
