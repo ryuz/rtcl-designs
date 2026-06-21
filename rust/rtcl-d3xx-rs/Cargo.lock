@@ -3,12 +3,5 @@
 version = 4
 
 [[package]]
-name = "d3xx_tx_rx"
-version = "0.1.0"
-dependencies = [
- "rtcl-d3xx",
-]
-
-[[package]]
 name = "rtcl-d3xx"
 version = "0.1.0"
