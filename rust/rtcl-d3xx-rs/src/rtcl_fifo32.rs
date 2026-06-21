@@ -10,10 +10,10 @@ const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
 
 #[derive(Debug, Clone)]
-pub struct RtclPacket {
-    pub opcode: u8,
-    pub operand: u8,
-    pub payload: Vec<u8>,
+struct RtclPacket {
+    opcode: u8,
+    operand: u8,
+    payload: Vec<u8>,
 }
 
 
@@ -63,7 +63,7 @@ fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>,
                         tx_command.send(packet.clone()).unwrap();
                     }
                     packet.payload.clear();
-                    println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
+          //        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
                 }
                 else {
                     header = false;

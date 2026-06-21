@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+rtcl-d3xx = { path = "../../../../../rust/rtcl-d3xx-rs" }
+
 
 [features]
 static-link = []

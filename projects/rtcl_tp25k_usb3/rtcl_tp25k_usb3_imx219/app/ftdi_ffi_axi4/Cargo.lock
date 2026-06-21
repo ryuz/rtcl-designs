@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "ftdi_ffi_axi4"
 version = "0.1.0"
+dependencies = [
+ "rtcl-d3xx",
+]
+
+[[package]]
+name = "rtcl-d3xx"
+version = "0.1.0"
