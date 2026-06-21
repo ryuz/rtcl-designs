@@ -32,10 +32,11 @@ fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>,
     let mut packet = RtclPacket { opcode : 0, operand: 0, payload: Vec::new() };
     let mut pkt_len = 0;
 
-    dev_reader.set_timeout(100)?;
+    dev_reader.set_timeout(1)?;
 
     loop {
         if rx_stop.try_recv().is_ok() {
+        println!("recv_thread: stop");
             break;
         }
 
@@ -78,12 +79,13 @@ fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>,
                     header = true;
                     if packet.opcode == OPCODE_AXI4S_TRANS {
                         tx_stream.send(packet.clone()).unwrap();
+                        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
                     }
                     else {
                         tx_command.send(packet.clone()).unwrap();
                     }
                     packet.payload.clear();
-                    println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
+//                  println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
                 }
                 else {
                     packet.payload.extend_from_slice(buf[offset..offset + size].as_ref());
@@ -93,6 +95,7 @@ fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>,
             }
         }
     }
+    println!("recv_thread: exit");
     Ok(())
 }
 
@@ -203,6 +206,7 @@ impl RtclFifo32D3xx {
 
 impl Drop for RtclFifo32D3xx {
     fn drop(&mut self) {
+        println!("RtclFifo32D3xx: drop");
         let _ = self.tx_stop.send(());  // 受信スレッドに停止を通知
         if let Some(handle) = self.thread_handle.take() {
             let _ = handle.join();

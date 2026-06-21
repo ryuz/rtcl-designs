@@ -1,5 +1,5 @@
 use std::error::Error;
-//use std::io::{Read, Write};
+use std::io::Write;
 use std::thread;
 use std::time::Duration;
 
@@ -88,9 +88,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut imx219 = Imx219SensorDriver::new(i2c);
     println!("sensor model ID:{:04x}", imx219.get_model_id().unwrap());
 
+    println!("Reset camera");
     imx219.reset().unwrap();
     std::thread::sleep(Duration::from_millis(100));
 
+    println!("set camera");
     // camera 設定
     let pixel_clock: f64 = 91000000.0;
     let binning =  false;
@@ -113,18 +115,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     imx219.set_gain(3.0).unwrap();
     imx219.set_digital_gain(1.0).unwrap();
+    println!("set camera end");
 
-    /*
     print!("wait key : start camera...");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-    */
 
-    /*
     imx219.start().unwrap();
 
+    print!("wait key : start camera...");
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();   
 
+    /*
     let mut img_list = Vec::<Vec<u8>>::new();
     if let Ok(mut d3xx_guard) = d3xx_arc.lock() {
         for _ in 0..256+1 {
@@ -134,6 +139,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     */
+
+    println!("End Test");
 
     Ok(())
 }
