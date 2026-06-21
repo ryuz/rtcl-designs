@@ -1,0 +1,7 @@
+[package]
+name = "rtcl-d3xx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+static-link = []

@@ -21,13 +21,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     std::thread::spawn(move || {
         loop {
-            let result = usb_rx.read(8*2);
+            let result = usb_rx.read(8);
             match result {
                 Ok(data) => {
                     println!("Read data: {:?}", data);
-                    if data.len() > 0 {
-                        break;
-                    }
+                    break;
+                }
+                Err(D3xxError::Timeout) => {
+                    eprintln!("Read Timeout");
+                    continue;
                 }
                 Err(e) => {
                     eprintln!("Error reading data: {}", e);
