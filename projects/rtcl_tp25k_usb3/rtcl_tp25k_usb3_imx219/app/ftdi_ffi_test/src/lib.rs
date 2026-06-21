@@ -10,6 +10,9 @@ pub struct D3xxDevice {
     handle: FT_HANDLE,
 }
 
+unsafe impl Send for D3xxDevice {}
+unsafe impl Sync for D3xxDevice {}
+
 pub struct D3xxWriter {
     device: Arc<D3xxDevice>,
     timeout_us: u32,
@@ -56,6 +59,7 @@ impl Drop for D3xxDevice {
         if status != 0 {
             eprintln!("Failed to close device: status = {}", status);
         }
+        println!("Device closed");
     }
 }
 
@@ -98,8 +102,10 @@ impl D3xxReader {
     }
 
     #[cfg(target_os = "linux")]
-    pub fn read(&self, buffer: &mut [u8]) -> Result<usize, Box<dyn Error>> {
+    pub fn read(&self, len : usize) -> Result<Vec::<u8>, Box<dyn Error>> {
+        let mut buffer = vec![0u8; len];
         let mut bytes_read: ULONG = 0;
+        println!("Calling FT_ReadPipeEx with timeout {} us...", self.timeout_us);
         let status = unsafe {
             FT_ReadPipeEx(
                 self.device.handle,
@@ -111,7 +117,7 @@ impl D3xxReader {
             )
         };
         if status == 0 {
-            Ok(bytes_read as usize)
+            Ok(buffer[0..bytes_read as usize].to_vec())
         } else {
             Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
