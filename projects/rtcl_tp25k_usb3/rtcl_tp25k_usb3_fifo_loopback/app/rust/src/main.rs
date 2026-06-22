@@ -13,7 +13,7 @@ fn main() {
     let device = all_devices[0].open().expect("failed to open device");
 
     const PACKET_SIZE: usize = 1024*64;
-    const ITERETIONS: usize = 1000;
+    const ITERETIONS: usize = 10000;
 
     // Read 1024 bytes from input pipe 1
     let mut buf = vec![0; PACKET_SIZE];
