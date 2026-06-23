@@ -45,11 +45,6 @@ module ft601_multi_ch_mode_transceiver
     localparam  int     CHANNELS_BITS = CHANNELS > 1 ? $clog2(CHANNELS) : 1;
     localparam  type    channel_t     = logic [CHANNELS_BITS-1:0];
 
-    // Multi-channel mode で未使用のピン
-    assign ft601_rd_n = 1'b1;
-    assign ft601_oe_n = 1'b1;
-
-
     // 入力信号ラッチ
     logic       reg_ft601_rxf_n  = 1'b1 ;
     logic       reg_ft601_txe_n  = 1'b1 ;
@@ -166,7 +161,7 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_DATA:
                     begin
-                        if ( ft601_rxf_n == 1'b1 ) begin
+                        if ( ft601_rxf_n == ft601_rxf_n ) begin
                             state            <= FINAL        ;
                             reg_ft601_wr_n   <= 1'b1         ;
                             reg_ft601_be_t   <= 4'h0         ;
@@ -186,23 +181,45 @@ module ft601_multi_ch_mode_transceiver
                         state            <= WRITE_DATA          ;
                         reg_ft601_wr_n   <= 1'b0                ;
                         reg_ft601_data_t <= 32'h0000_0000       ;
-                        reg_ft601_data_o <= s_fifo_data[channel];
+                        if ( buf_en[channel] ) begin
+                            reg_ft601_data_o <= buf_data[channel];
+                            reg_ft601_be_o   <= buf_strb[channel];
+                        end
+                        else begin
+                            reg_ft601_data_o <= s_fifo_data[channel];
+                            reg_ft601_be_o   <= s_fifo_strb[channel];
+                        end
                     end
 
                 WRITE_DATA:
                     begin
-                        if ( !s_fifo_valid[channel] ||  ) begin
-                            state            <= WRITE_TA2       ;
-                            reg_ft601_wr_n   <= 1'b1            ;
-                            reg_ft601_be_t   <= 4'h0            ;
-                            reg_ft601_be_o   <= 4'hf            ;
-                            reg_ft601_data_t <= 32'h0000_ff00   ;
-                            reg_ft601_data_o <= 32'hffff_ffff   ;
+                        if ( !s_fifo_valid[channel] || ft601_rxf_n ) begin
+                            state            <= FINAL               ;
+                            buf_en[channel]  <= s_fifo_valid[channel]   ;
+                            reg_ft601_wr_n   <= 1'b1                    ;
+                            reg_ft601_be_t   <= 4'h0                    ;
+                            reg_ft601_be_o   <= 4'hf                    ;
+                            reg_ft601_data_t <= 32'h0000_ff00           ;
+                            reg_ft601_data_o <= 32'hffff_ffff           ;
                         end
                         else begin
-                            reg_ft601_data_t <= 32'h0000_0000       ;
-                            reg_ft601_data_o <= s_fifo_data[channel];
+                            reg_ft601_be_t    <= 32'h0000_0000       ;
+                            reg_ft601_be_o    <= s_fifo_strb[channel];
+                            reg_ft601_data_t  <= 32'h0000_0000       ;
+                            reg_ft601_data_o  <= s_fifo_data[channel];
+                            buf_be  [channel] <= s_fifo_strb[channel];
+                            buf_data[channel] <= s_fifo_data[channel];
                         end
+                    end
+                
+                FINAL:
+                    begin
+                        state            <= FINAL        ;
+                        reg_ft601_wr_n   <= 1'b1         ;
+                        reg_ft601_be_t   <= 4'h0         ;
+                        reg_ft601_be_o   <= 4'hf         ;
+                        reg_ft601_data_t <= 32'h0000_ff00;
+                        reg_ft601_data_o <= 32'hffff_ffff;
                     end
 
                 default:
@@ -211,31 +228,38 @@ module ft601_multi_ch_mode_transceiver
         end
     end
 
-    logic           reg_read     = 1'b0 ;
+//  logic           reg_read     = 1'b0 ;
     always_ff @( posedge clk ) begin
         if ( reset ) begin
-            reg_read     <= 1'b0;
+            reg_read     <= 1'b0 ;
             m_fifo_strb  <= 'x  ;
             m_fifo_data  <= 'x  ;
-            m_fifo_valid <= 1'b0;
+            m_fifo_valid <= '0  ;
         end
         else begin
-            reg_read     <= (state == READ_DATA);
-            m_fifo_strb  <= reg_ft601_be_i              ;
-            m_fifo_data  <= reg_ft601_data_i            ;
-            m_fifo_valid <= reg_read && ~reg_ft601_rxf_n;
+//          reg_read     <= 1'b0;
+            m_fifo_strb  <= 'x  ;
+            m_fifo_data  <= 'x  ;
+            m_fifo_valid <= '0  ;
+            for ( int i = 0; i < CHANNELS; i++ ) begin
+                if ( channel == channel_t'(i) && state == READ_DATA && reg_ft601_rxf_n == 1'b0) begin
+                    m_fifo_strb[i]  <= reg_ft601_be_i   ;
+                    m_fifo_data[i]  <= reg_ft601_data_i ;
+                    m_fifo_valid[i] <= 1'b1             ;
+                end
+            end
         end
     end
 
-    assign s_fifo_ready = ~ft601_txe_n && (state == WRITE);
+    assign s_fifo_ready = (state == WRITE_DATA);
 
-    assign ft601_wr_n   = reg_ft601_wr_n   ;
-    assign ft601_rd_n   = reg_ft601_rd_n   ;
-    assign ft601_oe_n   = reg_ft601_oe_n   ;
-    assign ft601_be_o   = reg_ft601_be_o   ;
-    assign ft601_be_t   = reg_ft601_be_t   ; 
-    assign ft601_data_o = reg_ft601_data_o ;
-    assign ft601_data_t = reg_ft601_data_t ;
+    assign ft601_wr_n   = reg_ft601_wr_n    ;
+    assign ft601_rd_n   = 1'b1              ;
+    assign ft601_oe_n   = 1'b1              ;
+    assign ft601_be_o   = reg_ft601_be_o    ;
+    assign ft601_be_t   = reg_ft601_be_t    ; 
+    assign ft601_data_o = reg_ft601_data_o  ;
+    assign ft601_data_t = reg_ft601_data_t  ;
 
 endmodule
 
