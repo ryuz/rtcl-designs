@@ -16,13 +16,19 @@ CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
 VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_fifo_multi_channel.sv
-VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_mode245_transceiver.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode_transceiver.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_sync.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_sync.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_gray.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
 
 # SDC File
 SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_multi_channel.sdc

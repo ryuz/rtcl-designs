@@ -6,6 +6,7 @@
 //  https://rtc-lab.com/
 // -----------------------------------------------------------------------------
 
+`timescale 1ps/1ps
 `default_nettype none
 
 module ft601_multi_ch_mode_transceiver
@@ -73,7 +74,7 @@ module ft601_multi_ch_mode_transceiver
         READ_TA1_1      ,
         READ_TA1_2      ,
         READ_DATA       ,
-        WRITE_COMMAD    ,
+        WRITE_COMMAND   ,
         WRITE_TA1       ,
         WRITE_DATA      ,
         WRITE_TA2       ,
@@ -129,7 +130,7 @@ module ft601_multi_ch_mode_transceiver
                     // write判定(優先)
                     for ( int i = 0; i < CHANNELS; i++ ) begin
                         if ( reg_ft601_data_i[8+i] && s_fifo_valid[i] ) begin
-                            state               <= WRITE_COMMAD ;
+                            state               <= WRITE_COMMAND;
                             channel             <= channel_t'(i);
                             reg_ft601_wr_n      <= 1'b0         ;
                             reg_ft601_be_t      <= 4'h0         ;
@@ -143,7 +144,7 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_COMMAND:
                     begin
-                        state            <= READ_TA_1_1  ;
+                        state            <= READ_TA1_1  ;
                         reg_ft601_wr_n   <= 1'b0         ;
                         reg_ft601_be_t   <= 4'hf         ;
                         reg_ft601_data_t <= 32'hffff_ffff;
@@ -207,7 +208,7 @@ module ft601_multi_ch_mode_transceiver
                             reg_ft601_be_o    <= s_fifo_strb[channel];
                             reg_ft601_data_t  <= 32'h0000_0000       ;
                             reg_ft601_data_o  <= s_fifo_data[channel];
-                            buf_be  [channel] <= s_fifo_strb[channel];
+                            buf_strb[channel] <= s_fifo_strb[channel];
                             buf_data[channel] <= s_fifo_data[channel];
                         end
                     end
@@ -231,7 +232,7 @@ module ft601_multi_ch_mode_transceiver
 //  logic           reg_read     = 1'b0 ;
     always_ff @( posedge clk ) begin
         if ( reset ) begin
-            reg_read     <= 1'b0 ;
+//          reg_read     <= 1'b0 ;
             m_fifo_strb  <= 'x  ;
             m_fifo_data  <= 'x  ;
             m_fifo_valid <= '0  ;

@@ -6,7 +6,7 @@
 //  https://rtc-lab.com/
 // -----------------------------------------------------------------------------
 
-
+`timescale 1ps/1ps
 `default_nettype none
 
 module rtcl_tp25k_usb3_fifo_multi_channel
@@ -51,6 +51,9 @@ module rtcl_tp25k_usb3_fifo_multi_channel
             reset <= reset_count != 0;
         end
     end
+
+    logic   clk;
+    assign clk = in_clk50;
 
 
     logic ft601_reset;
@@ -127,22 +130,27 @@ module rtcl_tp25k_usb3_fifo_multi_channel
     end
 
 
-    logic   [3:0]   ft601_tx_fifo_strb       ;
-    logic   [31:0]  ft601_tx_fifo_data       ;
-    logic           ft601_tx_fifo_valid      ;
-    logic           ft601_tx_fifo_ready      ;
-
-    logic           ft601_rx_fifo_almost_full;
-    logic   [3:0]   ft601_rx_fifo_strb       ;
-    logic   [31:0]  ft601_rx_fifo_data       ;
-    logic           ft601_rx_fifo_valid      ;
-    
-    ft601_mode245_transceiver
-        u_ft601_mode245_transceiver
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1      ),
+                .USE_LAST   (0      ),
+                .DATA_BITS  (32     )
+            )
+        axi4s_ft601 [4]
             (
-                .reset              (ft601_reset                ),
-                .clk                (ft601_clk                  ),
+                .aresetn    (~reset ),
+                .aclk       (clk    ),
+                .aclken     (1'b1   )
+            );
 
+    ft601_multi_ch_mode
+            #(
+                .CHANNELS           (4                          )
+            )
+        u_ft601_multi_ch_mode
+            (
+                .ft601_reset        (ft601_reset                ),
+                .ft601_clk          (ft601_clk                  ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -155,72 +163,18 @@ module rtcl_tp25k_usb3_fifo_multi_channel
                 .ft601_data_o       (ft601_data_o               ),
                 .ft601_data_t       (ft601_data_t               ),
 
-                .s_fifo_strb        (ft601_tx_fifo_strb         ),
-                .s_fifo_data        (ft601_tx_fifo_data         ),
-                .s_fifo_valid       (ft601_tx_fifo_valid        ),
-                .s_fifo_ready       (ft601_tx_fifo_ready        ),
+                .s_axi4s_tx         (axi4s_ft601                ),
+                .m_axi4s_rx         (axi4s_ft601                )
 
-                .m_fifo_almost_full (ft601_rx_fifo_almost_full  ),
-                .m_fifo_strb        (ft601_rx_fifo_strb         ),
-                .m_fifo_data        (ft601_rx_fifo_data         ),
-                .m_fifo_valid       (ft601_rx_fifo_valid        )
             );
-
-    localparam FIFO_PTR_BITS = 14;
-    logic  [FIFO_PTR_BITS:0]  fifo_rx_free_size;
-
-    
-    jelly3_stream_fifo
-            #(
-                .ASYNC          (0                  ),
-                .PTR_BITS       (FIFO_PTR_BITS      ),
-                .DATA_BITS      (4+32               ),
-                .S_SYNC_FF      (3                  ),
-                .M_SYNC_FF      (3                  ),
-                .RAM_TYPE       ("block"            ),
-                .DOUT_REG       (1                  )
-            )
-        u_stream_fifo
-            (
-                .s_reset        (ft601_reset        ),
-                .s_clk          (ft601_clk          ),
-                .s_cke          (1'b1               ),
-                .s_data         ({
-                                    ft601_rx_fifo_strb,
-                                    ft601_rx_fifo_data
-                                }),
-                .s_valid        (ft601_rx_fifo_valid),
-                .s_ready        (),
-                .s_free_size    (fifo_rx_free_size  ),
-
-                .m_reset        (ft601_reset        ),
-                .m_clk          (ft601_clk          ),
-                .m_cke          (1'b1               ),
-                .m_data         ({
-                                    ft601_tx_fifo_strb,
-                                    ft601_tx_fifo_data
-                                }),
-                .m_valid        (ft601_tx_fifo_valid),
-                .m_ready        (ft601_tx_fifo_ready),
-                .m_data_size    ()
-            );
-
-    always_ff @(posedge ft601_clk) begin
-        if ( ft601_reset ) begin
-            ft601_rx_fifo_almost_full <= 1'b0;
-        end
-        else begin
-            ft601_rx_fifo_almost_full <= fifo_rx_free_size < 64;
-        end
-    end
 
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
-    assign pmod[2] = ft601_wr_n ;
-    assign pmod[3] = ft601_rd_n ;
-    assign pmod[4] = ft601_oe_n ;
-    assign pmod[5] = ft601_rx_fifo_valid;
-    assign pmod[6] = ft601_tx_fifo_valid & ft601_tx_fifo_ready;
+    assign pmod[2] = ft601_wr_n;
+    assign pmod[3] = ft601_rd_n;
+    assign pmod[4] = ft601_oe_n;
+    assign pmod[5] = '0;
+    assign pmod[6] = '0;
     assign pmod[7] = '0;
 
 endmodule
