@@ -17,6 +17,8 @@ unsafe extern "C" {}
 
 pub type DWORD = u32;
 pub type ULONG = u32;
+pub type BOOL = u32;
+pub type BOOLEAN = u8;
 pub type PVOID = *mut c_void;
 pub type LPVOID = PVOID;
 pub type HANDLE = *mut c_void;
@@ -56,11 +58,28 @@ pub struct OVERLAPPED_OFFSET {
     pub OffsetHigh: DWORD,
 }
 
+impl Default for OVERLAPPED_OFFSET {
+    fn default() -> Self {
+        Self {
+            Offset: 0,
+            OffsetHigh: 0,
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union OVERLAPPED_UNION {
     pub offset: OVERLAPPED_OFFSET, // 構造体（Offset と OffsetHigh）
     pub Pointer: PVOID,            // ポインタ
+}
+
+impl Default for OVERLAPPED_UNION {
+    fn default() -> Self {
+        Self {
+            offset: OVERLAPPED_OFFSET::default(),
+        }
+    }
 }
 
 // 3. 本体構造体
@@ -71,6 +90,17 @@ pub struct OVERLAPPED {
     pub InternalHigh: DWORD,
     pub u: OVERLAPPED_UNION, // 無名unionだった部分に名前（uなど）を付ける
     pub hEvent: HANDLE,
+}
+
+impl Default for OVERLAPPED {
+    fn default() -> Self {
+        Self {
+            Internal: 0,
+            InternalHigh: 0,
+            u: OVERLAPPED_UNION::default(),
+            hEvent: std::ptr::null_mut(),
+        }
+    }
 }
 
 #[repr(C)]
@@ -159,4 +189,47 @@ unsafe extern "C" {
         ucPipeID: u8,
         pTimeoutInMs: *mut ULONG,
     ) -> FT_STATUS;
+
+
+    // FTD3XX_API FT_STATUS  FT_InitializeOverlapped(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped);
+    pub fn FT_InitializeOverlapped(ftHandle: FT_HANDLE, pOverlapped: *mut OVERLAPPED) -> FT_STATUS;
+
+    // FTD3XX_API FT_STATUS FT_GetOverlappedResult(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped, PULONG pulBytesTransferred, BOOL bWait);
+    pub fn FT_GetOverlappedResult(
+        ftHandle: FT_HANDLE,
+        pOverlapped: *mut OVERLAPPED,
+        pulBytesTransferred: *mut ULONG,
+        bWait: i32, // BOOL は Windows では i32 として扱う
+    ) -> FT_STATUS;
+
+    // FT_STATUS  FT_ReleaseOverlapped(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped);
+    pub fn FT_ReleaseOverlapped(ftHandle: FT_HANDLE, pOverlapped: *mut OVERLAPPED) -> FT_STATUS;
+
+    // FT_STATUS FT_SetStreamPipe(FT_HANDLE ftHandle, BOOL bAllWritePipes, BOOL bAllReadPipes, UCHAR ucPipeID, ULONG ulStreamSize);
+    pub fn FT_SetStreamPipe(
+        ftHandle: FT_HANDLE,
+        bAllWritePipes: BOOL,
+        bAllReadPipes: BOOL,
+        ucPipeID: u8,
+        ulStreamSize: ULONG,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_ClearStreamPipe(FT_HANDLE ftHandle, BOOL bAllWritePipes, BOOL bAllReadPipes, UCHAR ucPipeID);
+    pub fn FT_ClearStreamPipe(
+        ftHandle: FT_HANDLE,
+        bAllWritePipes: BOOL,
+        bAllReadPipes: BOOL,
+        ucPipeID: u8,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_FlushPipe(FT_HANDLE ftHandle, UCHAR ucPipeID);
+    pub fn FT_FlushPipe(ftHandle: FT_HANDLE, ucPipeID: u8) -> FT_STATUS;
+
+    // FT_STATUS FT_AbortPipe(FT_HANDLE ftHandle, UCHAR ucPipeID);
+    pub fn FT_AbortPipe(ftHandle: FT_HANDLE, ucPipeID: u8) -> FT_STATUS;
+
+
+
+        
+
 }

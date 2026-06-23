@@ -27,6 +27,58 @@ pub struct RtclFifo32D3xx {
 
 
 fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>, tx_stream: mpsc::Sender<RtclPacket>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
+    let mut packet = RtclPacket { opcode : 0, operand: 0, payload: Vec::new() };
+    let mut pkt_len;
+
+    dev_reader.set_timeout(1)?;
+
+    'outer: loop {
+        // ヘッダ受信
+        loop {
+            if rx_stop.try_recv().is_ok() {
+            println!("recv_thread: stop");
+                break 'outer;
+            }
+
+            let header = dev_reader.read(4)?;
+            assert!(header.len() % 4 == 0);  // 32bit単位でしか通信しない
+            
+            if header.len() == 4 {
+//              println!("recv_thread: header = {:?}", header);
+                
+                // ヘッダを処理
+                packet.opcode = header[0];
+                packet.operand = header[1];
+                pkt_len = u16::from_le_bytes([header[2], header[3]]) as usize;
+                break;
+            }
+        }
+
+        // パケット分析
+        while pkt_len > 0 {
+            let payload = dev_reader.read(pkt_len)?;
+            assert!(payload.len() % 4 == 0);  // 32bit単位でしか通信しない
+            if payload.len() > 0 {
+                packet.payload.extend_from_slice(payload.as_ref());
+                pkt_len -= payload.len();
+            }
+        }
+
+        // opcode によって送信先を分ける
+        if packet.opcode == OPCODE_AXI4S_TRANS {
+            tx_stream.send(packet.clone()).unwrap();
+        }
+        else {
+            tx_command.send(packet.clone()).unwrap();
+        }
+        packet.payload.clear();
+    }
+    println!("recv_thread: exit");
+    Ok(())
+}
+
+/*
+fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>, tx_stream: mpsc::Sender<RtclPacket>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 //      let mut buf = vec![0u8; 4096];
     let mut header = true;
     let mut packet = RtclPacket { opcode : 0, operand: 0, payload: Vec::new() };
@@ -98,7 +150,7 @@ fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>,
     println!("recv_thread: exit");
     Ok(())
 }
-
+*/
 
 impl RtclFifo32D3xx {
     pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {

@@ -123,22 +123,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdin().read_line(&mut input).unwrap();   
 
     imx219.start().unwrap();
-
-    print!("wait key : start camera...");
-    std::io::stdout().flush().unwrap();
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();   
-
-    /*
+    
     let mut img_list = Vec::<Vec<u8>>::new();
-    if let Ok(mut d3xx_guard) = d3xx_arc.lock() {
+    if let Ok(mut d3xx_guard) = usb.lock() {
         for _ in 0..256+1 {
             let pkt = d3xx_guard.recv_axi4s().unwrap();
             img_list.push(pkt);
 //          println!("Received AXI4S packet: {:?}", pkt);
         }
     }
-    */
+    
+    for (i, img) in img_list.iter().enumerate() {
+        // ファイルに保存
+        let filename = format!("rec/image_{:03}.bin", i);
+        std::fs::write(&filename, img).expect("Failed to write image file");
+    }
+
+
+    print!("wait key : Quit");
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();   
 
     println!("End Test");
 
