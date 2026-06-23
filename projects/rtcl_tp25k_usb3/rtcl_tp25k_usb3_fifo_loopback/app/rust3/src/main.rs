@@ -37,11 +37,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         // read
         let rx_data = usb_rx.burst_read(tx_buf.len()).expect("failed to read from device");
 
+        // 32bit配列に変換
+        let tx_data_32bit: Vec<i32> = tx_buf.chunks_exact(4).map(|chunk| {i32::from_le_bytes(chunk.try_into().unwrap())}).collect();
+        let rx_data_32bit: Vec<i32> = rx_data.chunks_exact(4).map(|chunk| {i32::from_le_bytes(chunk.try_into().unwrap())}).collect();
         // verify
-        if rx_data != tx_buf {
-            for i in 0..rx_data.len() {
-                if rx_data[i] != tx_buf[i] {
-                    println!("Data mismatch at index {}: tx = {:02x}, rx = {:02x}", i, tx_buf[i], rx_data[i]);
+        if tx_data_32bit != rx_data_32bit {
+            for i in 0..rx_data_32bit.len() {
+                if rx_data_32bit[i] != tx_data_32bit[i] {
+                    println!("Data mismatch at index {:08x}: tx = {:08x}, rx = {:08x} diff = {:08x}", i, tx_data_32bit[i], rx_data_32bit[i], tx_data_32bit[i] ^ rx_data_32bit[i]);
                 }
             }
             eprintln!("Data mismatch! {}", itr);
