@@ -214,6 +214,7 @@ impl D3xxWriter {
         Ok(bytes_written as usize)
     }
 
+    #[cfg(target_os = "linux")]
     pub fn burst_write(&self, data: &[u8]) -> D3xxResult<usize> {
         const MAX_SIZE: usize = 4 * 1024;
 
@@ -339,6 +340,7 @@ impl D3xxReader {
         Ok(buffer[0..bytes_read as usize].to_vec())
     }
 
+    #[cfg(target_os = "linux")]
     pub fn burst_read(&self, len: usize) -> D3xxResult<Vec<u8>> {
         const MAX_SIZE: usize = 4 * 1024;
 
