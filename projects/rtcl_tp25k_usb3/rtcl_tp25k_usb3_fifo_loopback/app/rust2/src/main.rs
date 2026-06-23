@@ -34,6 +34,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // verify
         if rx_data != tx_buf {
+            for i in 0..rx_data.len() {
+                if rx_data[i] != tx_buf[i] {
+                    println!("Data mismatch at index {}: tx = {:02x}, rx = {:02x}", i, tx_buf[i], rx_data[i]);
+                }
+            }
             eprintln!("Data mismatch!");
             return Err("Data mismatch".into());
         }
