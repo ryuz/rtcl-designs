@@ -17,6 +17,9 @@ unsafe extern "C" {}
 
 pub type DWORD = u32;
 pub type ULONG = u32;
+#[cfg(target_os = "windows")]
+pub type BOOL = i32;
+#[cfg(target_os = "linux")]
 pub type BOOL = u32;
 pub type BOOLEAN = u8;
 pub type PVOID = *mut c_void;
@@ -120,6 +123,9 @@ pub const FT_OPEN_BY_DESCRIPTION: DWORD = 0x00000002;
 pub const FT_OPEN_BY_LOCATION: DWORD = 0x00000004;
 pub const FT_OPEN_BY_GUID: DWORD = 0x00000008;
 pub const FT_OPEN_BY_INDEX: DWORD = 0x00000010;
+pub const FT_LIST_ALL: DWORD = 0x20000000;
+pub const FT_LIST_BY_INDEX: DWORD = 0x40000000;
+pub const FT_LIST_NUMBER_ONLY: DWORD = 0x80000000;
 
 // Endpoint IDs
 pub const EP_ID_IN0: u8 = 0x82;
@@ -133,7 +139,7 @@ pub const EP_ID_OUT3: u8 = 0x05;
 
 // 共通の関数定義（リンク指定なしの extern "C" ブロック）
 unsafe extern "C" {
-    // FT_STATUS WINAPI FT_CreateDeviceInfoList(LPDWORD lpdwNumDevs);
+    // FT_STATUS FT_CreateDeviceInfoList(LPDWORD lpdwNumDevs);
     pub fn FT_CreateDeviceInfoList(lpdwNumDevs: *mut DWORD) -> FT_STATUS;
 
     // FT_STATUS FT_GetDeviceInfoList(FT_DEVICE_LIST_INFO_NODE *ptDest, LPDWORD lpdwNumDevs);
@@ -142,33 +148,90 @@ unsafe extern "C" {
         lpdwNumDevs: *mut DWORD,
     ) -> FT_STATUS;
 
-    // FT_STATUS FT_Create(PVOID pvArg, DWORD dwFlags, FT_HANDLE *pftHandle;
+    // FT_STATUS FT_Create(PVOID pvArg, DWORD dwFlags, FT_HANDLE *pftHandle);
     pub fn FT_Create(pvArg: PVOID, dwFlags: DWORD, pftHandle: *mut FT_HANDLE) -> FT_STATUS;
 
     // FT_STATUS FT_Close(FT_HANDLE ftHandle);
     pub fn FT_Close(ftHandle: FT_HANDLE) -> FT_STATUS;
 
-    // FT_STATUS FT_WritePipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    // FT_STATUS FT_WritePipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, DWORD dwTimeoutInMs);
+    #[cfg(target_os = "linux")]
     pub fn FT_WritePipe(
         ftHandle: FT_HANDLE,
         ucPipeID: u8,
         pucBuffer: *const u8,
         ulBufferLength: ULONG,
         pulBytesTransferred: *mut ULONG,
-        pOverlapped: *mut OVERLAPPED, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
+        dwTimeoutInMs: DWORD,
     ) -> FT_STATUS;
 
-    // FT_STATUS FT_ReadPipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    // FT_STATUS FT_WritePipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "windows")]
+    pub fn FT_WritePipe(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *const u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_WritePipeEx(FT_HANDLE ftHandle, UCHAR ucFifoID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, DWORD dwTimeoutInMs);
+    #[cfg(target_os = "linux")]
+    pub fn FT_WritePipeEx(
+        ftHandle: FT_HANDLE,
+        ucFifoID: u8,
+        pucBuffer: *const u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        dwTimeoutInMs: DWORD,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_WritePipeEx(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "windows")]
+    pub fn FT_WritePipeEx(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *const u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_WritePipeAsync(FT_HANDLE ftHandle, UCHAR ucFifoID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "linux")]
+    pub fn FT_WritePipeAsync(
+        ftHandle: FT_HANDLE,
+        ucFifoID: u8,
+        pucBuffer: *const u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_ReadPipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, DWORD dwTimeoutInMs);
+    #[cfg(target_os = "linux")]
     pub fn FT_ReadPipe(
         ftHandle: FT_HANDLE,
         ucPipeID: u8,
         pucBuffer: *mut u8,
         ulBufferLength: ULONG,
         pulBytesTransferred: *mut ULONG,
-        pOverlapped: *mut OVERLAPPED, // LPOVERLAPPED は Windows の OVERLAPPED 構造体へのポインタ
+        dwTimeoutInMs: DWORD,
     ) -> FT_STATUS;
 
-    // FT_STATUS WINAPI FT_ReadPipeEx(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    // FT_STATUS FT_ReadPipe(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "windows")]
+    pub fn FT_ReadPipe(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *mut u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_ReadPipeEx(FT_HANDLE ftHandle, UCHAR ucFifoID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, DWORD dwTimeoutInMs);
     #[cfg(target_os = "linux")]
     pub fn FT_ReadPipeEx(
         ftHandle: FT_HANDLE,
@@ -179,10 +242,32 @@ unsafe extern "C" {
         dwTimeout: DWORD,
     ) -> FT_STATUS;
 
-    // FT_STATUS FT_SetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, ULONG TimeoutInMs);
+    // FT_STATUS FT_ReadPipeEx(FT_HANDLE ftHandle, UCHAR ucPipeID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "windows")]
+    pub fn FT_ReadPipeEx(
+        ftHandle: FT_HANDLE,
+        ucPipeID: u8,
+        pucBuffer: *mut u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_ReadPipeAsync(FT_HANDLE ftHandle, UCHAR ucFifoID, PUCHAR pucBuffer, ULONG ulBufferLength, PULONG pulBytesTransferred, LPOVERLAPPED pOverlapped);
+    #[cfg(target_os = "linux")]
+    pub fn FT_ReadPipeAsync(
+        ftHandle: FT_HANDLE,
+        ucFifoID: u8,
+        pucBuffer: *mut u8,
+        ulBufferLength: ULONG,
+        pulBytesTransferred: *mut ULONG,
+        pOverlapped: *mut OVERLAPPED,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_SetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, DWORD dwTimeoutInMs);
     pub fn FT_SetPipeTimeout(ftHandle: FT_HANDLE, ucPipeID: u8, TimeoutInMs: ULONG) -> FT_STATUS;
 
-    // FT_STATUS WINAPI FT_GetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, PULONG pTimeoutInMs);
+    // FT_STATUS FT_GetPipeTimeout(FT_HANDLE ftHandle, UCHAR ucPipeID, PULONG pTimeoutInMs);
     #[cfg(target_os = "windows")]
     pub fn FT_GetPipeTimeout(
         ftHandle: FT_HANDLE,
@@ -191,21 +276,22 @@ unsafe extern "C" {
     ) -> FT_STATUS;
 
 
-    // FTD3XX_API FT_STATUS  FT_InitializeOverlapped(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped);
+    // FT_STATUS FT_InitializeOverlapped(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped);
     pub fn FT_InitializeOverlapped(ftHandle: FT_HANDLE, pOverlapped: *mut OVERLAPPED) -> FT_STATUS;
 
-    // FTD3XX_API FT_STATUS FT_GetOverlappedResult(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped, PULONG pulBytesTransferred, BOOL bWait);
+    // FT_STATUS FT_GetOverlappedResult(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped, PULONG pulBytesTransferred, BOOL bWait);
     pub fn FT_GetOverlappedResult(
         ftHandle: FT_HANDLE,
         pOverlapped: *mut OVERLAPPED,
         pulBytesTransferred: *mut ULONG,
-        bWait: i32, // BOOL は Windows では i32 として扱う
+        bWait: BOOL,
     ) -> FT_STATUS;
 
-    // FT_STATUS  FT_ReleaseOverlapped(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped);
+    // FT_STATUS FT_ReleaseOverlapped(FT_HANDLE ftHandle, LPOVERLAPPED pOverlapped);
     pub fn FT_ReleaseOverlapped(ftHandle: FT_HANDLE, pOverlapped: *mut OVERLAPPED) -> FT_STATUS;
 
     // FT_STATUS FT_SetStreamPipe(FT_HANDLE ftHandle, BOOL bAllWritePipes, BOOL bAllReadPipes, UCHAR ucPipeID, ULONG ulStreamSize);
+    #[cfg(target_os = "linux")]
     pub fn FT_SetStreamPipe(
         ftHandle: FT_HANDLE,
         bAllWritePipes: BOOL,
@@ -214,11 +300,31 @@ unsafe extern "C" {
         ulStreamSize: ULONG,
     ) -> FT_STATUS;
 
+    // FT_STATUS FT_SetStreamPipe(FT_HANDLE ftHandle, BOOLEAN bAllWritePipes, BOOLEAN bAllReadPipes, UCHAR ucPipeID, ULONG ulStreamSize);
+    #[cfg(target_os = "windows")]
+    pub fn FT_SetStreamPipe(
+        ftHandle: FT_HANDLE,
+        bAllWritePipes: BOOLEAN,
+        bAllReadPipes: BOOLEAN,
+        ucPipeID: u8,
+        ulStreamSize: ULONG,
+    ) -> FT_STATUS;
+
     // FT_STATUS FT_ClearStreamPipe(FT_HANDLE ftHandle, BOOL bAllWritePipes, BOOL bAllReadPipes, UCHAR ucPipeID);
+    #[cfg(target_os = "linux")]
     pub fn FT_ClearStreamPipe(
         ftHandle: FT_HANDLE,
         bAllWritePipes: BOOL,
         bAllReadPipes: BOOL,
+        ucPipeID: u8,
+    ) -> FT_STATUS;
+
+    // FT_STATUS FT_ClearStreamPipe(FT_HANDLE ftHandle, BOOLEAN bAllWritePipes, BOOLEAN bAllReadPipes, UCHAR ucPipeID);
+    #[cfg(target_os = "windows")]
+    pub fn FT_ClearStreamPipe(
+        ftHandle: FT_HANDLE,
+        bAllWritePipes: BOOLEAN,
+        bAllReadPipes: BOOLEAN,
         ucPipeID: u8,
     ) -> FT_STATUS;
 
