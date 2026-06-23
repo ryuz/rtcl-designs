@@ -11,8 +11,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     usb_tx.set_timeout(1000)?;
     usb_rx.set_timeout(1000)?;
 
-    const PACKET_SIZE: usize = 1024*4;
-    const ITERETIONS: usize = 10000;
+    const PACKET_SIZE: usize = 1024*4*16;
+    const ITERETIONS: usize = 1000;
+
+//  usb_tx.set_stream_pipe(0x10000)?;
+//  usb_rx.set_stream_pipe(0x10000)?;
 
     let mut tx_buf = vec![0; PACKET_SIZE];
 

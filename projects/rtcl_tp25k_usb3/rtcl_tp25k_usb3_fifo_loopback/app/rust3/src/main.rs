@@ -1,9 +1,16 @@
 use std::error::Error;
 use std::time::Instant;
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use rtcl_d3xx::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 loopback test");
+
+    const RANDOM_SEED: u64 = 0x1234_5678_9abc_deff;
+    let seed = RANDOM_SEED;
+    println!("Random seed: {}", seed);
+    let mut rng = StdRng::seed_from_u64(seed);
 
     // Open the first device found.
     let (mut usb_tx, mut usb_rx) = D3xxDevice::new(0)?;
@@ -11,43 +18,47 @@ fn main() -> Result<(), Box<dyn Error>> {
     usb_tx.set_timeout(1000)?;
     usb_rx.set_timeout(1000)?;
 
-    const PACKET_SIZE: usize = 1024*4;
-    const ITERETIONS: usize = 10000;
+    const PACKET_SIZE: usize = 1024*4*16;
+    const ITERETIONS: usize = 1000;
 
     let mut tx_buf = vec![0; PACKET_SIZE];
-
+    
     // データチェック
-    for _ in 0..ITERETIONS {
+    for itr in 0..ITERETIONS {
         // 乱数で初期化
         for i in 0..tx_buf.len() {
-            tx_buf[i] = rand::random::<u8>();
+            tx_buf[i] = if i % 2 == 0 { 0xaa } else { 0x55 };
         }
+        rng.fill_bytes(&mut tx_buf);
 
         // write
-        usb_tx.write(&tx_buf).expect("failed to write to device");
+        usb_tx.burst_write(&tx_buf).expect("failed to write to device");
 
         // read
-        let rx_data = usb_rx.read(tx_buf.len()).expect("failed to read from device");
+        let rx_data = usb_rx.burst_read(tx_buf.len()).expect("failed to read from device");
 
         // verify
         if rx_data != tx_buf {
-            eprintln!("Data mismatch!");
+            for i in 0..rx_data.len() {
+                if rx_data[i] != tx_buf[i] {
+                    println!("Data mismatch at index {}: tx = {:02x}, rx = {:02x}", i, tx_buf[i], rx_data[i]);
+                }
+            }
+            eprintln!("Data mismatch! {}", itr);
             return Err("Data mismatch".into());
         }
     }
 
 
     // Spped test
-    for i in 0..tx_buf.len() {
-        tx_buf[i] = rand::random::<u8>();
-    }
+    rng.fill_bytes(&mut tx_buf);
   
     let start = Instant::now();
     for _ in 0..ITERETIONS {
         // write
-        usb_tx.write(&tx_buf).expect("failed to write to device");
+        usb_tx.burst_write(&tx_buf).expect("failed to write to device");
         // read
-        let _ = usb_rx.read(tx_buf.len()).expect("failed to read from device");
+        let _ = usb_rx.burst_read(tx_buf.len()).expect("failed to read from device");
     }
 
     let elapsed = start.elapsed();

@@ -116,95 +116,6 @@ fn status_to_result(status: FT_STATUS) -> D3xxResult<()> {
     }
 }
 
-fn async_status_to_result(status: FT_STATUS) -> D3xxResult<()> {
-    if status == FT_OK || status == FT_IO_PENDING {
-        Ok(())
-    } else {
-        Err(status.into())
-    }
-}
-
-fn reset_overlapped(overlapped: &mut OVERLAPPED) {
-    overlapped.Internal = 0;
-    overlapped.InternalHigh = 0;
-}
-
-#[cfg(target_os = "linux")]
-unsafe fn submit_async_write(
-    handle: FT_HANDLE,
-    buffer: &[u8],
-    bytes_transferred: &mut ULONG,
-    overlapped: &mut OVERLAPPED,
-) -> FT_STATUS {
-    unsafe {
-        FT_WritePipeAsync(
-            handle,
-            0,
-            buffer.as_ptr(),
-            buffer.len() as ULONG,
-            bytes_transferred,
-            overlapped as *mut OVERLAPPED,
-        )
-    }
-}
-
-#[cfg(target_os = "windows")]
-unsafe fn submit_async_write(
-    handle: FT_HANDLE,
-    buffer: &[u8],
-    bytes_transferred: &mut ULONG,
-    overlapped: &mut OVERLAPPED,
-) -> FT_STATUS {
-    unsafe {
-        FT_WritePipeEx(
-            handle,
-            EP_ID_OUT0,
-            buffer.as_ptr(),
-            buffer.len() as ULONG,
-            bytes_transferred,
-            overlapped as *mut OVERLAPPED,
-        )
-    }
-}
-
-#[cfg(target_os = "linux")]
-unsafe fn submit_async_read(
-    handle: FT_HANDLE,
-    buffer: &mut [u8],
-    bytes_transferred: &mut ULONG,
-    overlapped: &mut OVERLAPPED,
-) -> FT_STATUS {
-    unsafe {
-        FT_ReadPipeAsync(
-            handle,
-            0,
-            buffer.as_mut_ptr(),
-            buffer.len() as ULONG,
-            bytes_transferred,
-            overlapped as *mut OVERLAPPED,
-        )
-    }
-}
-
-#[cfg(target_os = "windows")]
-unsafe fn submit_async_read(
-    handle: FT_HANDLE,
-    buffer: &mut [u8],
-    bytes_transferred: &mut ULONG,
-    overlapped: &mut OVERLAPPED,
-) -> FT_STATUS {
-    unsafe {
-        FT_ReadPipeEx(
-            handle,
-            EP_ID_IN0,
-            buffer.as_mut_ptr(),
-            buffer.len() as ULONG,
-            bytes_transferred,
-            overlapped as *mut OVERLAPPED,
-        )
-    }
-}
-
 pub struct D3xxDevice {
     handle: FT_HANDLE,
 }
@@ -257,6 +168,18 @@ impl D3xxWriter {
         Ok(())
     }
 
+    pub fn set_stream_pipe(&mut self, stream_size: u32) -> D3xxResult<()> {
+        let status = unsafe { FT_SetStreamPipe(self.device.handle, 1, 0, 0, stream_size) };
+        status_to_result(status)?;
+        Ok(())
+    }
+
+    pub fn clear_stream_pipe(&mut self) -> D3xxResult<()> {
+        let status = unsafe { FT_ClearStreamPipe(self.device.handle, 1, 0, 0) };
+        status_to_result(status)?;
+        Ok(())
+    }
+
     #[cfg(target_os = "linux")]
     pub fn write(&self, data: &[u8]) -> D3xxResult<usize> {
         let mut bytes_written: ULONG = 0;
@@ -299,97 +222,80 @@ impl D3xxWriter {
         }
 
         let chunks: Vec<&[u8]> = data.chunks(MAX_SIZE).collect();
+
+        // 書き込み要求
         let mut overlappeds = vec![OVERLAPPED::default(); chunks.len()];
-        let mut initialized = 0usize;
-        let mut stream_pipe_enabled = false;
-
-        let result = (|| -> D3xxResult<usize> {
+        let mut bytes_transferred = vec![0u32; chunks.len()];
+        for i in 0..overlappeds.len() {
+            // Overlapp の準備
             let status = unsafe {
-                FT_SetStreamPipe(self.device.handle, 0, 0, EP_ID_OUT0, MAX_SIZE as ULONG)
+                FT_InitializeOverlapped(self.device.handle, &mut overlappeds[i] as *mut OVERLAPPED)
             };
-            status_to_result(status)?;
-            stream_pipe_enabled = true;
+            assert!(status == FT_OK, "Failed to initialize overlapped: status = {}", status);
 
-            for overlapped in &mut overlappeds {
-                let status = unsafe {
-                    FT_InitializeOverlapped(self.device.handle, overlapped as *mut OVERLAPPED)
-                };
-                status_to_result(status)?;
-                initialized += 1;
-            }
-
-            for (overlapped, chunk) in overlappeds.iter_mut().zip(chunks.iter().copied()) {
-                let mut bytes_submitted = 0;
-                reset_overlapped(overlapped);
-                let status = unsafe {
-                    submit_async_write(
-                        self.device.handle,
-                        chunk,
-                        &mut bytes_submitted,
-                        overlapped,
-                    )
-                };
-                async_status_to_result(status)?;
-            }
-
-            let mut total_written = 0usize;
-            for (overlapped, chunk) in overlappeds.iter_mut().zip(chunks.iter().copied()) {
-                let mut bytes_transferred = 0;
-                let status = unsafe {
-                    FT_GetOverlappedResult(
-                        self.device.handle,
-                        overlapped as *mut OVERLAPPED,
-                        &mut bytes_transferred,
-                        1,
-                    )
-                };
-                status_to_result(status)?;
-
-                if bytes_transferred as usize != chunk.len() {
-                    return Err(D3xxError::IoError);
-                }
-
-                total_written += bytes_transferred as usize;
-            }
-
-            Ok(total_written)
-        })();
-
-        if result.is_err() {
-            let _ = unsafe { FT_AbortPipe(self.device.handle, EP_ID_OUT0) };
-
-            for overlapped in overlappeds.iter_mut().take(initialized) {
-                let mut bytes_transferred = 0;
-                let _ = unsafe {
-                    FT_GetOverlappedResult(
-                        self.device.handle,
-                        overlapped as *mut OVERLAPPED,
-                        &mut bytes_transferred,
-                        1,
-                    )
-                };
-            }
+            let status = unsafe { FT_WritePipeAsync(
+                self.device.handle,
+                0,
+                chunks[i].as_ptr(),
+                chunks[i].len() as ULONG,
+                &mut bytes_transferred[i] as *mut ULONG,
+                &mut overlappeds[i] as *mut OVERLAPPED,
+            )};
+            assert!(status == FT_IO_PENDING, "Failed to write pipe async: status = {}", status);
         }
 
-        for slot in 0..initialized {
-            let _ = unsafe {
-                FT_ReleaseOverlapped(self.device.handle, &mut overlappeds[slot] as *mut OVERLAPPED)
+        // 完了を待つ
+        for i in 0..overlappeds.len() {
+            let status = unsafe {
+                FT_GetOverlappedResult(
+                    self.device.handle,
+                    &mut overlappeds[i] as *mut OVERLAPPED,
+                    &mut bytes_transferred[i] as *mut ULONG,
+                    1,
+                )
             };
-        }
+            assert!(status == FT_OK, "Failed to get overlapped result: status = {}", status);
+//          assert!(bytes_transferred[i] != FT_OK, "Failed to get overlapped result: status = {}", status);
 
-        if stream_pipe_enabled {
-            let _ = unsafe { FT_ClearStreamPipe(self.device.handle, 0, 0, EP_ID_OUT0) };
+            let status = unsafe { FT_ReleaseOverlapped(self.device.handle, &mut overlappeds[i] as *mut OVERLAPPED)};
+            assert!(status == FT_OK, "Failed to release overlapped: status = {}", status);
         }
-
-        result
+        Ok(0)
     }
-
 }
 
+
 impl D3xxReader {
+
     #[cfg(target_os = "linux")]
     pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
         self.timeout_us = timeout_us;
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
+        let status = unsafe { FT_SetPipeTimeout(self.device.handle, EP_ID_IN0, timeout_us) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        self.timeout_us = timeout_us;
+        Ok(())
+    }
+
+    pub fn set_stream_pipe(&mut self, stream_size: u32) -> D3xxResult<()> {
+        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 1, 0, stream_size) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }
+
+    pub fn clear_stream_pipe(&mut self) -> D3xxResult<()> {
+        let status = unsafe { FT_ClearStreamPipe(self.device.handle, 0, 1, 0) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
         Ok(())
     }
 
@@ -411,14 +317,6 @@ impl D3xxReader {
             status_to_result(status)?;
         }
         Ok(buffer[0..bytes_read as usize].to_vec())
-    }
-
-    #[cfg(target_os = "windows")]
-    pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
-        let status = unsafe { FT_SetPipeTimeout(self.device.handle, EP_ID_IN0, timeout_us) };
-        status_to_result(status)?;
-        self.timeout_us = timeout_us;
-        Ok(())
     }
 
     #[cfg(target_os = "windows")]
@@ -449,85 +347,54 @@ impl D3xxReader {
         }
 
         let mut buffer = vec![0u8; len];
-        let mut overlappeds = vec![OVERLAPPED::default(); buffer.chunks(MAX_SIZE).len()];
-        let mut initialized = 0usize;
-        let mut stream_pipe_enabled = false;
+        let mut chunks: Vec<&mut [u8]> = buffer.chunks_mut(MAX_SIZE).collect();
 
-        let result = (|| -> D3xxResult<Vec<u8>> {
+        // 読み込み要求
+        let mut overlappeds = vec![OVERLAPPED::default(); chunks.len()];
+        let mut bytes_transferred = vec![0u32; chunks.len()];
+        for i in 0..overlappeds.len() {
             let status = unsafe {
-                FT_SetStreamPipe(self.device.handle, 0, 0, EP_ID_IN0, MAX_SIZE as ULONG)
+                FT_InitializeOverlapped(self.device.handle, &mut overlappeds[i] as *mut OVERLAPPED)
             };
+            assert!(status == FT_OK, "Failed to initialize overlapped: status = {}", status);
+
+            let status = unsafe {
+                FT_ReadPipeAsync(
+                    self.device.handle,
+                    0,
+                    chunks[i].as_mut_ptr(),
+                    chunks[i].len() as ULONG,
+                    &mut bytes_transferred[i] as *mut ULONG,
+                    &mut overlappeds[i] as *mut OVERLAPPED,
+                )
+            };
+            assert!(status == FT_IO_PENDING, "Failed to read pipe async: status = {}", status);
+        }
+
+        // 完了を待つ
+        let mut total_bytes: usize = 0;
+        for i in 0..overlappeds.len() {
+            let status = unsafe {
+                FT_GetOverlappedResult(
+                    self.device.handle,
+                    &mut overlappeds[i] as *mut OVERLAPPED,
+                    &mut bytes_transferred[i] as *mut ULONG,
+                    1,
+                )
+            };
+
+            let release_status = unsafe {
+                FT_ReleaseOverlapped(self.device.handle, &mut overlappeds[i] as *mut OVERLAPPED)
+            };
+            assert!(release_status == FT_OK, "Failed to release overlapped: status = {}", release_status);
+
             status_to_result(status)?;
-            stream_pipe_enabled = true;
-
-            for overlapped in &mut overlappeds {
-                let status = unsafe {
-                    FT_InitializeOverlapped(self.device.handle, overlapped as *mut OVERLAPPED)
-                };
-                status_to_result(status)?;
-                initialized += 1;
-            }
-
-            for (overlapped, chunk) in overlappeds.iter_mut().zip(buffer.chunks_mut(MAX_SIZE)) {
-                let mut bytes_submitted = 0;
-                reset_overlapped(overlapped);
-                let status = unsafe {
-                    submit_async_read(
-                        self.device.handle,
-                        chunk,
-                        &mut bytes_submitted,
-                        overlapped,
-                    )
-                };
-                async_status_to_result(status)?;
-            }
-
-            for (overlapped, chunk) in overlappeds.iter_mut().zip(buffer.chunks(MAX_SIZE)) {
-                let mut bytes_transferred = 0;
-                let status = unsafe {
-                    FT_GetOverlappedResult(
-                        self.device.handle,
-                        overlapped as *mut OVERLAPPED,
-                        &mut bytes_transferred,
-                        1,
-                    )
-                };
-                status_to_result(status)?;
-
-                if bytes_transferred as usize != chunk.len() {
-                    return Err(D3xxError::IoError);
-                }
-            }
-
-            Ok(buffer)
-        })();
-
-        if result.is_err() {
-            let _ = unsafe { FT_AbortPipe(self.device.handle, EP_ID_IN0) };
-
-            for overlapped in overlappeds.iter_mut().take(initialized) {
-                let mut bytes_transferred = 0;
-                let _ = unsafe {
-                    FT_GetOverlappedResult(
-                        self.device.handle,
-                        overlapped as *mut OVERLAPPED,
-                        &mut bytes_transferred,
-                        1,
-                    )
-                };
-            }
+            status_to_result(release_status)?;
+            total_bytes += bytes_transferred[i] as usize;
         }
 
-        for slot in 0..initialized {
-            let _ = unsafe {
-                FT_ReleaseOverlapped(self.device.handle, &mut overlappeds[slot] as *mut OVERLAPPED)
-            };
-        }
+        buffer.truncate(total_bytes);
+        Ok(buffer)
 
-        if stream_pipe_enabled {
-            let _ = unsafe { FT_ClearStreamPipe(self.device.handle, 0, 0, EP_ID_IN0) };
-        }
-
-        result
     }
 }
