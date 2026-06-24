@@ -14,23 +14,23 @@ module tb_main
     // -------------------------
 
     logic           ft601_reset_n   ;
-    logic           ft601_wakeup_n  ;
+    wire            ft601_wakeup_n  ;
     logic           ft601_rxf_n     ;
-    logic           ft601_txe_n     ;
+    logic           ft601_txe_n = 0 ;
     logic           ft601_siwu_n    ;
     logic           ft601_wr_n      ;
     logic           ft601_rd_n      ;
     logic           ft601_oe_n      ;
-    logic   [3:0]   ft601_be        ;
-    logic   [31:0]  ft601_data      ;
-    logic   [1:0]   ft601_gpio      ;
+    wire    [3:0]   ft601_be        ;
+    wire    [31:0]  ft601_data      ;
+    wire    [1:0]   ft601_gpio      ;
     logic   [1:0]   push_sw         ;
     logic   [1:0]   dip_sw          ;
     logic   [3:0]   led             ;
     logic   [7:0]   pmod            ;
 
-    rtcl_tp25k_usb3_fifo_loopback
-        u_rtcl_tp25k_usb3_fifo_sample
+    rtcl_tp25k_usb3_fifo_multi_channel
+        u_rtcl_tp25k_usb3_fifo_multi_channel
             (
                 .in_clk50           (clk            ),
                 .ft601_reset_n      (ft601_reset_n  ),
@@ -74,42 +74,111 @@ module tb_main
     end
 
     // 疑似送受信
-    int     rd_data_count = '0;
-    int     rd_data;
-    int     wr_data_count = '0;
+    logic   [3:0]   ft601_be_t      ;
+    logic   [3:0]   ft601_be_o      ;
+    logic   [3:0]   ft601_be_i      ;
+    logic   [31:0]  ft601_data_t    ;
+    logic   [31:0]  ft601_data_o    ;
+    logic   [31:0]  ft601_data_i    ;
 
-    always_ff @(negedge ft601_clk) begin
-        if ( !ft601_reset_n ) begin
-            rd_data_count <= '0;
-            rd_data       <= '1;
+    for ( genvar i = 0; i < 4; i++ ) begin
+        assign ft601_be  [i] = ft601_be_t[i] ? 1'bz            : ft601_be_o[i];
+        assign ft601_be_i[i] = ft601_be_t[i] ? dly_ft601_be[i] : ft601_be[i];
+    end
+    for ( genvar i = 0; i < 32; i++ ) begin
+        assign ft601_data  [i] = ft601_data_t[i] ? 1'bz              : ft601_data_o[i];
+        assign ft601_data_i[i] = ft601_data_t[i] ? dly_ft601_data[i] : ft601_data_o[i];
+    end
+
+    initial begin
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+        for ( int i = 0; i < 500; i++ ) begin
+            @(negedge ft601_clk);
         end
-        else begin
-            // read
-            if ( rd_data_count == 0 && $urandom_range(0, 99) < 2 ) begin
-                rd_data_count <= $urandom_range(16, 32);
-            end
 
-            if ( ~dly_ft601_rd_n && rd_data_count > 0 ) begin
-                rd_data_count <= rd_data_count - 1'b1;
-                rd_data       <= rd_data - 1;
-            end
+        // 受信
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ef00;
+        @(negedge ft601_clk);
 
-            // write
-            if ( wr_data_count > 0 && $urandom_range(0, 99) < 2 ) begin
-                wr_data_count <= 0;
-            end
-
-            if ( ~ft601_txe_n && ~dly_ft601_wr_n ) begin
-                wr_data_count <= wr_data_count + 1'b1;
-            end
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
         end
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'h0         ;
+        ft601_be_o   = 4'h1         ;
+        ft601_data_t = 32'h0000_0000;
+        ft601_data_o = 32'h0000_0001;
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'h0         ;
+        ft601_be_o   = 4'h2         ;
+        ft601_data_t = 32'h0000_0000;
+        ft601_data_o = 32'h0000_0002;
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'h0         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'h0000_0000;
+        ft601_data_o = 32'h0000_0003;
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+        @(negedge ft601_clk);
+
+
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        for ( int i = 0; i < 10; i++ ) begin
+            @(negedge ft601_clk);
+        end
+
+        // 送信
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_fe00;
+        @(negedge ft601_clk);
+
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
+        end
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'hf         ;
+        ft601_data_t = 32'hffff_ffff;
+        @(negedge ft601_clk);
+
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+
+
+        // end
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        for ( int i = 0; i < 100; i++ ) begin
+            @(negedge ft601_clk);
+        end
+
+        $finish;
     end
     
-    assign ft601_rxf_n = ~(rd_data_count > 0);
-    assign ft601_txe_n = ~(wr_data_count < 64);
-    assign ft601_data  = ~dly_ft601_oe_n ? rd_data : 'z;
-    assign ft601_be    = ~dly_ft601_oe_n ? '1 : 'z;
 
+
+    /*
     // logging
     int fp_tx = 0;
     int fp_rx = 0;
@@ -133,6 +202,7 @@ module tb_main
             end
         end
     end
+    */
 
 endmodule
 

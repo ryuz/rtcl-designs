@@ -69,16 +69,16 @@ module ft601_multi_ch_mode_transceiver
 
     // 状態定義
     typedef enum {
-        IDLE            ,
-        READ_COMMAND    ,
-        READ_TA1_1      ,
-        READ_TA1_2      ,
-        READ_DATA       ,
-        WRITE_COMMAND   ,
-        WRITE_TA1       ,
-        WRITE_DATA      ,
-        WRITE_TA2       ,
-        FINAL           
+        IDLE          = 0   ,
+        READ_COMMAND  = 1   ,
+        READ_TA1_1    = 2   ,
+        READ_TA1_2    = 3   ,
+        READ_DATA     = 4   ,
+        WRITE_COMMAND = 5   ,
+        WRITE_TA1     = 6   ,
+        WRITE_DATA    = 7   ,
+        WRITE_TA2     = 8   ,
+        FINAL         = 9   
     } state_t;
 
     state_t                     state            = IDLE         ;
@@ -116,7 +116,7 @@ module ft601_multi_ch_mode_transceiver
                     reg_ft601_data_o <= 32'hffff_ffff;
                     // read判定
                     for ( int i = 0; i < CHANNELS; i++ ) begin
-                        if ( reg_ft601_data_i[12+i] && m_fifo_almost_full[i] ) begin
+                        if ( ~reg_ft601_data_i[12+i] && !m_fifo_almost_full[i] ) begin
                             state               <= READ_COMMAND ;
                             channel             <= channel_t'(i);
                             reg_ft601_wr_n      <= 1'b0         ;
@@ -129,7 +129,7 @@ module ft601_multi_ch_mode_transceiver
                     end
                     // write判定(優先)
                     for ( int i = 0; i < CHANNELS; i++ ) begin
-                        if ( reg_ft601_data_i[8+i] && s_fifo_valid[i] ) begin
+                        if ( ~reg_ft601_data_i[8+i] && s_fifo_valid[i] ) begin
                             state               <= WRITE_COMMAND;
                             channel             <= channel_t'(i);
                             reg_ft601_wr_n      <= 1'b0         ;
@@ -157,12 +157,12 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_TA1_2:
                     begin
-                        state <= READ_DATA    ;
+                        state <= READ_DATA  ;
                     end
 
                 READ_DATA:
                     begin
-                        if ( ft601_rxf_n == ft601_rxf_n ) begin
+                        if ( ft601_rxf_n == 1'b1 ) begin
                             state            <= FINAL        ;
                             reg_ft601_wr_n   <= 1'b1         ;
                             reg_ft601_be_t   <= 4'h0         ;
@@ -204,7 +204,7 @@ module ft601_multi_ch_mode_transceiver
                             reg_ft601_data_o <= 32'hffff_ffff           ;
                         end
                         else begin
-                            reg_ft601_be_t    <= 32'h0000_0000       ;
+                            reg_ft601_be_t    <= 4'h0                ;
                             reg_ft601_be_o    <= s_fifo_strb[channel];
                             reg_ft601_data_t  <= 32'h0000_0000       ;
                             reg_ft601_data_o  <= s_fifo_data[channel];
@@ -215,7 +215,7 @@ module ft601_multi_ch_mode_transceiver
                 
                 FINAL:
                     begin
-                        state            <= FINAL        ;
+                        state            <= IDLE         ;
                         reg_ft601_wr_n   <= 1'b1         ;
                         reg_ft601_be_t   <= 4'h0         ;
                         reg_ft601_be_o   <= 4'hf         ;
@@ -252,7 +252,14 @@ module ft601_multi_ch_mode_transceiver
         end
     end
 
-    assign s_fifo_ready = (state == WRITE_DATA);
+    always_comb begin
+        s_fifo_ready = '0;
+        for ( int i = 0; i < CHANNELS; i++ ) begin
+            if ( channel == channel_t'(i) && state == WRITE_DATA && reg_ft601_txe_n == 1'b0 ) begin
+                s_fifo_ready[i] = 1'b1;
+            end
+        end
+    end
 
     assign ft601_wr_n   = reg_ft601_wr_n    ;
     assign ft601_rd_n   = 1'b1              ;

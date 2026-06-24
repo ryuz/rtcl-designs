@@ -17,7 +17,7 @@ module tb_top();
 
 
     logic   reset = 1'b1;
-    initial #(CLK_RATE*100) reset = 1'b0;
+    initial #(CLK_RATE*50) reset = 1'b0;
 
     logic   clk = 1'b1;
     initial forever #(CLK_RATE/2.0)  clk = ~clk;

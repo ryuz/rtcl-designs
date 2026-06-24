@@ -7,6 +7,7 @@ TOP_MODULE = tb_top
 
 SIM_LIB_DIRS += ..
 SIM_LIB_DIRS += ../../stub
+SIM_LIB_DIRS += ../../../../../shared/rtl
 
 FLAGS  = --binary -j 0
 FLAGS += --assert
@@ -16,8 +17,7 @@ FLAGS += $(addprefix -y ,$(SIM_LIB_DIRS))
 FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
-SRCS += ../../../rtl/rtcl_tp25k_usb3_fifo_loopback.sv
-SRCS += ../../../../../shared/rtl/ft601_mode245_transceiver.sv
+SRCS += ../../../rtl/rtcl_tp25k_usb3_fifo_multi_channel.sv
 
 all: build run
 
