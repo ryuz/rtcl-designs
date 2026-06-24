@@ -98,7 +98,7 @@ module rtcl_tp25k_usb3_fifo_multi_channel
 
     assign ft601_reset_n  = ~reset  ;
     assign ft601_wakeup_n = 1'bz    ;
-    assign ft601_gpio     = 2'b00   ;   // 245 Synchrounous FIFO Mode
+    assign ft601_gpio     = 2'b11   ;   // 4 channel, Multi-Channel FIFO mode
     assign ft601_siwu_n   = 1'b1    ;
  
     logic   [3:0]   ft601_be_i      ;
