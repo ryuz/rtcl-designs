@@ -111,26 +111,14 @@ module tb_main
         @(negedge ft601_clk);
         @(negedge ft601_clk);
 
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h1         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0000_0001;
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h2         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0000_0002;
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0000_0003;
-        @(negedge ft601_clk);
+        for ( int i = 1; i < 11; i++ ) begin
+            ft601_rxf_n  = 1'b0;
+            ft601_be_t   = 4'h0         ;
+            ft601_be_o   = 4'h1         ;
+            ft601_data_t = 32'h0000_0000;
+            ft601_data_o = 32'(i);
+            @(negedge ft601_clk);
+        end
 
         ft601_rxf_n  = 1'b1;
         ft601_be_t   = 4'hf         ;
@@ -142,11 +130,11 @@ module tb_main
 
         @(negedge ft601_clk);
         @(negedge ft601_clk);
-        for ( int i = 0; i < 10; i++ ) begin
+        for ( int i = 0; i < 20; i++ ) begin
             @(negedge ft601_clk);
         end
 
-        // 送信
+        // 送信1
         ft601_rxf_n  = 1'b1;
         ft601_data_t = 32'hffff_00ff;
         ft601_data_o = 32'h0000_fe00;
@@ -155,15 +143,58 @@ module tb_main
         while ( dly_ft601_wr_n != 1'b0 ) begin
             @(negedge ft601_clk);
         end
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
         ft601_be_t   = 4'hf         ;
         ft601_data_t = 32'hffff_ffff;
         @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b0;
 
         @(negedge ft601_clk);
         @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+
+        // interval
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+
+        // 送信2
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_fe00;
+        @(negedge ft601_clk);
+
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
+        end
+        ft601_be_t   = 4'hf         ;
+        ft601_data_t = 32'hffff_ffff;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b0;
+
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
 
 
         // end

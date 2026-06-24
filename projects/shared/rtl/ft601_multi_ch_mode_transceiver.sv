@@ -194,7 +194,7 @@ module ft601_multi_ch_mode_transceiver
 
                 WRITE_DATA:
                     begin
-                        if ( !s_fifo_valid[channel] || ft601_rxf_n ) begin
+                        if ( !s_fifo_valid[channel] || ft601_rxf_n == 1'b1 ) begin
                             state            <= FINAL               ;
                             buf_en[channel]  <= s_fifo_valid[channel]   ;
                             reg_ft601_wr_n   <= 1'b1                    ;
@@ -255,8 +255,10 @@ module ft601_multi_ch_mode_transceiver
     always_comb begin
         s_fifo_ready = '0;
         for ( int i = 0; i < CHANNELS; i++ ) begin
-            if ( channel == channel_t'(i) && state == WRITE_DATA && reg_ft601_txe_n == 1'b0 ) begin
-                s_fifo_ready[i] = 1'b1;
+            if ( channel == channel_t'(i) ) begin
+                if ( (state == WRITE_TA1 && !buf_en[i]) || (state == WRITE_DATA && ft601_rxf_n == 1'b0) ) begin
+                    s_fifo_ready[i] = 1'b1;
+                end
             end
         end
     end
