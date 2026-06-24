@@ -171,11 +171,11 @@ module rtcl_tp25k_usb3_fifo_multi_channel
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
     assign pmod[2] = ft601_wr_n;
-    assign pmod[3] = ft601_rd_n;
-    assign pmod[4] = ft601_oe_n;
-    assign pmod[5] = '0;
-    assign pmod[6] = '0;
-    assign pmod[7] = '0;
+    assign pmod[3] = '0;
+    assign pmod[4] = ft601_data_i[8];
+    assign pmod[5] = ft601_data_i[9];
+    assign pmod[6] = ft601_data_i[12];
+    assign pmod[7] = ft601_data_i[13];
 
 endmodule
 
