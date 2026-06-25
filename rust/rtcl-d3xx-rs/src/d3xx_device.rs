@@ -125,30 +125,44 @@ unsafe impl Sync for D3xxDevice {}
 
 pub struct D3xxWriter {
     device: Arc<D3xxDevice>,
+    pipe_id: u8,
+    fifo_id: u8,
     timeout_us: u32,
 }
 pub struct D3xxReader {
     device: Arc<D3xxDevice>,
+    pipe_id: u8,
+    fifo_id: u8,
     timeout_us: u32,
 }
 
 impl D3xxDevice {
-    pub fn new(dev_index: usize) -> D3xxResult<(D3xxWriter, D3xxReader)> {
+    pub fn new(dev_index: usize,  channels: usize) -> D3xxResult<(Vec::<D3xxWriter>, Vec::<D3xxReader>)> {
         let mut handle: FT_HANDLE = std::ptr::null_mut();
         let status = unsafe { FT_Create(dev_index as PVOID, FT_OPEN_BY_INDEX, &mut handle) };
         status_to_result(status)?;
 
         let device = Arc::new(D3xxDevice { handle });
-        Ok((
-            D3xxWriter {
+
+        let mut writers = Vec::<D3xxWriter>::new();
+        for i in 0..channels {
+            writers.push(D3xxWriter {
                 device: device.clone(),
+                pipe_id: EP_ID_IN0 + i as u8,
+                fifo_id: i as u8,
                 timeout_us: 5000,
-            },
-            D3xxReader {
-                device: device,
+            });
+        }
+        let mut readers = Vec::<D3xxReader>::new();
+        for i in 0..channels {
+            readers.push(D3xxReader {
+                device: device.clone(),
+                pipe_id: EP_ID_IN0 + i as u8,
+                fifo_id: i as u8,
                 timeout_us: 5000,
-            },
-        ))
+            });
+        }
+        Ok((writers, readers))
     }
 }
 
@@ -169,13 +183,13 @@ impl D3xxWriter {
     }
 
     pub fn set_stream_pipe(&mut self, stream_size: u32) -> D3xxResult<()> {
-        let status = unsafe { FT_SetStreamPipe(self.device.handle, 1, 0, 0, stream_size) };
+        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size) };
         status_to_result(status)?;
         Ok(())
     }
 
     pub fn clear_stream_pipe(&mut self) -> D3xxResult<()> {
-        let status = unsafe { FT_ClearStreamPipe(self.device.handle, 1, 0, 0) };
+        let status = unsafe { FT_ClearStreamPipe(self.device.handle, 0, 0, self.pipe_id) };
         status_to_result(status)?;
         Ok(())
     }
@@ -186,7 +200,7 @@ impl D3xxWriter {
         let status = unsafe {
             FT_WritePipeEx(
                 self.device.handle,
-                0,
+                self.fifo_id,
                 data.as_ptr(),
                 data.len() as ULONG,
                 &mut bytes_written,
@@ -203,7 +217,7 @@ impl D3xxWriter {
         let status = unsafe {
             FT_WritePipe(
                 self.device.handle,
-                EP_ID_OUT0,
+                self.pipe_id,
                 data.as_ptr(),
                 data.len() as ULONG,
                 &mut bytes_written,
@@ -236,7 +250,7 @@ impl D3xxWriter {
 
             let status = unsafe { FT_WritePipeAsync(
                 self.device.handle,
-                0,
+                self.fifo_id,
                 chunks[i].as_ptr(),
                 chunks[i].len() as ULONG,
                 &mut bytes_transferred[i] as *mut ULONG,
@@ -276,7 +290,7 @@ impl D3xxReader {
 
     #[cfg(target_os = "windows")]
     pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
-        let status = unsafe { FT_SetPipeTimeout(self.device.handle, EP_ID_IN0, timeout_us) };
+        let status = unsafe { FT_SetPipeTimeout(self.device.handle, self.pipe_id, timeout_us) };
         if status != FT_OK {
             return Err(D3xxError::from_status(status));
         }
@@ -285,7 +299,7 @@ impl D3xxReader {
     }
 
     pub fn set_stream_pipe(&mut self, stream_size: u32) -> D3xxResult<()> {
-        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 1, 0, stream_size) };
+        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size) };
         if status != FT_OK {
             return Err(D3xxError::from_status(status));
         }
@@ -293,7 +307,7 @@ impl D3xxReader {
     }
 
     pub fn clear_stream_pipe(&mut self) -> D3xxResult<()> {
-        let status = unsafe { FT_ClearStreamPipe(self.device.handle, 0, 1, 0) };
+        let status = unsafe { FT_ClearStreamPipe(self.device.handle, 0, 0, self.pipe_id) };
         if status != FT_OK {
             return Err(D3xxError::from_status(status));
         }
@@ -307,7 +321,7 @@ impl D3xxReader {
         let status = unsafe {
             FT_ReadPipeEx(
                 self.device.handle,
-                0,
+                self.fifo_id,
                 buffer.as_mut_ptr(),
                 buffer.len() as ULONG,
                 &mut bytes_read,
@@ -327,7 +341,7 @@ impl D3xxReader {
         let status = unsafe {
             FT_ReadPipe(
                 self.device.handle,
-                EP_ID_IN0,
+                self.pipe_id,
                 buffer.as_mut_ptr(),
                 buffer.len() as ULONG,
                 &mut bytes_read,
@@ -363,7 +377,7 @@ impl D3xxReader {
             let status = unsafe {
                 FT_ReadPipeAsync(
                     self.device.handle,
-                    0,
+                    self.fifo_id,
                     chunks[i].as_mut_ptr(),
                     chunks[i].len() as ULONG,
                     &mut bytes_transferred[i] as *mut ULONG,

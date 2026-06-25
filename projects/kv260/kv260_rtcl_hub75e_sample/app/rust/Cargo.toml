@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jelly-mem_access = "0.2.7"
-jelly-lib = "0.2.2"
-jelly-pac = "0.1.2"
+jelly-mem_access = "0.2.9"
+jelly-lib = "0.2.4"
+jelly-pac = "0.1.4"
 jelly-fpgautil = {git="https://github.com/ryuz/jelly-fpgautil-rs.git", tag="v0.0.2"}
 rtcl-lib = { path = "../../../../../rust/lib" }
 opencv = { version = "0.93.5", optional = true }

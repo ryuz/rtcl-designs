@@ -1,77 +1,145 @@
 use std::error::Error;
-use std::time::Instant;
 use rtcl_d3xx::*;
+use std::time::Duration;
+
+
+const REGADR_SYSCTL_CONTROL0 : usize = 0x10;
+const REGADR_SYSCTL_CONTROL1 : usize = 0x11;
+//const REGADR_SYSCTL_CONTROL2 : usize = 0x12;
+const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
+
+type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("FT601 loopback test");
+    println!("FT601 test");
 
-    // Open the first device found.
-    let (mut usb_tx, mut usb_rx) = D3xxDevice::new(0)?;
+    // OpenDevice
+    let mut usb = RtclFifo32CtlD3xx::new(0)?;
 
-    usb_tx.set_timeout(1000)?;
-    usb_rx.set_timeout(1000)?;
+    // direct read/write
+    println!("id : 0x{:08x}", usb.read_axi4l(0)?);
 
-    const PACKET_SIZE: usize = 4*4;
-    const ITERETIONS: usize = 1;
+    usb.write_axi4l(0x13*4, 0x01234567, 0xf)?;
+    let data = usb.read_axi4l(0x13*4)?;
+    println!("Read data: {:04x}", data);
+    usb.write_axi4l(0x13*4, 0x89abcdef, 0xf)?;
+    let data = usb.read_axi4l(0x13*4)?;
+    println!("Read data: {:04x}", data);
 
-    usb_tx.set_stream_pipe(0x10000)?;
-    usb_rx.set_stream_pipe(0x10000)?;
+    let usb = Arc::new(Mutex::new(usb));
+    let axi4l_bus = RtclD3xxAxi4lBus::new(usb.clone());
+    let usb_accessor = SharedBusAccessor::<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>::new(axi4l_bus);
 
-    let mut tx_buf = vec![0; PACKET_SIZE];
+    let ctl_acc = usb_accessor.subclone(0x0000_0000, 0x1000);
+    let i2c_acc = usb_accessor.subclone(0x0001_0000, 0x1000);
 
-    // データチェック
-    for itr in 0..ITERETIONS {
-        // 乱数で初期化
-        for i in 0..tx_buf.len() {
-            tx_buf[i] = rand::random::<u8>();
-        }
+    unsafe {
+        let id = ctl_acc
+            .try_read_reg_u32(0)
+            .expect("read_axi4l(scratch before) failed");
+        println!("id : {id:04x}");
 
-        // write
-        usb_tx.write(&tx_buf).expect("failed to write to device");
+        let scratch = ctl_acc
+            .try_read_reg_u32(REGADR_SYSCTL_CONTROL3)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
 
-        // read
-        let rx_data = usb_rx.read(tx_buf.len()).expect("failed to read from device");
+        ctl_acc
+            .try_write_reg_u32(REGADR_SYSCTL_CONTROL3, 0x1234)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
 
-        // 32bit配列に変換
-        let tx_data_32bit: Vec<i32> = tx_buf.chunks_exact(4).map(|chunk| {i32::from_le_bytes(chunk.try_into().unwrap())}).collect();
-        let rx_data_32bit: Vec<i32> = rx_data.chunks_exact(4).map(|chunk| {i32::from_le_bytes(chunk.try_into().unwrap())}).collect();
-        // verify
-        if tx_data_32bit != rx_data_32bit {
-            for i in 0..rx_data_32bit.len() {
-                if rx_data_32bit[i] != tx_data_32bit[i] {
-                    println!("Data mismatch at index {:08x}: tx = {:08x}, rx = {:08x} diff = {:08x}", i, tx_data_32bit[i], rx_data_32bit[i], tx_data_32bit[i] ^ rx_data_32bit[i]);
-                }
-            }
-            eprintln!("Data mismatch! {}", itr);
-            return Err("Data mismatch".into());
-        }
+        let scratch = ctl_acc
+            .try_read_reg_u32(REGADR_SYSCTL_CONTROL3)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
+
     }
 
-    /*
-    // Spped test
-    for i in 0..tx_buf.len() {
-        tx_buf[i] = rand::random::<u8>();
-    }
-  
-    let start = Instant::now();
-    for _ in 0..ITERETIONS {
-        // write
-        usb_tx.write(&tx_buf).expect("failed to write to device");
-        // read
-        let _ = usb_rx.read(tx_buf.len()).expect("failed to read from device");
+    // カメラOFF
+    println!("camera power off");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
+        std::thread::sleep(Duration::from_millis(100));
     }
 
-    let elapsed = start.elapsed();
-    let elapsed_sec = elapsed.as_secs_f64();
-    let transferred_bytes = (PACKET_SIZE * ITERETIONS * 2) as f64;
-    let bytes_per_sec = transferred_bytes / elapsed_sec;
-    let mbyte_per_sec = bytes_per_sec / (1024.0 * 1024.0);
-    let mbit_per_sec = bytes_per_sec * 8.0 / (1024.0 * 1024.0);
+    // カメラ電源ON
+    println!("camera power on");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 1);
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 1);
+        std::thread::sleep(Duration::from_millis(100));
+    }
 
-    println!("Elapsed: {:.6} sec", elapsed_sec);
-    println!("Throughput: {:.2} MByte/s", mbyte_per_sec);
-    println!("Throughput: {:.2} Mbit/s", mbit_per_sec);
-    */
+    const IMX219_DEVADR: u8 =     0x10;    // 7bit address
+    let i2c = JellyI2c::<UsbAccessor>::new(i2c_acc, None);
+    let mut model_id: [u8; 2] = [0u8; 2];
+    i2c.write(IMX219_DEVADR, &[0x00, 0x00]);
+    i2c.read(IMX219_DEVADR, &mut model_id);
+    println!("model_id: 0x{:02x}{:02x}", model_id[0], model_id[1]);
+    let i2c = JellyI2cDevice::<IMX219_DEVADR, UsbAccessor>::new(i2c);
+
+    let mut imx219 = Imx219SensorDriver::new(i2c);
+    println!("sensor model ID:{:04x}", imx219.get_model_id().unwrap());
+
 
     Ok(())
+}
+
+
+
+
+
+
+use std::sync::{Arc, Mutex};
+use jelly_mem_access::*;
+use jelly_mem_access::bus_accessor::LittleEndian;
+use jelly_pac::i2c::*;
+use jelly_pac::i2c_device::*;
+use jelly_lib::imx219_sensor_driver::Imx219SensorDriver;
+
+
+struct RtclD3xxAxi4lBus {
+    d3xx: Arc<Mutex<RtclFifo32CtlD3xx>>,
+}
+
+impl RtclD3xxAxi4lBus {
+    fn new(d3xx: Arc<Mutex<RtclFifo32CtlD3xx>>) -> Self {
+        Self { d3xx }
+    }
+
+    fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
+        if let Ok(mut d3xx_guard) = self.d3xx.lock() {
+            d3xx_guard.write_axi4l(addr, data, strb)?;
+            Ok(())
+        }
+        else {
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx")))
+        }
+    }
+
+    fn read_axi4l(&self, addr: u32) -> Result<u32, Box<dyn Error>> {
+        if let Ok(mut d3xx_guard) = self.d3xx.lock() {
+            d3xx_guard.read_axi4l(addr)
+        } else {
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx")))
+        }
+    }
+}
+
+impl Bus<u32, u32, u8> for RtclD3xxAxi4lBus {
+    type Error = Box<dyn Error>;
+
+    fn write(&mut self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
+        self.write_axi4l(addr, data, strb)?;
+        Ok(())
+    }
+
+    fn read(&mut self, addr: u32) -> Result<u32, Box<dyn Error>> {
+        let v = self.read_axi4l(addr)?;
+        Ok(v)
+    }
 }
