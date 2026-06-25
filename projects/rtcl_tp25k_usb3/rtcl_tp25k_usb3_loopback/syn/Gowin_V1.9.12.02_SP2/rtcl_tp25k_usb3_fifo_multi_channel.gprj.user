@@ -11,16 +11,16 @@
         <Process ID="Place" State="2"/>
     </FlowState>
     <ResultFileList>
-        <ResultFile ResultFileType="RES.netlist" ResultFilePath="impl/gwsynthesis/rtcl_tp25k_usb3_fifo_multi_channel.vg"/>
+        <ResultFile ResultFileType="RES.netlist" ResultFilePath="impl/gwsynthesis/rtcl_tp25k_usb3_loopback.vg"/>
         <ResultFile ResultFileType="RES.pnr.bitstream" ResultFilePath="impl/pnr/ao_0.fs"/>
-        <ResultFile ResultFileType="RES.pnr.pin.rpt" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_fifo_multi_channel.pin.html"/>
-        <ResultFile ResultFileType="RES.pnr.posp.bin" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_fifo_multi_channel.db"/>
-        <ResultFile ResultFileType="RES.pnr.pwr.rpt" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_fifo_multi_channel.power.html"/>
-        <ResultFile ResultFileType="RES.pnr.report" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_fifo_multi_channel.rpt.html"/>
-        <ResultFile ResultFileType="RES.pnr.timing.paths" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_fifo_multi_channel.timing_paths"/>
-        <ResultFile ResultFileType="RES.pnr.timing.rpt" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_fifo_multi_channel.tr.html"/>
-        <ResultFile ResultFileType="RES.syn.report" ResultFilePath="impl/gwsynthesis/rtcl_tp25k_usb3_fifo_multi_channel_syn.rpt.html"/>
-        <ResultFile ResultFileType="RES.syn.resource" ResultFilePath="impl/gwsynthesis/rtcl_tp25k_usb3_fifo_multi_channel_syn_rsc.xml"/>
+        <ResultFile ResultFileType="RES.pnr.pin.rpt" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_loopback.pin.html"/>
+        <ResultFile ResultFileType="RES.pnr.posp.bin" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_loopback.db"/>
+        <ResultFile ResultFileType="RES.pnr.pwr.rpt" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_loopback.power.html"/>
+        <ResultFile ResultFileType="RES.pnr.report" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_loopback.rpt.html"/>
+        <ResultFile ResultFileType="RES.pnr.timing.paths" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_loopback.timing_paths"/>
+        <ResultFile ResultFileType="RES.pnr.timing.rpt" ResultFilePath="impl/pnr/rtcl_tp25k_usb3_loopback.tr.html"/>
+        <ResultFile ResultFileType="RES.syn.report" ResultFilePath="impl/gwsynthesis/rtcl_tp25k_usb3_loopback_syn.rpt.html"/>
+        <ResultFile ResultFileType="RES.syn.resource" ResultFilePath="impl/gwsynthesis/rtcl_tp25k_usb3_loopback_syn_rsc.xml"/>
     </ResultFileList>
     <Ui>000000ff00000001fd00000002000000000000026c00000371fc0200000001fc0000003f000003710000000000fffffffaffffffff0200000003fb00000030004600700067006100500072006f006a006500630074002e00500061006e0065006c002e00440065007300690067006e0100000000ffffffff0000000000000000fb00000032004600700067006100500072006f006a006500630074002e00500061006e0065006c002e00500072006f00630065007300730100000000ffffffff0000000000000000fb00000036004600700067006100500072006f006a006500630074002e00500061006e0065006c002e0048006900650072006100720063006800790100000000ffffffff00000000000000000000000300000af400000248fc0100000001fc0000000000000af4000000a100fffffffa000000010100000002fb00000032004600700067006100500072006f006a006500630074002e00500061006e0065006c002e00470065006e006500720061006c0100000000ffffffff0000006400fffffffb0000002e004600700067006100500072006f006a006500630074002e00500061006e0065006c002e004900730073007500650100000000ffffffff000000a100ffffff000008820000037100000004000000040000000800000008fc000000010000000200000004000000220043006f00720065002e0054006f006f006c006200610072002e00460069006c00650100000000ffffffff0000000000000000000000220043006f00720065002e0054006f006f006c006200610072002e004500640069007401000000adffffffff0000000000000000000000240043006f00720065002e0054006f006f006c006200610072002e0054006f006f006c0073010000017fffffffff0000000000000000000000280043006f00720065002e0054006f006f006c006200610072002e00500072006f00630065007300730100000264ffffffff0000000000000000</Ui>
     <FpUi></FpUi>

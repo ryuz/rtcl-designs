@@ -2,7 +2,7 @@
 <GAO_CONFIG>
     <Version>3.0</Version>
     <Mode>Standard</Mode>
-    <AoCore index="0" sample_clock="ft601_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_fifo_multi_channel" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+    <AoCore index="0" sample_clock="ft601_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_loopback" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
             <Bus capture_enable="true" name="u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[31:0]">
                 <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[31]</Signal>

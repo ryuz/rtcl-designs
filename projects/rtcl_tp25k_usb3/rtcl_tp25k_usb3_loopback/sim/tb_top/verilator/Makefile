@@ -17,7 +17,7 @@ FLAGS += $(addprefix -y ,$(SIM_LIB_DIRS))
 FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
-SRCS += ../../../rtl/rtcl_tp25k_usb3_fifo_multi_channel.sv
+SRCS += ../../../rtl/rtcl_tp25k_usb3_loopback.sv
 
 all: build run
 

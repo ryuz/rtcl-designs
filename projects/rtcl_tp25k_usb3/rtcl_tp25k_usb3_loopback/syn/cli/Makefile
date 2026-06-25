@@ -4,7 +4,7 @@
 DEVICE_PART_NUMBER=GW5A-LV25MG121NC1/I0
 DEVICE_NAME=GW5A-25A
 
-TOP_MODULE = rtcl_tp25k_usb3_fifo_multi_channel
+TOP_MODULE = rtcl_tp25k_usb3_loopback
 OUTPUT_BASE_NAME = $(TOP_MODULE)
 
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
@@ -15,7 +15,7 @@ SHARED_DIR = ../../../../shared
 CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
-VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_fifo_multi_channel.sv
+VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_loopback.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode_transceiver.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
@@ -31,10 +31,10 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
 
 # SDC File
-SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_multi_channel.sdc
+SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_loopback.sdc
 
 # CST File
-CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_fifo_multi_channel.cst
+CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_loopback.cst
 
 # for tcl script
 export DEVICE_PART_NUMBER

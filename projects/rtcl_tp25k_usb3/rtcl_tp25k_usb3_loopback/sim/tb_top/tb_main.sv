@@ -29,8 +29,8 @@ module tb_main
     logic   [3:0]   led             ;
     logic   [7:0]   pmod            ;
 
-    rtcl_tp25k_usb3_fifo_multi_channel
-        u_rtcl_tp25k_usb3_fifo_multi_channel
+    rtcl_tp25k_usb3_loopback
+        u_rtcl_tp25k_usb3_loopback
             (
                 .in_clk50           (clk            ),
                 .ft601_reset_n      (ft601_reset_n  ),

@@ -9,7 +9,7 @@
 `timescale 1ps/1ps
 `default_nettype none
 
-module rtcl_tp25k_usb3_fifo_multi_channel
+module rtcl_tp25k_usb3_loopback
         (
             input   var logic           in_clk50        ,
 
