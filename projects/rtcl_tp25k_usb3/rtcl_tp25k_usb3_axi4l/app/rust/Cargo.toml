@@ -1,5 +1,5 @@
 [package]
-name = "rtcl_tp25k_usb3_fifo_loopback"
+name = "rtcl_tp25k_usb3_axi4l"
 version = "0.1.0"
 edition = "2024"
 

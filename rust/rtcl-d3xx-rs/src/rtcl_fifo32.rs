@@ -155,7 +155,9 @@ fn recv_thread(mut dev_reader: D3xxReader, tx_command: mpsc::Sender<RtclPacket>,
 impl RtclFifo32D3xx {
     pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {
 
-        let (dev_writer, dev_reader) = D3xxDevice::new(dev_index)?;
+        let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 1)?;
+        let dev_writer = dev_writers.into_iter().next().ok_or("No writer channel available")?;
+        let dev_reader = dev_readers.into_iter().next().ok_or("No reader channel available")?;
 
         let (tx_command, rx_command) = mpsc::channel::<RtclPacket>();
         let (tx_stream, rx_stream) = mpsc::channel::<RtclPacket>();
