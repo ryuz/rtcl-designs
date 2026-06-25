@@ -168,7 +168,7 @@ name = "rtcl-d3xx"
 version = "0.1.0"
 
 [[package]]
-name = "rtcl_tp25k_usb3_axi4l"
+name = "rtcl_tp25k_usb3_imx219"
 version = "0.1.0"
 dependencies = [
  "jelly-lib",

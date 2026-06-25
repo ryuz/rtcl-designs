@@ -85,7 +85,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut imx219 = Imx219SensorDriver::new(i2c);
     println!("sensor model ID:{:04x}", imx219.get_model_id().unwrap());
 
-
     Ok(())
 }
 
