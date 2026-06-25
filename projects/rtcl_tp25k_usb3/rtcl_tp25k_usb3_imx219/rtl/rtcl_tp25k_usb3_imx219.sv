@@ -6,7 +6,7 @@
 //  https://rtc-lab.com/
 // -----------------------------------------------------------------------------
 
-
+`timescale 1ps/1ps
 `default_nettype none
 
 module rtcl_tp25k_usb3_imx219
@@ -40,7 +40,7 @@ module rtcl_tp25k_usb3_imx219
             output  var logic   [3:0]   led             ,
             output  var logic   [7:0]   pmod            
         );
-
+    
     // reset switch
     logic in_reset;
     assign in_reset = push_sw[0];
@@ -110,17 +110,6 @@ module rtcl_tp25k_usb3_imx219
     logic   [1:0]   dphy_di_lprx3           ;
     logic   [1:0]   dphy_di_lprxck          ;
 
-
-    // logic           dphy_di_lprx0_n         ;
-    // logic           dphy_di_lprx0_p         ;
-    // logic           dphy_di_lprx1_n         ;
-    // logic           dphy_di_lprx1_p         ;
-    // logic           dphy_di_lprx2_n         ;
-    // logic           dphy_di_lprx2_p         ;
-    // logic           dphy_di_lprx3_n         ;
-    // logic           dphy_di_lprx3_p         ;
-    // logic           dphy_di_lprxck_n        ;
-    // logic           dphy_di_lprxck_p        ;
     logic           dphy_d0ln_deskew_done   ;
     logic           dphy_d1ln_deskew_done   ;
     logic           dphy_d2ln_deskew_done   ;
@@ -147,11 +136,7 @@ module rtcl_tp25k_usb3_imx219
     logic           dphy_hsrx_en_d1         ;
     logic           dphy_hsrx_en_d2         ;
     logic           dphy_hsrx_en_d3         ;
-    logic   [3:0]   dphy_hsrx_odten         ; 
-    // logic           dphy_hsrx_odten_d0      ;
-    // logic           dphy_hsrx_odten_d1      ;
-    // logic           dphy_hsrx_odten_d2      ;
-    // logic           dphy_hsrx_odten_d3      ;
+    logic   [3:0]   dphy_hsrx_odten         ;
     logic           dphy_lprx_en_d0         ;
     logic           dphy_lprx_en_d1         ;
     logic           dphy_lprx_en_d2         ;
@@ -225,10 +210,10 @@ module rtcl_tp25k_usb3_imx219
                 .hsrx_en_d2         (dphy_hsrx_en_d2        ), //input hsrx_en_d2
                 .hsrx_en_d3         (dphy_hsrx_en_d3        ), //input hsrx_en_d3
                 .hsrx_odten_ck      (1'b1                   ), //input hsrx_odten_ck
-                .hsrx_odten_d0      (dphy_hsrx_odten[0]      ), //input hsrx_odten_d0
-                .hsrx_odten_d1      (dphy_hsrx_odten[1]      ), //input hsrx_odten_d1
-                .hsrx_odten_d2      (dphy_hsrx_odten[2]      ), //input hsrx_odten_d2
-                .hsrx_odten_d3      (dphy_hsrx_odten[3]      ), //input hsrx_odten_d3
+                .hsrx_odten_d0      (dphy_hsrx_odten[0]     ), //input hsrx_odten_d0
+                .hsrx_odten_d1      (dphy_hsrx_odten[1]     ), //input hsrx_odten_d1
+                .hsrx_odten_d2      (dphy_hsrx_odten[2]     ), //input hsrx_odten_d2
+                .hsrx_odten_d3      (dphy_hsrx_odten[3]     ), //input hsrx_odten_d3
                 .lprx_en_ck         (1'b1                   ), //input lprx_en_ck
                 .lprx_en_d0         (dphy_lprx_en_d0        ), //input lprx_en_d0
                 .lprx_en_d1         (dphy_lprx_en_d1        ), //input lprx_en_d1
@@ -258,10 +243,6 @@ module rtcl_tp25k_usb3_imx219
     assign dphy_hsrx_en_d1    = 1;
     assign dphy_hsrx_en_d2    = 1;
     assign dphy_hsrx_en_d3    = 1;
-    // assign dphy_hsrx_odten_d0 = 0;
-    // assign dphy_hsrx_odten_d1 = 0;
-    // assign dphy_hsrx_odten_d2 = 0;
-    // assign dphy_hsrx_odten_d3 = 0;
     assign dphy_lprx_en_d0    = 1;
     assign dphy_lprx_en_d1    = 1;
     assign dphy_lprx_en_d2    = 1;
@@ -320,9 +301,9 @@ module rtcl_tp25k_usb3_imx219
 
 
 
-    // ----------------------------------------
+    // -------------------------------
     //  FT601
-    // ----------------------------------------
+    // -------------------------------
 
     logic ft601_reset;
     jelly3_reset_async
@@ -342,7 +323,7 @@ module rtcl_tp25k_usb3_imx219
 
     assign ft601_reset_n  = ~reset  ;
     assign ft601_wakeup_n = 1'bz    ;
-    assign ft601_gpio     = 2'b00   ;   // 245 Synchrounous FIFO Mode
+    assign ft601_gpio     = 2'b11   ;   // 4 channel, Multi-Channel FIFO mode
     assign ft601_siwu_n   = 1'b1    ;
  
     logic   [3:0]   ft601_be_i      ;
@@ -380,7 +361,7 @@ module rtcl_tp25k_usb3_imx219
                 .USE_LAST   (0      ),
                 .DATA_BITS  (32     )
             )
-        axi4s_ft601_rx
+        axi4s_ft601_rx [2]
             (
                 .aresetn    (~reset ),
                 .aclk       (clk    ),
@@ -393,73 +374,40 @@ module rtcl_tp25k_usb3_imx219
                 .USE_LAST   (0      ),
                 .DATA_BITS  (32     )
             )
-        axi4s_ft601_tx
+        axi4s_ft601_tx [2]
             (
                 .aresetn    (~reset ),
                 .aclk       (clk    ),
                 .aclken     (1'b1   )
             );
 
-    ft601_mode245
+    ft601_multi_ch_mode
             #(
-                .ASYNC              (1                  ),
-                .RX_FIFO_PTR_BITS   (8                  ),
-                .TX_FIFO_PTR_BITS   (8                  )
+                .CHANNELS           (2                          )
             )
-        u_ft601_mode245
+        u_ft601_multi_ch_mode
             (
-                .ft601_reset        (ft601_reset        ),
-                .ft601_clk          (ft601_clk          ),
-                .ft601_rxf_n        (ft601_rxf_n        ),
-                .ft601_txe_n        (ft601_txe_n        ),
-                .ft601_wr_n         (ft601_wr_n         ),
-                .ft601_rd_n         (ft601_rd_n         ),
-                .ft601_oe_n         (ft601_oe_n         ),
-                .ft601_be_i         (ft601_be_i         ),
-                .ft601_be_o         (ft601_be_o         ),
-                .ft601_be_t         (ft601_be_t         ),
-                .ft601_data_i       (ft601_data_i       ),
-                .ft601_data_o       (ft601_data_o       ),
-                .ft601_data_t       (ft601_data_t       ),
+                .ft601_reset        (ft601_reset                ),
+                .ft601_clk          (ft601_clk                  ),
+                .ft601_rxf_n        (ft601_rxf_n                ),
+                .ft601_txe_n        (ft601_txe_n                ),
+                .ft601_wr_n         (ft601_wr_n                 ),
+                .ft601_rd_n         (ft601_rd_n                 ),
+                .ft601_oe_n         (ft601_oe_n                 ),
+                .ft601_be_i         (ft601_be_i                 ),
+                .ft601_be_o         (ft601_be_o                 ),
+                .ft601_be_t         (ft601_be_t                 ),
+                .ft601_data_i       (ft601_data_i               ),
+                .ft601_data_o       (ft601_data_o               ),
+                .ft601_data_t       (ft601_data_t               ),
 
-                .s_axi4s_tx         (axi4s_ft601_tx.s   ),
-                .m_axi4s_rx         (axi4s_ft601_rx.m   )
-        );
-
-    // --------------------------------
-    //  Commnand arbiter
-    // --------------------------------
-
-    localparam  int     ARB_NUM = 2;
-
-    jelly3_axi4s_if
-            #(
-                .USE_STRB   (1      ),
-                .USE_LAST   (0      ),
-                .DATA_BITS  (32     ),
-                .STRB_BITS  (4      )
-            )
-        axi4s_arb_tx [ARB_NUM]
-            (
-                .aresetn    (~reset ),
-                .aclk       (clk    ),
-                .aclken     (1'b1   )
-            );
-
-    fifo32_cmd_arbiter
-            #(
-                .N          (2              )
-            )
-        u_fifo32_cmd_arbiter
-            (
-                .s_axi4s    (axi4s_arb_tx   ),
-                .m_axi4s    (axi4s_ft601_tx ) 
+                .s_axi4s_tx         (axi4s_ft601_tx             ),
+                .m_axi4s_rx         (axi4s_ft601_rx             )
             );
 
 
-
     // --------------------------------
-    //  Commnand processing
+    //  AXI4-Lite (ch0)
     // --------------------------------
 
     jelly3_axi4l_if
@@ -481,8 +429,8 @@ module rtcl_tp25k_usb3_imx219
                 .clk            (clk                ),
                 .cke            (1'b1               ),
 
-                .s_axi4s_rx     (axi4s_ft601_rx.s   ),
-                .m_axi4s_tx     (axi4s_arb_tx[0].m  ),
+                .s_axi4s_rx     (axi4s_ft601_rx[0].s),
+                .m_axi4s_tx     (axi4s_ft601_tx[0].m),
                 
                 .m_axi4l        (axi4l_host         )
             );
@@ -560,16 +508,14 @@ module rtcl_tp25k_usb3_imx219
         u_fifo32_cmd_axi4s_tx
             (
                 .s_axi4s    (axi4s_dphy.s       ),
-                .m_axi4s    (axi4s_arb_tx[1].m  )
+                .m_axi4s    (axi4s_ft601_tx[1].m)
             );
 
-    // assign axi4s_arb_tx[1].tdata  = '0;
-    // assign axi4s_arb_tx[1].tstrb  = '1;
-    // assign axi4s_arb_tx[1].tvalid = 1'b0;
 
+    // rx
+    assign axi4s_ft601_rx[1].tready = 1'b1;
 
-
-
+    
 
     // ----------------------------------------
     //  Address decoder
@@ -606,7 +552,6 @@ module rtcl_tp25k_usb3_imx219
                 .m_axi4l        (axi4l_dec  )
             );
 
-    
     // ----------------------------------------
     //  System Control
     // ----------------------------------------
@@ -699,10 +644,9 @@ module rtcl_tp25k_usb3_imx219
 
 
 
-
-    // ----------------------------------------
+    // --------------------------------
     //  LED
-    // ----------------------------------------
+    // --------------------------------
 
     logic   [24:0]  clk_counter;
     always_ff @(posedge in_clk50) begin
@@ -714,88 +658,26 @@ module rtcl_tp25k_usb3_imx219
         usb_counter <= usb_counter + 1'b1;
     end
 
-
-    logic  size_error;
-    always_ff @(posedge axi4s_arb_tx[1].aclk) begin
-        if ( ~axi4s_arb_tx[1].aresetn ) begin
-            size_error <= 1'b0;
-        end
-        else begin
-            if ( axi4s_arb_tx[1].tvalid && axi4s_arb_tx[1].tready && axi4s_arb_tx[1].tuser[0] ) begin
-                if ( axi4s_arb_tx[1].tdata[31:16] > 16'd1024 ) begin
-                    size_error <= 1'b1;
-                end
-            end
-        end
-    end
-
-    logic  size_error2;
-    always_ff @(posedge ft601_clk) begin
-        if ( ft601_reset ) begin
-            size_error2 <= 1'b0;
-        end
-        else begin
-            if ( ~ft601_wr_n && ft601_data_o[15:0] == 16'h8010 ) begin
-                if ( ft601_data_o[31:16] > 16'd1024 ) begin
-                    size_error2 <= 1'b1;
-                end
-            end
-        end
-    end
-
-
-
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = size_error2;//ft601_wakeup_n  ;
-    assign led[3] = size_error;//reset           ;
+    assign led[2] = ft601_wakeup_n  ;
+    assign led[3] = reset           ;
 
 
-    // ----------------------------------------
+    // --------------------------------
     //  PMOD
-    // ----------------------------------------
-
-//  assign pmod[7:0] = 0   ;
-
-    logic  [7:0]   count;
-    always_ff @(posedge dphy_clk) begin
-        count <= count + 1'b1;
-    end
-
-    /*
-    assign pmod[0] = dphy_di_lprx0[0]    ;
-    assign pmod[1] = dphy_di_lprx0[1]    ;
-//    assign pmod[2] = dphy_di_lprx1[0]    ;
-//    assign pmod[3] = dphy_di_lprx1[1]    ;
-    assign pmod[2] = ft601_txe_n  ;
-    assign pmod[3] = ft601_wr_n   ; //axi4s_arb_tx[1].tready ;
-    assign pmod[4] = dphy_di_lprxck[0]   ;
-    assign pmod[5] = dphy_di_lprxck[1]   ;
-    assign pmod[6] = ft601_rd_n ; // dphy_hsrxd_vld[0]   ;
-    assign pmod[7] = dphy_byte_ready     ;
-    */
-
-    /*
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_txe_n;
-    assign pmod[2] = ft601_wr_n;
-    assign pmod[3] = ft601_rd_n;
-    assign pmod[4] = ft601_oe_n;
-    assign pmod[5] = clk_counter[7];
-    assign pmod[6] = ft601_reset_n;
-    assign pmod[7] = ft601_wakeup_n;
-    */
+    // --------------------------------
 
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
     assign pmod[2] = ft601_wr_n;
-    assign pmod[3] = ft601_rd_n;
-    assign pmod[4] = ft601_oe_n;
-    assign pmod[5] = axi4s_arb_tx[1].tready;
-    assign pmod[6] = dphy_byte_ready;
-    assign pmod[7] = dphy_di_lprxck[0];
+    assign pmod[3] = '0;
+    assign pmod[4] = ft601_data_i[8];
+    assign pmod[5] = ft601_data_i[9];
+    assign pmod[6] = ft601_data_i[12];
+    assign pmod[7] = ft601_data_i[13];
 
 endmodule
 
-`default_nettype wire
 
+`default_nettype wire
