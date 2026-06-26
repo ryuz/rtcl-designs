@@ -93,6 +93,9 @@ module rtcl_tp25k_usb3_imx219
     //  D-PHY
     // ----------------------------------------
 
+    logic           dphy_reset              ;
+    assign dphy_reset = reset;
+
     logic           dphy_clk                ;
     logic   [7:0]   dphy_d0ln_hsrxd         ;
     logic   [7:0]   dphy_d1ln_hsrxd         ;
@@ -432,119 +435,15 @@ module rtcl_tp25k_usb3_imx219
             );
 
 
-    // --------------------------------
-    //  Stream
-    // --------------------------------
-    
-    jelly3_axi4s_if
-            #(
-                .USE_STRB   (1          ),
-                .USE_LAST   (1          ),
-                .DATA_BITS  (32         ),
-                .STRB_BITS  (4          )
-            )
-        axi4s_dphy
-            (
-                .aresetn    (~reset     ),
-                .aclk       (dphy_clk   ),
-                .aclken     (1'b1       )
-            );
-
-    gowin_dphy_lane2_to_fifo32
-        u_gowin_dphy_lane2_to_fifo32
-            (
-                .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-                .dphy_valid (dphy_byte_ready                ),
-                .data_type  (8'h2b                          ),
-
-                .m_axi4s    (axi4s_dphy.m                   )
-            );
-
-    /*
-    logic           dphy_phase  ;
-    logic           dphy_last   ;
-    logic   [31:0]  dphy_data   ;
-    logic           dphy_valid  ;
-
-    always_ff @(posedge dphy_clk or posedge reset ) begin
-        if ( reset ) begin
-            dphy_phase        <= 0;
-            dphy_last         <= 0;
-            dphy_data         <= '0;
-            dphy_valid        <= 1'b0;
-        end
-        else begin
-            if ( dphy_byte_ready ) begin
-                dphy_phase <= dphy_phase + 1;
-                dphy_last  <= 1'b0;
-                if ( dphy_phase == 0 ) begin
-                    dphy_data[15:0]  <= {dphy_byte_d1, dphy_byte_d0};
-                    dphy_data[31:16] <= '0;
-                end
-                else begin
-                    dphy_data[31:16] <= {dphy_byte_d1, dphy_byte_d0};
-                end
-                dphy_valid <= 1'b1;
-            end
-            else begin
-                if ( dphy_valid & dphy_last ) begin
-                    dphy_phase <= 0;
-                    dphy_data  <= '0;
-                    dphy_valid <= 1'b0;
-                end
-                else begin
-                    dphy_last  <= 1'b1;
-                end
-            end
-        end
-    end
-
-    jelly3_axi4s_if
-            #(
-                .USE_STRB   (1          ),
-                .USE_LAST   (1          ),
-                .DATA_BITS  (32         ),
-                .STRB_BITS  (4          )
-            )
-        axi4s_dphy
-            (
-                .aresetn    (~reset     ),
-                .aclk       (dphy_clk   ),
-                .aclken     (1'b1       )
-            );
-    
-    assign axi4s_dphy.tlast  = dphy_last;
-    assign axi4s_dphy.tdata  = dphy_data;
-    assign axi4s_dphy.tstrb  = '1;
-    assign axi4s_dphy.tvalid = dphy_valid && (~dphy_phase || dphy_last);
-    */
-
-    fifo32_cmd_axi4s_tx
-            #(
-                .ASYNC      (1                  ),
-                .CH_ID      (0                  ),
-                .MAX_LEN    (256                ),
-                .BUF_SIZE   (1024*16             )
-            )
-        u_fifo32_cmd_axi4s_tx
-            (
-                .s_axi4s    (axi4s_dphy.s       ),
-                .m_axi4s    (axi4s_ft601_tx[1].m)
-            );
-
-
-    // rx
-    assign axi4s_ft601_rx[1].tready = 1'b1;
-
-    
 
     // ----------------------------------------
     //  Address decoder
     // ----------------------------------------
 
-    localparam DEC_CTL = 0;
-    localparam DEC_I2C = 1;
-    localparam DEC_NUM = 2;
+    localparam DEC_CTL  = 0;
+    localparam DEC_I2C  = 1;
+    localparam DEC_FRM  = 2;
+    localparam DEC_NUM  = 3;
 
     jelly3_axi4l_if
             #(
@@ -561,6 +460,7 @@ module rtcl_tp25k_usb3_imx219
     // address map
     assign {axi4l_dec[DEC_CTL].addr_base, axi4l_dec[DEC_CTL].addr_high} = {32'h0000_0000, 32'h0000_ffff};
     assign {axi4l_dec[DEC_I2C].addr_base, axi4l_dec[DEC_I2C].addr_high} = {32'h0001_0000, 32'h0001_ffff};
+    assign {axi4l_dec[DEC_FRM].addr_base, axi4l_dec[DEC_FRM].addr_high} = {32'h0004_0000, 32'h0004_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
@@ -663,6 +563,80 @@ module rtcl_tp25k_usb3_imx219
                 .OEN        (i2c_sda_t  )
             );
 
+
+    // --------------------------------
+    //  Frame Control
+    // --------------------------------
+    
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1          ),
+                .USE_LAST   (1          ),
+                .USER_BITS  (1          ),
+                .DATA_BITS  (32         ),
+                .STRB_BITS  (4          )
+            )
+        axi4s_dphy
+            (
+                .aresetn    (~dphy_reset),
+                .aclk       (dphy_clk   ),
+                .aclken     (1'b1       )
+            );
+
+    gowin_dphy_lane2_to_fifo32
+        u_gowin_dphy_lane2_to_fifo32
+            (
+                .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
+                .dphy_valid (dphy_byte_ready                ),
+                .data_type  (8'h2b                          ),
+
+                .m_axi4s    (axi4s_dphy.m                   )
+            );
+
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1          ),
+                .USE_LAST   (1          ),
+                .USER_BITS  (1          ),
+                .DATA_BITS  (32         ),
+                .STRB_BITS  (4          )
+            )
+        axi4s_frame
+            (
+                .aresetn    (~dphy_reset),
+                .aclk       (dphy_clk   ),
+                .aclken     (1'b1       )
+            );
+
+
+    frame_controller
+        u_frame_controller
+            (
+                .s_axi4l    (axi4l_dec[DEC_FRM].s   ),
+
+                .s_axi4s    (axi4s_dphy.s           ),
+                .m_axi4s    (axi4s_frame.m          )
+            );
+
+
+    fifo32_cmd_axi4s_tx
+            #(
+                .ASYNC      (1                  ),
+                .CH_ID      (0                  ),
+                .MAX_LEN    (256                ),
+                .BUF_SIZE   (1024*16            )
+            )
+        u_fifo32_cmd_axi4s_tx
+            (
+                .s_axi4s    (axi4s_frame.s      ),
+                .m_axi4s    (axi4s_ft601_tx[1].m)
+            );
+
+
+    // rx
+    assign axi4s_ft601_rx[1].tready = 1'b1;
+
+    
 
 
     // --------------------------------
