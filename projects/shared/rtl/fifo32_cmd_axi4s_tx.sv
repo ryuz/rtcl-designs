@@ -36,11 +36,13 @@ module fifo32_cmd_axi4s_tx
     // --------------------------------
 
     // command fifo
+    logic   cmd_wr_user     ;
     logic   cmd_wr_last     ;
     len_t   cmd_wr_len      ;
     logic   cmd_wr_valid    ;
     logic   cmd_wr_ready    ;
 
+    logic   cmd_rd_user     ;
     logic   cmd_rd_last     ;
     len_t   cmd_rd_len      ;
     logic   cmd_rd_valid    ;
@@ -50,7 +52,7 @@ module fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (ASYNC              ),
                 .PTR_BITS       (4                  ),
-                .DATA_BITS      (1 + $bits(len_t)   ),
+                .DATA_BITS      (2 + $bits(len_t)   ),
                 .S_SYNC_FF      (4                  ),
                 .M_SYNC_FF      (4                  ),
                 .RAM_TYPE       ("distributed"      )
@@ -61,6 +63,7 @@ module fifo32_cmd_axi4s_tx
                 .s_clk           (s_axi4s.aclk      ),
                 .s_cke           (s_axi4s.aclken    ),
                 .s_data          ({
+                                    cmd_wr_user,
                                     cmd_wr_last,
                                     cmd_wr_len
                                 }),
@@ -72,6 +75,7 @@ module fifo32_cmd_axi4s_tx
                 .m_clk          (m_axi4s.aclk       ),
                 .m_cke          (m_axi4s.aclken     ),
                 .m_data         ({
+                                    cmd_rd_user,
                                     cmd_rd_last,
                                     cmd_rd_len
                                 }),
@@ -201,7 +205,8 @@ module fifo32_cmd_axi4s_tx
                         m_axi4s.tuser[0]     <= 1'b1        ;
                         m_axi4s.tlast        <= 1'b0        ;
                         m_axi4s.tdata[7:0]   <= 8'h10       ;   // opcode
-                        m_axi4s.tdata[14:8]  <= 7'(CH_ID)   ;   // channel ID
+                        m_axi4s.tdata[8]     <= cmd_rd_user ;   // user
+                        m_axi4s.tdata[14:9]  <= 6'(CH_ID)   ;   // channel ID
                         m_axi4s.tdata[15]    <= cmd_rd_last ;   // last
                         m_axi4s.tdata[31:16] <= packet_len  ;   // length
                         m_axi4s.tdata[31:28] <= 4'h0        ;   // reserved
