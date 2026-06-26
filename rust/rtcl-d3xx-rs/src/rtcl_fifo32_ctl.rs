@@ -19,7 +19,11 @@ pub struct RtclFifo32CtlD3xx {
 impl RtclFifo32CtlD3xx {
     pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {
 
-        let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
+        let (dev_writers, mut dev_readers) = D3xxDevice::new(dev_index, 2)?;
+
+        dev_readers[CH_AXI4S].set_timeout(100)?;
+        dev_readers[CH_AXI4S].set_stream_pipe(0x100000)?;
+
         Ok(Self {
             writers: dev_writers,
             readers: dev_readers,
@@ -61,9 +65,18 @@ impl RtclFifo32CtlD3xx {
         Ok(u32::from_le_bytes([response[4], response[5], response[6], response[7]]))
     }
 
-    pub fn recv_axi4s(&mut self, len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        let response = self.readers[CH_AXI4S].read(len)?;
-        Ok(response)
+    pub fn recv_axi4s(&mut self, mut len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let mut i = 0;
+        let mut buf = Vec::<u8>::new();
+        while len > 0 {
+            let response = self.readers[CH_AXI4S].read(len)?;
+            buf.extend_from_slice(&response);
+            len -= response.len();
+
+            i += 1;
+            if i > 100 { break; }
+        }
+        Ok(buf)
     }
 }
 

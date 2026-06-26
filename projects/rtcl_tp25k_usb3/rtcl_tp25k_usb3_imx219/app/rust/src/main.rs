@@ -95,8 +95,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // camera 設定
     let pixel_clock: f64 = 91000000.0;
     let binning =  false;
-    let width: i32 = 256;
-    let height: i32 = 256;
+    let width: i32 = 128;
+    let height: i32 = 64;
 //  let width: i32 = 256;
 //  let height: i32 = 256;
 //    let frame_rate: i32 = 30;
@@ -116,21 +116,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     imx219.set_digital_gain(1.0).unwrap();
     println!("set camera end");
 
-    /*
+    imx219.start().unwrap();
+    std::thread::sleep(Duration::from_millis(100)); 
+
+    
     print!("wait key : start camera...");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-    */
     
-    imx219.start().unwrap();
-    std::thread::sleep(Duration::from_millis(100)); 
 
     unsafe {
         frm_acc.write_reg_u32(0x10, 1);
     }
 
-    let size = ((4 + width * 10) * height) as usize;
+    let size = ((4 + (width * 10 / 8)) * height) as usize;
     let frame = usb.lock().unwrap().recv_axi4s(size)?;
 
     // ファイルに保存
@@ -139,26 +139,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     /*
-    let mut img_list = Vec::<Vec<u8>>::new();
-    if let Ok(mut d3xx_guard) = usb.lock() {
-        for _ in 0..256+1 {
-            let pkt = d3xx_guard.recv_axi4s().unwrap();
-            img_list.push(pkt);
-//          println!("Received AXI4S packet: {:?}", pkt);
-        }
-    }
-    
-    for (i, img) in img_list.iter().enumerate() {
-        // ファイルに保存
-        let filename = format!("rec/image_{:03}.bin", i);
-        std::fs::write(&filename, img).expect("Failed to write image file");
-    }
-    */
-
     print!("wait key : Quit");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
+    */
 
     println!("End Test");
 
