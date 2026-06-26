@@ -8,7 +8,7 @@ const OPCODE_AXI4L_READ: u8 = 0x03;
 //const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
 const CH_AXI4L: usize = 0;
-//const CH_AXI4S: usize = 1;
+const CH_AXI4S: usize = 1;
 
 
 pub struct RtclFifo32CtlD3xx {
@@ -19,7 +19,7 @@ pub struct RtclFifo32CtlD3xx {
 impl RtclFifo32CtlD3xx {
     pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {
 
-        let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 1)?;
+        let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
         Ok(Self {
             writers: dev_writers,
             readers: dev_readers,
@@ -60,7 +60,13 @@ impl RtclFifo32CtlD3xx {
         assert!(u16::from_le_bytes([response[2], response[3]]) == 4u16);
         Ok(u32::from_le_bytes([response[4], response[5], response[6], response[7]]))
     }
+
+    pub fn recv_axi4s(&mut self, len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let response = self.readers[CH_AXI4S].read(len)?;
+        Ok(response)
+    }
 }
+
 
 impl Drop for RtclFifo32CtlD3xx {
     fn drop(&mut self) {

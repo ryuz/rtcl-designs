@@ -33,6 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let ctl_acc = usb_accessor.subclone(0x0000_0000, 0x1000);
     let i2c_acc = usb_accessor.subclone(0x0001_0000, 0x1000);
+    let frm_acc = usb_accessor.subclone(0x0004_0000, 0x1000);
 
     unsafe {
         let id = ctl_acc
@@ -108,20 +109,35 @@ fn main() -> Result<(), Box<dyn Error>> {
     let flip_v: bool = false;
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
-    imx219.set_frame_rate(30.0).unwrap();
-    imx219.set_exposure_time(33.0).unwrap();
+    imx219.set_frame_rate(10.0).unwrap();
+    imx219.set_exposure_time(20.0).unwrap();
 
     imx219.set_gain(3.0).unwrap();
     imx219.set_digital_gain(1.0).unwrap();
     println!("set camera end");
 
+    /*
     print!("wait key : start camera...");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-
-    imx219.start().unwrap();
+    */
     
+    imx219.start().unwrap();
+    std::thread::sleep(Duration::from_millis(100)); 
+
+    unsafe {
+        frm_acc.write_reg_u32(0x10, 1);
+    }
+
+    let size = ((4 + width * 10) * height) as usize;
+    let frame = usb.lock().unwrap().recv_axi4s(size)?;
+
+    // ファイルに保存
+    let filename = format!("image.bin");
+    std::fs::write(&filename, frame).expect("Failed to write image file");
+
+
     /*
     let mut img_list = Vec::<Vec<u8>>::new();
     if let Ok(mut d3xx_guard) = usb.lock() {
