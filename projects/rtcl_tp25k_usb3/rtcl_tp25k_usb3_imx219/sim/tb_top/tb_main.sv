@@ -179,6 +179,106 @@ module tb_main
         ft601_data_t = 32'hffff_00ff;
         ft601_data_o = 32'h0000_ff00;
 
+        #10000
+        @(negedge ft601_clk);
+
+        // Write Command
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ef00;
+        @(negedge ft601_clk);
+
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
+        end
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'h0         ;
+        ft601_be_o   = 4'h1         ;
+        ft601_data_t = 32'h0000_0000;
+        ft601_data_o = 32'h0008_f002;   // write command
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'h0         ;
+        ft601_be_o   = 4'h1         ;
+        ft601_data_t = 32'h0000_0000;
+        ft601_data_o = 32'h0004_0040;   // write address
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b0;
+        ft601_be_t   = 4'h0         ;
+        ft601_be_o   = 4'h1         ;
+        ft601_data_t = 32'h0000_0000;
+        ft601_data_o = 32'h0000_0001;   // write data
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+        @(negedge ft601_clk);
+
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        for ( int i = 0; i < 20; i++ ) begin
+            @(negedge ft601_clk);
+        end
+
+        // Ack
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_fe00;
+        @(negedge ft601_clk);
+
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
+        end
+        ft601_be_t   = 4'hf         ;
+        ft601_data_t = 32'hffff_ffff;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b0;
+
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+
+        #100000;
+        @(negedge ft601_clk);
+
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_fd00;
+        @(negedge ft601_clk);
+
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
+        end
+        ft601_be_t   = 4'hf         ;
+        ft601_data_t = 32'hffff_ffff;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b0;
+
+        #1000;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+
         // end
         @(negedge ft601_clk);
         @(negedge ft601_clk);

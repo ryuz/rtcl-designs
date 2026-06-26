@@ -141,6 +141,9 @@ module frame_controller
 
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
+            ctl_enable <= 1'b0  ;
+            ctl_busy   <= 1'b0  ;
+
             m_axi4s.tuser  <= 'x;
             m_axi4s.tlast  <= 1'bx;
             m_axi4s.tdata  <= 'x;
@@ -164,8 +167,13 @@ module frame_controller
                     m_axi4s.tvalid <= s_axi4s.tvalid & ctl_busy ;
                 end
             end
+            if ( ctl_start ) begin
+                ctl_enable <= 1'b1;
+            end
         end
     end
+
+    assign s_axi4s.tready = !m_axi4s.tvalid || m_axi4s.tready;
 
 endmodule
 
