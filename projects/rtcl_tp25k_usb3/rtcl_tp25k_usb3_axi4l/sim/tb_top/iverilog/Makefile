@@ -35,7 +35,7 @@ SRCS += ../../../../../../jelly/rtl/v3/primitive/jelly3_cdc_gray.sv
 SRCS += ../../../../../../jelly/rtl/v3/primitive/jelly3_cdc_array_single.sv
 
 # Output files
-OUTPUT_DIR = objs
+OUTPUT_DIR = obj_dir
 VVP_FILE   = $(OUTPUT_DIR)/$(TOP_MODULE).vvp
 
 .PHONY : all
