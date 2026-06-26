@@ -80,7 +80,7 @@ module gowin_dphy_lane2_to_fifo32
             STATE_HEADER1:
                 begin
                     if ( dphy_valid ) begin
-                        header_wc[15:8] <= dphy_data[15:8];
+                        header_wc[15:8] <= dphy_data[7:0];
                         if ( header_dt == data_type ) begin
                             state   <= STATE_PAYLOAD;
                             counter <= 16'h0002;

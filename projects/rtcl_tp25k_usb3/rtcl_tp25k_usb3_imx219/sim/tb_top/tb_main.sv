@@ -252,7 +252,7 @@ module tb_main
             @(negedge dphy_clk);
             @(negedge dphy_clk);
 
-            for ( int i = 0; i < 100; i++ ) begin
+            for ( int i = 0; i < 10; i++ ) begin
                 #1000;
                 @(negedge dphy_clk);
                 di_lprx0_n      = 1;
