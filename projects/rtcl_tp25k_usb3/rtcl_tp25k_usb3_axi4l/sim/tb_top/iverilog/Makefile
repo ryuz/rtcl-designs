@@ -47,8 +47,8 @@ build: $(VVP_FILE)
 # Compile Verilog with iverilog
 $(VVP_FILE): $(SRCS)
 	mkdir -p $(OUTPUT_DIR)
-	sv2v --exclude Always --top tb_top $(SRCS) > $(OUTPUT_DIR)/tb_all.sv
-	iverilog -o $(VVP_FILE) -s $(TOP_MODULE) -g2012 $(OUTPUT_DIR)/tb_all.sv -D__IVERILOG__
+	sv2v --define=__IVERILOG__ --exclude Always --top tb_top $(SRCS) > $(OUTPUT_DIR)/tb_all.sv
+	iverilog -D__IVERILOG__ -o $(VVP_FILE) -s $(TOP_MODULE) -g2012 $(OUTPUT_DIR)/tb_all.sv
 
 .PHONY : run
 run: $(VVP_FILE)
