@@ -98,10 +98,6 @@ module rtcl_tp25k_usb3_imx219
     logic   [7:0]   dphy_d1ln_hsrxd         ;
     logic   [7:0]   dphy_d2ln_hsrxd         ;
     logic   [7:0]   dphy_d3ln_hsrxd         ;
-    // logic           dphy_d0ln_hsrxd_vld     ;
-    // logic           dphy_d1ln_hsrxd_vld     ;
-    // logic           dphy_d2ln_hsrxd_vld     ;
-    // logic           dphy_d3ln_hsrxd_vld     ;
     logic   [3:0]   dphy_hsrxd_vld          ;
 
     logic   [1:0]   dphy_di_lprx0           ;
@@ -668,6 +664,7 @@ module rtcl_tp25k_usb3_imx219
     //  PMOD
     // --------------------------------
 
+    /*
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
     assign pmod[2] = ft601_wr_n;
@@ -676,6 +673,16 @@ module rtcl_tp25k_usb3_imx219
     assign pmod[5] = ft601_data_i[9];
     assign pmod[6] = ft601_data_i[12];
     assign pmod[7] = ft601_data_i[13];
+    */
+
+    assign pmod[0] = dphy_byte_ready;
+    assign pmod[1] = dphy_hsrxd_vld[0];
+    assign pmod[2] = dphy_hsrxd_vld[1];
+    assign pmod[3] = '0;
+    assign pmod[4] = '0;
+    assign pmod[5] = '0;
+    assign pmod[6] = '0;
+    assign pmod[7] = '0;
 
 endmodule
 

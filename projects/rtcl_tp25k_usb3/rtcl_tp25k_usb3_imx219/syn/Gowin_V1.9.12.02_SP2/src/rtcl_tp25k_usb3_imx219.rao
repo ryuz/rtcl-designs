@@ -2,60 +2,71 @@
 <GAO_CONFIG>
     <Version>3.0</Version>
     <Mode>Standard</Mode>
-    <AoCore index="0" sample_clock="ft601_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_fifo_multi_channel" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+    <AoCore index="0" sample_clock="dphy_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_imx219" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
-            <Bus capture_enable="true" name="u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[31:0]">
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[31]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[30]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[29]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[28]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[27]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[26]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[25]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[24]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[23]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[22]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[21]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[20]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[19]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[18]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[17]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[16]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[15]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[14]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[13]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[12]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[11]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[10]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[9]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[8]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[7]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[6]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[5]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[4]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[3]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[2]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[1]</Signal>
-                <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_data_i[0]</Signal>
+            <Bus capture_enable="true" name="dphy_byte_d0[7:0]">
+                <Signal>dphy_byte_d0[7]</Signal>
+                <Signal>dphy_byte_d0[6]</Signal>
+                <Signal>dphy_byte_d0[5]</Signal>
+                <Signal>dphy_byte_d0[4]</Signal>
+                <Signal>dphy_byte_d0[3]</Signal>
+                <Signal>dphy_byte_d0[2]</Signal>
+                <Signal>dphy_byte_d0[1]</Signal>
+                <Signal>dphy_byte_d0[0]</Signal>
             </Bus>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[3]</Signal>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[2]</Signal>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[1]</Signal>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[0]</Signal>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_wr_n</Signal>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_txe_n</Signal>
-            <Signal capture_enable="true">u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_rxf_n</Signal>
+            <Bus capture_enable="true" name="dphy_byte_d1[7:0]">
+                <Signal>dphy_byte_d1[7]</Signal>
+                <Signal>dphy_byte_d1[6]</Signal>
+                <Signal>dphy_byte_d1[5]</Signal>
+                <Signal>dphy_byte_d1[4]</Signal>
+                <Signal>dphy_byte_d1[3]</Signal>
+                <Signal>dphy_byte_d1[2]</Signal>
+                <Signal>dphy_byte_d1[1]</Signal>
+                <Signal>dphy_byte_d1[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dphy_byte_ready</Signal>
+            <Bus capture_enable="true" name="dphy_data[31:0]">
+                <Signal>dphy_data[31]</Signal>
+                <Signal>dphy_data[30]</Signal>
+                <Signal>dphy_data[29]</Signal>
+                <Signal>dphy_data[28]</Signal>
+                <Signal>dphy_data[27]</Signal>
+                <Signal>dphy_data[26]</Signal>
+                <Signal>dphy_data[25]</Signal>
+                <Signal>dphy_data[24]</Signal>
+                <Signal>dphy_data[23]</Signal>
+                <Signal>dphy_data[22]</Signal>
+                <Signal>dphy_data[21]</Signal>
+                <Signal>dphy_data[20]</Signal>
+                <Signal>dphy_data[19]</Signal>
+                <Signal>dphy_data[18]</Signal>
+                <Signal>dphy_data[17]</Signal>
+                <Signal>dphy_data[16]</Signal>
+                <Signal>dphy_data[15]</Signal>
+                <Signal>dphy_data[14]</Signal>
+                <Signal>dphy_data[13]</Signal>
+                <Signal>dphy_data[12]</Signal>
+                <Signal>dphy_data[11]</Signal>
+                <Signal>dphy_data[10]</Signal>
+                <Signal>dphy_data[9]</Signal>
+                <Signal>dphy_data[8]</Signal>
+                <Signal>dphy_data[7]</Signal>
+                <Signal>dphy_data[6]</Signal>
+                <Signal>dphy_data[5]</Signal>
+                <Signal>dphy_data[4]</Signal>
+                <Signal>dphy_data[3]</Signal>
+                <Signal>dphy_data[2]</Signal>
+                <Signal>dphy_data[1]</Signal>
+                <Signal>dphy_data[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dphy_phase</Signal>
+            <Signal capture_enable="true">dphy_last</Signal>
+            <Signal capture_enable="true">dphy_valid</Signal>
         </SignalList>
         <Triggers>
             <Trigger index="0">
                 <SignalList>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[3]</Signal>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[2]</Signal>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[1]</Signal>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[0]</Signal>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_wr_n</Signal>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_txe_n</Signal>
-                    <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/ft601_rxf_n</Signal>
+                    <Signal>dphy_byte_ready</Signal>
                 </SignalList>
             </Trigger>
             <Trigger index="1"/>
@@ -75,7 +86,7 @@
             <Trigger index="15"/>
         </Triggers>
         <MatchUnits>
-            <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="XXXXXXX" value1="0000000" trigger="0"/>
+            <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="R" value1="0" trigger="0"/>
             <MatchUnit index="1" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
@@ -96,5 +107,5 @@
             <Expression>M0</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>1010101100110101</GAO_ID>
+    <GAO_ID>0001110000010111</GAO_ID>
 </GAO_CONFIG>
