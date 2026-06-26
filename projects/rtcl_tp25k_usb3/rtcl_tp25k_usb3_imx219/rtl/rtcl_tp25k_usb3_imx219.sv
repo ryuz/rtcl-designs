@@ -436,6 +436,31 @@ module rtcl_tp25k_usb3_imx219
     //  Stream
     // --------------------------------
     
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1          ),
+                .USE_LAST   (1          ),
+                .DATA_BITS  (32         ),
+                .STRB_BITS  (4          )
+            )
+        axi4s_dphy
+            (
+                .aresetn    (~reset     ),
+                .aclk       (dphy_clk   ),
+                .aclken     (1'b1       )
+            );
+
+    gowin_dphy_lane2_to_fifo32
+        u_gowin_dphy_lane2_to_fifo32
+            (
+                .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
+                .dphy_valid (dphy_byte_ready                ),
+                .data_type  (8'h2b                          ),
+
+                .m_axi4s    (axi4s_dphy.m                   )
+            );
+
+    /*
     logic           dphy_phase  ;
     logic           dphy_last   ;
     logic   [31:0]  dphy_data   ;
@@ -492,7 +517,7 @@ module rtcl_tp25k_usb3_imx219
     assign axi4s_dphy.tdata  = dphy_data;
     assign axi4s_dphy.tstrb  = '1;
     assign axi4s_dphy.tvalid = dphy_valid && (~dphy_phase || dphy_last);
-
+    */
 
     fifo32_cmd_axi4s_tx
             #(

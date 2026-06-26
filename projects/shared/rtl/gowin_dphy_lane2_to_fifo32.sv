@@ -174,11 +174,11 @@ module gowin_dphy_lane2_to_fifo32
         end
     end
 
-    assign m_axi4s.tuser = st1_user;
-    assign m_axi4s.tlast = st1_last;
-    assign m_axi4s.tdata = st1_data;
-    assign m_axi4s.tvalid = st1_valid;
-    
+    assign m_axi4s.tuser  = st1_user    ;
+    assign m_axi4s.tlast  = st1_last    ;
+    assign m_axi4s.tdata  = st1_data    ;
+    assign m_axi4s.tstrb  = '1          ;
+    assign m_axi4s.tvalid = st1_valid   ;
 
 endmodule
 

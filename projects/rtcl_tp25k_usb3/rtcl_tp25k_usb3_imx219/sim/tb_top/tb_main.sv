@@ -5,8 +5,10 @@
 module tb_main
         (
             input   var logic   reset       ,
-            input   var logic   clk         ,
-            input   var logic   ft601_clk   
+            input   var logic   clk50       ,
+            input   var logic   clk100      ,
+            input   var logic   ft601_clk   ,
+            input   var logic   dphy_clk    
         );
 
     // -------------------------
@@ -38,7 +40,7 @@ module tb_main
     rtcl_tp25k_usb3_imx219
         u_rtcl_tp25k_usb3_imx219
             (
-                .in_clk50           (clk            ),
+                .in_clk50           (clk50          ),
                 .ft601_reset_n      (ft601_reset_n  ),
                 .ft601_wakeup_n     (ft601_wakeup_n ),
                 .ft601_clk          (ft601_clk      ),
@@ -60,6 +62,10 @@ module tb_main
                 .led                (led            ),
                 .pmod               (pmod           )
             );
+
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_gowin_pll.clkout0  = clk100    ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.rx_clk_o = dphy_clk  ;
+
 
     // -------------------------
     //  Simulation
@@ -180,9 +186,137 @@ module tb_main
             @(negedge ft601_clk);
         end
 
+        #100000;
+
         $finish;
     end
-    
+
+
+
+    logic   [7:0]   d0ln_hsrxd          ;
+    logic   [7:0]   d1ln_hsrxd          ;
+    logic           d0ln_hsrxd_vld      ;
+    logic           d1ln_hsrxd_vld      ;
+    logic           di_lprx0_n          ;
+    logic           di_lprx0_p          ;
+    logic           di_lprx1_n          ;
+    logic           di_lprx1_p          ;
+
+    initial begin
+        d0ln_hsrxd      = '0;
+        d1ln_hsrxd      = '0;
+        d0ln_hsrxd_vld  = '0;
+        d1ln_hsrxd_vld  = '0;
+        di_lprx0_n      = 1;
+        di_lprx0_p      = 1;
+        di_lprx1_n      = 1;
+        di_lprx1_p      = 1;
+        #10000;
+
+        forever begin
+            #1000;
+            @(negedge dphy_clk);
+            di_lprx0_n      = 1;
+            di_lprx0_p      = 1;
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            di_lprx0_n      = 1;
+            di_lprx0_p      = 0;
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            di_lprx0_n      = 0;
+            di_lprx0_p      = 0;
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            d0ln_hsrxd_vld = 1;
+            d1ln_hsrxd_vld = 1;
+            d0ln_hsrxd = 8'hb8;
+            d1ln_hsrxd = 8'hb8;
+            @(negedge dphy_clk);
+            d0ln_hsrxd = 8'h00;
+            d1ln_hsrxd = 8'h00;
+            @(negedge dphy_clk);
+            d0ln_hsrxd = 8'h00;
+            d1ln_hsrxd = 8'h00;
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+            di_lprx0_n      = 1;
+            di_lprx0_p      = 1;
+            d0ln_hsrxd_vld  = 0;
+            d1ln_hsrxd_vld  = 0;
+            @(negedge dphy_clk);
+            @(negedge dphy_clk);
+
+            for ( int i = 0; i < 100; i++ ) begin
+                #1000;
+                @(negedge dphy_clk);
+                di_lprx0_n      = 1;
+                di_lprx0_p      = 1;
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                di_lprx0_n      = 1;
+                di_lprx0_p      = 0;
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                di_lprx0_n      = 0;
+                di_lprx0_p      = 0;
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                d0ln_hsrxd_vld = 1;
+                d1ln_hsrxd_vld = 1;
+                d0ln_hsrxd = 8'hb8;
+                d1ln_hsrxd = 8'hb8;
+                @(negedge dphy_clk);
+                d0ln_hsrxd = 8'h2b;
+                d1ln_hsrxd = 8'h40;
+                @(negedge dphy_clk);
+                d0ln_hsrxd = 8'h01;
+                d1ln_hsrxd = 8'h00;
+                @(negedge dphy_clk);
+                for ( int j = 0; j < 'h140 / 2; j++ ) begin
+                    d0ln_hsrxd = j;
+                    d1ln_hsrxd = ~j;
+                    @(negedge dphy_clk);
+                end
+                d0ln_hsrxd = 0;
+                d1ln_hsrxd = 0;
+                @(negedge dphy_clk);
+                d0ln_hsrxd = 0;
+                d1ln_hsrxd = 0;
+                @(negedge dphy_clk);
+                d0ln_hsrxd = 0;
+                d1ln_hsrxd = 0;
+                @(negedge dphy_clk);
+
+                di_lprx0_n      = 1;
+                di_lprx0_p      = 1;
+                d0ln_hsrxd_vld  = 0;
+                d1ln_hsrxd_vld  = 0;
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+                @(negedge dphy_clk);
+            end
+        end
+    end
+
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d0ln_hsrxd     = d0ln_hsrxd          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d1ln_hsrxd     = d1ln_hsrxd          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d0ln_hsrxd_vld = d0ln_hsrxd_vld      ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d1ln_hsrxd_vld = d1ln_hsrxd_vld      ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx0_n     = di_lprx0_n          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx0_p     = di_lprx0_p          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx1_n     = di_lprx1_n          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx1_p     = di_lprx1_p          ;
 
 endmodule
 
