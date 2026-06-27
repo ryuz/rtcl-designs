@@ -17,12 +17,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     const PACKET_SIZE: usize = 4*128;
     const ITERETIONS: usize = 1000;
-
     
-    for ch in 0..CHHANNELS {
+//   for ch in 0..CHHANNELS {
 //      usb_txs[ch].set_stream_pipe(0x10000)?;
-        usb_rxs[ch].set_stream_pipe(0x10000)?;
-    }
+//      usb_rxs[ch].set_stream_pipe(0x10000)?;
+//  }
     
 
     let mut tx_data: Vec<Vec<u8>> = (0..CHHANNELS)
@@ -51,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 //          rx_data[ch] = usb_rxs[ch].read(tx_data[ch].len()).expect("failed to read from device");
             let mut rx_buf = Vec::with_capacity(tx_data[ch].len());
             while rx_buf.len() < tx_data[ch].len() {
-                let mut temp_buf = usb_rxs[ch].read(tx_data[ch].len() - rx_buf.len()).expect("failed to read from device");
+                let temp_buf = usb_rxs[ch].read(tx_data[ch].len() - rx_buf.len()).expect("failed to read from device");
                 rx_buf.extend_from_slice(&temp_buf);
             }
             rx_data[ch] = rx_buf;

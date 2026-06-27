@@ -1,6 +1,4 @@
 use std::error::Error;
-use std::collections::VecDeque;
-use std::sync::{Arc, Condvar, Mutex};
 use std::sync::mpsc;
 
 use crate::d3xx_device::*;
@@ -10,15 +8,10 @@ const OPCODE_AXI4L_WRITE: u8 = 0x02;
 const OPCODE_AXI4L_READ: u8 = 0x03;
 const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
-//const CH_AXI4L: usize = 0;
-//const CH_AXI4S: usize = 1;
-
 
 pub struct RtclFifo32CtlD3xx {
     axi4l_writer: D3xxWriter,
     axi4l_reader: D3xxReader,
-//  axi4s_fifo: Arc<(Mutex<VecDeque<u8>>, Condvar)>,
-
     thread_handle: Option<std::thread::JoinHandle<()>>,
     rx_stream: mpsc::Receiver<Axi4Stream>,
     tx_stop: mpsc::Sender<()>,
@@ -28,7 +21,6 @@ impl RtclFifo32CtlD3xx {
     pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
-//      let axi4s_fifo = Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
 
         let [axi4l_writer, _axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
             Ok(writers) => writers,
@@ -39,28 +31,6 @@ impl RtclFifo32CtlD3xx {
             Err(_) => panic!("Expected 2 readers"),
         };
 
-        /*
-        // axi4s_reader を move して AXI4Sをリードするスレッドを作る 
-        let axi4s_fifo_thread = Arc::clone(&axi4s_fifo);
-        std::thread::spawn(move || {
-            let mut total_size = 0;
-            loop {
-                let response = axi4s_reader.read(1024*1024).unwrap();
-                if response.is_empty() {
-                    continue;
-                }
-
-                let (fifo, ready) = &*axi4s_fifo_thread;
-                let mut fifo = fifo.lock().unwrap();
-                fifo.extend(response.iter().copied());
-                ready.notify_all();
-
-                total_size += response.len();
-                println!("recv_thread: axi4s_reader read {} bytes, total_size = {}", response.len(), total_size);
-            }
-        });
-        */
-
         let (tx_stream, rx_stream) = mpsc::channel::<Axi4Stream>();
         let (tx_stop, rx_stop) = mpsc::channel::<()>();
         
@@ -70,16 +40,10 @@ impl RtclFifo32CtlD3xx {
             }
         });
         
-
-//      dev_readers[CH_AXI4S].set_timeout(100)?;
-//      dev_readers[CH_AXI4S].set_stream_pipe(0x100000)?;
-
         Ok(Self {
             axi4l_writer: axi4l_writer,
             axi4l_reader: axi4l_reader,
-//          axi4s_fifo: axi4s_fifo,
             thread_handle: Some(thread_handle),
-//          thread_handle: None,
             rx_stream: rx_stream,
             tx_stop: tx_stop,
         })
@@ -130,41 +94,6 @@ impl RtclFifo32CtlD3xx {
         }
         Err("No AXI4S packet available".into())
     }
-
-    /*
-    pub fn recv_axi4s(&mut self, mut len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        let (fifo, ready) = &*self.axi4s_fifo;
-        let mut fifo = fifo.lock().unwrap();
-        while fifo.len() < len {
-            fifo = ready.wait(fifo).unwrap();
-        }
-
-        let mut buf = Vec::<u8>::with_capacity(len);
-        while len > 0 {
-            if let Some(byte) = fifo.pop_front() {
-                buf.push(byte);
-                len -= 1;
-            }
-        }
-        Ok(buf)
-    }
-    */
-
-    /*
-    pub fn recv_axi4s(&mut self, mut len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        let mut i = 0;
-        let mut buf = Vec::<u8>::new();
-        while len > 0 {
-            let response = self.readers[CH_AXI4S].read(len)?;
-            buf.extend_from_slice(&response);
-            len -= response.len();
-
-            i += 1;
-            if i > 100 { break; }
-        }
-        Ok(buf)
-    }
-    */
 }
 
 
@@ -182,18 +111,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
-
-//  std::thread::sleep(std::time::Duration::from_millis(100));
-
-    /*
-    loop {
-        if rx_stop.try_recv().is_ok() {
-            println!("recv_thread: stop");
-            break;
-        }
-    }
-    return Ok(());
-    */
 
     reader.set_timeout(100)?;
     reader.set_stream_pipe(0x100000)?;
@@ -224,11 +141,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-
-//      println!("recv start");
-//      let rx = reader.read(0x100000)?;
-//      println!("recv_thread: read {} bytes", rx.len());
-//      rx_buffer.extend_from_slice(&rx);
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;
@@ -291,5 +203,4 @@ impl Drop for RtclFifo32CtlD3xx {
         }
     }
 }
-
 

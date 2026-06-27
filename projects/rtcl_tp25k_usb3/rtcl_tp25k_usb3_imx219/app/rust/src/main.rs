@@ -95,9 +95,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // camera 設定
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-    let width: i32 = 640;
-    let height: i32 = 480;
-//  let width: i32 = 256;
+//    let width: i32 = 640;
+//    let height: i32 = 480;
+    let width: i32 = 1280;
+    let height: i32 = 760;
+
+    //  let width: i32 = 256;
 //  let height: i32 = 256;
 //    let frame_rate: i32 = 30;
 //    let exposure: i32 = 33;
