@@ -177,7 +177,7 @@ pub struct Axi4Stream {
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
     const OVERLAPS : usize = 4;
-    const READ_UNIT : usize = 0x100000;
+    const READ_UNIT : usize = 0x10000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
@@ -196,6 +196,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     */
 
     reader.set_timeout(100)?;
+    reader.set_stream_pipe(0x100000)?;
 
     // 読み出し要求を発行
     for i in 0..OVERLAPS {
