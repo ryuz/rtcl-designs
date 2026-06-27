@@ -17,7 +17,10 @@ FLAGS += $(addprefix -y ,$(SIM_LIB_DIRS))
 FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
-SRCS += ../../../rtl/rtcl_tp25k_usb3_axi4l.sv
+SRCS += ../../../rtl/rtcl_tp25k_usb3_imx219.sv
+SRCS += ../../stub/IOBUF.sv
+SRCS += ../../stub/gowin_pll.v
+SRCS += ../../stub/gowin_mipi_dphy.v
 
 all: build run
 

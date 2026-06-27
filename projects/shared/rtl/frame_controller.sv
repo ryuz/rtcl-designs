@@ -154,19 +154,19 @@ module frame_controller
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 // frame start
                 if ( s_axi4s.tuser && s_axi4s.tvalid && s_axi4s.tready ) begin
-                    ctl_enable     <= 1'b0;
-                    ctl_busy       <= ctl_enable;
-                    m_axi4s.tuser  <= 'x;
-                    m_axi4s.tlast  <= 1'bx;
-                    m_axi4s.tdata  <= 'x;
-                    m_axi4s.tstrb  <= '1;
-                    m_axi4s.tvalid <= ctl_enable;
+                    ctl_enable     <= 1'b0          ;
+                    ctl_busy       <= ctl_enable    ;
+                    m_axi4s.tuser  <= s_axi4s.tuser ;
+                    m_axi4s.tlast  <= s_axi4s.tlast ;
+                    m_axi4s.tdata  <= s_axi4s.tdata ;
+                    m_axi4s.tstrb  <= '1            ;
+                    m_axi4s.tvalid <= ctl_enable    ;
                 end
                 else begin
                     m_axi4s.tuser  <= s_axi4s.tuser             ;
                     m_axi4s.tlast  <= s_axi4s.tlast             ;
                     m_axi4s.tdata  <= s_axi4s.tdata             ;
-                    m_axi4s.tstrb  <= '1;
+                    m_axi4s.tstrb  <= '1                        ;
                     m_axi4s.tvalid <= s_axi4s.tvalid & ctl_busy ;
                 end
             end
