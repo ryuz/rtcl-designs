@@ -29,6 +29,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 //      usb_rxs[ch].set_stream_pipe(0x10000)?;
 //  }
 
+    // 将来 Async を使った全力転送に書きかえる。
+    // まずはデータ化けのないチェックを優先
     
     let mut rx_index = 0;
     let mut rx_lsfr = 0x1234_5678;
