@@ -105,8 +105,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 //    let d_gain: i32 = args.d_gain;
     let aoi_x: i32 = -1;
     let aoi_y: i32 = -1;
-    let flip_h: bool = false;
-    let flip_v: bool = false;
+//    let flip_h: bool = false;
+//    let flip_v: bool = false;
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
     imx219.set_frame_rate(10.0).unwrap();

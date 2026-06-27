@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::collections::VecDeque;
 use std::sync::{Arc, Condvar, Mutex};
+use std::sync::mpsc;
 
 use crate::d3xx_device::*;
 
@@ -134,9 +135,83 @@ impl RtclFifo32CtlD3xx {
 }
 
 
+fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Vec<u8>>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
+    const OVERLAPS : usize = 3;
+    let mut overlappeds = vec![Overlapped::default(); OVERLAPS];
+    let mut bytes_transferred = vec![0u32; chunks.len()];
+
+    reader.set_timeout(10)?;
+
+    loop {
+        if rx_stop.try_recv().is_ok() {
+        println!("recv_thread: stop");
+            break;
+        }
+
+        // 受信
+        let mut offset = 0;
+        let buf = dev_reader.read(4096)?;
+        let mut size = buf.len();
+
+        // パケット分析
+        assert!(size % 4 == 0);  // 32bit単位でしか通信しない
+        while size > 0 {
+            if header {
+                // ヘッダを処理
+                packet.opcode = buf[offset];
+                packet.operand = buf[offset + 1];
+                pkt_len = u16::from_le_bytes([buf[offset + 2], buf[offset + 3]]) as usize;
+                offset += 4;
+                size -= 4;
+                if pkt_len == 0 {
+                    // ショートコマンドなら即処理
+                    if packet.opcode == OPCODE_AXI4S_TRANS {
+                        tx_stream.send(packet.clone()).unwrap();
+                    }
+                    else {
+                        tx_command.send(packet.clone()).unwrap();
+                    }
+                    packet.payload.clear();
+          //        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
+                }
+                else {
+                    header = false;
+                }
+            }
+            else {
+                // 後続ペイロードの処理
+                if size >= pkt_len {
+                    packet.payload.extend_from_slice(buf[offset..offset + pkt_len].as_ref());
+                    offset += pkt_len;
+                    size -= pkt_len;
+                    header = true;
+                    if packet.opcode == OPCODE_AXI4S_TRANS {
+                        tx_stream.send(packet.clone()).unwrap();
+                        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
+                    }
+                    else {
+                        tx_command.send(packet.clone()).unwrap();
+                    }
+                    packet.payload.clear();
+//                  println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
+                }
+                else {
+                    packet.payload.extend_from_slice(buf[offset..offset + size].as_ref());
+                    pkt_len -= size;
+                    size = 0;
+                }
+            }
+        }
+    }
+    println!("recv_thread: exit");
+    Ok(())
+}
+
+
 impl Drop for RtclFifo32CtlD3xx {
     fn drop(&mut self) {
 //      println!("RtclFifo32D3xx: drop");
     }
 }
+
 
