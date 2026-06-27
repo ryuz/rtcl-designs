@@ -217,7 +217,8 @@ impl D3xxWriter {
         let status = unsafe {
             FT_WritePipeEx(
                 self.device.handle,
-                self.fifo_id,
+//              self.fifo_id,
+                self.pipe_id - EP_ID_OUT0,
                 data.as_ptr(),
                 data.len() as ULONG,
                 &mut bytes_written,
@@ -269,18 +270,19 @@ impl D3xxWriter {
         let status = unsafe {
             FT_WritePipeAsync(
                 self.device.handle,
-                self.fifo_id,
-                buffer.as_mut_ptr(),
+//              self.fifo_id,
+                self.pipe_id - EP_ID_OUT0,
+                buffer.as_ptr(),
                 buffer.len() as ULONG,
                 bytes_transferred,
                 overlaped.as_mut_ptr(),
             )
         };
-        println!("bytes_read: {}, status: {}", bytes_read, status);
+        println!("bytes_read: {}, status: {}", bytes_transferred, status);
         if status != FT_IO_PENDING {
             status_to_result(status)?;
         }
-        Ok(buffer[0..bytes_read as usize].to_vec())
+        Ok(())
     }
 
     pub fn get_async_result(&self, overlaped: &mut Overlapped, bytes_transferred: &mut u32, wait: bool) -> D3xxResult<()> {
@@ -321,7 +323,8 @@ impl D3xxWriter {
 
             let status = unsafe { FT_WritePipeAsync(
                 self.device.handle,
-                self.fifo_id,
+//              self.fifo_id,
+                self.pipe_id - EP_ID_OUT0,
                 chunks[i].as_ptr(),
                 chunks[i].len() as ULONG,
                 &mut bytes_transferred[i] as *mut ULONG,
@@ -393,7 +396,8 @@ impl D3xxReader {
         let status = unsafe {
             FT_ReadPipeEx(
                 self.device.handle,
-                self.fifo_id,
+//              self.fifo_id,
+                self.pipe_id - EP_ID_IN0,
                 buffer.as_mut_ptr(),
                 buffer.len() as ULONG,
                 &mut bytes_read,
@@ -427,6 +431,22 @@ impl D3xxReader {
         Ok(buffer[0..bytes_read as usize].to_vec())
     }
 
+    pub fn initialize_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
+        let status = unsafe { FT_InitializeOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }    
+
+    pub fn release_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
+        let status = unsafe { FT_ReleaseOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }
+
     #[cfg(target_os = "windows")]
     pub fn read_async(&self, buffer: &mut [u8], bytes_transferred: &mut u32, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe {
@@ -445,40 +465,23 @@ impl D3xxReader {
         Ok(())
     }
 
-    pub fn initialize_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
-        let status = unsafe { FT_InitializeOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
-        if status != FT_OK {
-            return Err(D3xxError::from_status(status));
-        }
-        Ok(())
-    }    
-
-    pub fn release_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
-        let status = unsafe { FT_ReleaseOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
-        if status != FT_OK {
-            return Err(D3xxError::from_status(status));
-        }
-        Ok(())
-    }
-
-
     #[cfg(target_os = "linux")]
     pub fn read_async(&self, buffer: &mut [u8], bytes_transferred: &mut u32, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe {
             FT_ReadPipeAsync(
                 self.device.handle,
-                self.fifo_id,
+//              self.fifo_id,
+                self.pipe_id - EP_ID_IN0,
                 buffer.as_mut_ptr(),
                 buffer.len() as ULONG,
                 bytes_transferred,
                 overlaped.as_mut_ptr(),
             )
         };
-        println!("bytes_read: {}, status: {}", bytes_read, status);
         if status != FT_IO_PENDING {
             status_to_result(status)?;
         }
-        Ok(buffer[0..bytes_read as usize].to_vec())
+        Ok(())
     }
 
     pub fn get_async_result(&self, overlaped: &mut Overlapped, bytes_transferred: &mut u32, wait: bool) -> D3xxResult<()> {
@@ -519,7 +522,8 @@ impl D3xxReader {
             let status = unsafe {
                 FT_ReadPipeAsync(
                     self.device.handle,
-                    self.fifo_id,
+//                  self.fifo_id,
+                    self.pipe_id - EP_ID_IN0,
                     chunks[i].as_mut_ptr(),
                     chunks[i].len() as ULONG,
                     &mut bytes_transferred[i] as *mut ULONG,

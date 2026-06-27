@@ -196,6 +196,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     */
 
     reader.set_timeout(100)?;
+    reader.set_stream_pipe(0x100000)?;
 
     // 読み出し要求を発行
     for i in 0..OVERLAPS {
