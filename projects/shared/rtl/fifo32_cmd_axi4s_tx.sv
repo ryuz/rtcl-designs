@@ -13,19 +13,21 @@
 
 module fifo32_cmd_axi4s_tx
         #(
-            parameter   bit     ASYNC    = 0        ,
-            parameter   int     CH_ID    = 0        ,
-            parameter   int     MAX_LEN  = 512      ,
-            parameter   int     BUF_SIZE = 1024     
+            parameter   bit     ASYNC         = 0        ,
+            parameter   int     CH_ID         = 0        ,
+            parameter   int     MAX_LEN       = 512      ,
+            parameter   int     DATA_BUF_SIZE = 1024     ,
+            parameter   int     CMD_BUF_SIZE  = 128      
         )
         (
             jelly3_axi4s_if.s   s_axi4s     ,
             jelly3_axi4s_if.m   m_axi4s     
         );
     
-    localparam int   PTR_BITS  = $clog2(BUF_SIZE)       ;
-    localparam int   LEN_BITS  = $clog2(MAX_LEN)        ;
-    localparam type  len_t     = logic [LEN_BITS-1:0]   ;
+    localparam int   DATA_PTR_BITS = $clog2(DATA_BUF_SIZE)  ;
+    localparam int   CND_PTR_BITS  = $clog2(CMD_BUF_SIZE)   ;
+    localparam int   LEN_BITS      = $clog2(MAX_LEN)        ;
+    localparam type  len_t         = logic [LEN_BITS-1:0]   ;
 
     localparam type  data_t = logic [s_axi4s.DATA_BITS-1:0];
     localparam type  strb_t = logic [s_axi4s.STRB_BITS-1:0];
@@ -51,7 +53,7 @@ module fifo32_cmd_axi4s_tx
     jelly3_stream_fifo
             #(
                 .ASYNC          (ASYNC              ),
-                .PTR_BITS       (8                  ),
+                .PTR_BITS       (CND_PTR_BITS       ),
                 .DATA_BITS      (2 + $bits(len_t)   ),
                 .S_SYNC_FF      (4                  ),
                 .M_SYNC_FF      (4                  ),
@@ -99,7 +101,7 @@ module fifo32_cmd_axi4s_tx
     jelly3_stream_fifo
             #(
                 .ASYNC          (ASYNC              ),
-                .PTR_BITS       (PTR_BITS           ),
+                .PTR_BITS       (DATA_PTR_BITS      ),
                 .DATA_BITS      ($bits(strb_t) 
                                 + $bits(data_t)     ),
                 .RAM_TYPE       ("block"            )

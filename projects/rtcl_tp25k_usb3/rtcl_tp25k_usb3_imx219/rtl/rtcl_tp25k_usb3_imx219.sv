@@ -631,25 +631,24 @@ module rtcl_tp25k_usb3_imx219
                 .m_axi4s    (axi4s_frame.m          )
             );
 
-
     fifo32_cmd_axi4s_tx
             #(
-                .ASYNC      (1                  ),
-                .CH_ID      (0                  ),
-                .MAX_LEN    (256                ),
-                .BUF_SIZE   (1024*16            )
+                .ASYNC          (1                  ),
+                .CH_ID          (0                  ),
+                .MAX_LEN        (256                ),
+                .DATA_BUF_SIZE  (1024*16            ),
+                .CMD_BUF_SIZE   (1024               )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .s_axi4s    (axi4s_frame.s      ),
-                .m_axi4s    (axi4s_ft601_tx[1].m)
+                .s_axi4s        (axi4s_frame.s      ),
+                .m_axi4s        (axi4s_ft601_tx[1].m)
             );
 
 
     // rx
     assign axi4s_ft601_rx[1].tready = 1'b1;
 
-    
 
 
     // --------------------------------
