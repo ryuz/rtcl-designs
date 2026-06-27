@@ -56,6 +56,10 @@ module rtcl_tp25k_usb3_loopback
     assign clk = in_clk50;
 
 
+    // -------------------------------
+    //  FT601
+    // -------------------------------
+
     logic ft601_reset;
     jelly3_reset_async
         #(
@@ -70,31 +74,6 @@ module rtcl_tp25k_usb3_loopback
                 .in_reset           (reset          ),
                 .out_reset          (ft601_reset    )
             );
-
-
-    // LED
-    logic   [24:0]  clk_counter;
-    always_ff @(posedge in_clk50) begin
-        clk_counter <= clk_counter + 1'b1;
-    end
-
-    logic   [26:0]  usb_counter;
-    always_ff @(posedge ft601_clk) begin
-        usb_counter <= usb_counter + 1'b1;
-    end
-
-
-
-    assign led[0] = clk_counter[24] ;
-    assign led[1] = usb_counter[26] ;
-    assign led[2] = ft601_wakeup_n  ;
-    assign led[3] = reset           ;
-
-
-
-    // -------------------------------
-    //  FT601
-    // -------------------------------
 
     assign ft601_reset_n  = ~reset  ;
     assign ft601_wakeup_n = 1'bz    ;
@@ -168,6 +147,26 @@ module rtcl_tp25k_usb3_loopback
 
             );
 
+
+    // LED
+    logic   [24:0]  clk_counter;
+    always_ff @(posedge in_clk50) begin
+        clk_counter <= clk_counter + 1'b1;
+    end
+
+    logic   [26:0]  usb_counter;
+    always_ff @(posedge ft601_clk) begin
+        usb_counter <= usb_counter + 1'b1;
+    end
+
+
+
+    assign led[0] = clk_counter[24] ;
+    assign led[1] = usb_counter[26] ;
+    assign led[2] = ft601_wakeup_n  ;
+    assign led[3] = reset           ;
+
+    // PMOD
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_txe_n;
     assign pmod[2] = ft601_wr_n;
@@ -176,6 +175,7 @@ module rtcl_tp25k_usb3_loopback
     assign pmod[5] = ft601_data_i[9];
     assign pmod[6] = ft601_data_i[12];
     assign pmod[7] = ft601_data_i[13];
+
 
 endmodule
 
