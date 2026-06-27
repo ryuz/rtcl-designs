@@ -51,7 +51,7 @@ module fifo32_cmd_axi4s_tx
     jelly3_stream_fifo
             #(
                 .ASYNC          (ASYNC              ),
-                .PTR_BITS       (4                  ),
+                .PTR_BITS       (8                  ),
                 .DATA_BITS      (2 + $bits(len_t)   ),
                 .S_SYNC_FF      (4                  ),
                 .M_SYNC_FF      (4                  ),
