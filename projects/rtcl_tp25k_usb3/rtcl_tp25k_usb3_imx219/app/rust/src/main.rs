@@ -133,7 +133,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let size = ((4 + (width * 10 / 8)) * height) as usize;
     println!("frame size = {}", size);
-    let frame = usb.lock().unwrap().recv_axi4s(size)?;
+//  let frame = usb.lock().unwrap().recv_axi4s(size)?;
+    let mut frame = Vec::<u8>::with_capacity(size);
+    for _ in 0..height {
+        let lines = usb.lock().unwrap().recv_axi4s()?;
+        frame.extend_from_slice(lines.tdata.as_slice());
+        println!("frame size = {}", frame.len());
+    }
 
     // ファイルに保存
     let filename = format!("image.bin");

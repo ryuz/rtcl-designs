@@ -104,6 +104,7 @@ impl fmt::Display for D3xxError {
     }
 }
 
+#[derive(Clone)]
 pub struct Overlapped {
     overlapped : OVERLAPPED,
 }
@@ -437,7 +438,7 @@ impl D3xxReader {
     }
 
     #[cfg(target_os = "windows")]
-    pub fn read_async(&self, buffer: &mut [u8], overlaped: &mut Overlapped, bytes_transferred: &mut u32) -> D3xxResult<()> {
+    pub fn read_async(&self, buffer: &mut [u8], bytes_transferred: &mut u32, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe {
             FT_ReadPipe(
                 self.device.handle,

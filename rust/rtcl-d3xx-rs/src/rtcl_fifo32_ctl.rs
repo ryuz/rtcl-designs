@@ -8,7 +8,7 @@ use crate::d3xx_device::*;
 
 const OPCODE_AXI4L_WRITE: u8 = 0x02;
 const OPCODE_AXI4L_READ: u8 = 0x03;
-//const OPCODE_AXI4S_TRANS: u8 = 0x10;
+const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
 //const CH_AXI4L: usize = 0;
 //const CH_AXI4S: usize = 1;
@@ -17,14 +17,18 @@ const OPCODE_AXI4L_READ: u8 = 0x03;
 pub struct RtclFifo32CtlD3xx {
     axi4l_writer: D3xxWriter,
     axi4l_reader: D3xxReader,
-    axi4s_fifo: Arc<(Mutex<VecDeque<u8>>, Condvar)>,
+//  axi4s_fifo: Arc<(Mutex<VecDeque<u8>>, Condvar)>,
+
+    thread_handle: Option<std::thread::JoinHandle<()>>,
+    rx_stream: mpsc::Receiver<Axi4Stream>,
+    tx_stop: mpsc::Sender<()>,
 }
 
 impl RtclFifo32CtlD3xx {
     pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
-        let axi4s_fifo = Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
+//      let axi4s_fifo = Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
 
         let [axi4l_writer, _axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
             Ok(writers) => writers,
@@ -35,6 +39,7 @@ impl RtclFifo32CtlD3xx {
             Err(_) => panic!("Expected 2 readers"),
         };
 
+        /*
         // axi4s_reader を move して AXI4Sをリードするスレッドを作る 
         let axi4s_fifo_thread = Arc::clone(&axi4s_fifo);
         std::thread::spawn(move || {
@@ -54,6 +59,14 @@ impl RtclFifo32CtlD3xx {
                 println!("recv_thread: axi4s_reader read {} bytes, total_size = {}", response.len(), total_size);
             }
         });
+        */
+
+        let (tx_stream, rx_stream) = mpsc::channel::<Axi4Stream>();
+        let (tx_stop, rx_stop) = mpsc::channel::<()>();
+        let thread_handle = std::thread::spawn(move || {
+            let _ = recv_axi4s_thread(axi4s_reader, tx_stream, rx_stop);
+        });
+
 
 //      dev_readers[CH_AXI4S].set_timeout(100)?;
 //      dev_readers[CH_AXI4S].set_stream_pipe(0x100000)?;
@@ -61,7 +74,10 @@ impl RtclFifo32CtlD3xx {
         Ok(Self {
             axi4l_writer: axi4l_writer,
             axi4l_reader: axi4l_reader,
-            axi4s_fifo: axi4s_fifo,
+//          axi4s_fifo: axi4s_fifo,
+            thread_handle: Some(thread_handle),
+            rx_stream: rx_stream,
+            tx_stop: tx_stop,
         })
     }
 
@@ -100,6 +116,18 @@ impl RtclFifo32CtlD3xx {
         Ok(u32::from_le_bytes([response[4], response[5], response[6], response[7]]))
     }
 
+    pub fn recv_axi4s(&mut self) -> Result<Axi4Stream, Box<dyn Error>> {
+        self.rx_stream.recv().map_err(|e| e.into())
+    }
+
+    pub fn try_recv_axi4s(&mut self) -> Result<Axi4Stream, Box<dyn Error>> {
+        if let Ok(packet) = self.rx_stream.try_recv() {
+            return Ok(packet);
+        }
+        Err("No AXI4S packet available".into())
+    }
+
+    /*
     pub fn recv_axi4s(&mut self, mut len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
         let (fifo, ready) = &*self.axi4s_fifo;
         let mut fifo = fifo.lock().unwrap();
@@ -116,6 +144,7 @@ impl RtclFifo32CtlD3xx {
         }
         Ok(buf)
     }
+    */
 
     /*
     pub fn recv_axi4s(&mut self, mut len: usize) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -135,70 +164,86 @@ impl RtclFifo32CtlD3xx {
 }
 
 
-fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Vec<u8>>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
+#[derive(Debug, Clone)]
+pub struct Axi4Stream {
+    pub tuser: u8,
+    pub tdata: Vec<u8>,
+}
+
+fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
     const OVERLAPS : usize = 3;
-    let mut overlappeds = vec![Overlapped::default(); OVERLAPS];
-    let mut bytes_transferred = vec![0u32; chunks.len()];
+    const READ_UNIT : usize = 0x10000;
+    let mut overlappeds = vec![Overlapped::new(); OVERLAPS];
+    let mut buffers = vec![[0u8; READ_UNIT]; OVERLAPS];
+    let mut bytes_transferred = vec![0u32; OVERLAPS];
+    let mut pending = 0;
+    let mut index = 0;
 
     reader.set_timeout(10)?;
 
+    // 読み出し要求を発行
+    for i in 0..OVERLAPS {
+        reader.read_async(&mut buffers[i], &mut bytes_transferred[i], &mut overlappeds[i])?;
+    }
+
+    let mut stream = Axi4Stream {tuser: 0, tdata: Vec::<u8>::new()};
+
+    let mut header = true;
+    let mut rx_buffer = Vec::<u8>::new();
+    let mut packet_size = 0;
+    let mut packet_last = false;
+
+    let mut stop = false;
     loop {
         if rx_stop.try_recv().is_ok() {
-        println!("recv_thread: stop");
-            break;
+            println!("recv_thread: stop");
+            stop = true;
         }
 
         // 受信
-        let mut offset = 0;
-        let buf = dev_reader.read(4096)?;
-        let mut size = buf.len();
+        reader.get_async_result(&mut overlappeds[index], &mut bytes_transferred[index], true)?;
+        let rx_size = bytes_transferred[index] as usize;
+        rx_buffer.extend_from_slice(&buffers[index][..rx_size]);
+        if stop {
+            pending -= 1;
+            if pending == 0 {
+                break;
+            }
+        }
+        else {
+            reader.read_async(&mut buffers[index], &mut bytes_transferred[index], &mut overlappeds[index])?;
+        }
+        index = (index + 1) % OVERLAPS;
 
-        // パケット分析
-        assert!(size % 4 == 0);  // 32bit単位でしか通信しない
-        while size > 0 {
+        while rx_buffer.len() > 0 {
+            assert!(rx_buffer.len() % 4 == 0);  // 32bit単位でしか通信しない
+
             if header {
-                // ヘッダを処理
-                packet.opcode = buf[offset];
-                packet.operand = buf[offset + 1];
-                pkt_len = u16::from_le_bytes([buf[offset + 2], buf[offset + 3]]) as usize;
-                offset += 4;
-                size -= 4;
-                if pkt_len == 0 {
-                    // ショートコマンドなら即処理
-                    if packet.opcode == OPCODE_AXI4S_TRANS {
-                        tx_stream.send(packet.clone()).unwrap();
-                    }
-                    else {
-                        tx_command.send(packet.clone()).unwrap();
-                    }
-                    packet.payload.clear();
-          //        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
-                }
-                else {
-                    header = false;
-                }
+                let opcode = rx_buffer[0];
+                let operand = rx_buffer[1];
+                assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S");
+                stream.tuser = operand & 0x7f;
+                packet_last = (operand & 0x80) != 0;
+                packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
+                rx_buffer.drain(0..4);
+                header = false;
             }
             else {
-                // 後続ペイロードの処理
-                if size >= pkt_len {
-                    packet.payload.extend_from_slice(buf[offset..offset + pkt_len].as_ref());
-                    offset += pkt_len;
-                    size -= pkt_len;
+                if rx_buffer.len() >= packet_size {
+                    stream.tdata.extend_from_slice(&rx_buffer[0..packet_size]);
+                    rx_buffer.drain(0..packet_size);
                     header = true;
-                    if packet.opcode == OPCODE_AXI4S_TRANS {
-                        tx_stream.send(packet.clone()).unwrap();
-                        println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
+
+                    // 受信データを送信
+                    if packet_last {
+                        tx_stream.send(stream.clone()).unwrap();
+                        stream.tdata.clear();
                     }
-                    else {
-                        tx_command.send(packet.clone()).unwrap();
-                    }
-                    packet.payload.clear();
-//                  println!("recv_packet: opcode = 0x{:02x}, operand = 0x{:02x}, length = 0x{:04x}", packet.opcode, packet.operand, pkt_len);
                 }
                 else {
-                    packet.payload.extend_from_slice(buf[offset..offset + size].as_ref());
-                    pkt_len -= size;
-                    size = 0;
+                    stream.tdata.extend_from_slice(&rx_buffer);
+                    packet_size -= rx_buffer.len();
+                    rx_buffer.clear();
                 }
             }
         }
@@ -210,7 +255,11 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Vec<u8>>, r
 
 impl Drop for RtclFifo32CtlD3xx {
     fn drop(&mut self) {
-//      println!("RtclFifo32D3xx: drop");
+        println!("RtclFifo32D3xx: drop");
+        let _ = self.tx_stop.send(());  // 受信スレッドに停止を通知
+        if let Some(handle) = self.thread_handle.take() {
+            let _ = handle.join();
+        }
     }
 }
 
