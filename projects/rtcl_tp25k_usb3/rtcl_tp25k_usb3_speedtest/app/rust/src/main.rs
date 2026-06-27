@@ -84,7 +84,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let _ = usb_rxs[0].read(PACKET_SIZE).expect("failed to read to device");
     }
     let rx_elapsed = rx_start.elapsed();
+    let rx_seconds = rx_elapsed.as_secs_f64();
+    let rx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
+    let rx_byte_per_sec = rx_total_bytes / rx_seconds;
+    let rx_bit_per_sec = rx_byte_per_sec * 8.0;
+    let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
+    let rx_mbit_per_sec = rx_bit_per_sec / 1_000_000.0;
     println!("Receiving {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, rx_elapsed.as_secs_f64());
+    println!("Read throughput: {:.3} Mbyte/s, {:.3} Mbit/s", rx_mbyte_per_sec, rx_mbit_per_sec);
 
 
     // Write Speed test
@@ -95,7 +102,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         usb_txs[0].write(&tx_data).expect("failed to write to device");
     }
     let tx_elapsed = tx_start.elapsed();
+    let tx_seconds = tx_elapsed.as_secs_f64();
+    let tx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
+    let tx_byte_per_sec = tx_total_bytes / tx_seconds;
+    let tx_bit_per_sec = tx_byte_per_sec * 8.0;
+    let tx_mbyte_per_sec = tx_byte_per_sec / 1_000_000.0;
+    let tx_mbit_per_sec = tx_bit_per_sec / 1_000_000.0;
     println!("Sending {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, tx_elapsed.as_secs_f64());
+    println!("Write throughput: {:.3} Mbyte/s, {:.3} Mbit/s", tx_mbyte_per_sec, tx_mbit_per_sec);
 
 
     Ok(())
