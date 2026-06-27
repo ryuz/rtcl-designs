@@ -14,7 +14,6 @@
 module fifo32_cmd_axi4s_tx
         #(
             parameter   bit     ASYNC         = 0        ,
-            parameter   int     CH_ID         = 0        ,
             parameter   int     MAX_LEN       = 512      ,
             parameter   int     DATA_BUF_SIZE = 1024     ,
             parameter   int     CMD_BUF_SIZE  = 128      
@@ -29,6 +28,7 @@ module fifo32_cmd_axi4s_tx
     localparam int   LEN_BITS      = $clog2(MAX_LEN)        ;
     localparam type  len_t         = logic [LEN_BITS-1:0]   ;
 
+    localparam type  user_t = logic [s_axi4s.USER_BITS-1:0];
     localparam type  data_t = logic [s_axi4s.DATA_BITS-1:0];
     localparam type  strb_t = logic [s_axi4s.STRB_BITS-1:0];
 
@@ -38,13 +38,13 @@ module fifo32_cmd_axi4s_tx
     // --------------------------------
 
     // command fifo
-    logic   cmd_wr_user     ;
+    user_t  cmd_wr_user     ;
     logic   cmd_wr_last     ;
     len_t   cmd_wr_len      ;
     logic   cmd_wr_valid    ;
     logic   cmd_wr_ready    ;
 
-    logic   cmd_rd_user     ;
+    user_t  cmd_rd_user     ;
     logic   cmd_rd_last     ;
     len_t   cmd_rd_len      ;
     logic   cmd_rd_valid    ;
@@ -54,7 +54,9 @@ module fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (ASYNC              ),
                 .PTR_BITS       (CND_PTR_BITS       ),
-                .DATA_BITS      (2 + $bits(len_t)   ),
+                .DATA_BITS      (  $bits(user_t)
+                                 + 1
+                                 + $bits(len_t)     ),
                 .S_SYNC_FF      (4                  ),
                 .M_SYNC_FF      (4                  ),
                 .RAM_TYPE       ("distributed"      )
@@ -102,7 +104,7 @@ module fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (ASYNC              ),
                 .PTR_BITS       (DATA_PTR_BITS      ),
-                .DATA_BITS      ($bits(strb_t) 
+                .DATA_BITS      ($bits(strb_t)
                                 + $bits(data_t)     ),
                 .RAM_TYPE       ("block"            )
             )
@@ -142,15 +144,28 @@ module fifo32_cmd_axi4s_tx
     assign buf_wr_valid = s_axi4s.tvalid && (!cmd_wr_valid || cmd_wr_ready);
     assign s_axi4s.tready = buf_wr_ready && (!cmd_wr_valid || cmd_wr_ready);
 
+    logic   packet_first;
     len_t   buf_counter ;
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
-            buf_counter <= '0   ;
-            cmd_wr_last <= 1'bx ;
-            cmd_wr_len  <= 'x   ;
-            cmd_wr_valid<= 1'b0 ;
+            buf_counter  <= '0      ;
+            packet_first <= 1'b1    ;
+            cmd_wr_user  <= 1'bx    ;
+            cmd_wr_last  <= 1'bx    ;
+            cmd_wr_len   <= 'x      ;
+            cmd_wr_valid <= 1'b0    ;
         end
         else if ( s_axi4s.aclken ) begin
+            if ( s_axi4s.tvalid && s_axi4s.tready ) begin
+                if ( packet_first ) begin
+                    packet_first <= 1'b0;
+                    cmd_wr_user  <= s_axi4s.tuser   ;
+                end
+                if ( s_axi4s.tlast ) begin
+                    packet_first <= 1'b1;
+                end
+            end
+
             if ( cmd_wr_ready ) begin
                 cmd_wr_valid <= 1'b0    ;
             end
@@ -204,16 +219,15 @@ module fifo32_cmd_axi4s_tx
                         send_busy <= 1'b1        ;
                         send_len  <= cmd_rd_len  ;
 
-                        m_axi4s.tuser[0]     <= 1'b1        ;
-                        m_axi4s.tlast        <= 1'b0        ;
-                        m_axi4s.tdata[7:0]   <= 8'h10       ;   // opcode
-                        m_axi4s.tdata[8]     <= cmd_rd_user ;   // user
-                        m_axi4s.tdata[14:9]  <= 6'(CH_ID)   ;   // channel ID
-                        m_axi4s.tdata[15]    <= cmd_rd_last ;   // last
-                        m_axi4s.tdata[31:16] <= packet_len  ;   // length
-                        m_axi4s.tdata[31:28] <= 4'h0        ;   // reserved
-                        m_axi4s.tstrb        <= '1          ;
-                        m_axi4s.tvalid       <= 1'b1        ;
+                        m_axi4s.tuser[0]     <= 1'b1            ;
+                        m_axi4s.tlast        <= 1'b0            ;
+                        m_axi4s.tdata[7:0]   <= 8'h10           ;   // opcode
+                        m_axi4s.tdata[14:8]  <= 7'(cmd_rd_user) ;   // user
+                        m_axi4s.tdata[15]    <= cmd_rd_last     ;   // last
+                        m_axi4s.tdata[31:16] <= packet_len      ;   // length
+                        m_axi4s.tdata[31:28] <= 4'h0            ;   // reserved
+                        m_axi4s.tstrb        <= '1              ;
+                        m_axi4s.tvalid       <= 1'b1            ;
                     end
                 end
                 else begin

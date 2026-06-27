@@ -264,18 +264,30 @@ module tb_main
         #100000;
         @(negedge ft601_clk);
 
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_fd00;
-        @(negedge ft601_clk);
+        for ( int i = 0; i < 3; i++ ) begin
 
-        while ( dly_ft601_wr_n != 1'b0 ) begin
+            // 画像受信
+            ft601_rxf_n  = 1'b1;
+            ft601_data_t = 32'hffff_00ff;
+            ft601_data_o = 32'h0000_fd00;
             @(negedge ft601_clk);
+
+
+            while ( dly_ft601_wr_n != 1'b0 ) begin
+                @(negedge ft601_clk);
+            end
+            ft601_be_t   = 4'hf         ;
+            ft601_data_t = 32'hffff_ffff;
+            @(negedge ft601_clk);
+            ft601_rxf_n  = 1'b0;
+
+            while ( dly_ft601_wr_n == 1'b0 ) begin
+                @(negedge ft601_clk);
+            end
+            ft601_rxf_n  = 1'b1;
+            ft601_data_t = 32'hffff_00ff;
+            ft601_data_o = 32'h0000_fd00;
         end
-        ft601_be_t   = 4'hf         ;
-        ft601_data_t = 32'hffff_ffff;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b0;
 
         #1000;
         @(negedge ft601_clk);
@@ -388,10 +400,10 @@ module tb_main
                 d0ln_hsrxd = 8'h2b;
                 d1ln_hsrxd = 8'h40;
                 @(negedge dphy_clk);
-                d0ln_hsrxd = 8'h01;
+                d0ln_hsrxd = 8'h06;
                 d1ln_hsrxd = 8'h00;
                 @(negedge dphy_clk);
-                for ( int j = 0; j < 'h140 / 2; j++ ) begin
+                for ( int j = 0; j < 'h640 / 2; j++ ) begin
                     d0ln_hsrxd = 8'(j);
                     d1ln_hsrxd = 8'(~j);
                     @(negedge dphy_clk);

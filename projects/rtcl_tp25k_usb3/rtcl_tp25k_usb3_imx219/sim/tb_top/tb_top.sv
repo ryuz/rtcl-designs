@@ -14,7 +14,8 @@ module tb_top();
 
     localparam CLK50_RATE  = 1000.0/50.0;
     localparam CLK100_RATE = 1000.0/100.0;
-    localparam FT601_RATE  = 1000.0/100.0;
+//  localparam FT601_RATE  = 1000.0/100.0;
+    localparam FT601_RATE  = 1000.0/66.6;
     localparam DPHY_RATE   = 1000.0/114.0;
 
 
