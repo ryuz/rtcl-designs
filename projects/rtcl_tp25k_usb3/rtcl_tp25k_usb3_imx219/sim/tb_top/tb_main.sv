@@ -27,6 +27,10 @@ module tb_main
     wire    [31:0]  ft601_data      ;
     wire    [1:0]   ft601_gpio      ;
 
+    wire            mipi_ck_p       ;
+    wire            mipi_ck_n       ;
+    wire    [3:0]   mipi_d_p        ;
+    wire    [3:0]   mipi_d_n        ;
     wire            mipi_scl        ;
     wire            mipi_sda        ;
     wire    [1:0]   mipi_gpio       ;
@@ -53,6 +57,10 @@ module tb_main
                 .ft601_be           (ft601_be       ),
                 .ft601_data         (ft601_data     ),
                 .ft601_gpio         (ft601_gpio     ),
+                .mipi_ck_p          (mipi_ck_p      ),
+                .mipi_ck_n          (mipi_ck_n      ),
+                .mipi_d_p           (mipi_d_p       ),
+                .mipi_d_n           (mipi_d_n       ),
                 .mipi_scl           (mipi_scl       ),
                 .mipi_sda           (mipi_sda       ),
                 .mipi_gpio          (mipi_gpio      ),
@@ -384,8 +392,8 @@ module tb_main
                 d1ln_hsrxd = 8'h00;
                 @(negedge dphy_clk);
                 for ( int j = 0; j < 'h140 / 2; j++ ) begin
-                    d0ln_hsrxd = j;
-                    d1ln_hsrxd = ~j;
+                    d0ln_hsrxd = 8'(j);
+                    d1ln_hsrxd = 8'(~j);
                     @(negedge dphy_clk);
                 end
                 d0ln_hsrxd = 0;
