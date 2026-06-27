@@ -65,7 +65,7 @@ module frame_controller
     assign regadr_write = regadr_t'(s_axi4l.awaddr / axi4l_addr_t'($bits(axi4l_strb_t)));
     assign regadr_read  = regadr_t'(s_axi4l.araddr / axi4l_addr_t'($bits(axi4l_strb_t)));
 
-    logic          reg_start;
+    logic          reg_start = 1'b0;
 
     always_ff @(posedge s_axi4l.aclk) begin
         if ( ~s_axi4l.aresetn ) begin
@@ -136,8 +136,8 @@ module frame_controller
             );
 
 
-    logic       ctl_enable  ;
-    logic       ctl_busy    ;
+    logic       ctl_enable  = 1'b0;
+    logic       ctl_busy    = 1'b0;
 
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
@@ -147,6 +147,7 @@ module frame_controller
             m_axi4s.tuser  <= 'x;
             m_axi4s.tlast  <= 1'bx;
             m_axi4s.tdata  <= 'x;
+            m_axi4s.tstrb  <= '1;
             m_axi4s.tvalid <= 1'b0;
         end
         if ( s_axi4s.aclken ) begin
@@ -158,12 +159,14 @@ module frame_controller
                     m_axi4s.tuser  <= 'x;
                     m_axi4s.tlast  <= 1'bx;
                     m_axi4s.tdata  <= 'x;
+                    m_axi4s.tstrb  <= '1;
                     m_axi4s.tvalid <= ctl_enable;
                 end
                 else begin
                     m_axi4s.tuser  <= s_axi4s.tuser             ;
                     m_axi4s.tlast  <= s_axi4s.tlast             ;
                     m_axi4s.tdata  <= s_axi4s.tdata             ;
+                    m_axi4s.tstrb  <= '1;
                     m_axi4s.tvalid <= s_axi4s.tvalid & ctl_busy ;
                 end
             end
