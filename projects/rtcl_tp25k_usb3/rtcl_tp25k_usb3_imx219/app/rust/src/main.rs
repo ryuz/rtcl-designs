@@ -95,8 +95,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // camera 設定
     let pixel_clock: f64 = 91000000.0;
     let binning =  false;
-    let width: i32 = 128;
-    let height: i32 = 64;
+    let width: i32 = 256;
+    let height: i32 = 256;
 //  let width: i32 = 256;
 //  let height: i32 = 256;
 //    let frame_rate: i32 = 30;
@@ -116,34 +116,35 @@ fn main() -> Result<(), Box<dyn Error>> {
     imx219.set_digital_gain(1.0).unwrap();
     println!("set camera end");
 
+    println!("start camera");
     imx219.start().unwrap();
     std::thread::sleep(Duration::from_millis(100)); 
 
     
-    print!("wait key : start camera...");
+    print!("wait key : ctart capture...");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-    
+   
 
     unsafe {
         frm_acc.write_reg_u32(0x10, 1);
     }
 
     let size = ((4 + (width * 10 / 8)) * height) as usize;
+    println!("frame size = {}", size);
     let frame = usb.lock().unwrap().recv_axi4s(size)?;
 
     // ファイルに保存
     let filename = format!("image.bin");
     std::fs::write(&filename, frame).expect("Failed to write image file");
 
-
-    /*
+    
     print!("wait key : Quit");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-    */
+    
 
     println!("End Test");
 

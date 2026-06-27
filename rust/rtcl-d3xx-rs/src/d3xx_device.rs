@@ -148,7 +148,7 @@ impl D3xxDevice {
         for i in 0..channels {
             writers.push(D3xxWriter {
                 device: device.clone(),
-                pipe_id: EP_ID_IN0 + i as u8,
+                pipe_id: EP_ID_OUT0 + i as u8,
                 fifo_id: i as u8,
                 timeout_us: 5000,
             });
@@ -349,6 +349,7 @@ impl D3xxReader {
                 std::ptr::null_mut(),
             )
         };
+        println!("bytes_read: {}, status: {}", bytes_read, status);
         if status != FT_TIMEOUT {
             status_to_result(status)?;
         }
