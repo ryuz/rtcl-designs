@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io;
 use std::time::Instant;
 use rtcl_d3xx::*;
 
@@ -31,12 +32,25 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 将来 Async を使った全力転送に書きかえる。
     // まずはデータ化けのないチェックを優先
+
     
-    let mut rx_index = 0;
-    let mut rx_lsfr = 0x1234_5678;
+    // 送信テスト
+    println!("Sending {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
+    let mut tx_lsfr: u32 = 0x1234_5678;
+    for _ in 0..ITERETIONS {
+        let mut tx_data = Vec::with_capacity(PACKET_SIZE);
+        for _ in 0..(PACKET_SIZE/4) {
+            tx_data.extend_from_slice(&tx_lsfr.to_le_bytes());
+            tx_lsfr = calc_lfsr(tx_lsfr);
+        }
+        usb_txs[0].write(&tx_data).expect("failed to write to device");
+    }
+    println!("Sending test completed successfully!");
 
     // 受信テスト
     println!("Receiving {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
+    let mut rx_index = 0;
+    let mut rx_lsfr = 0x1234_5678;
     for _ in 0..ITERETIONS {
         // 受信
         let rx_u8 = usb_rxs[0].read(PACKET_SIZE).expect("failed to read from device");
@@ -65,35 +79,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Receiving test completed successfully!");
 
 
-    // 送信テスト
-    println!("Sending {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
-    let mut tx_lsfr: u32 = 0x1234_5678;
-    let mut tx_data = Vec::with_capacity(PACKET_SIZE);
-    for _ in 0..ITERETIONS {
-        for _ in 0..(PACKET_SIZE/4) {
-            tx_data.extend_from_slice(&tx_lsfr.to_le_bytes());
-            tx_lsfr = calc_lfsr(tx_lsfr);
-        }
-        usb_txs[0].write(&tx_data).expect("failed to write to device");
-    }
-    println!("Sending test completed successfully!");
-
-
-    // Rewad Speed test
-    println!("Read speed test starting...");
-    let rx_start = Instant::now();
-    for _ in 0..ITERETIONS {
-        let _ = usb_rxs[0].read(PACKET_SIZE).expect("failed to read to device");
-    }
-    let rx_elapsed = rx_start.elapsed();
-    let rx_seconds = rx_elapsed.as_secs_f64();
-    let rx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
-    let rx_byte_per_sec = rx_total_bytes / rx_seconds;
-    let rx_bit_per_sec = rx_byte_per_sec * 8.0;
-    let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
-    let rx_mbit_per_sec = rx_bit_per_sec / 1_000_000.0;
-    println!("Receiving {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, rx_elapsed.as_secs_f64());
-    println!("Read throughput: {:.3} Mbyte/s, {:.3} Mbit/s", rx_mbyte_per_sec, rx_mbit_per_sec);
+    // ここで一度キー入力待ちを行う
+    println!("Press Enter to start speed tests...");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
 
 
     // Write Speed test
@@ -112,6 +101,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tx_mbit_per_sec = tx_bit_per_sec / 1_000_000.0;
     println!("Sending {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, tx_elapsed.as_secs_f64());
     println!("Write throughput: {:.3} Mbyte/s, {:.3} Mbit/s", tx_mbyte_per_sec, tx_mbit_per_sec);
+
+
+
+    // Rewad Speed test
+    println!("Read speed test starting...");
+    let rx_start = Instant::now();
+    for _ in 0..ITERETIONS {
+        let _ = usb_rxs[0].read(PACKET_SIZE).expect("failed to read to device");
+    }
+    let rx_elapsed = rx_start.elapsed();
+    let rx_seconds = rx_elapsed.as_secs_f64();
+    let rx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
+    let rx_byte_per_sec = rx_total_bytes / rx_seconds;
+    let rx_bit_per_sec = rx_byte_per_sec * 8.0;
+    let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
+    let rx_mbit_per_sec = rx_bit_per_sec / 1_000_000.0;
+    println!("Receiving {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, rx_elapsed.as_secs_f64());
+    println!("Read throughput: {:.3} Mbyte/s, {:.3} Mbit/s", rx_mbyte_per_sec, rx_mbit_per_sec);
 
 
     Ok(())
