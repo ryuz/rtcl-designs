@@ -17,6 +17,7 @@ unsafe extern "C" {}
 
 pub type DWORD = u32;
 pub type ULONG = u32;
+pub type ULONG_PTR = usize;
 #[cfg(target_os = "windows")]
 pub type BOOL = i32;
 #[cfg(target_os = "linux")]
@@ -89,8 +90,8 @@ impl Default for OVERLAPPED_UNION {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct OVERLAPPED {
-    pub Internal: DWORD,
-    pub InternalHigh: DWORD,
+    pub Internal: ULONG_PTR,
+    pub InternalHigh: ULONG_PTR,
     pub u: OVERLAPPED_UNION, // 無名unionだった部分に名前（uなど）を付ける
     pub hEvent: HANDLE,
 }

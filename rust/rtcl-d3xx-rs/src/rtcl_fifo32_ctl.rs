@@ -183,6 +183,8 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
 
+//  std::thread::sleep(std::time::Duration::from_millis(100));
+
     /*
     loop {
         if rx_stop.try_recv().is_ok() {
@@ -193,7 +195,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     return Ok(());
     */
 
-//  reader.set_timeout(10)?;
+    reader.set_timeout(100)?;
 
     // 読み出し要求を発行
     for i in 0..OVERLAPS {
