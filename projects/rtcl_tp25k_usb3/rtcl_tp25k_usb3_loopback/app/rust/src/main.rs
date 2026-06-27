@@ -2,7 +2,7 @@ use std::error::Error;
 use std::time::Instant;
 use rtcl_d3xx::*;
 
-const CHHANNELS: usize = 2;
+const CHHANNELS: usize = 1;
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 loopback test");
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 乱数で初期化
         for ch in 0..CHHANNELS {
             for i in 0..tx_data[ch].len() {
-                tx_data[ch][i] = rand::random::<u8>();
+                tx_data[ch][i] = i as u8; //rand::random::<u8>();
             }
         }
 
@@ -65,6 +65,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 for i in 0..rx_data_32bit.len() {
                     if rx_data_32bit[i] != tx_data_32bit[i] {
                         println!("Data mismatch at ch {} index {:08x}: tx = {:08x}, rx = {:08x} diff = {:08x}", ch, i, tx_data_32bit[i], rx_data_32bit[i], tx_data_32bit[i] ^ rx_data_32bit[i]);
+                    }
+                    else {
+                        println!("Data match at ch {} index {:08x}: tx = {:08x}, rx = {:08x}", ch, i, tx_data_32bit[i], rx_data_32bit[i]);
                     }
                 }
                 eprintln!("Data mismatch! {}", itr);

@@ -180,7 +180,7 @@ module rtcl_tp25k_usb3_speedtest
                 .update         (axi4s_ft601_rx[0].tvalid   ),
                 .clear          (1'b0                       ),
                 .clear_value    (                           ),
-                .polynomial     (32'h8020_0002              ), // 32, 22, 2
+                .polynomial     (32'h8020_0003              ), // 32, 22, 2, 1
                 
                 .dout           (lfsr_rx                    )
             );
