@@ -109,26 +109,16 @@ pub struct Overlapped {
     overlapped : OVERLAPPED,
 }
 
+
 impl Overlapped {
     pub fn new() -> Self {
-        let mut overlapped = OVERLAPPED::default();
-        let status = unsafe { FT_InitializeOverlapped(std::ptr::null_mut(), &mut overlapped as *mut OVERLAPPED) };
-        assert!(status == FT_OK, "Failed to initialize overlapped: status = {}", status);
-        Self { overlapped }
+        Self { overlapped : OVERLAPPED::default() }
     }
 
     fn as_mut_ptr(&mut self) -> *mut OVERLAPPED {
         &mut self.overlapped as *mut OVERLAPPED
     }
 }
-
-impl Drop for Overlapped {
-    fn drop(&mut self) {
-        let status = unsafe { FT_ReleaseOverlapped(std::ptr::null_mut(), &mut self.overlapped as *mut OVERLAPPED) };
-        assert!(status == FT_OK, "Failed to release overlapped: status = {}", status);
-    }
-}
-
 
 
 impl Error for D3xxError {}
@@ -455,6 +445,23 @@ impl D3xxReader {
         Ok(())
     }
 
+    pub fn initialize_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
+        let status = unsafe { FT_InitializeOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }    
+
+    pub fn release_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
+        let status = unsafe { FT_ReleaseOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }
+
+
     #[cfg(target_os = "linux")]
     pub fn read_async(&self, buffer: &mut [u8], bytes_transferred: &mut u32, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe {
@@ -482,7 +489,7 @@ impl D3xxReader {
                 bytes_transferred,
                 if wait { 1 } else { 0 },
         )};
-        if status != FT_OK {
+        if status != FT_OK && status != FT_TIMEOUT {
             status_to_result(status)?;
         }
         Ok(())
