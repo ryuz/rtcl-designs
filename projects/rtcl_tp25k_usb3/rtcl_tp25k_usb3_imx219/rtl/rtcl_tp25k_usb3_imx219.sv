@@ -74,7 +74,7 @@ module rtcl_tp25k_usb3_imx219
             );
 
     logic       reset   ;
-    jelly3_reset_sync
+    jelly3_reset_async
             #(
                 .IN_LOW_ACTIVE      (0                  ),
                 .OUT_LOW_ACTIVE     (0                  )
@@ -94,7 +94,6 @@ module rtcl_tp25k_usb3_imx219
     // ----------------------------------------
 
     logic           dphy_reset              ;
-    assign dphy_reset = reset;
 
     logic           dphy_clk                ;
     logic   [7:0]   dphy_d0ln_hsrxd         ;
@@ -224,6 +223,20 @@ module rtcl_tp25k_usb3_imx219
                 .d2ln_deskew_req    (dphy_d2ln_deskew_req   ), //input d2ln_deskew_req
                 .d3ln_deskew_req    (dphy_d3ln_deskew_req   )  //input d3ln_deskew_req
             );
+
+    jelly3_reset_async
+            #(
+                .IN_LOW_ACTIVE      (0                  ),
+                .OUT_LOW_ACTIVE     (0                  )
+            )
+        u_reset_async_dphy
+            (
+                .clk                (dphy_clk           ),
+                .cke                (1'b1               ),
+                .in_reset           (self_reset || ~lock),
+                .out_reset          (dphy_reset         )
+            );
+
 
     assign dphy_lptxen_ln0    = 0;
     assign dphy_lptxen_ln1    = 0;
@@ -653,9 +666,21 @@ module rtcl_tp25k_usb3_imx219
         usb_counter <= usb_counter + 1'b1;
     end
 
+    logic frame_overflow;
+    always_ff @(posedge dphy_clk) begin
+        if ( dphy_reset ) begin
+            frame_overflow <= 1'b0;
+        end
+        else begin
+            if ( axi4s_frame.s.tvalid && !axi4s_frame.s.tready ) begin
+                frame_overflow <= 1'b1;
+            end
+        end
+    end
+
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = ft601_wakeup_n  ;
+    assign led[2] = frame_overflow  ;
     assign led[3] = reset           ;
 
 
@@ -663,17 +688,18 @@ module rtcl_tp25k_usb3_imx219
     //  PMOD
     // --------------------------------
 
-    /*
+    
     assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_txe_n;
-    assign pmod[2] = ft601_wr_n;
-    assign pmod[3] = '0;
+    assign pmod[1] = ft601_wr_n;
+    assign pmod[2] = axi4s_frame.s.tready;
+    assign pmod[3] = axi4s_frame.s.tvalid;
     assign pmod[4] = ft601_data_i[8];
     assign pmod[5] = ft601_data_i[9];
     assign pmod[6] = ft601_data_i[12];
     assign pmod[7] = ft601_data_i[13];
-    */
+    
 
+    /*
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];
     assign pmod[2] = dphy_hsrxd_vld[1];
@@ -682,6 +708,7 @@ module rtcl_tp25k_usb3_imx219
     assign pmod[5] = '0;
     assign pmod[6] = '0;
     assign pmod[7] = '0;
+    */
 
 endmodule
 
