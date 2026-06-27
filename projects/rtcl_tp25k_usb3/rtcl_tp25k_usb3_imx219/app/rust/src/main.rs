@@ -138,7 +138,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for _ in 0..height {
         let lines = usb.lock().unwrap().recv_axi4s()?;
         frame.extend_from_slice(lines.tdata.as_slice());
-        println!("frame size = {}", frame.len());
+//      println!("frame size = {}", frame.len());
     }
 
     // ファイルに保存

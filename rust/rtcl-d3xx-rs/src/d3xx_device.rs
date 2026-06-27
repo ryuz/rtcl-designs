@@ -430,7 +430,7 @@ impl D3xxReader {
                 std::ptr::null_mut(),
             )
         };
-        println!("bytes_read: {}, status: {}", bytes_read, status);
+//      println!("bytes_read: {}, status: {}", bytes_read, status);
         if status != FT_TIMEOUT {
             status_to_result(status)?;
         }
