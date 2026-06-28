@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::io;
 use std::time::Instant;
 use rtcl_d3xx::*;
 
@@ -17,44 +16,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Open the first device found.
     let (mut usb_txs, mut usb_rxs) = D3xxDevice::new(0, CHHANNELS)?;
 
-//  burst_read_test(&mut usb_rxs[0])?; 
+    read_lsfr_test(&mut usb_rxs[0])?; 
+    write_lsfr_test(&mut usb_txs[0])?;
 
-    for i in 0..CHHANNELS {
-        usb_txs[i].set_timeout(1000)?;
-        usb_rxs[i].set_timeout(1000)?;
-    }
+    burst_read_test(&mut usb_rxs[0])?;
+    burst_write_test(&mut usb_txs[0])?;
 
+    // Rewad Speed test
+    Ok(())
+}
+
+fn read_lsfr_test(reader: &mut D3xxReader) -> Result<(), Box<dyn Error>> {
+    // 受信テスト
     const PACKET_SIZE: usize = 4*128;
     const ITERETIONS: usize = 1000;
-    
-//   for ch in 0..CHHANNELS {
-//      usb_txs[ch].set_stream_pipe(0x10000)?;
-//      usb_rxs[ch].set_stream_pipe(0x10000)?;
-//  }
 
-    // 将来 Async を使った全力転送に書きかえる。
-    // まずはデータ化けのないチェックを優先
-
-    // 送信テスト
-    println!("\nSending {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
-    let mut tx_lsfr: u32 = 0x1234_5678;
-    for _ in 0..ITERETIONS {
-        let mut tx_data = Vec::with_capacity(PACKET_SIZE);
-        for _ in 0..(PACKET_SIZE/4) {
-            tx_data.extend_from_slice(&tx_lsfr.to_le_bytes());
-            tx_lsfr = calc_lfsr(tx_lsfr);
-        }
-        usb_txs[0].write(&tx_data).expect("failed to write to device");
-    }
-    println!("Sending test completed successfully!");
-
-    // 受信テスト
-    println!("\nReceiving {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
+    println!("\n=================================");
+    println!("Receiving {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
     let mut rx_index = 0;
     let mut rx_lsfr = 0x1234_5678;
     for _ in 0..ITERETIONS {
         // 受信
-        let rx_u8 = usb_rxs[0].read(PACKET_SIZE).expect("failed to read from device");
+        let rx_u8 = reader.read(PACKET_SIZE).expect("failed to read from device");
         // 32bit 化
         let rx_u32: Vec<u32> = rx_u8.chunks_exact(4).map(|chunk| {u32::from_le_bytes(chunk.try_into().unwrap())}).collect();
 
@@ -74,59 +57,37 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     println!("Receiving test completed successfully!");
-//  return Ok(());
+    println!("=================================");
+    Ok(())
+}
 
-    // ここで一度キー入力待ちを行う
-    println!("Press Enter to start speed tests...");
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-
-
-    // Write Speed test
-    println!("\nWrite speed test starting...");
-    let tx_start = Instant::now();
-    let tx_data = vec![0u8; PACKET_SIZE];
+fn write_lsfr_test(writer: &mut D3xxWriter) -> Result<(), Box<dyn Error>> {
+    // 送信テスト
+    const PACKET_SIZE: usize = 4*128;
+    const ITERETIONS: usize = 1000;
+    println!("\n=================================");
+    println!("Sending {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
+    let mut tx_lsfr: u32 = 0x1234_5678;
     for _ in 0..ITERETIONS {
-        usb_txs[0].write(&tx_data).expect("failed to write to device");
+        let mut tx_data = Vec::with_capacity(PACKET_SIZE);
+        for _ in 0..(PACKET_SIZE/4) {
+            tx_data.extend_from_slice(&tx_lsfr.to_le_bytes());
+            tx_lsfr = calc_lfsr(tx_lsfr);
+        }
+        writer.write(&tx_data).expect("failed to write to device");
     }
-    let tx_elapsed = tx_start.elapsed();
-    let tx_seconds = tx_elapsed.as_secs_f64();
-    let tx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
-    let tx_byte_per_sec = tx_total_bytes / tx_seconds;
-    let tx_bit_per_sec = tx_byte_per_sec * 8.0;
-    let tx_mbyte_per_sec = tx_byte_per_sec / 1_000_000.0;
-    let tx_mbit_per_sec = tx_bit_per_sec / 1_000_000.0;
-    println!("Sending {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, tx_elapsed.as_secs_f64());
-    println!("Write throughput: {:.3} Mbyte/s, {:.3} Mbit/s", tx_mbyte_per_sec, tx_mbit_per_sec);
-
-
-
-    // Rewad Speed test
-    println!("Read speed test starting...");
-    let rx_start = Instant::now();
-    for _ in 0..ITERETIONS {
-        let _ = usb_rxs[0].read(PACKET_SIZE).expect("failed to read to device");
-    }
-    let rx_elapsed = rx_start.elapsed();
-    let rx_seconds = rx_elapsed.as_secs_f64();
-    let rx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
-    let rx_byte_per_sec = rx_total_bytes / rx_seconds;
-    let rx_bit_per_sec = rx_byte_per_sec * 8.0;
-    let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
-    let rx_mbit_per_sec = rx_bit_per_sec / 1_000_000.0;
-    println!("Receiving {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, rx_elapsed.as_secs_f64());
-    println!("Read throughput: {:.3} Mbyte/s, {:.3} Mbit/s", rx_mbyte_per_sec, rx_mbit_per_sec);
-
-    burst_read_test(&mut usb_rxs[0])?;
-    burst_write_test(&mut usb_txs[0])?;
-
-    // Rewad Speed test
+    println!("Sending test completed successfully!");
+    println!("=================================");
     Ok(())
 }
 
 
+
 // 連続読み出しテスト
 fn burst_read_test(reader: &mut D3xxReader) -> Result<(), Box<dyn Error>> {
+
+    println!("\n=================================");
+    println!("Starting burst read test...");
 
     const ITERETIONS: usize = 1000;
     const OVERLAPS : usize = 8;
@@ -182,6 +143,7 @@ fn burst_read_test(reader: &mut D3xxReader) -> Result<(), Box<dyn Error>> {
     let rx_mbit_per_sec = rx_bit_per_sec / 1_000_000.0;
     println!("Receiving {} packets of size {} bytes took {:.6} seconds", ITERETIONS, READ_UNIT, rx_elapsed.as_secs_f64());
     println!("Read throughput: {:.3} Mbyte/s, {:.3} Mbit/s", rx_mbyte_per_sec, rx_mbit_per_sec);
+    println!("=================================");
 
     Ok(())
 }
@@ -189,6 +151,8 @@ fn burst_read_test(reader: &mut D3xxReader) -> Result<(), Box<dyn Error>> {
 
 
 fn burst_write_test(writer: &mut D3xxWriter) -> Result<(), Box<dyn Error>> {
+    println!("\n=================================");
+    println!("Starting burst write test...");
 
     const ITERETIONS: usize = 1000;
     const OVERLAPS : usize = 8;
@@ -242,6 +206,7 @@ fn burst_write_test(writer: &mut D3xxWriter) -> Result<(), Box<dyn Error>> {
     let tx_mbit_per_sec = tx_bit_per_sec / 1_000_000.0;
     println!("Sending {} packets of size {} bytes took {:.6} seconds", ITERETIONS, READ_UNIT, tx_elapsed.as_secs_f64());
     println!("Write throughput: {:.3} Mbyte/s, {:.3} Mbit/s", tx_mbyte_per_sec, tx_mbit_per_sec);
+    println!("=================================");
 
     Ok(())
 }

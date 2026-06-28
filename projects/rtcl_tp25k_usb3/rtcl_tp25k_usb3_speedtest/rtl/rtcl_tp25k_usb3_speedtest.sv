@@ -185,7 +185,7 @@ module rtcl_tp25k_usb3_speedtest
     logic           lfsr_clear;
 
     // ゼロ受信でクリア
-    assign lfsr_clear = axi4s_ft601_rx[0].tvalid && axi4s_ft601_rx[0].tready && (axi4s_ft601_rx[0].tdata == '0);
+    assign lfsr_clear = 0;//axi4s_ft601_rx[0].tvalid && axi4s_ft601_rx[0].tready && (axi4s_ft601_rx[0].tdata == LFSR_INIT);
 
 
     logic   [31:0]  lfsr_rx;
@@ -243,7 +243,7 @@ module rtcl_tp25k_usb3_speedtest
                 
                 .update         (axi4s_ft601_tx[0].tvalid
                                 && axi4s_ft601_tx[0].tready ),
-                .clear          (lfsr_clear                 ),
+                .clear          (1'b0                       ),
                 .clear_value    (LFSR_INIT                  ),
                 .polynomial     (32'h8020_0003              ), // 32, 22, 2, 1
                 
