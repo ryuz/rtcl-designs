@@ -65,10 +65,11 @@ module rtcl_tp25k_usb3_speedtest
     gowin_pll_ft601
         u_gowin_pll_ft601
             (
-                .clkin      (ft601_clk_in   ),
-                .clkout0    (ft601_clk      ),
-                .lock       (ft601_lock     ),
-                .mdclk      (in_clk50       )
+                .clkin              (ft601_clk_in   ),
+                .clkout0            (ft601_clk      ),
+                .lock               (ft601_lock     ),
+                .mdclk              (in_clk50       ),
+                .reset              (reset          )
             );
 
 

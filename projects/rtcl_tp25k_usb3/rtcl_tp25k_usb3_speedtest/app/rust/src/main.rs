@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         if err {
-//          return Err("Data mismatch".into());
+            return Err("Data mismatch".into());
         }
     }
     println!("Receiving test completed successfully!");

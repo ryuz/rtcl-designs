@@ -15,7 +15,7 @@ module rtcl_tp25k_usb3_imx219
 
             output  var logic           ft601_reset_n   ,
             inout   tri logic           ft601_wakeup_n  ,
-            input   var logic           ft601_clk       ,
+            input   var logic           ft601_clk_in    ,
             input   var logic           ft601_rxf_n     ,
             input   var logic           ft601_txe_n     ,
             output  var logic           ft601_siwu_n    ,
@@ -316,6 +316,18 @@ module rtcl_tp25k_usb3_imx219
     // -------------------------------
     //  FT601
     // -------------------------------
+
+    logic   ft601_clk   ;
+    logic   ft601_lock  ;
+    gowin_pll_ft601
+        u_gowin_pll_ft601
+            (
+                .clkin              (ft601_clk_in   ),
+                .clkout0            (ft601_clk      ),
+                .lock               (ft601_lock     ),
+                .mdclk              (in_clk50       ),
+                .reset              (reset          )
+            );
 
     logic ft601_reset;
     jelly3_reset_async
