@@ -16,6 +16,9 @@ CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
 VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_speedtest.sv
+VLOG_SOURCES += $(PRJ_DIR)/ip/pll_init.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601_mod.v
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode_transceiver.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
