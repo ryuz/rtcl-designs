@@ -180,11 +180,19 @@ module rtcl_tp25k_usb3_speedtest
     //  RX
     // -------------------------------
 
+    localparam  logic [31:0]  LFSR_INIT = 32'h1234_5678;
+    
+    logic           lfsr_clear;
+
+    // ゼロ受信でクリア
+    assign lfsr_clear = axi4s_ft601_rx[0].tvalid && axi4s_ft601_rx[0].tready && (axi4s_ft601_rx[0].tdata == '0);
+
+
     logic   [31:0]  lfsr_rx;
     jelly3_lfsr
             #(
                 .DATA_BITS      (32                         ),
-                .INIT           (32'h1234_5678              )
+                .INIT           (LFSR_INIT                  )
             )
         u_lfsr_rx
             (
@@ -193,8 +201,8 @@ module rtcl_tp25k_usb3_speedtest
                 .cke            (1'b1                       ),
                 
                 .update         (axi4s_ft601_rx[0].tvalid   ),
-                .clear          (1'b0                       ),
-                .clear_value    (                           ),
+                .clear          (lfsr_clear                 ),
+                .clear_value    (LFSR_INIT                  ),
                 .polynomial     (32'h8020_0003              ), // 32, 22, 2, 1
                 
                 .dout           (lfsr_rx                    )
@@ -204,7 +212,7 @@ module rtcl_tp25k_usb3_speedtest
 
     logic       rx_error;
     always_ff @(posedge axi4s_ft601_rx[0].aclk ) begin
-        if ( ~axi4s_ft601_rx[0].aresetn ) begin
+        if ( ~axi4s_ft601_rx[0].aresetn || lfsr_clear ) begin
             rx_error <= 1'b0;
         end
         else if ( axi4s_ft601_rx[0].aclken ) begin
@@ -225,7 +233,7 @@ module rtcl_tp25k_usb3_speedtest
     jelly3_lfsr
             #(
                 .DATA_BITS      (32                         ),
-                .INIT           (32'h1234_5678              )
+                .INIT           (LFSR_INIT                  )
             )
         u_lfsr_tx
             (
@@ -235,8 +243,8 @@ module rtcl_tp25k_usb3_speedtest
                 
                 .update         (axi4s_ft601_tx[0].tvalid
                                 && axi4s_ft601_tx[0].tready ),
-                .clear          (1'b0                       ),
-                .clear_value    (                           ),
+                .clear          (lfsr_clear                 ),
+                .clear_value    (LFSR_INIT                  ),
                 .polynomial     (32'h8020_0003              ), // 32, 22, 2, 1
                 
                 .dout           (lfsr_tx                    )
@@ -270,10 +278,10 @@ module rtcl_tp25k_usb3_speedtest
 
 
     // PMOD
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_txe_n;
-    assign pmod[2] = ft601_wr_n;
-    assign pmod[3] = '0;
+    assign pmod[0] = ft601_rxf_n    ;
+    assign pmod[1] = ft601_wr_n     ;
+    assign pmod[2] = ft601_txe_n    ;
+    assign pmod[3] = '0             ;
     assign pmod[4] = ft601_data_i[8];
     assign pmod[5] = ft601_data_i[9];
     assign pmod[6] = ft601_data_i[12];

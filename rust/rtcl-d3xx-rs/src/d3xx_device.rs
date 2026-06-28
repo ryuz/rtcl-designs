@@ -246,9 +246,24 @@ impl D3xxWriter {
         Ok(bytes_written as usize)
     }
 
+    pub fn initialize_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
+        let status = unsafe { FT_InitializeOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }    
+
+    pub fn release_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
+        let status = unsafe { FT_ReleaseOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
+        Ok(())
+    }
 
     #[cfg(target_os = "windows")]
-    pub fn write_async(&self, buffer: &[u8], overlaped: &mut Overlapped, bytes_transferred: &mut u32) -> D3xxResult<()> {
+    pub fn write_async(&self, buffer: &[u8], bytes_transferred: &mut u32, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe {
             FT_WritePipe(
                 self.device.handle,
@@ -266,7 +281,7 @@ impl D3xxWriter {
     }
 
     #[cfg(target_os = "linux")]
-    pub fn write_async(&self, buffer: &[u8], overlaped: &mut Overlapped, bytes_transferred: &mut u32) -> D3xxResult<()> {
+    pub fn write_async(&self, buffer: &[u8], bytes_transferred: &mut u32, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe {
             FT_WritePipeAsync(
                 self.device.handle,
@@ -278,7 +293,6 @@ impl D3xxWriter {
                 overlaped.as_mut_ptr(),
             )
         };
-        println!("bytes_read: {}, status: {}", bytes_transferred, status);
         if status != FT_IO_PENDING {
             status_to_result(status)?;
         }
