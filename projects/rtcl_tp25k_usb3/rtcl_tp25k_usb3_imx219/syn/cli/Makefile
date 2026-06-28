@@ -45,6 +45,8 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/peripheral/jelly_i2c_core.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/pll_init.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_mod.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601.v
+VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601_mod.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_mipi_dphy/gowin_mipi_dphy.v
 
 # SDC File
