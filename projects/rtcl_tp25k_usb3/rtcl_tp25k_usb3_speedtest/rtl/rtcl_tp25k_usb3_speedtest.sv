@@ -98,24 +98,6 @@ module rtcl_tp25k_usb3_speedtest
     logic   [3:0]   ft601_be_o      ;
     logic   [3:0]   ft601_be_t      ;
     for (genvar i = 0; i < 4; i++) begin : iob_be
-        /*
-        logic       ft601_be_o_dly;
-        IODELAY
-                #(
-                    .C_STATIC_DLY   (DLY_VALUE          ),
-                    .DYN_DLY_EN     ("FALSE"            ),
-                    .ADAPT_EN       ("FALSE"            )
-                )
-            u_iodelay_data
-                (
-                    .DO             (ft601_be_o_dly     ),
-                    .DF             (                   ),
-                    .DI             (ft601_be_o[i]      ),
-                    .SDTAP          (1'b0               ),
-                    .VALUE          (1'b0               ),
-                    .DLYSTEP        (DLY_VALUE          )
-                );
-        */
         IOBUF
             u_iobuf_be
                 (
@@ -130,24 +112,6 @@ module rtcl_tp25k_usb3_speedtest
     logic   [31:0]  ft601_data_o  = '0  ;
     logic   [31:0]  ft601_data_t  = '1  ;
     for (genvar i = 0; i < 32; i++) begin : iob_data
-        /*
-        logic       ft601_data_o_dly;
-        IODELAY
-                #(
-                    .C_STATIC_DLY   (0                ),
-                    .DYN_DLY_EN     ("FALSE"            ),
-                    .ADAPT_EN       ("FALSE"            )
-                )
-            u_iodelay_data
-                (
-                    .DO             (ft601_data_o_dly   ),
-                    .DF             (                   ),
-                    .DI             (ft601_data_o[i]    ),
-                    .SDTAP          (1'b0               ),
-                    .VALUE          (1'b0               ),
-                    .DLYSTEP        (8'd0             )
-                );
-        */
         IOBUF
             u_iobuf_data
                 (
