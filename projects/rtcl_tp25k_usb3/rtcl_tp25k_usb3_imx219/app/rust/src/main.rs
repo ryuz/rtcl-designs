@@ -125,13 +125,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     imx219.start().unwrap();
     std::thread::sleep(Duration::from_millis(100)); 
 
-    
+    /*
     print!("wait key : ctart capture...");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-   
-   loop {
+    */
+
+    loop {
   
         // 1 frame 取り込み指示
         unsafe {
@@ -192,9 +193,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
     }
-    return Ok(());
+    
 
-    ///////////////////////
+    /*
     unsafe {
         // 1 frame 取り込み指示
         frm_acc.write_reg_u32(0x10, 1);
@@ -234,7 +235,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
     opencv::highgui::imshow("image", &mat)?;
     opencv::highgui::wait_key(0)?;
-   
+   */
 
     /*
     print!("wait key : Quit");

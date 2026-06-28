@@ -105,7 +105,7 @@ pub struct Axi4Stream {
 
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
-    const OVERLAPS : usize = 4;
+    const OVERLAPS : usize = 8;
     const READ_UNIT : usize = 0x10000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
