@@ -7,7 +7,7 @@
 
 -mod_name gowin_pll_ft601_MOD
 -file_name gowin_pll_ft601_mod
--path /home/ryuji/git-work/rtcl-designs/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219/ip/gowin_pll/
+-path /home/ryuji/git-work/rtcl-designs/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_speedtest/ip/gowin_pll/
 -type PLL_ADV
 -file_type vlg
 -ip_version 1.0
@@ -30,7 +30,7 @@
 -clkout0_dt_step 0
 -dyn_pe0_sel false
 -clkout0_pe_coarse 0
--clkout0_pe_fine 7
+-clkout0_pe_fine 0
 -de0_en false
 -clkout0_dt_dir 1
 -clkout0_dt_step 0
