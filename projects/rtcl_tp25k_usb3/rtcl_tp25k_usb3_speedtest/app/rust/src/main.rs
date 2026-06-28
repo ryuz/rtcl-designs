@@ -12,7 +12,7 @@ fn calc_lfsr(lfsr: u32) -> u32 {
 
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("FT601 loopback test");
+    println!("FT601 read/write test");
 
     // Open the first device found.
     let (mut usb_txs, mut usb_rxs) = D3xxDevice::new(0, CHHANNELS)?;
