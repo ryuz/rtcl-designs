@@ -95,8 +95,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // camera 設定
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-    let width: i32 = 256;
-    let height: i32 = 256;
+    let width: usize = 256;
+    let height: usize = 256;
 //    let width: i32 = 640;
 //    let height: i32 = 480;
 //    let width: i32 = 1280;
@@ -113,7 +113,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 //    let flip_h: bool = false;
 //    let flip_v: bool = false;
     imx219.set_pixel_clock(pixel_clock).unwrap();
-    imx219.set_aoi(width, height, aoi_x, aoi_y, binning, binning).unwrap();
+    imx219.set_aoi(width as i32, height as i32, aoi_x, aoi_y, binning, binning).unwrap();
     imx219.set_frame_rate(10.0).unwrap();
     imx219.set_exposure_time(20.0).unwrap();
 
@@ -131,31 +131,117 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
    
+   loop {
+  
+        // 1 frame 取り込み指示
+        unsafe {
+            frm_acc.write_reg_u32(0x10, 1);
+        }
 
+//          println!("frame size = {}", size);
+
+        std::thread::sleep(Duration::from_millis(10));
+
+        let mut lines = Vec::<Vec<u8>>::new();
+        let size = ((4 + (width * 10 / 8)) * height) as usize;
+        let mut frame = Vec::<u8>::with_capacity(size);
+        for _ in 0..height {
+            let axi4s = match usb.lock().unwrap().try_recv_axi4s() {
+                Ok(packet) => packet,
+                Err(_) => {
+                    eprintln!("Failed to receive AXI4S packet, retrying...");
+                    break;  // 内側のfor loopを抜ける
+                }
+            };
+
+            lines.push(axi4s.tdata.clone());
+            frame.extend_from_slice(axi4s.tdata.as_slice());
+    //      println!("frame size = {}", frame.len());
+        }
+
+        // 受信に失敗したらリトライ
+        if lines.len() != height {
+            continue;
+        }
+
+        let mut image = vec![vec![0u16; width as usize]; height as usize];
+        for y in 0..height {
+            for x in 0..width/4 {
+                image[y][x*4+0] = (((lines[y][x*5+0] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 0) & 0x03) * 64;
+                image[y][x*4+1] = (((lines[y][x*5+1] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 2) & 0x03) * 64;
+                image[y][x*4+2] = (((lines[y][x*5+2] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 4) & 0x03) * 64;
+                image[y][x*4+3] = (((lines[y][x*5+3] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 6) & 0x03) * 64;
+            }
+        }
+
+        // OpenCV で画像を表示
+        let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
+        let mat = opencv::core::Mat::new_rows_cols_with_data(
+            height as i32,
+            width as i32,
+            &flat_image,
+        )?;
+        
+        // BYAER を BGR に変換
+        let mut mat_bgr = opencv::core::Mat::default();
+        opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
+
+        opencv::highgui::imshow("image", &mat_bgr)?;
+        let key = opencv::highgui::wait_key(100)?;
+        if (key & 0xff) == 27 { // ESC
+            break;
+        }
+    }
+    return Ok(());
+
+    ///////////////////////
     unsafe {
+        // 1 frame 取り込み指示
         frm_acc.write_reg_u32(0x10, 1);
     }
 
     let size = ((4 + (width * 10 / 8)) * height) as usize;
     println!("frame size = {}", size);
-//  let frame = usb.lock().unwrap().recv_axi4s(size)?;
+    let mut lines = Vec::<Vec<u8>>::new();
     let mut frame = Vec::<u8>::with_capacity(size);
     for _ in 0..height {
-        let lines = usb.lock().unwrap().recv_axi4s()?;
-        frame.extend_from_slice(lines.tdata.as_slice());
+        let axi4s = usb.lock().unwrap().try_recv_axi4s()?;
+        lines.push(axi4s.tdata.clone());
+        frame.extend_from_slice(axi4s.tdata.as_slice());
 //      println!("frame size = {}", frame.len());
     }
 
     // ファイルに保存
+    println!("save image file");
     let filename = format!("image.bin");
     std::fs::write(&filename, frame).expect("Failed to write image file");
 
-    
+    let mut image = vec![vec![0u16; width as usize]; height as usize];
+    for y in 0..height {
+        for x in 0..width/4 {
+            image[y][x*4+0] = (((lines[y][x*5+0] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 0) & 0x03) * 64;
+            image[y][x*4+1] = (((lines[y][x*5+1] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 2) & 0x03) * 64;
+            image[y][x*4+2] = (((lines[y][x*5+2] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 4) & 0x03) * 64;
+            image[y][x*4+3] = (((lines[y][x*5+3] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 6) & 0x03) * 64;
+        }
+    }
+    // OpenCV で画像を表示
+    let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
+    let mat = opencv::core::Mat::new_rows_cols_with_data(
+        height as i32,
+        width as i32,
+        &flat_image,
+    )?;
+    opencv::highgui::imshow("image", &mat)?;
+    opencv::highgui::wait_key(0)?;
+   
+
+    /*
     print!("wait key : Quit");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();   
-    
+    */
 
     println!("End Test");
 

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 rand = "0.10.1"
+opencv = "0.99.0"
 rtcl-d3xx = { path = "../../../../../rust/rtcl-d3xx-rs" }
 jelly-mem_access = { version="0.2.9" }
 jelly-pac = { version="0.1.4" }
