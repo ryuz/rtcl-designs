@@ -1,8 +1,15 @@
 use std::error::Error;
+use std::io;
 use std::time::Instant;
 use rtcl_d3xx::*;
 
-const CHHANNELS: usize = 2;
+const CHHANNELS: usize = 1;
+
+fn calc_lfsr(lfsr: u32) -> u32 {
+    let bit = ((lfsr >> 0) ^ (lfsr >> 1) ^ (lfsr >> 21) ^ (lfsr >> 31)) & 1;
+    (lfsr >> 1) | (bit << 31)
+}
+
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 loopback test");
@@ -22,89 +29,97 @@ fn main() -> Result<(), Box<dyn Error>> {
 //      usb_txs[ch].set_stream_pipe(0x10000)?;
 //      usb_rxs[ch].set_stream_pipe(0x10000)?;
 //  }
+
+    // 将来 Async を使った全力転送に書きかえる。
+    // まずはデータ化けのないチェックを優先
+
     
-
-    let mut tx_data: Vec<Vec<u8>> = (0..CHHANNELS)
-        .map(|_| vec![0; PACKET_SIZE])
-        .collect();
-
-    // データチェック
-    for itr in 0..ITERETIONS {
-        // 乱数で初期化
-        for ch in 0..CHHANNELS {
-            for i in 0..tx_data[ch].len() {
-                tx_data[ch][i] = rand::random::<u8>();
-            }
-        }
-
-        // write
-        for ch in (0..CHHANNELS).rev() {
-            usb_txs[ch].write(&tx_data[ch]).expect("failed to write to device");
-        }
-
-        // read
-        let mut rx_data: Vec<Vec<u8>> = (0..CHHANNELS)
-            .map(|_| Vec::new())
-            .collect();
-        for ch in 0..CHHANNELS {
-//          rx_data[ch] = usb_rxs[ch].read(tx_data[ch].len()).expect("failed to read from device");
-            let mut rx_buf = Vec::with_capacity(tx_data[ch].len());
-            while rx_buf.len() < tx_data[ch].len() {
-                let temp_buf = usb_rxs[ch].read(tx_data[ch].len() - rx_buf.len()).expect("failed to read from device");
-                rx_buf.extend_from_slice(&temp_buf);
-            }
-            rx_data[ch] = rx_buf;
-        }
-
-        // verify
-        for ch in 0..CHHANNELS {
-            // 32bit配列に変換
-            let tx_data_32bit: Vec<i32> = tx_data[ch].chunks_exact(4).map(|chunk| {i32::from_le_bytes(chunk.try_into().unwrap())}).collect();
-            let rx_data_32bit: Vec<i32> = rx_data[ch].chunks_exact(4).map(|chunk| {i32::from_le_bytes(chunk.try_into().unwrap())}).collect();
-            if tx_data_32bit != rx_data_32bit {
-                for i in 0..rx_data_32bit.len() {
-                    if rx_data_32bit[i] != tx_data_32bit[i] {
-                        println!("Data mismatch at ch {} index {:08x}: tx = {:08x}, rx = {:08x} diff = {:08x}", ch, i, tx_data_32bit[i], rx_data_32bit[i], tx_data_32bit[i] ^ rx_data_32bit[i]);
-                    }
-                }
-                eprintln!("Data mismatch! {}", itr);
-                return Err("Data mismatch".into());
-            }
-        }
-    }
-
-    // Speed test
-    println!("\nSpeed test starting...");
-    
-    // Initialize test data for all channels
-    for ch in 0..CHHANNELS {
-        for i in 0..tx_data[ch].len() {
-            tx_data[ch][i] = rand::random::<u8>();
-        }
-    }
-
-    let start = Instant::now();
+    // 送信テスト
+    println!("Sending {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
+    let mut tx_lsfr: u32 = 0x1234_5678;
     for _ in 0..ITERETIONS {
-        // write to all channels
-        for ch in (0..CHHANNELS).rev() {
-            usb_txs[ch].write(&tx_data[ch]).expect("failed to write to device");
+        let mut tx_data = Vec::with_capacity(PACKET_SIZE);
+        for _ in 0..(PACKET_SIZE/4) {
+            tx_data.extend_from_slice(&tx_lsfr.to_le_bytes());
+            tx_lsfr = calc_lfsr(tx_lsfr);
         }
-        // read from all channels
-        for ch in 0..CHHANNELS {
-            let _ = usb_rxs[ch].read(tx_data[ch].len()).expect("failed to read from device");
+        usb_txs[0].write(&tx_data).expect("failed to write to device");
+    }
+    println!("Sending test completed successfully!");
+
+    // 受信テスト
+    println!("Receiving {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
+    let mut rx_index = 0;
+    let mut rx_lsfr = 0x1234_5678;
+    for _ in 0..ITERETIONS {
+        // 受信
+        let rx_u8 = usb_rxs[0].read(PACKET_SIZE).expect("failed to read from device");
+        // 32bit 化
+        let rx_u32: Vec<u32> = rx_u8.chunks_exact(4).map(|chunk| {u32::from_le_bytes(chunk.try_into().unwrap())}).collect();
+
+        // データチェック
+        let mut err = false;
+        for &data in rx_u32.iter() {
+            if data != rx_lsfr {
+                eprintln!("Data mismatch! {}: expected {:08x}, got {:08x}", rx_index, rx_lsfr, data);
+                err = true;
+//              return Err("Data mismatch".into());
+            }
+            else {
+//              println!("Data match! {}: {:08x}", rx_index, data);
+            }
+            rx_lsfr = calc_lfsr(rx_lsfr);
+            rx_index += 1;
+        }
+
+        if err {
+            return Err("Data mismatch".into());
         }
     }
-    let elapsed = start.elapsed();
+    println!("Receiving test completed successfully!");
 
-    let elapsed_sec = elapsed.as_secs_f64();
-    let transferred_bytes = (PACKET_SIZE * ITERETIONS * 2 * CHHANNELS) as f64;
-    let bytes_per_sec = transferred_bytes / elapsed_sec;
-    let mbyte_per_sec = bytes_per_sec / (1024.0 * 1024.0);
-    let mbit_per_sec = bytes_per_sec * 8.0 / (1024.0 * 1024.0);
 
-    println!("Elapsed: {:.6} sec", elapsed_sec);
-    println!("Throughput: {:.2} MByte/s", mbyte_per_sec);
-    println!("Throughput: {:.2} Mbit/s", mbit_per_sec);
+    // ここで一度キー入力待ちを行う
+    println!("Press Enter to start speed tests...");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+
+    // Write Speed test
+    println!("\nWrite speed test starting...");
+    let tx_start = Instant::now();
+    let tx_data = vec![0u8; PACKET_SIZE];
+    for _ in 0..ITERETIONS {
+        usb_txs[0].write(&tx_data).expect("failed to write to device");
+    }
+    let tx_elapsed = tx_start.elapsed();
+    let tx_seconds = tx_elapsed.as_secs_f64();
+    let tx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
+    let tx_byte_per_sec = tx_total_bytes / tx_seconds;
+    let tx_bit_per_sec = tx_byte_per_sec * 8.0;
+    let tx_mbyte_per_sec = tx_byte_per_sec / 1_000_000.0;
+    let tx_mbit_per_sec = tx_bit_per_sec / 1_000_000.0;
+    println!("Sending {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, tx_elapsed.as_secs_f64());
+    println!("Write throughput: {:.3} Mbyte/s, {:.3} Mbit/s", tx_mbyte_per_sec, tx_mbit_per_sec);
+
+
+
+    // Rewad Speed test
+    println!("Read speed test starting...");
+    let rx_start = Instant::now();
+    for _ in 0..ITERETIONS {
+        let _ = usb_rxs[0].read(PACKET_SIZE).expect("failed to read to device");
+    }
+    let rx_elapsed = rx_start.elapsed();
+    let rx_seconds = rx_elapsed.as_secs_f64();
+    let rx_total_bytes = (ITERETIONS * PACKET_SIZE) as f64;
+    let rx_byte_per_sec = rx_total_bytes / rx_seconds;
+    let rx_bit_per_sec = rx_byte_per_sec * 8.0;
+    let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
+    let rx_mbit_per_sec = rx_bit_per_sec / 1_000_000.0;
+    println!("Receiving {} packets of size {} bytes took {:.6} seconds", ITERETIONS, PACKET_SIZE, rx_elapsed.as_secs_f64());
+    println!("Read throughput: {:.3} Mbyte/s, {:.3} Mbit/s", rx_mbyte_per_sec, rx_mbit_per_sec);
+
 
     Ok(())
 }
