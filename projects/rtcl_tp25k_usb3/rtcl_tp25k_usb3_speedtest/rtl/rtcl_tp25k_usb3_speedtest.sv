@@ -15,7 +15,7 @@ module rtcl_tp25k_usb3_speedtest
 
             output  var logic           ft601_reset_n   ,
             inout   tri logic           ft601_wakeup_n  ,
-            input   var logic           ft601_clk       ,
+            input   var logic           ft601_clk_in    ,
             input   var logic           ft601_rxf_n     ,
             input   var logic           ft601_txe_n     ,
             output  var logic           ft601_siwu_n    ,
@@ -60,6 +60,18 @@ module rtcl_tp25k_usb3_speedtest
     //  FT601
     // -------------------------------
 
+    logic   ft601_clk   ;
+    logic   ft601_lock  ;
+    gowin_pll_ft601
+        u_gowin_pll_ft601
+            (
+                .clkin      (ft601_clk_in   ),
+                .clkout0    (ft601_clk      ),
+                .lock       (ft601_lock     ),
+                .mdclk      (in_clk50       )
+            );
+
+
     logic ft601_reset;
     jelly3_reset_async
         #(
@@ -75,6 +87,8 @@ module rtcl_tp25k_usb3_speedtest
                 .out_reset          (ft601_reset    )
             );
 
+    localparam logic [7:0]  DLY_VALUE = 8'd127;
+
     assign ft601_reset_n  = ~reset  ;
     assign ft601_wakeup_n = 1'bz    ;
     assign ft601_gpio     = 2'b01   ;   // 1 channel, Multi-Channel FIFO mode
@@ -84,6 +98,24 @@ module rtcl_tp25k_usb3_speedtest
     logic   [3:0]   ft601_be_o      ;
     logic   [3:0]   ft601_be_t      ;
     for (genvar i = 0; i < 4; i++) begin : iob_be
+        /*
+        logic       ft601_be_o_dly;
+        IODELAY
+                #(
+                    .C_STATIC_DLY   (DLY_VALUE          ),
+                    .DYN_DLY_EN     ("FALSE"            ),
+                    .ADAPT_EN       ("FALSE"            )
+                )
+            u_iodelay_data
+                (
+                    .DO             (ft601_be_o_dly     ),
+                    .DF             (                   ),
+                    .DI             (ft601_be_o[i]      ),
+                    .SDTAP          (1'b0               ),
+                    .VALUE          (1'b0               ),
+                    .DLYSTEP        (DLY_VALUE          )
+                );
+        */
         IOBUF
             u_iobuf_be
                 (
@@ -98,13 +130,31 @@ module rtcl_tp25k_usb3_speedtest
     logic   [31:0]  ft601_data_o  = '0  ;
     logic   [31:0]  ft601_data_t  = '1  ;
     for (genvar i = 0; i < 32; i++) begin : iob_data
+        /*
+        logic       ft601_data_o_dly;
+        IODELAY
+                #(
+                    .C_STATIC_DLY   (0                ),
+                    .DYN_DLY_EN     ("FALSE"            ),
+                    .ADAPT_EN       ("FALSE"            )
+                )
+            u_iodelay_data
+                (
+                    .DO             (ft601_data_o_dly   ),
+                    .DF             (                   ),
+                    .DI             (ft601_data_o[i]    ),
+                    .SDTAP          (1'b0               ),
+                    .VALUE          (1'b0               ),
+                    .DLYSTEP        (8'd0             )
+                );
+        */
         IOBUF
             u_iobuf_data
                 (
-                    .O  (ft601_data_i[i]),
-                    .IO (ft601_data  [i]),
-                    .I  (ft601_data_o[i]),
-                    .OEN(ft601_data_t[i])
+                    .O              (ft601_data_i[i]    ),
+                    .IO             (ft601_data  [i]    ),
+                    .I              (ft601_data_o[i]   ),
+                    .OEN            (ft601_data_t[i]    )
                 );
     end
 
@@ -157,8 +207,8 @@ module rtcl_tp25k_usb3_speedtest
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             )
-
             );
+
 
 
     // -------------------------------
@@ -180,7 +230,7 @@ module rtcl_tp25k_usb3_speedtest
                 .update         (axi4s_ft601_rx[0].tvalid   ),
                 .clear          (1'b0                       ),
                 .clear_value    (                           ),
-                .polynomial     (32'h8020_0002              ), // 32, 22, 2
+                .polynomial     (32'h8020_0003              ), // 32, 22, 2, 1
                 
                 .dout           (lfsr_rx                    )
             );
@@ -200,6 +250,7 @@ module rtcl_tp25k_usb3_speedtest
             end
         end
     end
+
 
     // -------------------------------
     //  TX
@@ -221,7 +272,7 @@ module rtcl_tp25k_usb3_speedtest
                                 && axi4s_ft601_tx[0].tready ),
                 .clear          (1'b0                       ),
                 .clear_value    (                           ),
-                .polynomial     (32'h8020_0002              ), // 32, 22, 2
+                .polynomial     (32'h8020_0003              ), // 32, 22, 2, 1
                 
                 .dout           (lfsr_tx                    )
             );
@@ -250,7 +301,7 @@ module rtcl_tp25k_usb3_speedtest
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
     assign led[2] = rx_error        ;
-    assign led[3] = reset           ;
+    assign led[3] = ft601_lock      ;
 
 
     // PMOD
