@@ -1,0 +1,13 @@
+[package]
+name = "rtcl_tp25k_usb3_p3s7"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rand = "0.10.1"
+opencv = "0.99.0"
+rtcl-d3xx = { path = "../../../../../rust/rtcl-d3xx-rs" }
+rtcl-lib = { path = "../../../../../rust/lib" }
+jelly-mem_access = { version="0.2.9" }
+jelly-pac = { version="0.1.4" }
+jelly-lib = { version="0.2.4" }
