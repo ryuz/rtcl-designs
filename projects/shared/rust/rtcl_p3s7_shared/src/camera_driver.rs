@@ -52,6 +52,7 @@ where
 
     opend: bool,
     pgood_enable: bool,
+    camera_mode: CameraMode,
     color : bool,
     width: usize,
     height: usize,
@@ -81,6 +82,7 @@ where
             reg_sys,
             reg_fmtr,
             opend: false,
+            camera_mode: CameraMode::HighSpeed,
             pgood_enable: true,
             color : false,
             width: 640,
@@ -110,6 +112,10 @@ where
 
     pub fn sensor_ready(&mut self) -> Result<bool, Box<dyn Error>> {
         Ok(self.cam_i2c.sensor_ready()?)
+    }
+
+    pub fn set_camera_mode(&mut self, mode: CameraMode) {
+        self.camera_mode = mode;
     }
 
     pub fn sensor_pgood(&mut self) -> Result<bool, Box<dyn Error>> {
@@ -182,8 +188,9 @@ where
         unsafe {
             self.reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 0);
         }
+
         // 高速モード設定
-        self.cam_i2c.set_camera_mode(CameraMode::HighSpeed)?;
+        self.cam_i2c.set_camera_mode(self.camera_mode)?;
 
         // センサー電源ON
         self.cam_i2c.set_sensor_power_enable(true)?;

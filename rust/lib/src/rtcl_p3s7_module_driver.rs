@@ -153,6 +153,7 @@ impl<E: std::error::Error + 'static> std::error::Error for RtclP3s7ModuleDriverE
 }
 
 /// Camera operation modes
+#[derive(Clone, Copy, Debug)]
 pub enum CameraMode {
     /// High Speed mode
     HighSpeed = 0,
