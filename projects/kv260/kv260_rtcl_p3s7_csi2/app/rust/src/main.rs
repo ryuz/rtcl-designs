@@ -120,6 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_camera_mode(CameraMode::Csi2);
     cam.set_color(color);
     cam.set_black_lines(15)?;
+    cam.set_xsm_delay(255)?;
     cam.set_image_size(width, height)?;
     cam.set_slave_mode(trigger_mode)?;
     cam.set_trigger_mode(trigger_mode)?;
@@ -154,7 +155,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
     create_cv_trackbar("exposure",  10, 1000, 950)?;
-    create_cv_trackbar("xsm_delay",  0,  255,   0)?;
+    create_cv_trackbar("xsm_delay",  0,  255, 255)?;
     
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
