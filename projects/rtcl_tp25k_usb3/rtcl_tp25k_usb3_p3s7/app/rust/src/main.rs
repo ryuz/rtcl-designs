@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // カメラOFF
     println!("camera power off");
     unsafe {
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);
+//      ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
         std::thread::sleep(Duration::from_millis(100));
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
         std::thread::sleep(Duration::from_millis(100));

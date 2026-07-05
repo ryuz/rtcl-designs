@@ -47,7 +47,7 @@ module tb_main
                 .in_clk50           (clk50          ),
                 .ft601_reset_n      (ft601_reset_n  ),
                 .ft601_wakeup_n     (ft601_wakeup_n ),
-                .ft601_clk          (ft601_clk      ),
+                .ft601_clk_in       (ft601_clk      ),
                 .ft601_rxf_n        (ft601_rxf_n    ),
                 .ft601_txe_n        (ft601_txe_n    ),
                 .ft601_siwu_n       (ft601_siwu_n   ),
