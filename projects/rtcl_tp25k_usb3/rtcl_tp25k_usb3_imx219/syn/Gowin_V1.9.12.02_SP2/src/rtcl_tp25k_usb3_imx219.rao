@@ -25,59 +25,70 @@
                 <Signal>dphy_byte_d1[0]</Signal>
             </Bus>
             <Signal capture_enable="true">dphy_byte_ready</Signal>
-            <Bus capture_enable="true" name="axi4s_frame.tdata[31:0]">
-                <Signal>axi4s_frame.tdata[31]</Signal>
-                <Signal>axi4s_frame.tdata[30]</Signal>
-                <Signal>axi4s_frame.tdata[29]</Signal>
-                <Signal>axi4s_frame.tdata[28]</Signal>
-                <Signal>axi4s_frame.tdata[27]</Signal>
-                <Signal>axi4s_frame.tdata[26]</Signal>
-                <Signal>axi4s_frame.tdata[25]</Signal>
-                <Signal>axi4s_frame.tdata[24]</Signal>
-                <Signal>axi4s_frame.tdata[23]</Signal>
-                <Signal>axi4s_frame.tdata[22]</Signal>
-                <Signal>axi4s_frame.tdata[21]</Signal>
-                <Signal>axi4s_frame.tdata[20]</Signal>
-                <Signal>axi4s_frame.tdata[19]</Signal>
-                <Signal>axi4s_frame.tdata[18]</Signal>
-                <Signal>axi4s_frame.tdata[17]</Signal>
-                <Signal>axi4s_frame.tdata[16]</Signal>
-                <Signal>axi4s_frame.tdata[15]</Signal>
-                <Signal>axi4s_frame.tdata[14]</Signal>
-                <Signal>axi4s_frame.tdata[13]</Signal>
-                <Signal>axi4s_frame.tdata[12]</Signal>
-                <Signal>axi4s_frame.tdata[11]</Signal>
-                <Signal>axi4s_frame.tdata[10]</Signal>
-                <Signal>axi4s_frame.tdata[9]</Signal>
-                <Signal>axi4s_frame.tdata[8]</Signal>
-                <Signal>axi4s_frame.tdata[7]</Signal>
-                <Signal>axi4s_frame.tdata[6]</Signal>
-                <Signal>axi4s_frame.tdata[5]</Signal>
-                <Signal>axi4s_frame.tdata[4]</Signal>
-                <Signal>axi4s_frame.tdata[3]</Signal>
-                <Signal>axi4s_frame.tdata[2]</Signal>
-                <Signal>axi4s_frame.tdata[1]</Signal>
-                <Signal>axi4s_frame.tdata[0]</Signal>
+            <Bus capture_enable="true" name="dphy_di_lprx0[1:0]">
+                <Signal>dphy_di_lprx0[1]</Signal>
+                <Signal>dphy_di_lprx0[0]</Signal>
             </Bus>
-            <Bus capture_enable="true" name="axi4s_frame.tstrb[3:0]">
-                <Signal>axi4s_frame.tstrb[3]</Signal>
-                <Signal>axi4s_frame.tstrb[2]</Signal>
-                <Signal>axi4s_frame.tstrb[1]</Signal>
-                <Signal>axi4s_frame.tstrb[0]</Signal>
+            <Bus capture_enable="true" name="dphy_di_lprx1[1:0]">
+                <Signal>dphy_di_lprx1[1]</Signal>
+                <Signal>dphy_di_lprx1[0]</Signal>
             </Bus>
-            <Signal capture_enable="true">axi4s_frame.tlast</Signal>
-            <Signal capture_enable="true">axi4s_frame.tvalid</Signal>
-            <Signal capture_enable="true">axi4s_frame.tready</Signal>
-            <Signal capture_enable="true">u_frame_controller/ctl_start</Signal>
-            <Signal capture_enable="true">u_frame_controller/ctl_enable</Signal>
-            <Signal capture_enable="true">u_frame_controller/ctl_busy</Signal>
+            <Bus capture_enable="true" name="dphy_lp0_reg_0[1:0]">
+                <Signal>dphy_lp0_reg_0[1]</Signal>
+                <Signal>dphy_lp0_reg_0[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="dphy_lp0_reg_1[1:0]">
+                <Signal>dphy_lp0_reg_1[1]</Signal>
+                <Signal>dphy_lp0_reg_1[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dphy_reg3to1</Signal>
+            <Bus capture_enable="true" name="dphy_hsrx_cnt[5:0]">
+                <Signal>dphy_hsrx_cnt[5]</Signal>
+                <Signal>dphy_hsrx_cnt[4]</Signal>
+                <Signal>dphy_hsrx_cnt[3]</Signal>
+                <Signal>dphy_hsrx_cnt[2]</Signal>
+                <Signal>dphy_hsrx_cnt[1]</Signal>
+                <Signal>dphy_hsrx_cnt[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dphy_odt_en_msk</Signal>
+            <Signal capture_enable="true">dphy_hsrx_en_msk</Signal>
+            <Signal capture_enable="true">dphy_rx_drst_n</Signal>
+            <Bus capture_enable="true" name="dphy_odt_en[1:0]">
+                <Signal>dphy_odt_en[1]</Signal>
+                <Signal>dphy_odt_en[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dphy_hsrx_odten[1]</Signal>
+            <Signal capture_enable="true">dphy_hsrx_odten[0]</Signal>
+            <Bus capture_enable="true" name="dphy_d0ln_hsrxd[7:0]">
+                <Signal>dphy_d0ln_hsrxd[7]</Signal>
+                <Signal>dphy_d0ln_hsrxd[6]</Signal>
+                <Signal>dphy_d0ln_hsrxd[5]</Signal>
+                <Signal>dphy_d0ln_hsrxd[4]</Signal>
+                <Signal>dphy_d0ln_hsrxd[3]</Signal>
+                <Signal>dphy_d0ln_hsrxd[2]</Signal>
+                <Signal>dphy_d0ln_hsrxd[1]</Signal>
+                <Signal>dphy_d0ln_hsrxd[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="dphy_d1ln_hsrxd[7:0]">
+                <Signal>dphy_d1ln_hsrxd[7]</Signal>
+                <Signal>dphy_d1ln_hsrxd[6]</Signal>
+                <Signal>dphy_d1ln_hsrxd[5]</Signal>
+                <Signal>dphy_d1ln_hsrxd[4]</Signal>
+                <Signal>dphy_d1ln_hsrxd[3]</Signal>
+                <Signal>dphy_d1ln_hsrxd[2]</Signal>
+                <Signal>dphy_d1ln_hsrxd[1]</Signal>
+                <Signal>dphy_d1ln_hsrxd[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">dphy_hsrxd_vld[0]</Signal>
+            <Signal capture_enable="true">dphy_hsrxd_vld[1]</Signal>
         </SignalList>
         <Triggers>
             <Trigger index="0">
                 <SignalList>
                     <Signal>dphy_byte_ready</Signal>
-                    <Signal>axi4s_frame.tvalid</Signal>
-                    <Signal>u_frame_controller/ctl_start</Signal>
+                    <Signal>dphy_reg3to1</Signal>
+                    <Signal>dphy_hsrxd_vld[1]</Signal>
+                    <Signal>dphy_hsrxd_vld[0]</Signal>
                 </SignalList>
             </Trigger>
             <Trigger index="1"/>
@@ -97,7 +108,7 @@
             <Trigger index="15"/>
         </Triggers>
         <MatchUnits>
-            <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="X1X" value1="000" trigger="0"/>
+            <MatchUnit index="0" enabled="1" match_type="1" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="RXXX" value1="0000" trigger="0"/>
             <MatchUnit index="1" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="2" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
             <MatchUnit index="3" enabled="0" match_type="0" counter_enable="0" counter_width="2" counter="2" countinuous="0" func="0" value0="" value1=""/>
@@ -207,5 +218,5 @@
             <Expression>M0</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>0111001011001011</GAO_ID>
+    <GAO_ID>0101011110011001</GAO_ID>
 </GAO_CONFIG>

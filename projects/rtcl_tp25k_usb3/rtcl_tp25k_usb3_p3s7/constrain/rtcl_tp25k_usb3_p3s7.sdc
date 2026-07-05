@@ -19,7 +19,7 @@ create_generated_clock -name clk -source [get_ports {in_clk50}] -multiply_by 2 [
 create_generated_clock -name ft601_clk -source [get_ports {ft601_clk_in}] -multiply_by 1 -phase 45 [get_pins {u_gowin_pll_ft601/u_pll/PLLA_inst/CLKOUT0}]
 
 # clock_groups
-set_clock_groups -asynchronous -group [get_clocks {in_clk50 clk}] -group [get_clocks {ft601_clk}] -group [get_clocks {dphy_clk}]
+set_clock_groups -asynchronous -group [get_clocks {in_clk50}] -group [get_clocks {clk}] -group [get_clocks {ft601_clk}] -group [get_clocks {dphy_clk}]
 
 # FT601
 #set_input_delay -clock ft601_clk  3.0 -min [get_ports {ft601_rxf_n ft601_txe_n ft601_data[*] ft601_de[*]}]

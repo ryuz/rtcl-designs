@@ -265,6 +265,7 @@ module rtcl_tp25k_usb3_p3s7
     assign dphy_d2ln_deskew_req = 0;
     assign dphy_d3ln_deskew_req = 0;
     
+    /*
     // control terminator
     logic               dphy_byte_ready  ;
     logic   [7:0]       dphy_byte_d0     ;
@@ -309,7 +310,95 @@ module rtcl_tp25k_usb3_p3s7
         dphy_byte_d1     <= dphy_d1ln_hsrxd[7:0];
     end
     assign dphy_hsrx_odten = {(dphy_di_lprx3==0), (dphy_di_lprx2==0), (dphy_di_lprx1==0), (dphy_di_lprx0==0)} & {4{dphy_odt_en_msk}};
+    */
 
+    // control terminator
+    typedef enum logic [1:0] {
+        DPHY_LP  = 2'b00,
+        DPHY_RST = 2'b01,
+        DPHY_HS  = 2'b10,
+        DPHY_MSK = 2'b11
+    } dphy_state_t;
+
+
+    (* ASYNC_REG="true" *)  logic   reg0_lprx0, reg1_lprx0;
+    (* ASYNC_REG="true" *)  logic   reg0_lprx1 ,reg1_lprx1;
+    always_ff @(posedge dphy_clk ) begin
+        reg0_lprx0 <= dphy_di_lprx0[0];
+        reg0_lprx1 <= dphy_di_lprx1[0];
+        reg1_lprx0 <= reg0_lprx0;
+        reg1_lprx1 <= reg0_lprx1;
+    end
+
+    dphy_state_t        dphy_state       ;
+    logic   [3:0]       dphy_count       ;
+
+    always_ff @(posedge dphy_clk or posedge reset) begin
+        if ( reset ) begin
+            dphy_state      <= DPHY_LP;
+            dphy_count      <= 4'd10;
+            dphy_rx_drst_n  <= 1'b1;
+        end
+        else begin
+            dphy_rx_drst_n  <= 1'b1;
+            case ( dphy_state )
+            DPHY_LP: begin
+                if ( reg1_lprx0 == 1'b0 && reg1_lprx1 == 1'b0 ) begin
+                    dphy_rx_drst_n <= 1'b0;
+                    dphy_state     <= DPHY_RST;
+                end
+            end
+            DPHY_RST: begin
+                if ( reg1_lprx0 == 1'b0 && reg1_lprx1 == 1'b0 ) begin
+                    dphy_state <= DPHY_HS;
+                end
+                else begin
+                    dphy_state <= DPHY_MSK;
+                    dphy_count <= 4'd10;
+                end
+            end
+            DPHY_HS: begin
+                if ( !(reg1_lprx0 == 1'b0 && reg1_lprx1 == 1'b0) ) begin
+                    dphy_state <= DPHY_MSK;
+                    dphy_count <= 4'd10;
+                end
+            end
+            DPHY_MSK: begin
+                if ( reg1_lprx0 == 1'b1 && reg1_lprx1 == 1'b1 ) begin
+                    dphy_count <= dphy_count - 1'b1;
+                    if ( dphy_count == 0 ) begin
+                        dphy_state <= DPHY_LP;
+                    end
+                end
+                else begin
+                    dphy_count <= 4'd10;
+                end
+            end
+            endcase
+        end
+    end
+
+    logic               dphy_byte_ready  ;
+    logic   [7:0]       dphy_byte_d0     ;
+    logic   [7:0]       dphy_byte_d1     ;
+
+    always_ff @(posedge dphy_clk or posedge reset) begin
+        if ( reset ) begin
+            dphy_hsrx_odten <= 4'b0000;
+            dphy_byte_ready <= 1'b0;
+            dphy_byte_d0    <= 'x;
+            dphy_byte_d1    <= 'x;
+        end
+        else begin
+            dphy_hsrx_odten[0] <= ~reg1_lprx0;
+            dphy_hsrx_odten[1] <= ~reg1_lprx1;
+            dphy_hsrx_odten[2] <= 1'b0;
+            dphy_hsrx_odten[3] <= 1'b0;
+            dphy_byte_ready    <= (dphy_state == DPHY_HS) && dphy_hsrxd_vld[0] && dphy_hsrxd_vld[1];
+            dphy_byte_d0       <= dphy_d0ln_hsrxd[7:0];
+            dphy_byte_d1       <= dphy_d1ln_hsrxd[7:0];
+        end
+    end
 
 
 
@@ -719,11 +808,11 @@ module rtcl_tp25k_usb3_p3s7
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];
     assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = '0;
-    assign pmod[4] = '0;
-    assign pmod[5] = '0;
-    assign pmod[6] = '0;
-    assign pmod[7] = '0;
+    assign pmod[3] = dphy_hsrx_odten[0];
+    assign pmod[4] = dphy_di_lprx0[0];
+    assign pmod[5] = dphy_di_lprx0[1];
+    assign pmod[6] = dphy_di_lprx1[0];
+    assign pmod[7] = dphy_di_lprx1[1];
     
 
 endmodule
