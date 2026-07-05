@@ -16,7 +16,6 @@ module fifo32_cmd_axi4s_tx
             parameter   bit     ASYNC         = 0                       ,
             parameter   int     DATA_BUF_SIZE = 1024                    ,
             parameter   int     CMD_BUF_SIZE  = 128                     ,
-//          parameter   int     MAX_LEN       = 512                     ,
             parameter   int     DATA_PTR_BITS = $clog2(DATA_BUF_SIZE)   ,
             parameter   int     CND_PTR_BITS  = $clog2(CMD_BUF_SIZE)    ,
             parameter   int     LEN_BITS      = DATA_PTR_BITS + 1       ,
@@ -32,10 +31,12 @@ module fifo32_cmd_axi4s_tx
             input   var timer_t timeout     
         );
     
+    localparam int      SIZE_BITS      = DATA_PTR_BITS + 1    ;
+    localparam type     size_t         = logic [SIZE_BITS-1:0];
 
-    localparam type  user_t = logic [s_axi4s.USER_BITS-1:0];
-    localparam type  data_t = logic [s_axi4s.DATA_BITS-1:0];
-    localparam type  strb_t = logic [s_axi4s.STRB_BITS-1:0];
+    localparam type     user_t = logic [s_axi4s.USER_BITS-1:0];
+    localparam type     data_t = logic [s_axi4s.DATA_BITS-1:0];
+    localparam type     strb_t = logic [s_axi4s.STRB_BITS-1:0];
 
 
     // --------------------------------
@@ -104,7 +105,7 @@ module fifo32_cmd_axi4s_tx
     data_t  buf_rd_data     ;
     logic   buf_rd_valid    ;
     logic   buf_rd_ready    ;
-    len_t   buf_rd_size      ;
+    size_t  buf_rd_size     ;
 
     jelly3_stream_fifo
             #(
@@ -266,18 +267,20 @@ module fifo32_cmd_axi4s_tx
     logic       output_enable   ;
     always_ff @(posedge m_axi4s.aclk) begin
         if ( ~m_axi4s.aresetn ) begin
-            timer_counter <= 'x    ;
+            timer_counter <= '0     ;
             output_enable <= 1'b0   ;
         end
         else if ( m_axi4s.aclken ) begin
             if ( output_enable ) begin
                 if ( !buf_rd_valid ) begin
-                    output_enable <= 1'b0   ;
-                    timer_counter <= '0     ;
+                    if ( timeout > 0 ) begin
+                        output_enable <= 1'b0   ;
+                        timer_counter <= '0     ;
+                    end
                 end
             end
             else begin
-                if ( buf_rd_size >= limit_len ) begin
+                if ( buf_rd_size >= size_t'(limit_len) ) begin
                     output_enable <= 1'b1   ;
                 end
                 else if ( timer_counter >= timeout ) begin

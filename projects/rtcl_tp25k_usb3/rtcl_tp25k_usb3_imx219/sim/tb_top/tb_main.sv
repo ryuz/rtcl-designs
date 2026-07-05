@@ -372,8 +372,8 @@ module tb_main
             @(negedge dphy_clk);
             @(negedge dphy_clk);
 
-            for ( int i = 0; i < 10; i++ ) begin
-                #1000;
+            for ( int i = 0; i < 100; i++ ) begin
+                #10000;
                 @(negedge dphy_clk);
                 di_lprx0_n      = 1;
                 di_lprx0_p      = 1;
@@ -404,8 +404,8 @@ module tb_main
                 d1ln_hsrxd = 8'h00;
                 @(negedge dphy_clk);
                 for ( int j = 0; j < 'h640 / 2; j++ ) begin
-                    d0ln_hsrxd = 8'(j);
-                    d1ln_hsrxd = 8'(~j);
+                    d0ln_hsrxd = 8'((j >> 0) & 8'hff);
+                    d1ln_hsrxd = 8'((j >> 8) & 8'hff);
                     @(negedge dphy_clk);
                 end
                 d0ln_hsrxd = 0;

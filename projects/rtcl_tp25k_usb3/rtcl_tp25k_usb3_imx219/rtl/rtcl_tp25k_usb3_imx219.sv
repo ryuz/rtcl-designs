@@ -505,17 +505,20 @@ module rtcl_tp25k_usb3_imx219
     logic   [31:0]      control0;
     logic   [31:0]      control1;
     logic   [31:0]      control2;
+    logic   [31:0]      control3;
+    logic   [31:0]      control4;
+    logic   [31:0]      control5;
     jelly3_system_control
         #(
                 .DATA_BITS          (32                 ),
                 .CORE_ID            (32'h527a_0001      ),
                 .CORE_VERSION       (32'h0003_0001      ),
-                .INIT_CONTROL0      ('0                 ),
-                .INIT_CONTROL1      ('0                 ),
+                .INIT_CONTROL0      ('0                 ),  // POWER_RN
+                .INIT_CONTROL1      ('0                 ),  // CAM_EN
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      ('0                 ),
-                .INIT_CONTROL4      ('0                 ),
-                .INIT_CONTROL5      ('0                 ),
+                .INIT_CONTROL3      (512                ),  // max_len
+                .INIT_CONTROL4      (1024*8             ),  // limit_len
+                .INIT_CONTROL5      (10000              ),  // timeout
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -526,9 +529,9 @@ module rtcl_tp25k_usb3_imx219
                 .control0           (control0           ),
                 .control1           (control1           ),
                 .control2           (control2           ),
-                .control3           (                   ),
-                .control4           (                   ),
-                .control5           (                   ),
+                .control3           (control3           ),
+                .control4           (control4           ),
+                .control5           (control5           ),
                 .control6           (                   ),
                 .control7           (                   ),
 
@@ -652,9 +655,9 @@ module rtcl_tp25k_usb3_imx219
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len        (128                ),
-                .limit_len      (15'd1024*8         ),
-                .timeout        (16'd10000          ),
+                .max_len        (control3[13:0]     ),
+                .limit_len      (control4[13:0]     ),
+                .timeout        (control5[15:0]     ),
 
                 .s_axi4s        (axi4s_frame.s      ),
                 .m_axi4s        (axi4s_ft601_tx[1].m)
