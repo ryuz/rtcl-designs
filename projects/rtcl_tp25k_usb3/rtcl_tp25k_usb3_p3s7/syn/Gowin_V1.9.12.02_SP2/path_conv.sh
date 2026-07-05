@@ -1,2 +1,2 @@
 #! /bin/bash
-python3 ../../../../../jelly/scripts/gowin_gprj_path_conv.py rtcl_tp25k_usb3_imx219.gprj
+python3 ../../../../../jelly/scripts/gowin_gprj_path_conv.py rtcl_tp25k_usb3_p3s7.gprj

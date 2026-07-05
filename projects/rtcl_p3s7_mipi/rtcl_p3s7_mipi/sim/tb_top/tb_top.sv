@@ -546,8 +546,8 @@ module tb_top();
         cmd_write(REGADR_PMOD_MODE, 16'h0010);
         cmd_write(REGADR_PMOD_SLOT2_TIM, 10);
 
-//      cmd_write(REGADR_CSI_MODE, 1);
-        cmd_write(REGADR_CSI_MODE, 0);
+        cmd_write(REGADR_CSI_MODE, 1);
+//      cmd_write(REGADR_CSI_MODE, 0);
 
 //      cmd_write(16'h4000 , 0);
         cmd_write(16'h5000 , 16'h1234);
