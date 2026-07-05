@@ -87,6 +87,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let module_ver = cam.module_version()?;
     println!("module_ver : 0x{:04x}", module_ver);
 
+    // キー入力待ち
+    /*
+    print!("Press Enter to start...");
+    std::io::stdout().flush()?;
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    */
 
     println!("camera set");
 //  cam.set_dphy_speed(1250000000.0)?;
@@ -99,6 +106,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 //  cam.set_camera_mode(CameraMode::HighSpeed)?;   // 高速モード設定
     cam.set_camera_mode(CameraMode::Csi2)?;   // CSI2 like なモード
 
+    cam.set_pmod_mode(0xff00)?;
+
     // センサー電源ON
     cam.set_sensor_power_enable(true)?;
     std::thread::sleep(std::time::Duration::from_millis(10));
@@ -106,12 +115,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // センサー基板 DPHY-TX リセット解除
     cam.set_dphy_reset(false)?;
 
-    let width = 64;
-    let height = 64;
+    let width = 128;
+    let height = 128;
 
     // xsm_delay
-    let xsm_delay = cam.calc_xsm_delay(width);
-    cam.set_xsm_delay(xsm_delay * 2 + 1000)?;
+//  let xsm_delay = cam.calc_xsm_delay(width);
+    cam.set_xsm_delay(255)?; // xsm_delay)?;
     cam.set_nzrot_xsm_delay_enable(true)?;
     cam.set_zero_rot_enable(true)?;
 
@@ -133,6 +142,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 動作開始
     cam.set_sequencer_enable(true)?;
 
+    // キー入力待ち
+    print!("Press Enter to start...");
+    std::io::stdout().flush()?;
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    return Ok(());
 
     println!("Start");
 

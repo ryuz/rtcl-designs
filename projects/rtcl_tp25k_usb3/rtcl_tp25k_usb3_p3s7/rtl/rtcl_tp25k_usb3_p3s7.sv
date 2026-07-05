@@ -612,7 +612,7 @@ module rtcl_tp25k_usb3_p3s7
         u_gowin_dphy_lane2_to_fifo32
             (
                 .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-                .dphy_valid (dphy_byte_ready                ),
+                .dphy_valid (1'b0), //dphy_byte_ready                ),
                 .data_type  (8'h2b                          ),
 
                 .m_axi4s    (axi4s_dphy.m                   )
@@ -704,7 +704,7 @@ module rtcl_tp25k_usb3_p3s7
     //  PMOD
     // --------------------------------
 
-    
+    /*
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_wr_n;
     assign pmod[2] = axi4s_frame.s.tready;
@@ -713,9 +713,9 @@ module rtcl_tp25k_usb3_p3s7
     assign pmod[5] = ft601_data_i[9];
     assign pmod[6] = ft601_data_i[12];
     assign pmod[7] = ft601_data_i[13];
-    
+    */
 
-    /*
+    
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];
     assign pmod[2] = dphy_hsrxd_vld[1];
@@ -724,7 +724,7 @@ module rtcl_tp25k_usb3_p3s7
     assign pmod[5] = '0;
     assign pmod[6] = '0;
     assign pmod[7] = '0;
-    */
+    
 
 endmodule
 
