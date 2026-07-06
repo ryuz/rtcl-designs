@@ -272,7 +272,7 @@ module fifo32_cmd_axi4s_tx
         end
         else if ( m_axi4s.aclken ) begin
             if ( output_enable ) begin
-                if ( !buf_rd_valid ) begin
+                if ( !cmd_rd_valid ) begin
                     if ( timeout > 0 ) begin
                         output_enable <= 1'b0   ;
                         timer_counter <= '0     ;
@@ -286,7 +286,7 @@ module fifo32_cmd_axi4s_tx
                 else if ( timer_counter >= timeout ) begin
                     output_enable <= 1'b1   ;
                 end
-                else if ( buf_rd_valid ) begin
+                else if ( cmd_rd_valid ) begin
                     timer_counter <= timer_counter + 1;
                 end
             end
