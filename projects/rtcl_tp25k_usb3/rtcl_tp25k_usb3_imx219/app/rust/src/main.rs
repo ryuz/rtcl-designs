@@ -18,12 +18,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-//    let width: usize = 256;
-//    let height: usize = 256;
+    let width: usize = 256;
+    let height: usize = 256;
     let width: usize = 640;
     let height: usize = 480;
 //    let width: usize = 1280;
-//    let height: usize = 16;
+//    let height: usize = 720;
 
 
     // OpenDevice
@@ -71,9 +71,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     unsafe {
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 256);     // max
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*4);
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 100000);
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 512);     // max
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*2);  // limit
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 10000);   // 100us
     }
 
     // カメラOFF
@@ -136,16 +136,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::thread::sleep(Duration::from_millis(100)); 
 
     /*
-    print!("wait key : ctart capture...");
-    std::io::stdout().flush().unwrap();
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();   
+    // 1 frame 取り込み指示
+    loop {
+        unsafe {
+            frm_acc.write_reg_u32(0x10, 1);
+        }
+
+//      print!("\nwait key : start capture...");
+        std::io::stdout().flush().unwrap();
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();   
+//      println!("");
+    }
+    return Ok(());
     */
 
     loop {
-        // 10ms待つ
-        std::thread::sleep(Duration::from_millis(10));
-
         // 取り込み指示前にゴミがあれば try_recv_axi4s ですべて読み出す
         while usb.lock().unwrap().try_recv_axi4s().is_ok() {}
 
@@ -155,19 +161,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             frm_acc.write_reg_u32(0x10, 1);
         }
 
-//          println!("frame size = {}", size);
-
-        std::thread::sleep(Duration::from_millis(10));
+//      std::thread::sleep(Duration::from_millis(10));
 
         let mut lines = Vec::<Vec<u8>>::new();
         let size = ((4 + (width * 10 / 8)) * height) as usize;
         let mut frame = Vec::<u8>::with_capacity(size);
         for _ in 0..height {
             std::thread::sleep(Duration::from_millis(1));
-            let axi4s = match usb.lock().unwrap().try_recv_axi4s() {
+            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(100)) {
                 Ok(packet) => packet,
                 Err(_) => {
-                    eprintln!("Failed to receive AXI4S packet, retrying...");
+//                  eprintln!("Failed to receive AXI4S packet, retrying...");
                     break;  // 内側のfor loopを抜ける
                 }
             };
@@ -203,10 +207,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         
         // BYAER を BGR に変換
         let mut mat_bgr = opencv::core::Mat::default();
-        opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
+        opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerGR2BGR, 0)?;
 
         opencv::highgui::imshow("image", &mat_bgr)?;
-        let key = opencv::highgui::wait_key(100)?;
+        let key = opencv::highgui::wait_key(10)?;
         if (key & 0xff) == 27 { // ESC
             break;
         }

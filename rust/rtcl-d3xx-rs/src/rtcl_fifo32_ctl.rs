@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::sync::mpsc;
+use std::time::Duration;
 
 use crate::d3xx_device::*;
 
@@ -87,6 +88,11 @@ impl RtclFifo32CtlD3xx {
     pub fn recv_axi4s(&mut self) -> Result<Axi4Stream, Box<dyn Error>> {
         self.rx_stream.recv().map_err(|e| e.into())
     }
+
+    pub fn recv_axi4s_timeout(&mut self, timeout: Duration) -> Result<Axi4Stream, Box<dyn Error>> {
+        self.rx_stream.recv_timeout(timeout).map_err(|e| e.into())
+    }
+
 
     pub fn try_recv_axi4s(&mut self) -> Result<Axi4Stream, Box<dyn Error>> {
         if let Ok(packet) = self.rx_stream.try_recv() {
@@ -179,7 +185,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                     header = true;
 
                     // 受信データを送信
-//                  println!("axi4s : tuser : {} tdata: {} bytes", stream.tuser, stream.tdata.len());
                     if packet_last {
                         tx_stream.send(stream.clone()).unwrap();
                         stream.tdata.clear();
