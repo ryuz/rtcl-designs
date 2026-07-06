@@ -656,8 +656,8 @@ module rtcl_tp25k_usb3_imx219
             )
         axi4s_tx
             (
-                .aresetn    (~dphy_reset),
-                .aclk       (dphy_clk   ),
+                .aresetn    (~reset     ),
+                .aclk       (clk        ),
                 .aclken     (1'b1       )
             );
 
@@ -675,11 +675,11 @@ module rtcl_tp25k_usb3_imx219
                 .timeout        (control5[15:0]     ),
 
                 .s_axi4s        (axi4s_frame.s      ),
-//              .m_axi4s        (axi4s_ft601_tx[1].m)
-                .m_axi4s        (axi4s_tx.m)
+                .m_axi4s        (axi4s_ft601_tx[1].m)
+//              .m_axi4s        (axi4s_tx.m)
             );
 
-    
+    /*
     // 全力送信実験
     logic  [31:0]   busy_count = 13;
     always_ff @(posedge axi4s_ft601_tx[1].aclk ) begin
@@ -712,7 +712,7 @@ module rtcl_tp25k_usb3_imx219
     assign axi4s_ft601_tx[1].tdata = axi4s_tx_count[7:0] == 0 ? 32'h03fc_0010 : axi4s_tx_data;
 //  assign axi4s_ft601_tx[1].tdata  = 32'h0100_0010;
     assign axi4s_ft601_tx[1].tvalid = axi4s_tx_valid && (busy_count[16:9] != 0); // || busy_count[3:0] == 0);
-    
+    */
 
     // rx
     assign axi4s_ft601_rx[1].tready = 1'b1;
@@ -739,7 +739,7 @@ module rtcl_tp25k_usb3_imx219
             frame_overflow <= 1'b0;
         end
         else begin
-            if ( axi4s_frame.s.tvalid && !axi4s_frame.s.tready ) begin
+            if ( axi4s_frame.tvalid && !axi4s_frame.tready ) begin
                 frame_overflow <= 1'b1;
             end
         end

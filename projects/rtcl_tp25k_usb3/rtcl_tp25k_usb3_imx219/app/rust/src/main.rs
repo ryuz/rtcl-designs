@@ -18,10 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-    let width: usize = 256;
-    let height: usize = 256;
-//    let width: usize = 640;
-//    let height: usize = 480;
+//    let width: usize = 256;
+//    let height: usize = 256;
+    let width: usize = 640;
+    let height: usize = 480;
 //    let width: usize = 1280;
 //    let height: usize = 16;
 
@@ -71,8 +71,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     unsafe {
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 128);
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*8);
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 256);     // max
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*4);
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 100000);
     }
 
@@ -143,6 +143,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     */
 
     loop {
+        // 10ms待つ
+        std::thread::sleep(Duration::from_millis(10));
+
+        // 取り込み指示前にゴミがあれば try_recv_axi4s ですべて読み出す
+        while usb.lock().unwrap().try_recv_axi4s().is_ok() {}
+
   
         // 1 frame 取り込み指示
         unsafe {
@@ -157,10 +163,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let size = ((4 + (width * 10 / 8)) * height) as usize;
         let mut frame = Vec::<u8>::with_capacity(size);
         for _ in 0..height {
+            std::thread::sleep(Duration::from_millis(1));
             let axi4s = match usb.lock().unwrap().try_recv_axi4s() {
                 Ok(packet) => packet,
                 Err(_) => {
-//                  eprintln!("Failed to receive AXI4S packet, retrying...");
+                    eprintln!("Failed to receive AXI4S packet, retrying...");
                     break;  // 内側のfor loopを抜ける
                 }
             };
@@ -172,6 +179,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // 受信に失敗したらリトライ
         if lines.len() != height {
+            eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
             continue;
         }
 

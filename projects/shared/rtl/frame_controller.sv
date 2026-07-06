@@ -153,7 +153,7 @@ module frame_controller
         if ( s_axi4s.aclken ) begin
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 // frame start
-                if ( s_axi4s.tuser && s_axi4s.tvalid && s_axi4s.tready ) begin
+                if ( s_axi4s.tuser[0] && s_axi4s.tvalid && s_axi4s.tready ) begin
                     ctl_enable     <= 1'b0          ;
                     ctl_busy       <= ctl_enable    ;
                     m_axi4s.tuser  <= s_axi4s.tuser ;
