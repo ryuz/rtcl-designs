@@ -18,10 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-//    let width: usize = 256;
-//    let height: usize = 256;
-    let width: usize = 640;
-    let height: usize = 480;
+    let width: usize = 256;
+    let height: usize = 256;
+//    let width: usize = 640;
+//    let height: usize = 480;
 //    let width: usize = 1280;
 //    let height: usize = 16;
 
