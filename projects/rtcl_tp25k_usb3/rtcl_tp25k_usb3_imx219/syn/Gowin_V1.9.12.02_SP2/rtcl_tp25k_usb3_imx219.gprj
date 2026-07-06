@@ -23,6 +23,7 @@
         <File path="../../../../../jelly/rtl/v3/primitive/jelly3_cdc_array_single.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/primitive/jelly3_cdc_gray.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/primitive/jelly3_cdc_single.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/misc/jelly3_axi4s_debug_monitor.sv" type="file.verilog" enable="1" />
         <File path="../../ip/gowin_mipi_dphy/gowin_mipi_dphy.v" type="file.verilog" enable="1" />
         <File path="../../ip/gowin_pll/gowin_pll.v" type="file.verilog" enable="1" />
         <File path="../../ip/gowin_pll/gowin_pll_ft601.v" type="file.verilog" enable="1" />

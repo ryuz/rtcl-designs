@@ -517,7 +517,7 @@ module rtcl_tp25k_usb3_imx219
                 .INIT_CONTROL1      ('0                 ),  // CAM_EN
                 .INIT_CONTROL2      ('0                 ),
                 .INIT_CONTROL3      (512                ),  // max_len
-                .INIT_CONTROL4      (1024*8             ),  // limit_len
+                .INIT_CONTROL4      (1024*4             ),  // limit_len
                 .INIT_CONTROL5      (10000              ),  // timeout
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
@@ -664,7 +664,7 @@ module rtcl_tp25k_usb3_imx219
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .DATA_BUF_SIZE  (1024*16            ),
+                .DATA_BUF_SIZE  (1024*8             ),
                 .CMD_BUF_SIZE   (1024               ),
                 .TIMER_BITS     (16                 )
             )
@@ -745,10 +745,23 @@ module rtcl_tp25k_usb3_imx219
         end
     end
 
+    logic dphy_overflow;
+    always_ff @(posedge dphy_clk) begin
+        if ( dphy_reset ) begin
+            dphy_overflow <= 1'b0;
+        end
+        else begin
+            if ( axi4s_dphy.tvalid && !axi4s_dphy.tready ) begin
+                dphy_overflow <= 1'b1;
+            end
+        end
+    end
+
+
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
     assign led[2] = frame_overflow  ;
-    assign led[3] = reset           ;
+    assign led[3] = dphy_overflow   ;
 
 
     // --------------------------------
@@ -780,6 +793,23 @@ module rtcl_tp25k_usb3_imx219
     assign pmod[6] = '0;
     assign pmod[7] = '0;
     */
+
+
+    // --------------------------------
+    //  Debug
+    // --------------------------------
+
+    jelly3_axi4s_debug_monitor
+        u_axi4s_debug_monitor_dphy
+            (
+                .mon_axi4s  (axi4s_dphy.mon)
+            );
+
+    jelly3_axi4s_debug_monitor
+        u_axi4s_debug_monitor_frame
+            (
+                .mon_axi4s  (axi4s_frame.mon)
+            );
 
 endmodule
 
