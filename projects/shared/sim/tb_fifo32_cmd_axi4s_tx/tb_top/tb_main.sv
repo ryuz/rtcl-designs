@@ -98,7 +98,7 @@ module tb_main
                 tuser <= s_axi4s.tlast && $urandom_range(0, 99) < 30;
             end
             if ( !s_axi4s.tvalid || s_axi4s.tready ) begin
-                tvalid <= $urandom_range(0, 99) < 90;
+                tvalid <= $urandom_range(0, 99) < 1;
                 tlast  <= $urandom_range(0, 99) < 3;
             end
         end
