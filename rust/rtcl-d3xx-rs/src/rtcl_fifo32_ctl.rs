@@ -138,9 +138,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut packet_size = 0;
     let mut packet_last = false;
 
-    let mut line_count = 255;
-    let mut send_count = 0;
-
     let mut stop = false;
     loop {
         if rx_stop.try_recv().is_ok() {
@@ -178,20 +175,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                 packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
                 assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
                 rx_buffer.drain(0..4);
-                if stream.tuser != 0 {
-//                  println!("Xlines={}", line_count);
-                    if line_count != 255 {
-                        println!("Warning: line_count != 0 : {}", line_count);
-                    }
-                    line_count = 0;
-                }
-                else {
-//                  println!("Slines={}", line_count);
-                    line_count += 1;
-                }
-                if packet_size != 256*10/8 {
-                    println!("Warning: packet_size != 360 : {}", packet_size);
-                }
 //              println!("axi4s : tuser : {} packet_size: {} bytes", stream.tuser, packet_size);
                 header = false;
             }
@@ -202,16 +185,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                     header = true;
 
                     // 受信データを送信
-//                  println!("axi4s : tuser : {} tdata: {} bytes", stream.tuser, stream.tdata.len());
                     if packet_last {
-                        if stream.tuser != 0 {
-                            println!("recv_thread: tuser={} tdata.len()={} bytes", stream.tuser, stream.tdata.len());
-                        }
-                        send_count += 1;
-                        if send_count == 256 {
-                            println!("recv_thread: send_count={}", send_count);
-                            send_count = 0;
-                        }
                         tx_stream.send(stream.clone()).unwrap();
                         stream.tdata.clear();
                     }

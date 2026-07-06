@@ -20,10 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let binning =  true;
     let width: usize = 256;
     let height: usize = 256;
-//    let width: usize = 640;
-//    let height: usize = 480;
+    let width: usize = 640;
+    let height: usize = 480;
 //    let width: usize = 1280;
-//    let height: usize = 16;
+//    let height: usize = 720;
 
 
     // OpenDevice
@@ -71,9 +71,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     unsafe {
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 256);     // max
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*4);
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 100000);
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 512);     // max
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*2);  // limit
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 10000);   // 100us
     }
 
     // カメラOFF
@@ -152,9 +152,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     */
 
     loop {
-        // 10ms待つ
-        std::thread::sleep(Duration::from_millis(10));
-
         // 取り込み指示前にゴミがあれば try_recv_axi4s ですべて読み出す
         while usb.lock().unwrap().try_recv_axi4s().is_ok() {}
 
@@ -164,9 +161,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             frm_acc.write_reg_u32(0x10, 1);
         }
 
-//          println!("frame size = {}", size);
-
-        std::thread::sleep(Duration::from_millis(10));
+//      std::thread::sleep(Duration::from_millis(10));
 
         let mut lines = Vec::<Vec<u8>>::new();
         let size = ((4 + (width * 10 / 8)) * height) as usize;
