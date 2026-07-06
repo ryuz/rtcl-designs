@@ -136,10 +136,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::thread::sleep(Duration::from_millis(100)); 
 
     /*
-    print!("wait key : ctart capture...");
-    std::io::stdout().flush().unwrap();
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();   
+    // 1 frame 取り込み指示
+    loop {
+        unsafe {
+            frm_acc.write_reg_u32(0x10, 1);
+        }
+
+//      print!("\nwait key : start capture...");
+        std::io::stdout().flush().unwrap();
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();   
+//      println!("");
+    }
+    return Ok(());
     */
 
     loop {
@@ -164,7 +173,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut frame = Vec::<u8>::with_capacity(size);
         for _ in 0..height {
             std::thread::sleep(Duration::from_millis(1));
-            let axi4s = match usb.lock().unwrap().try_recv_axi4s() {
+            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(100)) {
                 Ok(packet) => packet,
                 Err(_) => {
                     eprintln!("Failed to receive AXI4S packet, retrying...");
@@ -179,7 +188,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // 受信に失敗したらリトライ
         if lines.len() != height {
-            eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
+//          eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
             continue;
         }
 
@@ -203,7 +212,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         
         // BYAER を BGR に変換
         let mut mat_bgr = opencv::core::Mat::default();
-        opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
+        opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerGR2BGR, 0)?;
 
         opencv::highgui::imshow("image", &mat_bgr)?;
         let key = opencv::highgui::wait_key(100)?;
