@@ -646,6 +646,21 @@ module rtcl_tp25k_usb3_imx219
                 .m_axi4s    (axi4s_frame.m          )
             );
 
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1          ),
+                .USE_LAST   (1          ),
+                .USER_BITS  (1          ),
+                .DATA_BITS  (32         ),
+                .STRB_BITS  (4          )
+            )
+        axi4s_tx
+            (
+                .aresetn    (~dphy_reset),
+                .aclk       (dphy_clk   ),
+                .aclken     (1'b1       )
+            );
+
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
@@ -660,9 +675,44 @@ module rtcl_tp25k_usb3_imx219
                 .timeout        (control5[15:0]     ),
 
                 .s_axi4s        (axi4s_frame.s      ),
-                .m_axi4s        (axi4s_ft601_tx[1].m)
+//              .m_axi4s        (axi4s_ft601_tx[1].m)
+                .m_axi4s        (axi4s_tx.m)
             );
 
+    
+    // 全力送信実験
+    logic  [31:0]   busy_count = 13;
+    always_ff @(posedge axi4s_ft601_tx[1].aclk ) begin
+        if ( !axi4s_ft601_tx[1].tvalid || axi4s_ft601_tx[1].tready ) begin
+            busy_count <= busy_count + 1'b1;
+        end
+    end
+
+    logic  [31:0]   axi4s_tx_data;
+    logic  [31:0]   axi4s_tx_count;
+    logic           axi4s_tx_valid;
+    always_ff @(posedge axi4s_ft601_tx[1].aclk ) begin
+        if ( ~axi4s_ft601_tx[1].aresetn ) begin
+            axi4s_tx_count           <= 8'b0;
+            axi4s_tx_data            <= 32'hx03020100;
+            axi4s_ft601_tx[1].tstrb  <= '1;
+            axi4s_tx_valid <= 1'b0;
+        end
+        else begin
+            axi4s_tx_valid <= 1'b1;
+            if ( axi4s_ft601_tx[1].tvalid && axi4s_ft601_tx[1].tready ) begin
+                axi4s_tx_count <= axi4s_tx_count + 1'b1;
+                axi4s_tx_data[0*8 +: 8] <= axi4s_tx_data[0*8 +: 8] + 4;
+                axi4s_tx_data[1*8 +: 8] <= axi4s_tx_data[1*8 +: 8] + 4;
+                axi4s_tx_data[2*8 +: 8] <= axi4s_tx_data[2*8 +: 8] + 4;
+                axi4s_tx_data[3*8 +: 8] <= axi4s_tx_data[3*8 +: 8] + 4;
+            end
+        end
+    end
+    assign axi4s_ft601_tx[1].tdata = axi4s_tx_count[7:0] == 0 ? 32'h03fc_0010 : axi4s_tx_data;
+//  assign axi4s_ft601_tx[1].tdata  = 32'h0100_0010;
+    assign axi4s_ft601_tx[1].tvalid = axi4s_tx_valid && (busy_count[16:9] != 0); // || busy_count[3:0] == 0);
+    
 
     // rx
     assign axi4s_ft601_rx[1].tready = 1'b1;
@@ -708,13 +758,17 @@ module rtcl_tp25k_usb3_imx219
     
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_wr_n;
-    assign pmod[2] = axi4s_frame.s.tready;
-    assign pmod[3] = axi4s_frame.s.tvalid;
-    assign pmod[4] = ft601_data_i[8];
-    assign pmod[5] = ft601_data_i[9];
-    assign pmod[6] = ft601_data_i[12];
-    assign pmod[7] = ft601_data_i[13];
-    
+    assign pmod[2] = axi4s_frame.tready;
+    assign pmod[3] = axi4s_frame.tvalid;
+//    assign pmod[4] = ft601_data_i[8];
+//    assign pmod[5] = ft601_data_i[9];
+//    assign pmod[6] = ft601_data_i[12];
+//    assign pmod[7] = ft601_data_i[13];
+
+    assign pmod[4] = axi4s_ft601_tx[1].tready;
+    assign pmod[5] = axi4s_ft601_tx[1].tvalid;
+    assign pmod[6] = ft601_txe_n;
+    assign pmod[7] = ft601_data_i[9];
 
     /*
     assign pmod[0] = dphy_byte_ready;

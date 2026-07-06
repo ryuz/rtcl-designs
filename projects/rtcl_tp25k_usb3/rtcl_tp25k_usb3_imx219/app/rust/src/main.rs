@@ -8,11 +8,23 @@ const REGADR_SYSCTL_CONTROL0 : usize = 0x10;
 const REGADR_SYSCTL_CONTROL1 : usize = 0x11;
 //const REGADR_SYSCTL_CONTROL2 : usize = 0x12;
 const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
+const REGADR_SYSCTL_CONTROL4 : usize = 0x14;
+const REGADR_SYSCTL_CONTROL5 : usize = 0x15;
 
 type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
+
+    let pixel_clock: f64 = 91000000.0;
+    let binning =  true;
+    let width: usize = 256;
+    let height: usize = 256;
+//    let width: usize = 640;
+//    let height: usize = 480;
+//    let width: usize = 1280;
+//    let height: usize = 16;
+
 
     // OpenDevice
     let mut usb = RtclFifo32CtlD3xx::new(0)?;
@@ -58,6 +70,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     }
 
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 128);
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*8);
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 100000);
+    }
+
     // カメラOFF
     println!("camera power off");
     unsafe {
@@ -93,14 +111,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("set camera");
     // camera 設定
-    let pixel_clock: f64 = 91000000.0;
-    let binning =  true;
-    let width: usize = 256;
-    let height: usize = 256;
-//    let width: i32 = 640;
-//    let height: i32 = 480;
-//    let width: i32 = 1280;
-//    let height: i32 = 760;
 
     //  let width: i32 = 256;
 //  let height: i32 = 256;
@@ -150,7 +160,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let axi4s = match usb.lock().unwrap().try_recv_axi4s() {
                 Ok(packet) => packet,
                 Err(_) => {
-                    eprintln!("Failed to receive AXI4S packet, retrying...");
+//                  eprintln!("Failed to receive AXI4S packet, retrying...");
                     break;  // 内側のfor loopを抜ける
                 }
             };
