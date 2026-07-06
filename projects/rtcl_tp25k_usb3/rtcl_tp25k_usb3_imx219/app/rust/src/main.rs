@@ -171,7 +171,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(100)) {
                 Ok(packet) => packet,
                 Err(_) => {
-                    eprintln!("Failed to receive AXI4S packet, retrying...");
+//                  eprintln!("Failed to receive AXI4S packet, retrying...");
                     break;  // 内側のfor loopを抜ける
                 }
             };
@@ -183,7 +183,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // 受信に失敗したらリトライ
         if lines.len() != height {
-//          eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
+            eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
             continue;
         }
 
@@ -210,7 +210,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerGR2BGR, 0)?;
 
         opencv::highgui::imshow("image", &mat_bgr)?;
-        let key = opencv::highgui::wait_key(100)?;
+        let key = opencv::highgui::wait_key(10)?;
         if (key & 0xff) == 27 { // ESC
             break;
         }
