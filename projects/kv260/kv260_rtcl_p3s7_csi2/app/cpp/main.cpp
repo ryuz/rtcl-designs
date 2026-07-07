@@ -38,6 +38,8 @@ void          print_status(jelly::UioAccessor& uio, jelly::I2cAccessor& i2c);
 #define CAMREG_CORE_VERSION         0x0001
 #define CAMREG_SENSOR_ENABLE        0x0004
 #define CAMREG_SENSOR_READY         0x0008
+#define CAMREG_SENSOR_PGOOD         0x000c
+#define CAMREG_SENSOR_PGOOD_EN      0x000d
 #define CAMREG_RECV_RESET           0x0010
 #define CAMREG_ALIGN_RESET          0x0020
 #define CAMREG_ALIGN_PATTERN        0x0022
@@ -209,6 +211,9 @@ int main(int argc, char *argv[])
 
     // MIPI-CSIモード設定
     i2c_write(i2c, CAMREG_CSI_MODE, 1);
+
+    // PGOOD監視OFF
+    i2c_write(i2c, CAMREG_SENSOR_PGOOD_EN, 0);
 
     // センサー基板 DPHY-TX リセット解除
     i2c_write(i2c, CAMREG_DPHY_CORE_RESET, 0);
