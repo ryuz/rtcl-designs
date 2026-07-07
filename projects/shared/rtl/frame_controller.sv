@@ -136,42 +136,54 @@ module frame_controller
             );
 
 
-    logic   [3:0]   ctl_enable  = 0     ;
-    logic           ctl_busy    = 1'b0  ;
-
+    logic   [3:0]   capture_counter, next_capture_counter;
+    always_comb begin
+        next_capture_counter = capture_counter;
+        if ( ctl_start ) begin
+            next_capture_counter++;
+        end
+        if ( capture_counter > 0 && s_axi4s.tuser[0] && s_axi4s.tvalid && s_axi4s.tready ) begin
+            next_capture_counter--;
+        end
+    end
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
-            ctl_enable <= 1'b0  ;
-            ctl_busy   <= 1'b0  ;
-
-            m_axi4s.tuser  <= 'x;
-            m_axi4s.tlast  <= 1'bx;
-            m_axi4s.tdata  <= 'x;
-            m_axi4s.tstrb  <= '1;
-            m_axi4s.tvalid <= 1'b0;
+            capture_counter <= '0;
         end
-        if ( s_axi4s.aclken ) begin
+        else if ( s_axi4s.aclken ) begin
+            capture_counter <= next_capture_counter;
+        end
+    end
+
+    logic           ctl_busy    = 1'b0  ;
+    always_ff @(posedge s_axi4s.aclk) begin
+        if ( ~s_axi4s.aresetn ) begin
+            ctl_busy       <= 1'b0  ;
+            m_axi4s.tuser  <= 'x    ;
+            m_axi4s.tlast  <= 1'bx  ;
+            m_axi4s.tdata  <= 'x    ;
+            m_axi4s.tstrb  <= '1    ;
+            m_axi4s.tvalid <= 1'b0  ;
+        end
+        else if ( s_axi4s.aclken ) begin
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
-                // frame start
                 if ( s_axi4s.tuser[0] && s_axi4s.tvalid && s_axi4s.tready ) begin
-                    ctl_enable     <= ctl_enable > 0 ? ctl_enable - 1'b1 : 0;
-                    ctl_busy       <= ctl_enable > 0   ;
-                    m_axi4s.tuser  <= s_axi4s.tuser ;
-                    m_axi4s.tlast  <= s_axi4s.tlast ;
-                    m_axi4s.tdata  <= s_axi4s.tdata ;
-                    m_axi4s.tstrb  <= '1            ;
-                    m_axi4s.tvalid <= ctl_enable    ;
+                    // frame start
+                    ctl_busy       <= capture_counter > 0       ;
+                    m_axi4s.tuser  <= s_axi4s.tuser             ;
+                    m_axi4s.tlast  <= s_axi4s.tlast             ;
+                    m_axi4s.tdata  <= s_axi4s.tdata             ;
+                    m_axi4s.tstrb  <= '1                        ;
+                    m_axi4s.tvalid <= capture_counter > 0       ;
                 end
                 else begin
+                    // frame data
                     m_axi4s.tuser  <= s_axi4s.tuser             ;
                     m_axi4s.tlast  <= s_axi4s.tlast             ;
                     m_axi4s.tdata  <= s_axi4s.tdata             ;
                     m_axi4s.tstrb  <= '1                        ;
                     m_axi4s.tvalid <= s_axi4s.tvalid & ctl_busy ;
                 end
-            end
-            if ( ctl_start && ctl_enable != '1 ) begin
-                ctl_enable <= ctl_enable + 1'b1;
             end
         end
     end

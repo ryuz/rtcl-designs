@@ -712,9 +712,54 @@ module rtcl_tp25k_usb3_p3s7_mipi
         end
     end
 
+
+    logic [15:0]  dphy_count;
+    logic         dphy_count_error;
+    always_ff @(posedge dphy_clk) begin
+        if ( dphy_reset ) begin
+            dphy_count <= 0;
+            dphy_count_error <= 1'b0;
+        end
+        else begin
+            if ( axi4s_dphy.tvalid && axi4s_dphy.tready ) begin
+                dphy_count <= dphy_count + 1'b1;
+                if ( axi4s_dphy.tlast ) begin
+                    dphy_count <= 0;
+                    if ( dphy_count != 160/4-1 ) begin
+                        dphy_count_error <= 1'b1;
+                    end
+                    if ( axi4s_dphy.tuser[0] && dphy_count != 0 ) begin
+                        dphy_count_error <= 1'b1;
+                    end
+                end
+            end
+        end
+    end
+
+
+    logic [15:0]  frm_count;
+    logic         frm_count_error;
+    always_ff @(posedge dphy_clk) begin
+        if ( dphy_reset ) begin
+            frm_count <= 0;
+            frm_count_error <= 1'b0;
+        end
+        else begin
+            if ( axi4s_frame.tvalid && axi4s_frame.tready ) begin
+                frm_count <= frm_count + 1'b1;
+                if ( axi4s_frame.tlast ) begin
+                    frm_count <= 0;
+                    if ( frm_count != 160/4-1 ) begin
+                        frm_count_error <= 1'b1;
+                    end
+                end
+            end
+        end
+    end
+
     assign led[0] = clk_counter[24] ;
-    assign led[1] = usb_counter[26] ;
-    assign led[2] = frame_overflow  ;
+    assign led[1] = dphy_count_error;//usb_counter[26] ;
+    assign led[2] = frm_count_error; //frame_overflow  ;
     assign led[3] = dphy_overflow   ;
 
 

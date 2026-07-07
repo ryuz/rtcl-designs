@@ -95,8 +95,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdin().read_line(&mut input)?;
     */
 
-    let width = 128;
-    let height = 128;
+    let width = 256;
+    let height = 256;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
@@ -151,7 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdin().read_line(&mut input)?;
 //  return Ok(());
     */
-    
+
     unsafe {
         frm_acc.write_reg_u32(0x10, 1);
         frm_acc.write_reg_u32(0x10, 1);
