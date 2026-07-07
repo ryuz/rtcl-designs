@@ -12,7 +12,7 @@
 module rtcl_p3s7_mipi
         #(
             parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
-            parameter   bit     [15:0]  MODULE_VERSION = 16'h0108   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0109   ,
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,

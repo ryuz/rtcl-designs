@@ -37,16 +37,6 @@
                 <Signal>dphy_di_lprx1[1]</Signal>
                 <Signal>dphy_di_lprx1[0]</Signal>
             </Bus>
-            <Bus capture_enable="true" name="dphy_state[1:0]">
-                <Signal>dphy_state[1]</Signal>
-                <Signal>dphy_state[0]</Signal>
-            </Bus>
-            <Bus capture_enable="true" name="dphy_count[3:0]">
-                <Signal>dphy_count[3]</Signal>
-                <Signal>dphy_count[2]</Signal>
-                <Signal>dphy_count[1]</Signal>
-                <Signal>dphy_count[0]</Signal>
-            </Bus>
             <Bus capture_enable="true" name="dphy_byte_d0[7:0]">
                 <Signal>dphy_byte_d0[7]</Signal>
                 <Signal>dphy_byte_d0[6]</Signal>
@@ -68,8 +58,6 @@
                 <Signal>dphy_byte_d1[0]</Signal>
             </Bus>
             <Signal capture_enable="true">dphy_byte_ready</Signal>
-            <Signal capture_enable="true">reg1_lprx0</Signal>
-            <Signal capture_enable="true">reg1_lprx1</Signal>
         </SignalList>
         <Triggers>
             <Trigger index="0">
@@ -127,5 +115,5 @@
             <Expression>M0</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>0100111010100111</GAO_ID>
+    <GAO_ID>0001110000010111</GAO_ID>
 </GAO_CONFIG>
