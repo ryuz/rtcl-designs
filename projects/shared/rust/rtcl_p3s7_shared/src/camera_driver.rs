@@ -189,8 +189,11 @@ where
             self.reg_sys.write_reg(SYSREG_DPHY_SW_RESET, 0);
         }
 
-        // 高速モード設定
+        // モード設定
         self.cam_i2c.set_camera_mode(self.camera_mode)?;
+
+        // CSI2の場合
+        self.cam_i2c.set_csi2_word_count((self.width * 10 / 8) as u16)?;
 
         // センサー電源ON
         self.cam_i2c.set_sensor_power_enable(true)?;
