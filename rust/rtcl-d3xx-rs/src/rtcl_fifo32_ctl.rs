@@ -148,7 +148,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-        println!("recv_thread: rx_size: {} bytes", rx_size);
+//      println!("recv_thread: rx_size: {} bytes", rx_size);
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;
