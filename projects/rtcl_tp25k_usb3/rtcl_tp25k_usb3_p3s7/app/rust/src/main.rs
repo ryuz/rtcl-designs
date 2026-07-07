@@ -180,6 +180,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     //      println!("frame size = {}", frame.len());
         }
 
+        /*
+        let mut line_count = 0;
+        let mut frame_start = true;
+        while line_count < height {
+            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
+                Ok(packet) => packet,
+                Err(_) => {
+                    eprintln!("Failed to receive AXI4S packet, retrying...");
+                    break;  // 内側のfor loopを抜ける
+                }
+            };
+            if !frame_start || (axi4s.tuser & 1) != 0 {
+                // フレーム開始パケット以外は無視
+                continue;
+            }
+
+            lines.push(axi4s.tdata.clone());
+            frame.extend_from_slice(axi4s.tdata.as_slice());
+            line_count += 1;
+            frame_start = false;
+        }
+        */
+
         // 受信に失敗したらリトライ
         if lines.len() != height {
             continue;
@@ -195,7 +218,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 image[y][x*4+3] = (((lines[y][x*5+3] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 6) & 0x03) * 64;
             }
         }
-
+        
         // OpenCV で画像を表示
         let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
         let mat = opencv::core::Mat::new_rows_cols_with_data(
