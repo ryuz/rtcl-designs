@@ -9,7 +9,7 @@
 `timescale 1ps/1ps
 `default_nettype none
 
-module rtcl_tp25k_usb3_p3s7
+module rtcl_tp25k_usb3_p3s7_mipi
         (
             input   var logic           in_clk50        ,
 

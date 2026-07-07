@@ -4,7 +4,7 @@
 DEVICE_PART_NUMBER=GW5A-LV25MG121NC1/I0
 DEVICE_NAME=GW5A-25A
 
-TOP_MODULE = rtcl_tp25k_usb3_p3s7
+TOP_MODULE = rtcl_tp25k_usb3_p3s7_mipi
 OUTPUT_BASE_NAME = $(TOP_MODULE)
 
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
@@ -15,7 +15,7 @@ SHARED_DIR = ../../../../shared
 CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
-VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_p3s7.sv
+VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_p3s7_mipi.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode_transceiver.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4l.sv
@@ -50,10 +50,10 @@ VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601_mod.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_mipi_dphy/gowin_mipi_dphy.v
 
 # SDC File
-SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_p3s7.sdc
+SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_p3s7_mipi.sdc
 
 # CST File
-CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_p3s7.cst
+CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_p3s7_mipi.cst
 
 # for tcl script
 export DEVICE_PART_NUMBER
