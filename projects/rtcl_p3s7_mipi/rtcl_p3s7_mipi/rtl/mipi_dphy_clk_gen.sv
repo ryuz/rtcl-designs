@@ -31,7 +31,8 @@ module mipi_dphy_clk_gen
         output  var logic   txclkesc            ,   // BUFG
         output  var logic   oserdes_clkdiv      ,   // BUFR  (div4 from oserdes_clk)
         output  var logic   oserdes_clk         ,   // BUFIO
-        output  var logic   oserdes_clk90           // BUFIO
+        output  var logic   oserdes_clk90       ,   // BUFIO
+        output  var logic   dphy_tst_clk            // BUFG
     );
 
 
@@ -145,6 +146,13 @@ module mipi_dphy_clk_gen
             (
                 .I                  (serial_clk         ),
                 .O                  (oserdes_clk        )
+            );
+
+    BUFG
+        u_bufg_tst
+            (
+                .I                  (serial_clkfb       ),
+                .O                  (dphy_tst_clk       )
             );
 
     BUFIO

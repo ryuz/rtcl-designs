@@ -666,6 +666,7 @@ module rtcl_p3s7_mipi
     logic   dphy_oserdes_clkdiv     ;
     logic   dphy_oserdes_clk        ;
     logic   dphy_oserdes_clk90      ;
+    logic   dphy_tst_clk            ;
 
     mipi_dphy_clk_gen
         u_mipi_dphy_clk_gen
@@ -689,7 +690,8 @@ module rtcl_p3s7_mipi
                 .txclkesc           (dphy_txclkesc          ),
                 .oserdes_clkdiv     (dphy_oserdes_clkdiv    ),
                 .oserdes_clk        (dphy_oserdes_clk       ),
-                .oserdes_clk90      (dphy_oserdes_clk90     )
+                .oserdes_clk90      (dphy_oserdes_clk90     ),
+                .dphy_tst_clk       (dphy_tst_clk           )
             );
 
 
@@ -762,6 +764,8 @@ module rtcl_p3s7_mipi
                 .oserdes_clk_in         (dphy_oserdes_clk           ),   //  input
                 .oserdes_clk90_in       (dphy_oserdes_clk90         ),   //  input
                 .system_rst_in          (dphy_system_reset || ctl_dphy_sys_reset ),   //  input
+                .cl_tst_clk_in          (dphy_tst_clk               ),
+                .dl_tst_clk_in          (dphy_tst_clk               ),
 
                 .init_done              (dphy_init_done             ),    // output
                 .cl_txclkactivehs       (dphy_cl_txclkactivehs      ),    // output
