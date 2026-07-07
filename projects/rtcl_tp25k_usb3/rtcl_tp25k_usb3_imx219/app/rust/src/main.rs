@@ -167,8 +167,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let size = ((4 + (width * 10 / 8)) * height) as usize;
         let mut frame = Vec::<u8>::with_capacity(size);
         for _ in 0..height {
-            std::thread::sleep(Duration::from_millis(1));
-            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(200)) {
+            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
                 Ok(packet) => packet,
                 Err(_) => {
 //                  eprintln!("Failed to receive AXI4S packet, retrying...");
@@ -184,6 +183,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 受信に失敗したらリトライ
         if lines.len() != height {
             eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
+            std::thread::sleep(Duration::from_millis(100));
+            while usb.lock().unwrap().try_recv_axi4s().is_ok() {}
             continue;
         }
 

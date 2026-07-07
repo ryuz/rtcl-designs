@@ -147,7 +147,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdout().flush()?;
     let mut input = String::new();
     std::io::stdin().read_line(&mut input)?;
-    return Ok(());
+//  return Ok(());
 
     println!("Start");
 
@@ -166,19 +166,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let size = ((4 + (width * 10 / 8)) * height) as usize;
         let mut frame = Vec::<u8>::with_capacity(size);
         for _ in 0..height {
-            let packet_result = match usb.lock().unwrap().try_recv_axi4s() {
-                Ok(packet) => Ok(packet),
-                Err(_) => {
-                    // 10us スリープ
-                    std::thread::sleep(Duration::from_micros(10));
-                    usb.lock().unwrap().try_recv_axi4s()
-                }
-            };
-
-            let axi4s = match packet_result {
+            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
                 Ok(packet) => packet,
                 Err(_) => {
-                    eprintln!("Failed to receive AXI4S packet, retrying...");
+//                  eprintln!("Failed to receive AXI4S packet, retrying...");
                     break;  // 内側のfor loopを抜ける
                 }
             };
