@@ -95,12 +95,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdin().read_line(&mut input)?;
     */
 
-    let width = 256;
-    let height = 256;
+    let width = 128;
+    let height = 128;
 
     println!("camera set");
-//  cam.set_dphy_speed(1250000000.0)?;
-    cam.set_dphy_speed(950000000.0)?;
+    cam.set_dphy_speed(1250000000.0)?;
+//  cam.set_dphy_speed(950000000.0)?;
     cam.set_sensor_pgood_enable(false)?;
     cam.set_sensor_power_enable(false)?;
     cam.set_dphy_reset(true)?;
@@ -144,16 +144,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_sequencer_enable(true)?;
 
     // キー入力待ち
+    /*
     print!("Press Enter to start...");
     std::io::stdout().flush()?;
     let mut input = String::new();
     std::io::stdin().read_line(&mut input)?;
 //  return Ok(());
+    */
+    
+    unsafe {
+        frm_acc.write_reg_u32(0x10, 1);
+        frm_acc.write_reg_u32(0x10, 1);
+    }
 
     println!("Start");
 
     loop {
-  
         // 1 frame 取り込み指示
         unsafe {
             frm_acc.write_reg_u32(0x10, 1);
@@ -170,10 +176,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
                 Ok(packet) => packet,
                 Err(_) => {
-//                  eprintln!("Failed to receive AXI4S packet, retrying...");
+                    eprintln!("Failed to receive AXI4S packet, retrying...");
                     break;  // 内側のfor loopを抜ける
                 }
             };
+
+            if axi4s.tdata.len() != (width * 10 / 8) as usize {
+                eprintln!("Received AXI4S packet with unexpected size: {} bytes expected : {} ", axi4s.tdata.len(), (width * 10 / 8) as usize);
+                break;  // 内側のfor loopを抜ける
+            }
 
             lines.push(axi4s.tdata.clone());
             frame.extend_from_slice(axi4s.tdata.as_slice());
@@ -232,7 +243,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 //      opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
 
         opencv::highgui::imshow("image", &mat)?;
-        let key = opencv::highgui::wait_key(100)?;
+        let key = opencv::highgui::wait_key(10)?;
         if (key & 0xff) == 27 { // ESC
             break;
         }

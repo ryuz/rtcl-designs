@@ -311,96 +311,6 @@ module rtcl_tp25k_usb3_p3s7_mipi
     end
     assign dphy_hsrx_odten = {(dphy_di_lprx3==0), (dphy_di_lprx2==0), (dphy_di_lprx1==0), (dphy_di_lprx0==0)} & {4{dphy_odt_en_msk}};
     
-    /*
-    // control terminator
-    typedef enum logic [1:0] {
-        DPHY_LP  = 2'b00,
-        DPHY_RST = 2'b01,
-        DPHY_HS  = 2'b10,
-        DPHY_MSK = 2'b11
-    } dphy_state_t;
-
-
-    (* ASYNC_REG="true" *)  logic   reg0_lprx0, reg1_lprx0;
-    (* ASYNC_REG="true" *)  logic   reg0_lprx1 ,reg1_lprx1;
-    always_ff @(posedge dphy_clk ) begin
-        reg0_lprx0 <= dphy_di_lprx0[0];
-        reg0_lprx1 <= dphy_di_lprx1[0];
-        reg1_lprx0 <= reg0_lprx0;
-        reg1_lprx1 <= reg0_lprx1;
-    end
-
-    dphy_state_t        dphy_state       ;
-    logic   [3:0]       dphy_count       ;
-
-    always_ff @(posedge dphy_clk or posedge reset) begin
-        if ( reset ) begin
-            dphy_state      <= DPHY_LP;
-            dphy_count      <= 4'd10;
-            dphy_rx_drst_n  <= 1'b1;
-        end
-        else begin
-            dphy_rx_drst_n  <= 1'b1;
-            case ( dphy_state )
-            DPHY_LP: begin
-                if ( reg1_lprx0 == 1'b0 && reg1_lprx1 == 1'b0 ) begin
-                    dphy_rx_drst_n <= 1'b0;
-                    dphy_state     <= DPHY_RST;
-                end
-            end
-            DPHY_RST: begin
-                if ( reg1_lprx0 == 1'b0 && reg1_lprx1 == 1'b0 ) begin
-                    dphy_state <= DPHY_HS;
-                end
-                else begin
-                    dphy_state <= DPHY_MSK;
-                    dphy_count <= 4'd10;
-                end
-            end
-            DPHY_HS: begin
-                if ( !(reg1_lprx0 == 1'b0 && reg1_lprx1 == 1'b0) ) begin
-                    dphy_state <= DPHY_MSK;
-                    dphy_count <= 4'd10;
-                end
-            end
-            DPHY_MSK: begin
-                if ( reg1_lprx0 == 1'b1 && reg1_lprx1 == 1'b1 ) begin
-                    dphy_count <= dphy_count - 1'b1;
-                    if ( dphy_count == 0 ) begin
-                        dphy_state <= DPHY_LP;
-                    end
-                end
-                else begin
-                    dphy_count <= 4'd10;
-                end
-            end
-            endcase
-        end
-    end
-
-    logic               dphy_byte_ready  ;
-    logic   [7:0]       dphy_byte_d0     ;
-    logic   [7:0]       dphy_byte_d1     ;
-
-    always_ff @(posedge dphy_clk or posedge reset) begin
-        if ( reset ) begin
-            dphy_hsrx_odten <= 4'b0000;
-            dphy_byte_ready <= 1'b0;
-            dphy_byte_d0    <= 'x;
-            dphy_byte_d1    <= 'x;
-        end
-        else begin
-            dphy_hsrx_odten[0] <= ~reg1_lprx0;
-            dphy_hsrx_odten[1] <= ~reg1_lprx1;
-            dphy_hsrx_odten[2] <= 1'b0;
-            dphy_hsrx_odten[3] <= 1'b0;
-            dphy_byte_ready    <= (dphy_state == DPHY_HS) && dphy_hsrxd_vld[0] && dphy_hsrxd_vld[1];
-            dphy_byte_d0       <= dphy_d0ln_hsrxd[7:0];
-            dphy_byte_d1       <= dphy_d1ln_hsrxd[7:0];
-        end
-    end
-    */
-
 
     // -------------------------------
     //  FT601
@@ -784,27 +694,39 @@ module rtcl_tp25k_usb3_p3s7_mipi
             frame_overflow <= 1'b0;
         end
         else begin
-            if ( axi4s_frame.s.tvalid && !axi4s_frame.s.tready ) begin
+            if ( axi4s_frame.tvalid && !axi4s_frame.tready ) begin
                 frame_overflow <= 1'b1;
+            end
+        end
+    end
+
+    logic dphy_overflow;
+    always_ff @(posedge dphy_clk) begin
+        if ( dphy_reset ) begin
+            dphy_overflow <= 1'b0;
+        end
+        else begin
+            if ( axi4s_dphy.tvalid && !axi4s_dphy.tready ) begin
+                dphy_overflow <= 1'b1;
             end
         end
     end
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = dphy_counter[24];
-    assign led[3] = reset           ;
+    assign led[2] = frame_overflow  ;
+    assign led[3] = dphy_overflow   ;
 
 
     // --------------------------------
     //  PMOD
     // --------------------------------
 
-    /*
+    
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_wr_n;
-    assign pmod[2] = axi4s_frame.s.tready;
-    assign pmod[3] = axi4s_frame.s.tvalid;
+    assign pmod[2] = axi4s_frame.tready;
+    assign pmod[3] = axi4s_frame.tvalid;
     // assign pmod[4] = ft601_data_i[8];
     // assign pmod[5] = ft601_data_i[9];
     // assign pmod[6] = ft601_data_i[12];
@@ -814,8 +736,8 @@ module rtcl_tp25k_usb3_p3s7_mipi
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
     assign pmod[6] = ft601_txe_n;
     assign pmod[7] = ft601_data_i[9];
-    */
     
+    /*
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];
     assign pmod[2] = dphy_hsrxd_vld[1];
@@ -824,7 +746,7 @@ module rtcl_tp25k_usb3_p3s7_mipi
     assign pmod[5] = dphy_di_lprx0[1];
     assign pmod[6] = dphy_di_lprx1[0];
     assign pmod[7] = dphy_di_lprx1[1];
-    
+    */
 
 endmodule
 

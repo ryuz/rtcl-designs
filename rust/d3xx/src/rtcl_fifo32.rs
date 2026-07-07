@@ -113,7 +113,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 
     const OVERLAPS : usize = 16;
     const READ_UNIT : usize = 0x10000;
-//  const READ_UNIT : usize = 256*10/8 + 4;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
@@ -136,6 +135,8 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut rx_buffer = Vec::<u8>::new();
     let mut packet_size = 0;
     let mut packet_last = false;
+
+    let mut line_count = 0;
 
     let mut stop = false;
     loop {
@@ -174,6 +175,9 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                 packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
                 assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
                 rx_buffer.drain(0..4);
+                if packet_size != 160 {
+                    println!("recv_thread: packet_size={} bytes", packet_size);
+                }
 //              println!("axi4s : tuser : {} packet_size: {} bytes", stream.tuser, packet_size);
                 header = false;
             }
@@ -185,7 +189,13 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 
                     // 受信データを送信
                     if packet_last {
-                        tx_stream.send(stream.clone()).unwrap();
+                        if stream.tuser != 0 {
+//                          println!("recv_thread: line_count={}", line_count);
+                            line_count = 0;
+                        }
+//                      println!("recv_thread: send stream {}  tuser={} size={} bytes", line_count, stream.tuser, stream.tdata.len());
+                        line_count += 1;
+                        tx_stream.send(stream.clone())?;
                         stream.tdata.clear();
                     }
                 }

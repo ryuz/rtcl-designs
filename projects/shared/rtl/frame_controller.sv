@@ -136,8 +136,8 @@ module frame_controller
             );
 
 
-    logic       ctl_enable  = 1'b0;
-    logic       ctl_busy    = 1'b0;
+    logic   [3:0]   ctl_enable  = 0     ;
+    logic           ctl_busy    = 1'b0  ;
 
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
@@ -154,8 +154,8 @@ module frame_controller
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 // frame start
                 if ( s_axi4s.tuser[0] && s_axi4s.tvalid && s_axi4s.tready ) begin
-                    ctl_enable     <= 1'b0          ;
-                    ctl_busy       <= ctl_enable    ;
+                    ctl_enable     <= ctl_enable > 0 ? ctl_enable - 1'b1 : 0;
+                    ctl_busy       <= ctl_enable > 0   ;
                     m_axi4s.tuser  <= s_axi4s.tuser ;
                     m_axi4s.tlast  <= s_axi4s.tlast ;
                     m_axi4s.tdata  <= s_axi4s.tdata ;
@@ -170,8 +170,8 @@ module frame_controller
                     m_axi4s.tvalid <= s_axi4s.tvalid & ctl_busy ;
                 end
             end
-            if ( ctl_start ) begin
-                ctl_enable <= 1'b1;
+            if ( ctl_start && ctl_enable != '1 ) begin
+                ctl_enable <= ctl_enable + 1'b1;
             end
         end
     end

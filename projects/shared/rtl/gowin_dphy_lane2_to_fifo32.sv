@@ -27,7 +27,6 @@ module gowin_dphy_lane2_to_fifo32
         STATE_FINAL     
     } state_t;
 
-
     // stage 0
     state_t         state           ;
     logic           frame_start     ;
@@ -107,16 +106,11 @@ module gowin_dphy_lane2_to_fifo32
                         state <= STATE_FINAL;
                     end
                     else begin
-                        if ( dphy_valid ) begin
-                            frame_start <= 1'b0;
-                            st0_last  <= (counter >= header_wc);
-                            st0_user  <= frame_start;
-                            st0_data  <= dphy_data;
-                            st0_valid <= 1'b1;
-                        end
-                        else begin
-                            state <= STATE_FINAL;
-                        end
+                        frame_start <= 1'b0;
+                        st0_last  <= (counter >= header_wc) || !dphy_valid;
+                        st0_user  <= frame_start;
+                        st0_data  <= dphy_data;
+                        st0_valid <= 1'b1;
                     end
                 end
 
