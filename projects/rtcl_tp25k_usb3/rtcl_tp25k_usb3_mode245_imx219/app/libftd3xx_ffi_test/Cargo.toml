@@ -1,7 +1,0 @@
-[package]
-name = "libftd3xx_ffi_test"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-libftd3xx-ffi = "0.0.2"
