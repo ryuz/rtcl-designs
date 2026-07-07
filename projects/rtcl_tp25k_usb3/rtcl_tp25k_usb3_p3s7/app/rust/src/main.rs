@@ -95,6 +95,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdin().read_line(&mut input)?;
     */
 
+    let width = 256;
+    let height = 256;
+
     println!("camera set");
 //  cam.set_dphy_speed(1250000000.0)?;
     cam.set_dphy_speed(950000000.0)?;
@@ -105,6 +108,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //  cam.set_camera_mode(CameraMode::HighSpeed)?;   // 高速モード設定
     cam.set_camera_mode(CameraMode::Csi2)?;   // CSI2 like なモード
+    cam.set_csi2_word_count((width * 10 / 8) as u16)?;
 
     cam.set_pmod_mode(0xff00)?;
 
@@ -114,9 +118,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // センサー基板 DPHY-TX リセット解除
     cam.set_dphy_reset(false)?;
-
-    let width = 128;
-    let height = 128;
 
     // xsm_delay
 //  let xsm_delay = cam.calc_xsm_delay(width);

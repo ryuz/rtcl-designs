@@ -800,7 +800,7 @@ module rtcl_tp25k_usb3_p3s7
     //  PMOD
     // --------------------------------
 
-    
+    /*
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_wr_n;
     assign pmod[2] = axi4s_frame.s.tready;
@@ -814,8 +814,8 @@ module rtcl_tp25k_usb3_p3s7
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
     assign pmod[6] = ft601_txe_n;
     assign pmod[7] = ft601_data_i[9];
-
-    /*
+    */
+    
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];
     assign pmod[2] = dphy_hsrxd_vld[1];
@@ -824,7 +824,7 @@ module rtcl_tp25k_usb3_p3s7
     assign pmod[5] = dphy_di_lprx0[1];
     assign pmod[6] = dphy_di_lprx1[0];
     assign pmod[7] = dphy_di_lprx1[1];
-    */
+    
     
 
 endmodule
