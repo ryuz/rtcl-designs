@@ -111,17 +111,16 @@ pub struct Axi4Stream {
 
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
-    const OVERLAPS : usize = 8;
-    const READ_UNIT : usize = 0x1000;
+    const OVERLAPS : usize = 16;
+    const READ_UNIT : usize = 0x10000;
 //  const READ_UNIT : usize = 256*10/8 + 4;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
 
-    reader.set_timeout(1)?;
-//  reader.set_stream_pipe(0x100000)?;
-    reader.set_stream_pipe(0x10000)?;
+    reader.set_timeout(100)?;
+    reader.set_stream_pipe(0x100000)?;
 
     // 読み出し要求を発行
     for i in 0..OVERLAPS {
@@ -149,7 +148,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-//      println!("recv_thread: rx_size: {} bytes", rx_size);
+        println!("recv_thread: rx_size: {} bytes", rx_size);
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;

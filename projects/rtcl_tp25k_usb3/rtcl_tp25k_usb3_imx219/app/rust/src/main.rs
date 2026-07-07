@@ -18,12 +18,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-    let width: usize = 256;
-    let height: usize = 256;
-    let width: usize = 640;
-    let height: usize = 480;
-//    let width: usize = 1280;
-//    let height: usize = 720;
+//    let width: usize = 256;
+//    let height: usize = 256;
+//    let width: usize = 640;
+//    let height: usize = 480;
+    let width: usize = 1280;
+    let height: usize = 720;
 
 
     // OpenDevice
@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     unsafe {
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 512);     // max
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*2);  // limit
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*8);  // limit
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 10000);   // 100us
     }
 
@@ -124,7 +124,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 //    let flip_v: bool = false;
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width as i32, height as i32, aoi_x, aoi_y, binning, binning).unwrap();
-    imx219.set_frame_rate(10.0).unwrap();
+    imx219.set_frame_rate(30.0).unwrap();
     imx219.set_exposure_time(20.0).unwrap();
 
     imx219.set_gain(3.0).unwrap();
@@ -167,8 +167,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let size = ((4 + (width * 10 / 8)) * height) as usize;
         let mut frame = Vec::<u8>::with_capacity(size);
         for _ in 0..height {
-            std::thread::sleep(Duration::from_millis(1));
-            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(100)) {
+            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
                 Ok(packet) => packet,
                 Err(_) => {
 //                  eprintln!("Failed to receive AXI4S packet, retrying...");
@@ -184,6 +183,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 受信に失敗したらリトライ
         if lines.len() != height {
             eprintln!("Failed to receive complete frame, retrying... received {} lines, expected {}", lines.len(), height);
+            std::thread::sleep(Duration::from_millis(100));
+            while usb.lock().unwrap().try_recv_axi4s().is_ok() {}
             continue;
         }
 
@@ -215,7 +216,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
     }
-    
+
+    println!("start stop");
+    imx219.stop().unwrap();
+    std::thread::sleep(Duration::from_millis(100)); 
+
 
     /*
     unsafe {

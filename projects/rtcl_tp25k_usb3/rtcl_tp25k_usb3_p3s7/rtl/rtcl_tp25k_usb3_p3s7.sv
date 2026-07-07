@@ -265,7 +265,7 @@ module rtcl_tp25k_usb3_p3s7
     assign dphy_d2ln_deskew_req = 0;
     assign dphy_d3ln_deskew_req = 0;
     
-    /*
+    
     // control terminator
     logic               dphy_byte_ready  ;
     logic   [7:0]       dphy_byte_d0     ;
@@ -310,8 +310,8 @@ module rtcl_tp25k_usb3_p3s7
         dphy_byte_d1     <= dphy_d1ln_hsrxd[7:0];
     end
     assign dphy_hsrx_odten = {(dphy_di_lprx3==0), (dphy_di_lprx2==0), (dphy_di_lprx1==0), (dphy_di_lprx0==0)} & {4{dphy_odt_en_msk}};
-    */
-
+    
+    /*
     // control terminator
     typedef enum logic [1:0] {
         DPHY_LP  = 2'b00,
@@ -399,7 +399,7 @@ module rtcl_tp25k_usb3_p3s7
             dphy_byte_d1       <= dphy_d1ln_hsrxd[7:0];
         end
     end
-
+    */
 
 
     // -------------------------------
@@ -594,6 +594,9 @@ module rtcl_tp25k_usb3_p3s7
     logic   [31:0]      control0;
     logic   [31:0]      control1;
     logic   [31:0]      control2;
+    logic   [31:0]      control3;
+    logic   [31:0]      control4;
+    logic   [31:0]      control5;
     jelly3_system_control
         #(
                 .DATA_BITS          (32                 ),
@@ -602,9 +605,9 @@ module rtcl_tp25k_usb3_p3s7
                 .INIT_CONTROL0      ('0                 ),
                 .INIT_CONTROL1      ('0                 ),
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      ('0                 ),
-                .INIT_CONTROL4      ('0                 ),
-                .INIT_CONTROL5      ('0                 ),
+                .INIT_CONTROL3      (512                ),  // max_len
+                .INIT_CONTROL4      (1024*4             ),  // limit_len
+                .INIT_CONTROL5      (10000              ),  // timeout
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -615,9 +618,9 @@ module rtcl_tp25k_usb3_p3s7
                 .control0           (control0           ),
                 .control1           (control1           ),
                 .control2           (control2           ),
-                .control3           (                   ),
-                .control4           (                   ),
-                .control5           (                   ),
+                .control3           (control3           ),
+                .control4           (control4           ),
+                .control5           (control5           ),
                 .control6           (                   ),
                 .control7           (                   ),
 
@@ -701,7 +704,7 @@ module rtcl_tp25k_usb3_p3s7
         u_gowin_dphy_lane2_to_fifo32
             (
                 .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-                .dphy_valid (1'b0), //dphy_byte_ready                ),
+                .dphy_valid (dphy_byte_ready                ),
                 .data_type  (8'h2b                          ),
 
                 .m_axi4s    (axi4s_dphy.m                   )
@@ -735,12 +738,16 @@ module rtcl_tp25k_usb3_p3s7
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .MAX_LEN        (256                ),
                 .DATA_BUF_SIZE  (1024*16            ),
-                .CMD_BUF_SIZE   (1024               )
+                .CMD_BUF_SIZE   (1024               ),
+                .TIMER_BITS     (16                 )
             )
         u_fifo32_cmd_axi4s_tx
             (
+                .max_len        (control3[13:0]     ),
+                .limit_len      (control4[13:0]     ),
+                .timeout        (control5[15:0]     ),
+
                 .s_axi4s        (axi4s_frame.s      ),
                 .m_axi4s        (axi4s_ft601_tx[1].m)
             );
@@ -793,18 +800,22 @@ module rtcl_tp25k_usb3_p3s7
     //  PMOD
     // --------------------------------
 
-    /*
+    
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_wr_n;
     assign pmod[2] = axi4s_frame.s.tready;
     assign pmod[3] = axi4s_frame.s.tvalid;
-    assign pmod[4] = ft601_data_i[8];
-    assign pmod[5] = ft601_data_i[9];
-    assign pmod[6] = ft601_data_i[12];
-    assign pmod[7] = ft601_data_i[13];
-    */
+    // assign pmod[4] = ft601_data_i[8];
+    // assign pmod[5] = ft601_data_i[9];
+    // assign pmod[6] = ft601_data_i[12];
+    // assign pmod[7] = ft601_data_i[13];
 
-    
+    assign pmod[4] = axi4s_ft601_tx[1].tready;
+    assign pmod[5] = axi4s_ft601_tx[1].tvalid;
+    assign pmod[6] = ft601_txe_n;
+    assign pmod[7] = ft601_data_i[9];
+
+    /*
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];
     assign pmod[2] = dphy_hsrxd_vld[1];
@@ -813,6 +824,7 @@ module rtcl_tp25k_usb3_p3s7
     assign pmod[5] = dphy_di_lprx0[1];
     assign pmod[6] = dphy_di_lprx1[0];
     assign pmod[7] = dphy_di_lprx1[1];
+    */
     
 
 endmodule

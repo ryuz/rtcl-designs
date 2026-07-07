@@ -664,7 +664,7 @@ module rtcl_tp25k_usb3_imx219
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .DATA_BUF_SIZE  (1024*8             ),
+                .DATA_BUF_SIZE  (1024*16            ),
                 .CMD_BUF_SIZE   (1024               ),
                 .TIMER_BITS     (16                 )
             )
