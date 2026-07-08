@@ -16,7 +16,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
     // OpenDevice
-    let mut usb = RtclFifo32CtlD3xx::new(0)?;
+//  let mut usb = RtclFifo32CtlD3xx::new(0)?;
+    let usb = RtclVideoCaptureD3xx::new(0, 10)?;
 
     // direct read/write
     println!("id : 0x{:08x}", usb.read_axi4l(0)?);
@@ -87,16 +88,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let module_ver = cam.module_version()?;
     println!("module_ver : 0x{:04x}", module_ver);
 
-    // キー入力待ち
     /*
+    // キー入力待ち
     print!("Press Enter to start...");
     std::io::stdout().flush()?;
     let mut input = String::new();
     std::io::stdin().read_line(&mut input)?;
     */
 
-    let width = 256;
-    let height = 256;
+    let width  = 416;
+    let height = 416;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
@@ -143,19 +144,35 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 動作開始
     cam.set_sequencer_enable(true)?;
 
-    // キー入力待ち
     /*
-    print!("Press Enter to start...");
-    std::io::stdout().flush()?;
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-//  return Ok(());
-    */
+    loop {
+        unsafe {
+            frm_acc.write_reg_u32(0x10, 1);
+        }
+    }
+
+    // キー入力待ち
+    loop {
+        print!("\nPress Enter to start...");
+        std::io::stdout().flush()?;
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        println!("");
+        std::io::stdout().flush()?;
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        unsafe {
+            frm_acc.write_reg_u32(0x10, 1);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::io::stdout().flush()?;
+    }
+    return Ok(());
 
     unsafe {
-        frm_acc.write_reg_u32(0x10, 1);
-        frm_acc.write_reg_u32(0x10, 1);
+//      frm_acc.write_reg_u32(0x10, 1);
+//      frm_acc.write_reg_u32(0x10, 1);
     }
+    */
 
     println!("Start");
 
@@ -163,70 +180,51 @@ fn main() -> Result<(), Box<dyn Error>> {
         // 1 frame 取り込み指示
         unsafe {
             frm_acc.write_reg_u32(0x10, 1);
+            frm_acc.write_reg_u32(0x10, 1);
+            frm_acc.write_reg_u32(0x10, 1);
+            frm_acc.write_reg_u32(0x10, 1);
+            frm_acc.write_reg_u32(0x10, 1);
         }
 
 //          println!("frame size = {}", size);
 
         std::thread::sleep(Duration::from_millis(10));
 
-        let mut lines = Vec::<Vec<u8>>::new();
-        let size = ((4 + (width * 10 / 8)) * height) as usize;
-        let mut frame = Vec::<u8>::with_capacity(size);
-        for _ in 0..height {
-            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
-                Ok(packet) => packet,
-                Err(_) => {
-                    eprintln!("Failed to receive AXI4S packet, retrying...");
-                    break;  // 内側のfor loopを抜ける
-                }
-            };
-
-            if axi4s.tdata.len() != (width * 10 / 8) as usize {
-                eprintln!("Received AXI4S packet with unexpected size: {} bytes expected : {} ", axi4s.tdata.len(), (width * 10 / 8) as usize);
-                break;  // 内側のfor loopを抜ける
-            }
-
-            lines.push(axi4s.tdata.clone());
-            frame.extend_from_slice(axi4s.tdata.as_slice());
-    //      println!("frame size = {}", frame.len());
-        }
-
-        /*
-        let mut line_count = 0;
-        let mut frame_start = true;
-        while line_count < height {
-            let axi4s = match usb.lock().unwrap().recv_axi4s_timeout(Duration::from_millis(1000)) {
-                Ok(packet) => packet,
-                Err(_) => {
-                    eprintln!("Failed to receive AXI4S packet, retrying...");
-                    break;  // 内側のfor loopを抜ける
-                }
-            };
-            if !frame_start || (axi4s.tuser & 1) != 0 {
-                // フレーム開始パケット以外は無視
+        let frame = match usb.lock().unwrap().recv_video_timeout(Duration::from_millis(1000)) {
+            Ok(frame) => frame,
+            Err(_) => {
                 continue;
             }
+        };
 
-            lines.push(axi4s.tdata.clone());
-            frame.extend_from_slice(axi4s.tdata.as_slice());
-            line_count += 1;
-            frame_start = false;
-        }
-        */
-
-        // 受信に失敗したらリトライ
-        if lines.len() != height {
+        if frame.width == 0 || frame.height == 0 {
             continue;
         }
-        let h = lines.len();
+        if frame.width % 5 != 0 {
+            eprintln!("Received frame with unexpected line size: {} bytes", frame.width);
+            continue;
+        }
 
-        let mut image = vec![vec![0u16; width as usize]; h as usize];
+        let h = frame.height as usize;
+        let line_bytes = frame.width;
+        if frame.data.len() != line_bytes * h {
+            eprintln!(
+                "Received frame with unexpected payload size: {} bytes expected : {}",
+                frame.data.len(),
+                line_bytes * h
+            );
+            continue;
+        }
+
+        let image_width = (line_bytes / 5) * 4;
+        let mut image = vec![vec![0u16; image_width]; h];
         for y in 0..h {
-            for x in 0..width/4 {
-                image[y][x*4+0] = (((lines[y][x*5+0] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 0) & 0x03) * 64;
-                image[y][x*4+1] = (((lines[y][x*5+1] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 2) & 0x03) * 64;
-                image[y][x*4+2] = (((lines[y][x*5+2] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 4) & 0x03) * 64;
-                image[y][x*4+3] = (((lines[y][x*5+3] as u16) << 2) | ((lines[y][x*5+4] as u16) >> 6) & 0x03) * 64;
+            let line = &frame.data[(y * line_bytes)..((y + 1) * line_bytes)];
+            for x in 0..(image_width / 4) {
+                image[y][x * 4 + 0] = (((line[x * 5 + 0] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 0) & 0x03) * 64;
+                image[y][x * 4 + 1] = (((line[x * 5 + 1] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 2) & 0x03) * 64;
+                image[y][x * 4 + 2] = (((line[x * 5 + 2] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 4) & 0x03) * 64;
+                image[y][x * 4 + 3] = (((line[x * 5 + 3] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 6) & 0x03) * 64;
             }
         }
         
@@ -234,7 +232,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
         let mat = opencv::core::Mat::new_rows_cols_with_data(
             h as i32,
-            width as i32,
+            image_width as i32,
             &flat_image,
         )?;
         
@@ -269,16 +267,16 @@ use jelly_pac::i2c_device::*;
 
 
 struct RtclD3xxAxi4lBus {
-    d3xx: Arc<Mutex<RtclFifo32CtlD3xx>>,
+    d3xx: Arc<Mutex<RtclVideoCaptureD3xx>>,
 }
 
 impl RtclD3xxAxi4lBus {
-    fn new(d3xx: Arc<Mutex<RtclFifo32CtlD3xx>>) -> Self {
+    fn new(d3xx: Arc<Mutex<RtclVideoCaptureD3xx>>) -> Self {
         Self { d3xx }
     }
 
     fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
-        if let Ok(mut d3xx_guard) = self.d3xx.lock() {
+        if let Ok(d3xx_guard) = self.d3xx.lock() {
             d3xx_guard.write_axi4l(addr, data, strb)?;
             Ok(())
         }
@@ -288,7 +286,7 @@ impl RtclD3xxAxi4lBus {
     }
 
     fn read_axi4l(&self, addr: u32) -> Result<u32, Box<dyn Error>> {
-        if let Ok(mut d3xx_guard) = self.d3xx.lock() {
+        if let Ok(d3xx_guard) = self.d3xx.lock() {
             d3xx_guard.read_axi4l(addr)
         } else {
             Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx")))

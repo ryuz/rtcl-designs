@@ -229,7 +229,7 @@ fn recv_video_thread(
     stop: Arc<AtomicBool>,
     stats: Arc<Mutex<VideoCaptureStats>>,
 ) {
-    const FIFO_RECV_TIMEOUT: Duration = Duration::from_millis(50);
+    const IDLE_SLEEP: Duration = Duration::from_micros(200);
     let mut assembler = FrameAssembler::new();
 
     loop {
@@ -242,12 +242,15 @@ fn recv_video_thread(
                 Ok(guard) => guard,
                 Err(_) => break,
             };
-            guard.recv_axi4s_timeout(FIFO_RECV_TIMEOUT)
+            guard.try_recv_axi4s()
         };
 
         let packet = match packet {
             Ok(packet) => packet,
-            Err(_) => continue,
+            Err(_) => {
+                thread::sleep(IDLE_SLEEP);
+                continue;
+            }
         };
 
         update_stats(&stats, |s| {

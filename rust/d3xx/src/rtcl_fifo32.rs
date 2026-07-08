@@ -118,7 +118,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
 
-    reader.set_timeout(100)?;
+    reader.set_timeout(10)?;
     reader.set_stream_pipe(0x100000)?;
 
     // 読み出し要求を発行
@@ -175,9 +175,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                 packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
                 assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
                 rx_buffer.drain(0..4);
-                if packet_size != 160 {
-                    println!("recv_thread: packet_size={} bytes", packet_size);
-                }
 //              println!("axi4s : tuser : {} packet_size: {} bytes", stream.tuser, packet_size);
                 header = false;
             }
