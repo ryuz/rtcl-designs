@@ -1,6 +1,5 @@
 use std::error::Error;
 use rtcl_d3xx::*;
-use std::io::Write;
 use std::time::Duration;
 
 use rtcl_lib::rtcl_p3s7_module_driver::*;
@@ -29,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = usb.read_axi4l(0x13*4)?;
     println!("Read data: {:04x}", data);
 
-    let usb = Arc::new(Mutex::new(usb));
+    let usb = Arc::new(usb);
     let axi4l_bus = RtclD3xxAxi4lBus::new(usb.clone());
     let usb_accessor = SharedBusAccessor::<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>::new(axi4l_bus);
 
@@ -190,7 +189,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         std::thread::sleep(Duration::from_millis(10));
 
-        let frame = match usb.lock().unwrap().recv_video_timeout(Duration::from_millis(1000)) {
+        let frame = match usb.recv_video_timeout(Duration::from_millis(1000)) {
             Ok(frame) => frame,
             Err(_) => {
                 continue;
@@ -259,7 +258,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use jelly_mem_access::*;
 use jelly_mem_access::bus_accessor::LittleEndian;
 use jelly_pac::i2c::*;
@@ -267,30 +266,20 @@ use jelly_pac::i2c_device::*;
 
 
 struct RtclD3xxAxi4lBus {
-    d3xx: Arc<Mutex<RtclVideoCaptureD3xx>>,
+    d3xx: Arc<RtclVideoCaptureD3xx>,
 }
 
 impl RtclD3xxAxi4lBus {
-    fn new(d3xx: Arc<Mutex<RtclVideoCaptureD3xx>>) -> Self {
+    fn new(d3xx: Arc<RtclVideoCaptureD3xx>) -> Self {
         Self { d3xx }
     }
 
     fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
-        if let Ok(d3xx_guard) = self.d3xx.lock() {
-            d3xx_guard.write_axi4l(addr, data, strb)?;
-            Ok(())
-        }
-        else {
-            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx")))
-        }
+        self.d3xx.write_axi4l(addr, data, strb)
     }
 
     fn read_axi4l(&self, addr: u32) -> Result<u32, Box<dyn Error>> {
-        if let Ok(d3xx_guard) = self.d3xx.lock() {
-            d3xx_guard.read_axi4l(addr)
-        } else {
-            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to lock RtclD3xx")))
-        }
+        self.d3xx.read_axi4l(addr)
     }
 }
 

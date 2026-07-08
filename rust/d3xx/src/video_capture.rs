@@ -5,7 +5,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use crate::rtcl_fifo32::{Axi4Stream, RtclFifo32CtlD3xx};
+use crate::rtcl_fifo32::{Axi4Stream, RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclFifo32CtlD3xx};
 
 #[derive(Debug, Clone)]
 pub struct VideoFrame {
@@ -91,7 +91,7 @@ struct FrameQueueState {
 }
 
 pub struct RtclVideoCaptureD3xx {
-    fifo: Arc<Mutex<RtclFifo32CtlD3xx>>,
+    axi4l: RtclAxi4lD3xx,
     stop: Arc<AtomicBool>,
     frame_queue: Arc<(Mutex<FrameQueueState>, Condvar)>,
     thread_handle: Option<thread::JoinHandle<()>>,
@@ -100,13 +100,16 @@ pub struct RtclVideoCaptureD3xx {
 
 impl RtclVideoCaptureD3xx {
     pub fn new(dev_index: usize, max_buffered_frames: usize) -> Result<Self, Box<dyn Error>> {
-        let fifo = RtclFifo32CtlD3xx::new(dev_index)?;
-        Self::with_fifo(fifo, max_buffered_frames)
+        let (axi4l, axi4s_rx, _axi4s_tx) = RtclFifo32CtlD3xx::new(dev_index)?;
+        Self::with_handles(axi4l, axi4s_rx, max_buffered_frames)
     }
 
-    pub fn with_fifo(fifo: RtclFifo32CtlD3xx, max_buffered_frames: usize) -> Result<Self, Box<dyn Error>> {
+    pub fn with_handles(
+        axi4l: RtclAxi4lD3xx,
+        axi4s_rx: RtclAxi4sRxD3xx,
+        max_buffered_frames: usize,
+    ) -> Result<Self, Box<dyn Error>> {
         let max_frames = max_buffered_frames.max(1);
-        let fifo = Arc::new(Mutex::new(fifo));
         let stats = Arc::new(Mutex::new(VideoCaptureStats::default()));
         let stop = Arc::new(AtomicBool::new(false));
         let frame_queue = Arc::new((
@@ -117,16 +120,15 @@ impl RtclVideoCaptureD3xx {
             Condvar::new(),
         ));
 
-        let thread_fifo = Arc::clone(&fifo);
         let thread_stats = Arc::clone(&stats);
         let thread_stop = Arc::clone(&stop);
         let thread_queue = Arc::clone(&frame_queue);
         let thread_handle = thread::spawn(move || {
-            recv_video_thread(thread_fifo, thread_queue, thread_stop, thread_stats);
+            recv_video_thread(axi4s_rx, thread_queue, thread_stop, thread_stats);
         });
 
         Ok(Self {
-            fifo,
+            axi4l,
             stop,
             frame_queue,
             thread_handle: Some(thread_handle),
@@ -136,19 +138,11 @@ impl RtclVideoCaptureD3xx {
 
     // AXI4L APIs are intentionally exposed as pass-through.
     pub fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
-        let mut guard = self
-            .fifo
-            .lock()
-            .map_err(|_| "failed to lock fifo for write_axi4l")?;
-        guard.write_axi4l(addr, data, strb)
+        self.axi4l.write_axi4l(addr, data, strb)
     }
 
     pub fn read_axi4l(&self, addr: u32) -> Result<u32, Box<dyn Error>> {
-        let mut guard = self
-            .fifo
-            .lock()
-            .map_err(|_| "failed to lock fifo for read_axi4l")?;
-        guard.read_axi4l(addr)
+        self.axi4l.read_axi4l(addr)
     }
 
     pub fn recv_video(&self) -> Result<VideoFrame, Box<dyn Error>> {
@@ -224,7 +218,7 @@ impl RtclVideoCaptureD3xx {
 }
 
 fn recv_video_thread(
-    fifo: Arc<Mutex<RtclFifo32CtlD3xx>>,
+    axi4s_rx: RtclAxi4sRxD3xx,
     frame_queue: Arc<(Mutex<FrameQueueState>, Condvar)>,
     stop: Arc<AtomicBool>,
     stats: Arc<Mutex<VideoCaptureStats>>,
@@ -237,17 +231,9 @@ fn recv_video_thread(
             break;
         }
 
-        let packet = {
-            let mut guard = match fifo.lock() {
-                Ok(guard) => guard,
-                Err(_) => break,
-            };
-            guard.try_recv_axi4s()
-        };
-
-        let packet = match packet {
-            Ok(packet) => packet,
-            Err(_) => {
+        let packet = match axi4s_rx.try_recv_axi4s_opt() {
+            Some(packet) => packet,
+            None => {
                 thread::sleep(IDLE_SLEEP);
                 continue;
             }

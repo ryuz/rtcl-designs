@@ -10,20 +10,29 @@ const OPCODE_AXI4L_READ: u8 = 0x03;
 const OPCODE_AXI4S_TRANS: u8 = 0x10;
 
 
-pub struct RtclFifo32CtlD3xx {
+pub struct RtclFifo32CtlD3xx;
+
+pub struct RtclAxi4lD3xx {
     axi4l_writer: D3xxWriter,
     axi4l_reader: D3xxReader,
+}
+
+pub struct RtclAxi4sRxD3xx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
     rx_stream: mpsc::Receiver<Axi4Stream>,
     tx_stop: mpsc::Sender<()>,
 }
 
+pub struct RtclAxi4sTxD3xx {
+    axi4s_writer: D3xxWriter,
+}
+
 impl RtclFifo32CtlD3xx {
-    pub fn new(dev_index: usize) -> Result<Self, Box<dyn Error>> {
+    pub fn new(dev_index: usize) -> Result<(RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx), Box<dyn Error>> {
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
-        let [axi4l_writer, _axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
+        let [axi4l_writer, mut axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
             Ok(writers) => writers,
             Err(_) => panic!("Expected 2 writers"),
         };
@@ -31,6 +40,9 @@ impl RtclFifo32CtlD3xx {
             Ok(readers) => readers,
             Err(_) => panic!("Expected 2 readers"),
         };
+
+        axi4s_writer.set_timeout(10)?;
+        axi4s_writer.set_stream_pipe(0x100000)?;
 
         let (tx_stream, rx_stream) = mpsc::channel::<Axi4Stream>();
         let (tx_stop, rx_stop) = mpsc::channel::<()>();
@@ -40,17 +52,26 @@ impl RtclFifo32CtlD3xx {
                 eprintln!("recv_axi4s_thread error: {}", err);
             }
         });
-        
-        Ok(Self {
+
+        let axi4l = RtclAxi4lD3xx {
             axi4l_writer: axi4l_writer,
             axi4l_reader: axi4l_reader,
+        };
+        let axi4s_rx = RtclAxi4sRxD3xx {
             thread_handle: Some(thread_handle),
             rx_stream: rx_stream,
             tx_stop: tx_stop,
-        })
-    }
+        };
+        let axi4s_tx = RtclAxi4sTxD3xx {
+            axi4s_writer: axi4s_writer,
+        };
 
-    pub fn write_axi4l(&mut self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
+        Ok((axi4l, axi4s_rx, axi4s_tx))
+    }
+}
+
+impl RtclAxi4lD3xx {
+    pub fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
         // コマンド送信
         let mut command = Vec::<u8>::with_capacity(4*3);
         command.push(OPCODE_AXI4L_WRITE);
@@ -68,7 +89,7 @@ impl RtclFifo32CtlD3xx {
         Ok(())
     }
 
-    pub fn read_axi4l(&mut self, addr: u32) -> Result<u32, Box<dyn Error>> {
+    pub fn read_axi4l(&self, addr: u32) -> Result<u32, Box<dyn Error>> {
         // コマンド送信
         let mut command = Vec::<u8>::with_capacity(4*3);
         command.push(OPCODE_AXI4L_READ);
@@ -84,21 +105,48 @@ impl RtclFifo32CtlD3xx {
         assert!(u16::from_le_bytes([response[2], response[3]]) == 4u16);
         Ok(u32::from_le_bytes([response[4], response[5], response[6], response[7]]))
     }
+}
 
-    pub fn recv_axi4s(&mut self) -> Result<Axi4Stream, Box<dyn Error>> {
+impl RtclAxi4sRxD3xx {
+    pub fn recv_axi4s(&self) -> Result<Axi4Stream, Box<dyn Error>> {
         self.rx_stream.recv().map_err(|e| e.into())
     }
 
-    pub fn recv_axi4s_timeout(&mut self, timeout: Duration) -> Result<Axi4Stream, Box<dyn Error>> {
+    pub fn recv_axi4s_timeout(&self, timeout: Duration) -> Result<Axi4Stream, Box<dyn Error>> {
         self.rx_stream.recv_timeout(timeout).map_err(|e| e.into())
     }
 
 
-    pub fn try_recv_axi4s(&mut self) -> Result<Axi4Stream, Box<dyn Error>> {
+    pub fn try_recv_axi4s(&self) -> Result<Axi4Stream, Box<dyn Error>> {
         if let Ok(packet) = self.rx_stream.try_recv() {
             return Ok(packet);
         }
         Err("No AXI4S packet available".into())
+    }
+    
+    pub fn try_recv_axi4s_opt(&self) -> Option<Axi4Stream> {
+        self.rx_stream.try_recv().ok()
+    }
+}
+
+impl RtclAxi4sTxD3xx {
+    pub fn send_axi4s(&self, stream: &Axi4Stream) -> Result<(), Box<dyn Error>> {
+        if stream.tdata.len() > u16::MAX as usize {
+            return Err("AXI4S payload too large (must be <= 65535 bytes)".into());
+        }
+
+        if (stream.tdata.len() & 0x3) != 0 {
+            return Err("AXI4S payload size must be 4-byte aligned".into());
+        }
+
+        let mut packet = Vec::<u8>::with_capacity(4 + stream.tdata.len());
+        packet.push(OPCODE_AXI4S_TRANS);
+        packet.push((stream.tuser & 0x7f) | 0x80);
+        packet.extend_from_slice(&(stream.tdata.len() as u16).to_le_bytes());
+        packet.extend_from_slice(&stream.tdata);
+
+        self.axi4s_writer.write(&packet)?;
+        Ok(())
     }
 }
 
@@ -135,8 +183,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut rx_buffer = Vec::<u8>::new();
     let mut packet_size = 0;
     let mut packet_last = false;
-
-    let mut line_count = 0;
 
     let mut stop = false;
     loop {
@@ -186,12 +232,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 
                     // 受信データを送信
                     if packet_last {
-                        if stream.tuser != 0 {
-//                          println!("recv_thread: line_count={}", line_count);
-                            line_count = 0;
-                        }
-//                      println!("recv_thread: send stream {}  tuser={} size={} bytes", line_count, stream.tuser, stream.tdata.len());
-                        line_count += 1;
                         tx_stream.send(stream.clone())?;
                         stream.tdata.clear();
                     }
@@ -209,9 +249,8 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 }
 
 
-impl Drop for RtclFifo32CtlD3xx {
+impl Drop for RtclAxi4sRxD3xx {
     fn drop(&mut self) {
-        println!("RtclFifo32D3xx: drop");
         let _ = self.tx_stop.send(());  // 受信スレッドに停止を通知
         if let Some(handle) = self.thread_handle.take() {
             let _ = handle.join();
