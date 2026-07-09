@@ -72,11 +72,24 @@ module tb_main
             );
 
 
+    logic   error;
+    fifo32_cmd_axi4s_checker
+            #(
+                .MIN_PACKET_SIZE    (4              ),
+                .MAX_PACKET_SIZE    (64*4           )
+            )
+        u_fifo32_cmd_axi4s_checker
+            (
+                .mon_axi4s          (m_axi4s.mon    ),
+
+                .error              (error          )
+            );
+
     // -------------------------
     //  Simulation
     // -------------------------
 
-    assign max_len     = 64     ;
+    assign max_len     = 64-1   ;
     assign limit_len   = 128    ;
     assign timeout     = 100    ;
 
@@ -117,7 +130,7 @@ module tb_main
     int  fp = 0;
     initial begin
         fp = $fopen("out_log.txt", "w");
-        #10000000;
+        #20000000;
         $fclose(fp);
         $finish;
     end

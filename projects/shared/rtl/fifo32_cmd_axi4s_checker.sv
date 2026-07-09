@@ -34,21 +34,25 @@ module fifo32_cmd_axi4s_checker
                 if ( header ) begin
                     // check opcode
                     if ( mon_axi4s.tdata[7:0] != 8'h10 ) begin
+                        $display("opcode error");
                         error <= 1'b1;
                     end
                     // check packet size
                     if ( int'(mon_axi4s.tdata[31:16]) > MAX_PACKET_SIZE ) begin
+                        $display("packet size over MAX_PACKET_SIZE %d > %d", mon_axi4s.tdata[31:16], MAX_PACKET_SIZE);
                         error <= 1'b1;
                     end
                     if ( int'(mon_axi4s.tdata[31:16]) < MIN_PACKET_SIZE ) begin
+                        $display("packet size under MIN_PACKET_SIZE");
                         error <= 1'b1;
                     end
                     if ( mon_axi4s.tdata[17:16] != 2'b00 ) begin
+                        $display("reserved bit error");
                         error <= 1'b1;
                     end
 
                     if ( mon_axi4s.tdata[31:16] > 0 ) begin
-                        count  <= mon_axi4s.tdata[15:0] - 4;
+                        count  <= mon_axi4s.tdata[31:16] - 4;
                         header <= 1'b0;
                     end
                 end
