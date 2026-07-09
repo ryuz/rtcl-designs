@@ -23,6 +23,7 @@ VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_arbiter.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4s_tx.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/gowin_dphy_lane2_to_fifo32.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/frame_controller.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4s_checker.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_reset_sync.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_fifo.sv

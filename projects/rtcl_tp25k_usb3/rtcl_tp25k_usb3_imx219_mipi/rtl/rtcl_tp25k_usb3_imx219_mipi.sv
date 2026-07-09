@@ -757,10 +757,23 @@ module rtcl_tp25k_usb3_imx219_mipi
         end
     end
 
+    logic   pkt_error;
+    fifo32_cmd_axi4s_checker
+            #(
+                .MIN_PACKET_SIZE    (4                      ),
+                .MAX_PACKET_SIZE    (4096                   )
+            )
+        u_fifo32_cmd_axi4s_checker
+            (
+                .mon_axi4s          (axi4s_ft601_tx[1].mon  ),
+
+                .error              (pkt_error              )
+            );
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = frame_overflow  ;
+    assign led[2] = pkt_error;
+//  assign led[2] = frame_overflow  ;
     assign led[3] = dphy_overflow   ;
 
 
