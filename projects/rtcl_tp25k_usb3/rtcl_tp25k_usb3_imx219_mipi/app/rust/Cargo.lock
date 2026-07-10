@@ -351,14 +351,6 @@ name = "rtcl-d3xx"
 version = "0.1.0"
 
 [[package]]
-name = "rtcl-lib"
-version = "0.1.0"
-dependencies = [
- "jelly-lib",
- "nix",
-]
-
-[[package]]
 name = "rtcl_tp25k_usb3_imx219_mipi"
 version = "0.1.0"
 dependencies = [
@@ -368,7 +360,6 @@ dependencies = [
  "opencv",
  "rand",
  "rtcl-d3xx",
- "rtcl-lib",
 ]
 
 [[package]]

@@ -22,7 +22,7 @@
 //! ```no_run
 //! # use rtcl_p3s7_module_driver::RtclP3s7ModuleDriver;
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! #[cfg(feature = "std")]
+//! #[cfg(all(feature = "std", target_os = "linux"))]
 //! let mut driver = RtclP3s7ModuleDriver::new_with_linux("/dev/i2c-1")?;
 //! 
 //! // Initialize the camera
@@ -41,7 +41,7 @@
 
 use jelly_lib::i2c_hal::I2cHal;
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", target_os = "linux"))]
 use jelly_lib::linux_i2c::LinuxI2c;
 
 // Spartan-7 FPGA register addresses
@@ -246,7 +246,7 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
     /// # Errors
     /// 
     /// Returns an error if the I2C device cannot be opened or configured
-    #[cfg(feature = "std")]
+    #[cfg(all(feature = "std", target_os = "linux"))]
     pub fn new_with_linux(
         devname: &str,
     ) -> Result<RtclP3s7ModuleDriver<LinuxI2c>, Box<dyn std::error::Error>> {
