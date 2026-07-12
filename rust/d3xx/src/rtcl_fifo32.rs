@@ -3,6 +3,8 @@ use std::sync::mpsc;
 use std::time::Duration;
 
 use crate::d3xx_device::*;
+#[cfg(target_os = "linux")]
+use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
 
 
 const OPCODE_AXI4L_WRITE: u8 = 0x02;
@@ -29,6 +31,14 @@ pub struct RtclAxi4sTxD3xx {
 
 impl RtclFifo32CtlD3xx {
     pub fn new(dev_index: usize) -> Result<(RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx), Box<dyn Error>> {
+        #[cfg(target_os = "linux")]
+        {
+            let mut transfer_conf = FT_TRANSFER_CONF::default();
+//            transfer_conf.pipe[0].dwURBBufferSize = 1024;
+//            transfer_conf.pipe[1].dwURBBufferSize = 1024;
+//          D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+//          D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+        }
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
@@ -166,8 +176,8 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
 
-//    reader.set_timeout(10)?;
-//    reader.set_stream_pipe(0x100000)?;
+    reader.set_timeout(10)?;
+//  reader.set_stream_pipe(0x100000)?;
 
     // 読み出し要求を発行
     for i in 0..OVERLAPS {

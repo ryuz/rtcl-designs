@@ -181,6 +181,17 @@ impl D3xxDevice {
         }
         Ok((writers, readers))
     }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub fn set_transfer_params_for_fifo(
+        fifo_id: usize,
+        transfer_conf: &mut FT_TRANSFER_CONF,
+    ) -> D3xxResult<()> {
+        transfer_conf.wStructSize = std::mem::size_of::<FT_TRANSFER_CONF>() as WORD;
+
+        let status = unsafe { FT_SetTransferParams(transfer_conf, fifo_id as DWORD) };
+        status_to_result(status)
+    }
 }
 
 impl Drop for D3xxDevice {

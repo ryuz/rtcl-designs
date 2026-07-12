@@ -7,6 +7,7 @@ TOP_MODULE = tb_top
 
 SIM_LIB_DIRS += ..
 SIM_LIB_DIRS += ../../stub
+SIM_LIB_DIRS += ../../../rtl
 SIM_LIB_DIRS += ../../../../../shared/rtl
 
 FLAGS  = --binary -j 0
@@ -17,11 +18,10 @@ FLAGS += $(addprefix -y ,$(SIM_LIB_DIRS))
 FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
-SRCS += ../../../rtl/rtcl_tp25k_usb3_imx219_mipi.sv
+SRCS += ../../../rtl/rtcl_tp25k_usb3_morphology_filter.sv
 SRCS += ../../stub/IOBUF.sv
 SRCS += ../../stub/gowin_pll.v
 SRCS += ../../stub/gowin_pll_ft601.v
-SRCS += ../../stub/gowin_mipi_dphy.v
 
 all: build run
 
