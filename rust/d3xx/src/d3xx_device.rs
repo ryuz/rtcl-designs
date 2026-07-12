@@ -199,8 +199,8 @@ impl D3xxWriter {
         Ok(())
     }
 
-    pub fn set_stream_pipe(&mut self, stream_size: u32) -> D3xxResult<()> {
-        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size) };
+    pub fn set_stream_pipe(&mut self, stream_size: usize) -> D3xxResult<()> {
+        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size as u32) };
         status_to_result(status)?;
         Ok(())
     }
@@ -333,8 +333,8 @@ impl D3xxReader {
         Ok(())
     }
 
-    pub fn set_stream_pipe(&mut self, stream_size: u32) -> D3xxResult<()> {
-        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size) };
+    pub fn set_stream_pipe(&mut self, stream_size: usize) -> D3xxResult<()> {
+        let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size as u32) };
 //      let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 1, 0, stream_size) };
         if status != FT_OK {
             return Err(D3xxError::from_status(status));

@@ -16,6 +16,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Open the first device found.
     let (mut usb_txs, mut usb_rxs) = D3xxDevice::new(0, CHHANNELS)?;
 
+    usb_rxs[0].set_stream_pipe(0x100000)?;
+    
     read_lsfr_test(&mut usb_rxs[0])?; 
     write_lsfr_test(&mut usb_txs[0])?;
 
