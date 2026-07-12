@@ -277,12 +277,12 @@ module rtcl_tp25k_usb3_morphology_filter
                 .DATA_BITS          (32                 ),
                 .CORE_ID            (32'h527a_0001      ),
                 .CORE_VERSION       (32'h0003_0001      ),
-                .INIT_CONTROL0      ('0                 ),  // POWER_RN
-                .INIT_CONTROL1      ('0                 ),  // CAM_EN
+                .INIT_CONTROL0      (128/32             ),  // width
+                .INIT_CONTROL1      (128                ),  // height
                 .INIT_CONTROL2      ('0                 ),
                 .INIT_CONTROL3      (512                ),  // max_len
-                .INIT_CONTROL4      (1024*4             ),  // limit_len
-                .INIT_CONTROL5      (10000              ),  // timeout
+                .INIT_CONTROL4      (0                  ),  // limit_len
+                .INIT_CONTROL5      (0                  ),  // timeout
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -328,10 +328,11 @@ module rtcl_tp25k_usb3_morphology_filter
             );
     
     fifo32_cmd_axi4s_rx
-        (
-            .s_axi4s        (axi4s_ft601_rx[1].s),
-            .m_axi4s        (axi4s_stream_rx.m  )
-        );
+        u_fifo32_cmd_axi4s_rx
+            (
+                .s_axi4s        (axi4s_ft601_rx[1].s),
+                .m_axi4s        (axi4s_stream_rx.m  )
+            );
 
     jelly3_axi4s_if
             #(
@@ -355,8 +356,8 @@ module rtcl_tp25k_usb3_morphology_filter
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len        (control3[13:0]     ),
-                .limit_len      (control4[13:0]     ),
+                .max_len        (control3[10:0]     ),
+                .limit_len      (control4[10:0]     ),
                 .timeout        (control5[15:0]     ),
 
                 .s_axi4s        (axi4s_stream_tx.s  ),
