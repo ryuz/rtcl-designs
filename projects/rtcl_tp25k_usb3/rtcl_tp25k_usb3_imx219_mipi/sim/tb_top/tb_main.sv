@@ -41,8 +41,8 @@ module tb_main
     logic   [3:0]   led             ;
     logic   [7:0]   pmod            ;
 
-    rtcl_tp25k_usb3_imx219
-        u_rtcl_tp25k_usb3_imx219
+    rtcl_tp25k_usb3_imx219_mipi
+        u_rtcl_tp25k_usb3_imx219_mipi
             (
                 .in_clk50           (clk50          ),
                 .ft601_reset_n      (ft601_reset_n  ),
@@ -71,8 +71,8 @@ module tb_main
                 .pmod               (pmod           )
             );
 
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_gowin_pll.clkout0  = clk100    ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.rx_clk_o = dphy_clk  ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_gowin_pll.clkout0  = clk100    ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.rx_clk_o = dphy_clk  ;
 
 
     // -------------------------
@@ -429,14 +429,14 @@ module tb_main
         end
     end
 
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d0ln_hsrxd     = d0ln_hsrxd          ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d1ln_hsrxd     = d1ln_hsrxd          ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d0ln_hsrxd_vld = d0ln_hsrxd_vld      ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.d1ln_hsrxd_vld = d1ln_hsrxd_vld      ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx0_n     = di_lprx0_n          ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx0_p     = di_lprx0_p          ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx1_n     = di_lprx1_n          ;
-    always_comb force u_rtcl_tp25k_usb3_imx219.u_mipi_dphy.di_lprx1_p     = di_lprx1_p          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.d0ln_hsrxd     = d0ln_hsrxd          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.d1ln_hsrxd     = d1ln_hsrxd          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.d0ln_hsrxd_vld = d0ln_hsrxd_vld      ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.d1ln_hsrxd_vld = d1ln_hsrxd_vld      ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.di_lprx0_n     = di_lprx0_n          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.di_lprx0_p     = di_lprx0_p          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.di_lprx1_n     = di_lprx1_n          ;
+    always_comb force u_rtcl_tp25k_usb3_imx219_mipi.u_mipi_dphy.di_lprx1_p     = di_lprx1_p          ;
 
 endmodule
 

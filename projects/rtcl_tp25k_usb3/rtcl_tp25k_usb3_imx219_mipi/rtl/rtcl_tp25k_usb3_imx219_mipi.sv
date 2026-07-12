@@ -670,8 +670,8 @@ module rtcl_tp25k_usb3_imx219_mipi
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len        (control3[13:0]     ),
-                .limit_len      (control4[13:0]     ),
+                .max_len        (control3[14:0]     ),
+                .limit_len      (control4[14:0]     ),
                 .timeout        (control5[15:0]     ),
 
                 .s_axi4s        (axi4s_frame.s      ),
