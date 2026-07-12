@@ -4,7 +4,7 @@
 DEVICE_PART_NUMBER=GW5A-LV25MG121NC1/I0
 DEVICE_NAME=GW5A-25A
 
-TOP_MODULE = rtcl_tp25k_usb3_imx219_mipi
+TOP_MODULE = rtcl_tp25k_usb3_morphology_filter
 OUTPUT_BASE_NAME = $(TOP_MODULE)
 
 FS_FILE = impl/pnr/$(OUTPUT_BASE_NAME).fs
@@ -15,11 +15,13 @@ SHARED_DIR = ../../../../shared
 CONSTRAIN_DIR = ../../constrain
 
 # Verilog Source Files
-VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_imx219_mipi.sv
+VLOG_SOURCES  = $(PRJ_DIR)/rtl/rtcl_tp25k_usb3_morphology_filter.sv
+VLOG_SOURCES += $(PRJ_DIR)/rtl/image_processing.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode_transceiver.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4l.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_arbiter.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4s_rx.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4s_tx.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/gowin_dphy_lane2_to_fifo32.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/frame_controller.sv
@@ -35,28 +37,46 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_pulse_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_data_async.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_histry_buffer_mem.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_histry_buffer_mem_sdp.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_delay.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_data_delay.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_skid_buffer.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_mat_if.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_axi4s_mat.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_axi4s_to_mat.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_mat_to_axi4s.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_mat_delay.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_mat_buf_blk.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_mat_buf_row.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_mat_buf_col.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_img_morphology_filter.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_img_morphology_filter_core.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/image/jelly3_img_morphology_filter_calc.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_addr_decoder.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_gray.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_single.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_shift_register.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/misc/jelly3_axi4s_debug_monitor.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_i2c.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/peripheral/jelly3_system_control.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/peripheral/jelly_i2c_core.v
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/library/jelly_param_update_master.v
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v1/library/jelly_param_update_slave.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/pll_init.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_mod.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601_mod.v
-VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_mipi_dphy/gowin_mipi_dphy.v
 
 # SDC File
-SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_imx219_mipi.sdc
+SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_morphology_filter.sdc
 
 # CST File
-CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_imx219_mipi.cst
+CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_morphology_filter.cst
 
 # for tcl script
 export DEVICE_PART_NUMBER
