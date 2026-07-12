@@ -32,14 +32,14 @@ pub struct RtclAxi4sTxD3xx {
 impl RtclFifo32CtlD3xx {
     pub fn new(dev_index: usize) -> Result<(RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx), Box<dyn Error>> {
         #[cfg(target_os = "linux")]
-        let (dev_writers, dev_readers) = {
+        {
             let mut transfer_conf = FT_TRANSFER_CONF::default();
             transfer_conf.pipe[0].dwURBBufferSize = 1024;
             transfer_conf.pipe[1].dwURBBufferSize = 1024;
-            D3xxDevice::new_with_transfer_params(dev_index, 2, transfer_conf)?
-        };
+            D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+            D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+        }
 
-        #[cfg(not(target_os = "linux"))]
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
         let [axi4l_writer, mut axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
