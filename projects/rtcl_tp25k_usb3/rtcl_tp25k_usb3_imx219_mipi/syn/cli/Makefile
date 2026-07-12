@@ -34,6 +34,7 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_pulse_async.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_data_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_addr_decoder.sv

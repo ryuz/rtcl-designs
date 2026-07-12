@@ -150,15 +150,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     return Ok(());
     */
 
+    // frame 取り込み開始
+    unsafe {
+        frm_acc.write_reg_u32(0x10, 1);
+    }
+
     loop {
-        // 1 frame 取り込み指示
-        unsafe {
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-        }
 
         std::thread::sleep(Duration::from_millis(10));
 
@@ -217,6 +214,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         if (key & 0xff) == 27 { // ESC
             break;
         }
+    }
+
+    // frame 取り込み停止
+    unsafe {
+        frm_acc.write_reg_u32(0x10, 0);
     }
 
     println!("start stop");
