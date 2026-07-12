@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::{self, Write};
 use std::time::Instant;
 use rtcl_d3xx::*;
 
@@ -19,6 +20,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     read_lsfr_test(&mut usb_rxs[0])?; 
     write_lsfr_test(&mut usb_txs[0])?;
 
+    // コンソールからキー入力待ちをする(ここまででエラーLEDをチェックしておく)
+    print!("Press Enter to start burst tests...");
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
     burst_read_test(&mut usb_rxs[0])?;
     burst_write_test(&mut usb_txs[0])?;
 
@@ -28,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn read_lsfr_test(reader: &mut D3xxReader) -> Result<(), Box<dyn Error>> {
     // 受信テスト
-    const PACKET_SIZE: usize = 4*128;
+    const PACKET_SIZE: usize = 4*1024;
     const ITERETIONS: usize = 1000;
 
     println!("\n=================================");
@@ -63,7 +70,7 @@ fn read_lsfr_test(reader: &mut D3xxReader) -> Result<(), Box<dyn Error>> {
 
 fn write_lsfr_test(writer: &mut D3xxWriter) -> Result<(), Box<dyn Error>> {
     // 送信テスト
-    const PACKET_SIZE: usize = 4*128;
+    const PACKET_SIZE: usize = 4*1024;
     const ITERETIONS: usize = 1000;
     println!("\n=================================");
     println!("Sending {} packets of size {} bytes...", ITERETIONS, PACKET_SIZE);
