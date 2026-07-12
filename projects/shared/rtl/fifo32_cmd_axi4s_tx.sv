@@ -271,23 +271,25 @@ module fifo32_cmd_axi4s_tx
             output_enable <= 1'b0   ;
         end
         else if ( m_axi4s.aclken ) begin
-            if ( output_enable ) begin
-                if ( !cmd_rd_valid ) begin
-                    if ( timeout > 0 ) begin
-                        output_enable <= 1'b0   ;
-                        timer_counter <= '0     ;
+            if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
+                if ( output_enable ) begin
+                    if ( !cmd_rd_valid ) begin
+                        if ( timeout > 0 ) begin
+                            output_enable <= 1'b0   ;
+                            timer_counter <= '0     ;
+                        end
                     end
                 end
-            end
-            else begin
-                if ( buf_rd_size >= size_t'(limit_len) ) begin
-                    output_enable <= 1'b1   ;
-                end
-                else if ( timer_counter >= timeout ) begin
-                    output_enable <= 1'b1   ;
-                end
-                else if ( cmd_rd_valid ) begin
-                    timer_counter <= timer_counter + 1;
+                else begin
+                    if ( buf_rd_size >= size_t'(limit_len) ) begin
+                        output_enable <= 1'b1   ;
+                    end
+                    else if ( timer_counter >= timeout ) begin
+                        output_enable <= 1'b1   ;
+                    end
+                    else if ( cmd_rd_valid ) begin
+                        timer_counter <= timer_counter + 1;
+                    end
                 end
             end
         end
