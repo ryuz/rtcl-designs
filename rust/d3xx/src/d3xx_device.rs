@@ -181,6 +181,31 @@ impl D3xxDevice {
         }
         Ok((writers, readers))
     }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub fn new_with_transfer_params(
+        dev_index: usize,
+        channels: usize,
+        mut transfer_conf: FT_TRANSFER_CONF,
+    ) -> D3xxResult<(Vec<D3xxWriter>, Vec<D3xxReader>)> {
+        transfer_conf.wStructSize = std::mem::size_of::<FT_TRANSFER_CONF>() as WORD;
+
+        for fifo_id in 0..channels {
+            let status = unsafe { FT_SetTransferParams(&mut transfer_conf, fifo_id as DWORD) };
+            status_to_result(status)?;
+        }
+
+        Self::new(dev_index, channels)
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn new_with_transfer_params(
+        _dev_index: usize,
+        _channels: usize,
+        _transfer_conf: (),
+    ) -> D3xxResult<(Vec<D3xxWriter>, Vec<D3xxReader>)> {
+        Err(D3xxError::NotSupported)
+    }
 }
 
 impl Drop for D3xxDevice {
