@@ -34,10 +34,10 @@ impl RtclFifo32CtlD3xx {
         #[cfg(target_os = "linux")]
         {
             let mut transfer_conf = FT_TRANSFER_CONF::default();
-            transfer_conf.pipe[0].dwURBBufferSize = 1024;
-            transfer_conf.pipe[1].dwURBBufferSize = 1024;
-            D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
-            D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+//            transfer_conf.pipe[0].dwURBBufferSize = 1024;
+//            transfer_conf.pipe[1].dwURBBufferSize = 1024;
+//          D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+//          D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
         }
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
@@ -170,8 +170,7 @@ pub struct Axi4Stream {
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
     const OVERLAPS : usize = 16;
-//  const READ_UNIT : usize = 0x10000;
-    const READ_UNIT : usize = 128/8 + 4;
+    const READ_UNIT : usize = 0x10000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
