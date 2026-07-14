@@ -432,12 +432,12 @@ module rtcl_tp25k_usb3_morphology_filter
     
     assign pmod[0] = ft601_rxf_n;
     assign pmod[1] = ft601_wr_n;
-    assign pmod[2] = 0;
-    assign pmod[3] = 0;
+    assign pmod[2] = axi4s_ft601_rx[1].tready;
+    assign pmod[3] = axi4s_ft601_rx[1].tvalid;
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
-    assign pmod[6] = ft601_txe_n;
-    assign pmod[7] = ft601_data_i[9];
+    assign pmod[6] = ft601_data_i[9];
+    assign pmod[7] = ft601_data_i[13];
 
     /*
     assign pmod[0] = dphy_byte_ready;
