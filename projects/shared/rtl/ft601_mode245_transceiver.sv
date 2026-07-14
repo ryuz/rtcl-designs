@@ -9,6 +9,9 @@
 `default_nettype none
 
 module ft601_mode245_transceiver
+        #(
+            parameter bit   USE_TX_STRB = 0
+        )
         (
             input   var logic           reset               ,
             input   var logic           clk                 ,
@@ -151,7 +154,7 @@ module ft601_mode245_transceiver
                             reg_ft601_wr_n   <= 1'b0        ;
                             reg_ft601_be_t   <= '0          ;
                             reg_ft601_data_t <= '0          ;
-                            reg_ft601_be_o   <= s_fifo_strb ;
+                            reg_ft601_be_o   <= USE_TX_STRB ? s_fifo_strb : 4'b1111;
                             reg_ft601_data_o <= s_fifo_data ;
                             reg_ft601_buf    <= 1'b1        ;
                         end

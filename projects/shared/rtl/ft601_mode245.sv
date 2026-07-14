@@ -13,7 +13,8 @@ module ft601_mode245
         #(
             parameter bit   ASYNC            = 1,
             parameter int   RX_FIFO_PTR_BITS = 8,
-            parameter int   TX_FIFO_PTR_BITS = 8
+            parameter int   TX_FIFO_PTR_BITS = 8,
+            parameter bit   USE_TX_STRB      = 0
         )
         (
             input   var logic           ft601_reset         ,
@@ -45,6 +46,9 @@ module ft601_mode245
     logic           ft601_rx_fifo_valid      ;
     
     ft601_mode245_transceiver
+            #(
+                .USE_TX_STRB        (USE_TX_STRB                )
+            )
         u_ft601_mode245_transceiver
             (
                 .reset              (ft601_reset                ),
