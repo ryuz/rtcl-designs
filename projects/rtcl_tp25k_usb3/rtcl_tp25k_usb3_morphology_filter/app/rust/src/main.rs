@@ -56,7 +56,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     std::thread::sleep(std::time::Duration::from_millis(100));
-
     for y in 0..height {
         let rx_stream = axi4s_rx.recv_axi4s(width / 8)?;
         if rx_stream.tdata.len() != width / 8 {
