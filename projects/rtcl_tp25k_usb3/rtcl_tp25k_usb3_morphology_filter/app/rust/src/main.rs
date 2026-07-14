@@ -1,4 +1,9 @@
 use std::error::Error;
+use std::thread;
+use std::sync::Arc;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::time::Instant;
 use rtcl_d3xx::*;
 
 const BASE_SYSCTL : usize = 0x0000_0000;
@@ -45,25 +50,69 @@ fn main() -> Result<(), Box<dyn Error>> {
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b1111, 0xf)?;
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0110, 0xf)?;
 
-    // 送信
-    for y in 0..height {
-        let tx_buf = vec![0u8; width / 8];
-        let tx_stream = AxiStream {
-            tuser: if y == 0 { 1 } else { 0 },
-            tdata: tx_buf,
-        };
-        axi4s_tx.send_axi4s(&tx_stream)?;
+    // ファイルを先に読み込む（スレッド外で1度だけ実行）
+    println!("Loading input image...");
+    let mut tx_data = vec![0u8; width * height / 8];
+    {
+        let mut file = File::open("img_1024x1024.bin").map_err(|e| e.to_string())?;
+        file.read_exact(&mut tx_data).map_err(|e| e.to_string())?;
     }
+    println!("Input image loaded: {} bytes", tx_data.len());
+    
+    let tx_data = Arc::new(tx_data);
 
-    // 受信
-    for y in 0..height {
-        let rx_stream = axi4s_rx.recv_axi4s(width / 8)?;
-        if rx_stream.tdata.len() != width / 8 {
-            eprintln!("Received frame with unexpected payload size: {} bytes expected : {}", rx_stream.tdata.len(), width / 8);
-            continue;
+    // 時間計測開始
+    let start_time = Instant::now();
+
+    // 送信スレッド（所有権をmove）
+    let tx_handle = {
+        let tx_data = Arc::clone(&tx_data);
+        thread::spawn(move || -> Result<(), String> {
+            for y in 0..height {
+                let start = y * width / 8;
+                let end = start + width / 8;
+                let tx_buf = tx_data[start..end].to_vec();
+                let tx_stream = AxiStream {
+                    tuser: if y == 0 { 1 } else { 0 },
+                    tdata: tx_buf,
+                };
+                axi4s_tx.send_axi4s(&tx_stream).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })
+    };
+
+    // 受信スレッド（所有権をmove）
+    let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
+        let mut result = Vec::with_capacity(width * height / 8);
+        for y in 0..height {
+            let rx_stream = axi4s_rx.recv_axi4s(width / 8).map_err(|e| e.to_string())?;
+            if rx_stream.tdata.len() != width / 8 {
+                eprintln!("Received frame with unexpected payload size: {} bytes expected : {}", rx_stream.tdata.len(), width / 8);
+                continue;
+            }
+            result.extend_from_slice(&rx_stream.tdata);
+//          println!("Received frame line {}: tuser={} len={}", y, rx_stream.tuser, rx_stream.tdata.len());
         }
-        println!("Received frame line {}: tuser={} len={}", y, rx_stream.tuser, rx_stream.tdata.len());
+        Ok(result)
+    });
+
+    // 両スレッドの終了を待機
+    tx_handle.join().map_err(|_| "TX thread panicked".to_string()).and_then(|r| r)?;
+    let result_data = rx_handle.join().map_err(|_| "RX thread panicked".to_string()).and_then(|r| r)?;
+
+    // 時間計測終了
+    let elapsed = start_time.elapsed();
+    println!("Processing time: {:.3} seconds", elapsed.as_secs_f64());
+
+
+    // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）
+    println!("Writing output image...");
+    {
+        let mut file = File::create("result.bin").map_err(|e| e.to_string())?;
+        file.write_all(&result_data).map_err(|e| e.to_string())?;
     }
+    println!("Output image written: {} bytes", result_data.len());
 
     println!("End Test");
 

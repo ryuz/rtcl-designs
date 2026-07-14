@@ -17,13 +17,22 @@ pub struct RtclFifo32AxilD3xx {
     axi4l_reader: D3xxReader,
 }
 
+unsafe impl Send for RtclFifo32AxilD3xx {}
+unsafe impl Sync for RtclFifo32AxilD3xx {}
+
 pub struct RtRtclFifo32AxisRxD3xx {
     axi4s_reader: D3xxReader,
 }
 
+unsafe impl Send for RtRtclFifo32AxisRxD3xx {}
+unsafe impl Sync for RtRtclFifo32AxisRxD3xx {}
+
 pub struct RtclFifo32AxisTxD3xx {
     axi4s_writer: D3xxWriter,
 }
+
+unsafe impl Send for RtclFifo32AxisTxD3xx {}
+unsafe impl Sync for RtclFifo32AxisTxD3xx {}
 
 impl RtclFifo32AxiD3xx {
     pub fn new(dev_index: usize) -> Result<(RtclFifo32AxilD3xx, RtRtclFifo32AxisRxD3xx, RtclFifo32AxisTxD3xx), Box<dyn Error>> {

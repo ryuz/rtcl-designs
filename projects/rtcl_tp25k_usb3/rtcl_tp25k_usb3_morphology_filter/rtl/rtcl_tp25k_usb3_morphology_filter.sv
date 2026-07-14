@@ -373,7 +373,7 @@ module rtcl_tp25k_usb3_morphology_filter
                 .FILTER_ROWS    (3                      ),
                 .FILTER_COLS    (3                      ),
                 .TAPS           (32                     ),
-                .MAX_COLS       (512                    ),
+                .MAX_COLS       (1024                   ),
                 .RAM_TYPE       ("block"                ),
                 .BYPASS_SIZE    (1'b1                   ),
                 .DEVICE         ("RTL"                  )

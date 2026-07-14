@@ -123,6 +123,9 @@ impl Overlapped {
 
 impl Error for D3xxError {}
 
+unsafe impl Send for D3xxError {}
+unsafe impl Sync for D3xxError {}
+
 pub type D3xxResult<T> = Result<T, D3xxError>;
 
 fn status_to_result(status: FT_STATUS) -> D3xxResult<()> {
