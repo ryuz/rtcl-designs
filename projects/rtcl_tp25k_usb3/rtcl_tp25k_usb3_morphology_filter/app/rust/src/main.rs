@@ -27,9 +27,8 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
-    let width:  usize = 1280;
-    let height: usize = 16;
-
+    let width:  usize = 1024;
+    let height: usize = 1024;
 
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
