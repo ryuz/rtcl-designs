@@ -1,6 +1,5 @@
 use std::error::Error;
 use rtcl_d3xx::*;
-use std::time::Duration;
 
 const BASE_SYSCTL : usize = 0x0000_0000;
 const BASE_MORPHO : usize = 0x1000_0000;
@@ -25,23 +24,21 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 
 
 
-// type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
-
-
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
-    let width:  usize = 128;
+    let width:  usize = 1280;
     let height: usize = 16;
 
 
     // OpenDevice
-    let (axi4l, axi4s_rx, axi4s_tx) = RtclFifo32CtlD3xx::new(0)?;
+    let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
 
     // direct read/write
     println!("SYSCTL_CORE_ID      : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CORE_ID  ) as u32)?);
     println!("MORPHO_CORE_ID      : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_ID     ) as u32)?);
     println!("MORPHO_CORE_VERSION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_VERSION) as u32)?);
+
 
     axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
     axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
@@ -51,15 +48,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for y in 0..height {
         let tx_buf = vec![0u8; width / 8];
-        let tx_stream = Axi4Stream {
+        let tx_stream = AxiStream {
             tuser: if y == 0 { 1 } else { 0 },
             tdata: tx_buf,
         };
         axi4s_tx.send_axi4s(&tx_stream)?;
     }
 
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
     for y in 0..height {
-        let rx_stream = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(1000))?;
+        let rx_stream = axi4s_rx.recv_axi4s(width / 8)?;
         if rx_stream.tdata.len() != width / 8 {
             eprintln!("Received frame with unexpected payload size: {} bytes expected : {}", rx_stream.tdata.len(), width / 8);
             continue;

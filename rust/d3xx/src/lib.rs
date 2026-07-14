@@ -8,6 +8,9 @@ pub use d3xx_device::*;
 mod rtcl_fifo32;
 pub use rtcl_fifo32::*;
 
+mod rtcl_fifo32_axi;
+pub use rtcl_fifo32_axi::*;
+
 mod video_capture;
 pub use video_capture::*;
 
