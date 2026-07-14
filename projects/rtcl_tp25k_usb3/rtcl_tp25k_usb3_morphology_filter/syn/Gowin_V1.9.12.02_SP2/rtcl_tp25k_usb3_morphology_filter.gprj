@@ -61,6 +61,5 @@
         <File path="../../../../shared/rtl/gowin_dphy_lane2_to_fifo32.sv" type="file.verilog" enable="1" />
         <File path="../../constrain/rtcl_tp25k_usb3_morphology_filter.cst" type="file.cst" enable="1" />
         <File path="../../constrain/rtcl_tp25k_usb3_morphology_filter.sdc" type="file.sdc" enable="1" />
-        <File path="src/rtcl_tp25k_usb3_morphology_filter.rao" type="file.gao" enable="1" />
     </FileList>
 </Project>
