@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b1111, 0xf)?;
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0110, 0xf)?;
 
+    // 送信
     for y in 0..height {
         let tx_buf = vec![0u8; width / 8];
         let tx_stream = AxiStream {
@@ -54,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         axi4s_tx.send_axi4s(&tx_stream)?;
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    // 受信
     for y in 0..height {
         let rx_stream = axi4s_rx.recv_axi4s(width / 8)?;
         if rx_stream.tdata.len() != width / 8 {
