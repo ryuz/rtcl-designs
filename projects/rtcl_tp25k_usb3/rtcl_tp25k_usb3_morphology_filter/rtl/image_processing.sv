@@ -127,9 +127,9 @@ module image_processing
                 .MAX_COLS               (MAX_COLS       ),
                 .RAM_TYPE               (RAM_TYPE       ),
                 .BYPASS_SIZE            (BYPASS_SIZE    ),
-                .INIT_CTL_CONTROL       (2'b00          ),
-                .INIT_PARAM_ENABLE      ('0             ),
-                .INIT_PARAM_DILATION    ('0             ),
+                .INIT_CTL_CONTROL       (2'b01          ),
+                .INIT_PARAM_ENABLE      (4'b1111        ),
+                .INIT_PARAM_DILATION    (4'b0110        ),
                 .INIT_PARAM_FILTER      ('1             )
             )
         u_img_morphology_filter
