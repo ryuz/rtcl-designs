@@ -226,6 +226,25 @@ impl RtRtclFifo32AxisRxD3xx {
 
         Ok(image)
     }
+
+    pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let rx_data = self.axi4s_reader.read((width + 4) * height)?;
+        let mut image = Vec::with_capacity(width * height);
+        for y in 0..height {
+            let start = y * (width + 4);
+            let end = start + (width + 4);
+            let line_data = &rx_data[start..end];
+            let opcode = line_data[0];
+            let operand = line_data[1];
+            let packet_last = (operand & 0x80) != 0;
+            let packet_size = u16::from_le_bytes([line_data[2], line_data[3]]) as usize;
+            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+            assert!(packet_last, "Expected AXI4S packet_last to be set");
+            assert!(packet_size == width, "Expected AXI4S packet_size to match width: {} != {}", packet_size, width);
+            image.extend_from_slice(&line_data[4..]);
+        }
+        Ok(image)
+    }
 }
 
 
@@ -248,6 +267,22 @@ impl RtclFifo32AxisTxD3xx {
         self.axi4s_writer.write(&packet)?;
         Ok(())
     }
+
+    pub fn send_frame(&self, width: usize, height: usize, image: &[u8]) -> Result<(), Box<dyn Error>> {
+        let mut packet = Vec::<u8>::with_capacity((width + 4) * height);
+
+        for y in 0..height {
+            let header : [u8; 4] = [OPCODE_AXI4S_TRANS, if y == 0 { 0x81 } else { 0x80 }, (width as u16).to_le_bytes()[0], (width as u16).to_le_bytes()[1]];
+            packet.extend_from_slice(&header);
+            let start = y * width;
+            let end = start + width;
+            packet.extend_from_slice(&image[start..end]);
+        }
+        self.axi4s_writer.write(&packet)?;
+
+        Ok(())
+    }
+
 
     pub fn send_image(&self, width: usize, height: usize, image: &[u8]) -> Result<(), Box<dyn Error>> {
         assert!(width > 0, "image width must be > 0");

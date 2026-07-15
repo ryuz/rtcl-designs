@@ -31,10 +31,10 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
-    let width:  usize = 1024;
-    let height: usize = 1024;
-//    let width:  usize = 128;
-//    let height: usize = 128;
+//  let width:  usize = 1024;
+//  let height: usize = 1024;
+    let width:  usize = 128;
+    let height: usize = 128;
 
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
@@ -49,10 +49,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
     axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
 
-//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b1111, 0xf)?;
-//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0110, 0xf)?;
-    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b0000, 0xf)?;
-    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0000, 0xf)?;
+    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b1111, 0xf)?;
+    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0110, 0xf)?;
+//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b0000, 0xf)?;
+//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0000, 0xf)?;
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_CTL_CONTROL   ) as u32,      3, 0xf)?;
 
     println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
@@ -63,8 +63,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let line_bytes = width / 8;
     let mut tx_data = vec![0u8; line_bytes * height];
     {
-        let mut file = File::open("img_1024x1024.bin").map_err(|e| e.to_string())?;
-//      let mut file = File::open("img_128x128.bin").map_err(|e| e.to_string())?;
+//      let mut file = File::open("img_1024x1024.bin").map_err(|e| e.to_string())?;
+        let mut file = File::open("img_128x128.bin").map_err(|e| e.to_string())?;
         file.read_exact(&mut tx_data).map_err(|e| e.to_string())?;
     }
     println!("Input image loaded: {} bytes", tx_data.len());
@@ -75,7 +75,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let tx_handle = thread::spawn(move || -> Result<(), String> {
         axi4s_tx
-            .send_image(line_bytes, height, &tx_data)
+//          .send_image(line_bytes, height, &tx_data)
+            .send_frame(line_bytes, height, &tx_data)
             .map_err(|e| e.to_string())?;
         Ok(())
     });
@@ -83,7 +84,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::thread::sleep(std::time::Duration::from_millis(1));
     let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
         axi4s_rx
-            .recv_image(line_bytes, height)
+//          .recv_image(line_bytes, height)
+            .recv_frame(line_bytes, height)
             .map_err(|e| e.to_string())
     });
 
@@ -102,12 +104,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）
-    // println!("Writing output image...");
-    // {
-    //     let mut file = File::create("result.bin").map_err(|e| e.to_string())?;
-    //     file.write_all(&result_data).map_err(|e| e.to_string())?;
-    // }
-    // println!("Output image written: {} bytes", result_data.len());
+    println!("Writing output image...");
+    {
+        let mut file = File::create("result.bin").map_err(|e| e.to_string())?;
+        file.write_all(&result_data).map_err(|e| e.to_string())?;
+    }
+    println!("Output image written: {} bytes", result_data.len());
 
     println!("End Test");
 
