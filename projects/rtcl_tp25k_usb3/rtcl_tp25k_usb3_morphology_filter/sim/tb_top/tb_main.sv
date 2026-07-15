@@ -198,13 +198,10 @@ module tb_main
         axi4l_write(BASE_SYSCTL + `REG_PERIPHERAL_SYSCTL_CONTROL1 * 4, 8,      4'hf);   // height
 
         $display("Write width");
-        axi4l_write(BASE_MORPHO + `REG_IMG_MORPHO_PARAM_ENABLE   * 4, 32'b1111,  4'hf);
-        axi4l_write(BASE_MORPHO + `REG_IMG_MORPHO_PARAM_DILATION * 4, 32'b0110,  4'hf);
+//      axi4l_write(BASE_MORPHO + `REG_IMG_MORPHO_PARAM_ENABLE   * 4, 32'b1111,  4'hf);
+//      axi4l_write(BASE_MORPHO + `REG_IMG_MORPHO_PARAM_DILATION * 4, 32'b0110,  4'hf);
         #100;
 
-        for ( int i = 0; i < 5; i++ ) begin
-            packet[i] = i;
-        end
         for ( int i = 0; i < 8; i++ ) begin
             @(negedge ft601_clk);
             if ( i == 0 ) begin
@@ -213,6 +210,13 @@ module tb_main
             else begin
                 packet[0] = 32'h0010_8010;
             end
+            for ( int j = 0; j < 4; j++ ) begin
+                packet[j+1][8*0 +: 8] = i*16 + j*4 + 0;
+                packet[j+1][8*1 +: 8] = i*16 + j*4 + 1;
+                packet[j+1][8*2 +: 8] = i*16 + j*4 + 2;
+                packet[j+1][8*3 +: 8] = i*16 + j*4 + 3;
+            end
+
             ft601_write(1, packet);
             #1000;
         end
