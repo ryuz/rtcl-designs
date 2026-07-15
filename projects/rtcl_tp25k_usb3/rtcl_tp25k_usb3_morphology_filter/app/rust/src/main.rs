@@ -34,30 +34,44 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let width:  usize = 1024;
     let height: usize = 1024;
+//    let width:  usize = 128;
+//    let height: usize = 128;
 
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
 
     // direct read/write
-    println!("SYSCTL_CORE_ID      : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CORE_ID  ) as u32)?);
-    println!("MORPHO_CORE_ID      : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_ID     ) as u32)?);
-    println!("MORPHO_CORE_VERSION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_VERSION) as u32)?);
-
+    println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CORE_ID    ) as u32)?);
+    println!("MORPHO_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_ID       ) as u32)?);
+    println!("MORPHO_CORE_VERSION   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_VERSION  ) as u32)?);
+    println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
+    println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
 
     axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
     axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
 
-    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b1111, 0xf)?;
-    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0110, 0xf)?;
+//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b1111, 0xf)?;
+//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0110, 0xf)?;
+    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b0000, 0xf)?;
+    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0000, 0xf)?;
+    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_CTL_CONTROL   ) as u32,      3, 0xf)?;
+
+    println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
+    println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
 
     // ファイルを先に読み込む（スレッド外で1度だけ実行）
     println!("Loading input image...");
     let mut tx_data = vec![0u8; width * height / 8];
     {
         let mut file = File::open("img_1024x1024.bin").map_err(|e| e.to_string())?;
+//      let mut file = File::open("img_128x128.bin").map_err(|e| e.to_string())?;
         file.read_exact(&mut tx_data).map_err(|e| e.to_string())?;
     }
     println!("Input image loaded: {} bytes", tx_data.len());
+
+//    for i in 0..tx_data.len() {
+//        tx_data[i] = i as u8;
+//    }
     
     let tx_data = Arc::new(tx_data);
 
