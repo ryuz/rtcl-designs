@@ -1,8 +1,7 @@
 use std::error::Error;
-use std::thread;
-use std::sync::Arc;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::thread;
 use std::time::Instant;
 use rtcl_d3xx::*;
 
@@ -61,7 +60,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // ファイルを先に読み込む（スレッド外で1度だけ実行）
     println!("Loading input image...");
-    let mut tx_data = vec![0u8; width * height / 8];
+    let line_bytes = width / 8;
+    let mut tx_data = vec![0u8; line_bytes * height];
     {
         let mut file = File::open("img_1024x1024.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("img_128x128.bin").map_err(|e| e.to_string())?;
@@ -69,51 +69,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("Input image loaded: {} bytes", tx_data.len());
 
-//    for i in 0..tx_data.len() {
-//        tx_data[i] = i as u8;
-//    }
-    
-    let tx_data = Arc::new(tx_data);
-
     // 時間計測開始
+    println!("Start");
     let start_time = Instant::now();
 
-    // 送信スレッド（所有権をmove）
-    let tx_handle = {
-        let tx_data = Arc::clone(&tx_data);
-        thread::spawn(move || -> Result<(), String> {
-            for y in 0..height {
-                let start = y * width / 8;
-                let end = start + width / 8;
-                let tx_buf = tx_data[start..end].to_vec();
-                let tx_stream = AxiStream {
-                    tuser: if y == 0 { 1 } else { 0 },
-                    tdata: tx_buf,
-                };
-                axi4s_tx.send_axi4s(&tx_stream).map_err(|e| e.to_string())?;
-            }
-            Ok(())
-        })
-    };
-
-    // 受信スレッド（所有権をmove）
-    let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
-        let mut result = Vec::with_capacity(width * height / 8);
-        for y in 0..height {
-            let rx_stream = axi4s_rx.recv_axi4s(width / 8).map_err(|e| e.to_string())?;
-            if rx_stream.tdata.len() != width / 8 {
-                eprintln!("Received frame with unexpected payload size: {} bytes expected : {}", rx_stream.tdata.len(), width / 8);
-                continue;
-            }
-            result.extend_from_slice(&rx_stream.tdata);
-//          println!("Received frame line {}: tuser={} len={}", y, rx_stream.tuser, rx_stream.tdata.len());
-        }
-        Ok(result)
+    let tx_handle = thread::spawn(move || -> Result<(), String> {
+        axi4s_tx
+            .send_image(line_bytes, height, &tx_data)
+            .map_err(|e| e.to_string())?;
+        Ok(())
     });
 
-    // 両スレッドの終了を待機
-    tx_handle.join().map_err(|_| "TX thread panicked".to_string()).and_then(|r| r)?;
-    let result_data = rx_handle.join().map_err(|_| "RX thread panicked".to_string()).and_then(|r| r)?;
+    std::thread::sleep(std::time::Duration::from_millis(1));
+    let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
+        axi4s_rx
+            .recv_image(line_bytes, height)
+            .map_err(|e| e.to_string())
+    });
+
+    tx_handle
+        .join()
+        .map_err(|_| "TX thread panicked".to_string())
+        .and_then(|r| r)?;
+    let result_data = rx_handle
+        .join()
+        .map_err(|_| "RX thread panicked".to_string())
+        .and_then(|r| r)?;
 
     // 時間計測終了
     let elapsed = start_time.elapsed();
@@ -121,14 +102,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）
-    println!("Writing output image...");
-    {
-        let mut file = File::create("result.bin").map_err(|e| e.to_string())?;
-        file.write_all(&result_data).map_err(|e| e.to_string())?;
-    }
-    println!("Output image written: {} bytes", result_data.len());
+    // println!("Writing output image...");
+    // {
+    //     let mut file = File::create("result.bin").map_err(|e| e.to_string())?;
+    //     file.write_all(&result_data).map_err(|e| e.to_string())?;
+    // }
+    // println!("Output image written: {} bytes", result_data.len());
 
     println!("End Test");
 
-    return Ok(());
+    Ok(())
 }

@@ -47,11 +47,11 @@ impl RtclFifo32AxiD3xx {
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
-        let [axi4l_writer, mut axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
+        let [axi4l_writer, axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
             Ok(writers) => writers,
             Err(_) => panic!("Expected 2 writers"),
         };
-        let [axi4l_reader, mut axi4s_reader]: [D3xxReader; 2] = match dev_readers.try_into() {
+        let [axi4l_reader, axi4s_reader]: [D3xxReader; 2] = match dev_readers.try_into() {
             Ok(readers) => readers,
             Err(_) => panic!("Expected 2 readers"),
         };
@@ -164,7 +164,70 @@ impl RtRtclFifo32AxisRxD3xx {
             tdata: rx_data[4..].to_vec(),
         })
     }
+
+
+    pub fn recv_image(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let line_transfer_size = width + 4;
+
+        let image_size = width * height;
+        let mut image = vec![0u8; image_size];
+
+        const MAX_OVERLAPS: usize = 16;
+
+        let overlaps = height.min(MAX_OVERLAPS);
+        let mut overlapped = vec![Overlapped::new(); overlaps];
+        let mut buffers = vec![vec![0u8; line_transfer_size]; overlaps];
+        let mut bytes_transferred = vec![0u32; overlaps];
+
+        // 読み出し要求を発行
+        for i in 0..overlaps {
+            self.axi4s_reader.initialize_overlapped(&mut overlapped[i])?;
+            self.axi4s_reader.read_async(&mut buffers[i], &mut bytes_transferred[i], &mut overlapped[i])?;
+        }
+
+        let mut issued_lines = overlaps;
+        let mut completed_lines = 0usize;
+        let mut index = 0usize;
+
+        while completed_lines < height {
+            self.axi4s_reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
+            let rx_size = bytes_transferred[index] as usize;
+//          println!("Received line {}: {} bytes", completed_lines, rx_size);
+            assert!(rx_size == line_transfer_size);
+
+            let line_data = &buffers[index];
+            let opcode = line_data[0];
+            let operand = line_data[1];
+            let packet_last = (operand & 0x80) != 0;
+            let packet_size = u16::from_le_bytes([line_data[2], line_data[3]]) as usize;
+            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+            assert!(packet_last, "Expected AXI4S packet_last to be set");
+            assert!(packet_size == width);
+
+            let dst_offset = completed_lines * width;
+            image[dst_offset..dst_offset + width].copy_from_slice(&line_data[4..]);
+            completed_lines += 1;
+
+            if issued_lines < height {
+                self.axi4s_reader.read_async(
+                    &mut buffers[index],
+                    &mut bytes_transferred[index],
+                    &mut overlapped[index],
+                )?;
+                issued_lines += 1;
+            }
+
+            index = (index + 1) % overlaps;
+        }
+
+        for i in 0..overlaps {
+            let _ = self.axi4s_reader.release_overlapped(&mut overlapped[i]);
+        }
+
+        Ok(image)
+    }
 }
+
 
 impl RtclFifo32AxisTxD3xx {
     pub fn send_axi4s(&self, stream: &AxiStream) -> Result<(), Box<dyn Error>> {
@@ -183,6 +246,79 @@ impl RtclFifo32AxisTxD3xx {
         packet.extend_from_slice(&stream.tdata);
 
         self.axi4s_writer.write(&packet)?;
+        Ok(())
+    }
+
+    pub fn send_image(&self, width: usize, height: usize, image: &[u8]) -> Result<(), Box<dyn Error>> {
+        assert!(width > 0, "image width must be > 0");
+        assert!(height > 0, "image height must be > 0");
+
+        let image_size = width * height;
+        assert!(image.len() == image_size, "image buffer size mismatch: {} != {}", image.len(), image_size);
+        assert!(width <= u16::MAX as usize, "image line width too large: {}", width);
+
+        let line_transfer_size = width + 4;
+        assert!((line_transfer_size & 0x3) == 0, "image line transfer size (width + 4) must be 4-byte aligned");
+
+        const MAX_OVERLAPS: usize = 16;
+        let overlaps = height.min(MAX_OVERLAPS);
+        let mut overlapped = vec![Overlapped::new(); overlaps];
+        let mut buffers = vec![vec![0u8; line_transfer_size]; overlaps];
+        let mut bytes_transferred = vec![0u32; overlaps];
+
+        // 先行してoverlap本数分の書き込み要求を発行
+        for i in 0..overlaps {
+            let line_index = i;
+            let src_offset = line_index * width;
+            let line_buf = &mut buffers[i];
+            line_buf[0] = OPCODE_AXI4S_TRANS;
+            line_buf[1] = if i == 0 { 0x81 } else { 0x80 };
+            line_buf[2..4].copy_from_slice(&(width as u16).to_le_bytes());
+            line_buf[4..].copy_from_slice(&image[src_offset..src_offset + width]);
+
+            self.axi4s_writer.initialize_overlapped(&mut overlapped[i])?;
+            bytes_transferred[i] = buffers[i].len() as u32;
+            self.axi4s_writer.write_async(&buffers[i], &mut bytes_transferred[i], &mut overlapped[i])?;
+//          println!("Issued line {}: {} bytes", line_index, line_transfer_size);
+        }
+
+        let mut issued_lines = overlaps;
+        let mut completed_lines = 0usize;
+        let mut index = 0usize;
+
+        while completed_lines < height {
+            self.axi4s_writer.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
+            let tx_size = bytes_transferred[index] as usize;
+            assert!(tx_size == line_transfer_size, "AXI4S image line transfer size mismatch at line {}: {} != {}", completed_lines, tx_size, line_transfer_size);
+//          println!("Completed line {}: {} bytes", completed_lines, tx_size);
+            completed_lines += 1;
+
+            if issued_lines < height {
+                let line_index = issued_lines;
+                let src_offset = line_index * width;
+                let line_buf = &mut buffers[index];
+                line_buf[0] = OPCODE_AXI4S_TRANS;
+                line_buf[1] = 0x80;
+                line_buf[2..4].copy_from_slice(&(width as u16).to_le_bytes());
+                line_buf[4..].copy_from_slice(&image[src_offset..src_offset + width]);
+                
+                bytes_transferred[index] = buffers[index].len() as u32;
+                self.axi4s_writer.write_async(
+                    &buffers[index],
+                    &mut bytes_transferred[index],
+                    &mut overlapped[index],
+                )?;
+//              println!("Issued line {}: {} bytes", line_index, line_transfer_size);
+                issued_lines += 1;
+            }
+
+            index = (index + 1) % overlaps;
+        }
+
+        for i in 0..overlaps {
+            let _ = self.axi4s_writer.release_overlapped(&mut overlapped[i]);
+        }
+
         Ok(())
     }
 }
