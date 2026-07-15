@@ -26,9 +26,11 @@
         <File path="../../../../../jelly/rtl/v3/library/jelly3_fifo_fwft_read.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_fifo_sync.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_histry_buffer_mem.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_histry_buffer_mem_rf.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_histry_buffer_mem_sdp.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_pulse_async.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_ram_simple_dualport.sv" type="file.verilog" enable="1" />
+        <File path="../../../../../jelly/rtl/v3/library/jelly3_ram_singleport.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_reset_async.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_reset_sync.sv" type="file.verilog" enable="1" />
         <File path="../../../../../jelly/rtl/v3/library/jelly3_skid_buffer.sv" type="file.verilog" enable="1" />
