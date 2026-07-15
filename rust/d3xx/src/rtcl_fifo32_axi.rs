@@ -229,6 +229,7 @@ impl RtRtclFifo32AxisRxD3xx {
 
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
         let rx_data = self.axi4s_reader.read((width + 4) * height)?;
+        println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
         let mut image = Vec::with_capacity(width * height);
         for y in 0..height {
             let start = y * (width + 4);
@@ -238,7 +239,7 @@ impl RtRtclFifo32AxisRxD3xx {
             let operand = line_data[1];
             let packet_last = (operand & 0x80) != 0;
             let packet_size = u16::from_le_bytes([line_data[2], line_data[3]]) as usize;
-            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S y={} opcode={:02x}, oprand={:02x}, size={:04x}", y, opcode, operand, packet_size);
             assert!(packet_last, "Expected AXI4S packet_last to be set");
             assert!(packet_size == width, "Expected AXI4S packet_size to match width: {} != {}", packet_size, width);
             image.extend_from_slice(&line_data[4..]);

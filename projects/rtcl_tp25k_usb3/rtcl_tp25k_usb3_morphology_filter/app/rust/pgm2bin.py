@@ -46,8 +46,8 @@ pixels = pixels[:w * h]  # 必要なピクセル数だけ取得
 binary = np.array(pixels, dtype=np.uint8)
 binary = (binary > threshold).astype(np.uint8)
 
-# 1バイトに8ピクセルを詰め込む（big-endian）
-packed = np.packbits(binary, bitorder='big')
+# 1バイトに8ピクセルを詰め込む（little-endian）
+packed = np.packbits(binary, bitorder='little')
 
 # バイナリファイルに保存
 dst_path.write_bytes(packed.tobytes())

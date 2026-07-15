@@ -3,19 +3,18 @@
 
 import cv2
 import numpy as np
-from pathlib import Path
 
-here = Path(__file__).parent
-src_path = here / "img_128x128.pgm"
-dst_pgm  = here / "img_1024x1024.pgm"
-dst_bin  = here / "img_1024x1024.bin"
 
 tile_w, tile_h = 128, 128
-out_w, out_h = 1024, 1024
+out_w, out_h = 256, 256
 cols = out_w // tile_w  # 8
 rows = out_h // tile_h  # 8
 
-src = cv2.imread(str(src_path), cv2.IMREAD_UNCHANGED)
+src_pgm = f"img_{tile_w}x{tile_h}.pgm"
+dst_pgm = f"img_{out_w}x{out_h}.pgm"
+dst_bin = f"input_{out_w}x{out_h}.bin"
+
+src = cv2.imread(str(src_pgm), cv2.IMREAD_UNCHANGED)
 
 dst = np.tile(src, (rows, cols))
 
@@ -28,7 +27,7 @@ print(f"Saved {dst_pgm} ({out_w}x{out_h})")
 
 # 2値画像として1バイト8画素パックのバイナリ出力 (MSB first, 閾値=128)
 binary = (dst >= 128).astype(np.uint8)
-packed = np.packbits(binary, axis=1, bitorder='big')  # shape: (1024, 128)
+packed = np.packbits(binary, axis=1, bitorder='little')  # shape: (1024, 128)
 with open(dst_bin, "wb") as f:
     f.write(packed.tobytes())
 print(f"Saved {dst_bin} ({out_w}x{out_h}, 1bpp packed)")

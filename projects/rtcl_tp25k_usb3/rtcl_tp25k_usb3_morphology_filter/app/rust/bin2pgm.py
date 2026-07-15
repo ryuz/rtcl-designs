@@ -18,7 +18,7 @@ out_w = int(sys.argv[3]) if len(sys.argv) >= 4 else 1024
 out_h = int(sys.argv[4]) if len(sys.argv) >= 5 else 1024
 
 data = np.frombuffer(src_path.read_bytes(), dtype=np.uint8)
-bits = np.unpackbits(data, bitorder='big')  # 1 → 255, 0 → 0
+bits = np.unpackbits(data, bitorder='little')  # 1 → 255, 0 → 0
 img = (bits[:out_h * out_w] * 255).reshape(out_h, out_w).astype(np.uint8)
 
 with open(dst_path, "w") as f:
