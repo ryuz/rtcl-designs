@@ -48,7 +48,7 @@ module fifo32_lfsr_receiver
     localparam  regadr_t REGADR_CORE_VERSION = regadr_t'('h01);
     localparam  regadr_t REGADR_CLEAR        = regadr_t'('h10);
     localparam  regadr_t REGADR_LFSR_VALUE   = regadr_t'('h11);
-    localparam  regadr_t REGADR_RX_LEN       = regadr_t'('h12);
+    localparam  regadr_t REGADR_RX_COUNT     = regadr_t'('h12);
     localparam  regadr_t REGADR_LFSR_ERROR   = regadr_t'('h13);
 
 
@@ -72,7 +72,7 @@ module fifo32_lfsr_receiver
 
     logic           reg_clear   ;
     logic  [31:0]   reg_lfsr    ;
-    logic  [31:0]   reg_rx_len  ;
+    logic  [31:0]   reg_rx_count;
     logic           reg_error   ;
 
     always_ff @(posedge s_axi4l.aclk) begin
@@ -112,7 +112,7 @@ module fifo32_lfsr_receiver
                 REGADR_CORE_VERSION :  s_axi4l.rdata <= axi4l_data_t'(CORE_VERSION);
                 REGADR_CLEAR        :  s_axi4l.rdata <= axi4l_data_t'(reg_clear   );
                 REGADR_LFSR_VALUE   :  s_axi4l.rdata <= axi4l_data_t'(reg_lfsr    );
-                REGADR_RX_LEN       :  s_axi4l.rdata <= axi4l_data_t'(reg_rx_len  );
+                REGADR_RX_COUNT     :  s_axi4l.rdata <= axi4l_data_t'(reg_rx_count);
                 REGADR_LFSR_ERROR   :  s_axi4l.rdata <= axi4l_data_t'(reg_error   );
                 default             :  s_axi4l.rdata <= '0;
                 endcase
@@ -134,7 +134,7 @@ module fifo32_lfsr_receiver
 
     logic           ctl_clear   ;
     logic  [31:0]   ctl_lfsr    ;
-    logic  [31:0]   ctl_rx_len  ;
+    logic  [31:0]   ctl_rx_count;
     logic           ctl_error   ;
 
     jelly3_pulse_async
@@ -174,14 +174,14 @@ module fifo32_lfsr_receiver
                 .s_reset    (~s_axi4s.aresetn   ),
                 .s_clk      (s_axi4s.aclk       ),
                 .s_cke      (1'b1               ),
-                .s_data     (ctl_rx_len         ),
+                .s_data     (ctl_rx_count       ),
                 .s_valid    (1'b1               ),
                 .s_ready    (                   ),
 
                 .m_reset    (~s_axi4l.aresetn   ),
                 .m_clk      (s_axi4l.aclk       ),
                 .m_cke      (1'b1               ),
-                .m_data     (reg_rx_len         ),
+                .m_data     (reg_rx_count       ),
                 .m_valid    (                   ),
                 .m_ready    (1'b1               )
             );
@@ -206,7 +206,6 @@ module fifo32_lfsr_receiver
                 .dout           (expected_lfsr                  )
             );
 
-    logic   [31:0]  ctl_rx_count;
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
             ctl_rx_count <= '0;

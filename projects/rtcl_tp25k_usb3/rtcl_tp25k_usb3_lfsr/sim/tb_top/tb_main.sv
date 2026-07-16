@@ -181,7 +181,7 @@ module tb_main
     localparam BASE_LFSR_RX = 32'h0002_0000;
     localparam BASE_LFSR_TX = 32'h0003_0000;
 
-    logic  [31:0]  packet [0:4];
+    logic  [31:0]  packet [0:16];
 
     initial begin
         ft601_rxf_n  = 1'b1;
@@ -208,12 +208,12 @@ module tb_main
         for ( int i = 0; i < 8; i++ ) begin
             @(negedge ft601_clk);
             if ( i == 0 ) begin
-                packet[0] = 32'h0010_8110;
+                packet[0] = 32'h0040_8110;
             end
             else begin
-                packet[0] = 32'h0010_8010;
+                packet[0] = 32'h0040_8010;
             end
-            for ( int j = 0; j < 4; j++ ) begin
+            for ( int j = 0; j < 16; j++ ) begin
                 packet[j+1][8*0 +: 8] = i*16 + j*4 + 0;
                 packet[j+1][8*1 +: 8] = i*16 + j*4 + 1;
                 packet[j+1][8*2 +: 8] = i*16 + j*4 + 2;
@@ -221,7 +221,7 @@ module tb_main
             end
 
             ft601_write(1, packet);
-            #1000;
+            #100;
         end
 
         
