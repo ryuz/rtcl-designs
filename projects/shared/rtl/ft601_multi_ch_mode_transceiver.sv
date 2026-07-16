@@ -197,6 +197,10 @@ module ft601_multi_ch_mode_transceiver
                         if ( !s_fifo_valid[channel] || ft601_rxf_n == 1'b1 ) begin
                             state            <= FINAL1                  ;
                             buf_en[channel]  <= s_fifo_valid[channel]   ;
+                            if ( s_fifo_valid[channel] ) begin
+                                buf_strb[channel] <= s_fifo_strb[channel];
+                                buf_data[channel] <= s_fifo_data[channel];
+                            end
                             reg_ft601_wr_n   <= 1'b1                    ;
                             reg_ft601_be_t   <= 4'h0                    ;
                             reg_ft601_be_o   <= 4'hf                    ;
