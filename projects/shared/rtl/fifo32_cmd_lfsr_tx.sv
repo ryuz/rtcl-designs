@@ -67,7 +67,6 @@ module fifo32_cmd_lfsr_tx
     assign regadr_write = regadr_t'(s_axi4l.awaddr / axi4l_addr_t'($bits(axi4l_strb_t)));
     assign regadr_read  = regadr_t'(s_axi4l.araddr / axi4l_addr_t'($bits(axi4l_strb_t)));
 
-    localparam  type    frames_t = logic [FRAMES_BITS-1:0];
 
     logic           reg_start   ;
     logic  [31:0]   reg_lfsr    ;
@@ -138,7 +137,7 @@ module fifo32_cmd_lfsr_tx
     jelly3_data_async
             #(
                 .ASYNC      (ASYNC                  ),
-                .DATA_BITS  (32                     )
+                .DATA_BITS  (32+32                  )
             )
         u_data_async
             (
@@ -180,6 +179,8 @@ module fifo32_cmd_lfsr_tx
     always_ff @(posedge m_axi4s.aclk) begin
         if ( ~m_axi4s.aresetn ) begin
             tx_count <= '0;
+            m_axi4s.tlast  <= 1'b0;
+            m_axi4s.tvalid <= 1'b0;
         end
         else if ( m_axi4s.aclken ) begin
             if ( m_axi4s.tready ) begin
@@ -188,6 +189,7 @@ module fifo32_cmd_lfsr_tx
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 if ( tx_count > 0 ) begin
                     tx_count       <= tx_count - 1;
+                    m_axi4s.tlast  <= (tx_count - 1) == 0;
                     m_axi4s.tvalid <= 1'b1;
                 end
             end
@@ -196,6 +198,8 @@ module fifo32_cmd_lfsr_tx
             end
         end
     end
+
+    assign m_axi4s.tstrb = '1;
 
  endmodule
 
