@@ -333,6 +333,10 @@ impl D3xxReader {
 
     #[cfg(target_os = "linux")]
     pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
+        let status = unsafe { FT_SetPipeTimeout(self.device.handle, self.pipe_id, timeout_us) };
+        if status != FT_OK {
+            return Err(D3xxError::from_status(status));
+        }
         self.timeout_us = timeout_us;
         Ok(())
     }
