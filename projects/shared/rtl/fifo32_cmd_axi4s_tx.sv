@@ -243,15 +243,20 @@ module fifo32_cmd_axi4s_tx
                     end
                 end
                 else begin
-                    send_len <= send_len - 1;
-                    if ( send_len == '0 ) begin
-                        send_busy <= 1'b0;
-                    end
-
-                    out_tlast  <= send_len == '0;
                     out_tdata  <= buf_rd_data   ;
                     out_tstrb  <= buf_rd_strb   ;
                     out_tvalid <= buf_rd_valid  ;
+
+                    if ( buf_rd_valid ) begin
+                        send_len <= send_len - 1;
+                        if ( send_len == '0 ) begin
+                            send_busy <= 1'b0;
+                        end
+                        out_tlast <= send_len == '0;
+                    end
+                    else begin
+                        out_tlast <= 1'b0;
+                    end
                 end
             end
         end
