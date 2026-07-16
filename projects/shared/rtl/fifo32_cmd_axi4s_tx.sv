@@ -212,7 +212,7 @@ module fifo32_cmd_axi4s_tx
     always_ff @(posedge m_axi4s.aclk) begin
         if ( ~m_axi4s.aresetn ) begin
             send_busy   <= 1'b0 ;
-            send_len       <= 'x   ;
+            send_len    <= 'x   ;
             out_tuser   <= '0   ;
             out_tlast   <= 1'bx ;
             out_tdata   <= 'x   ;
@@ -273,7 +273,7 @@ module fifo32_cmd_axi4s_tx
         else if ( m_axi4s.aclken ) begin
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 if ( output_enable ) begin
-                    if ( !cmd_rd_valid ) begin
+                    if ( m_axi4s.tlast && m_axi4s.tvalid && m_axi4s.tready ) begin
                         if ( timeout > 0 ) begin
                             output_enable <= 1'b0   ;
                             timer_counter <= '0     ;
@@ -281,14 +281,17 @@ module fifo32_cmd_axi4s_tx
                     end
                 end
                 else begin
-                    if ( buf_rd_size >= size_t'(limit_len) ) begin
-                        output_enable <= 1'b1   ;
-                    end
-                    else if ( timer_counter >= timeout ) begin
-                        output_enable <= 1'b1   ;
-                    end
-                    else if ( cmd_rd_valid ) begin
+                    if ( buf_rd_valid ) begin
+                        if ( buf_rd_size >= size_t'(limit_len) ) begin
+                            output_enable <= 1'b1   ;
+                        end
+                        if ( timer_counter >= timeout ) begin
+                            output_enable <= 1'b1   ;
+                        end
                         timer_counter <= timer_counter + 1;
+                    end
+                    else begin
+                        timer_counter <= '0;
                     end
                 end
             end
