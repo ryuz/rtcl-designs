@@ -14,6 +14,9 @@ Kria KV260 で [グローバルシャッターMIPI高速度カメラ](https://rt
 8 波長の撮影スロットと背景用スロットを順番に取得し、OpenCV の表示画面からゲインや露光、各スロットの照明時間を調整できます。
 
 
+[![デモ動画](https://img.youtube.com/vi/qkKeoeXnXa8/0.jpg)](https://www.youtube.com/watch?v=qkKeoeXnXa8)
+
+
 ## 環境構築
 
 本プロジェクトでは、KV260 の FPGA部分である PL(Proglamable Logic)部 用の SystemVerilog の設計の他に、それらを制御する PS(Processing System)部 用のソフトウェアや PC 側から制御する提供しております。
