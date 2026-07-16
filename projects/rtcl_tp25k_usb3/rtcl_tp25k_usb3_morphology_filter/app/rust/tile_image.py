@@ -6,7 +6,7 @@ import numpy as np
 
 
 tile_w, tile_h = 128, 128
-out_w, out_h = 256, 256
+out_w, out_h = 512, 512
 cols = out_w // tile_w  # 8
 rows = out_h // tile_h  # 8
 
