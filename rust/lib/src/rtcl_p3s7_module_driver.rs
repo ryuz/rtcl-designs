@@ -153,6 +153,7 @@ impl<E: std::error::Error + 'static> std::error::Error for RtclP3s7ModuleDriverE
 }
 
 /// Camera operation modes
+#[derive(Clone, Copy, Debug)]
 pub enum CameraMode {
     /// High Speed mode
     HighSpeed = 0,
@@ -548,6 +549,23 @@ impl<I2C: I2cHal> RtclP3s7ModuleDriver<I2C>
         self.write_i2c(REG_P3S7_CSI_MODE, mode as u16)?;
         Ok(())
     }
+
+    pub fn set_csi2_data_type(
+        &mut self,
+        dt: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REG_P3S7_CSI_DT, dt)?;
+        Ok(())
+    }
+
+    pub fn set_csi2_word_count(
+        &mut self,
+        wc: u16,
+    ) -> Result<(), RtclP3s7ModuleDriverError<I2C::Error>> {
+        self.write_i2c(REG_P3S7_CSI_WC, wc)?;
+        Ok(())
+    }
+
 
     /// Set the PMOD mode register
     ///
