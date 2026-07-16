@@ -8,6 +8,8 @@ Kria KV260 でRTCL-P3S7-MIPI グローバルシャッター高速度カメラを
 
 アプリは Rust 版のみ提供しています。
 
+[![デモ動画](https://img.youtube.com/vi/a_S5naYyBKw/0.jpg)](https://www.youtube.com/watch?v=a_S5naYyBKw)
+
 
 ## 環境準備
 

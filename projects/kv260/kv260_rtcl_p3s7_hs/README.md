@@ -297,6 +297,9 @@ RTCL-P3S7-MIPI グローバルシャッター高速度カメラは KV260 の 3.3
 
 ## multispectral アプリの使い方
 
+[![デモ動画](https://img.youtube.com/vi/V_uv2sRn7yI/0.jpg)](https://www.youtube.com/watch?v=V_uv2sRn7yI)
+
+
 `app/multispectral` には、RTCL-LED-PMOD のマルチバンド LED 照明ボードを使って波長を切り替えながら撮影するアプリがあります。
 
 モノクロカメラに https://rtc-lab.com/products/rtcl-led-pmod/ のマルチバンド LED 照明ボードが取り付けられている前提となります。
