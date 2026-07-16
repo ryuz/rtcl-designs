@@ -238,7 +238,6 @@ module fifo32_cmd_axi4s_tx
                         out_tdata[14:8]  <= 7'(cmd_rd_user) ;   // user
                         out_tdata[15]    <= cmd_rd_last     ;   // last
                         out_tdata[31:16] <= packet_len      ;   // length
-                        out_tdata[31:28] <= 4'h0            ;   // reserved
                         out_tstrb        <= '1              ;
                         out_tvalid       <= 1'b1            ;
                     end
