@@ -9,7 +9,7 @@
 `timescale 1ps/1ps
 `default_nettype none
 
-module rtcl_tp25k_usb3_morphology_filter
+module rtcl_tp25k_usb3_lfsr
         (
             input   var logic           in_clk50        ,
 
@@ -232,8 +232,9 @@ module rtcl_tp25k_usb3_morphology_filter
     // ----------------------------------------
 
     localparam DEC_CTL  = 0;
-    localparam DEC_IMG  = 1;
-    localparam DEC_NUM  = 2;
+    localparam DEC_RX   = 1;
+    localparam DEC_TX   = 2;
+    localparam DEC_NUM  = 3;
 
     jelly3_axi4l_if
             #(
@@ -249,7 +250,8 @@ module rtcl_tp25k_usb3_morphology_filter
     
     // address map
     assign {axi4l_dec[DEC_CTL].addr_base, axi4l_dec[DEC_CTL].addr_high} = {32'h0000_0000, 32'h0000_ffff};
-    assign {axi4l_dec[DEC_IMG].addr_base, axi4l_dec[DEC_IMG].addr_high} = {32'h1000_0000, 32'h1fff_ffff};
+    assign {axi4l_dec[DEC_RX ].addr_base, axi4l_dec[DEC_RX ].addr_high} = {32'h0002_0000, 32'h0002_ffff};
+    assign {axi4l_dec[DEC_TX ].addr_base, axi4l_dec[DEC_TX ].addr_high} = {32'h0003_0000, 32'h0003_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
@@ -311,85 +313,105 @@ module rtcl_tp25k_usb3_morphology_filter
 
 
     // --------------------------------
-    //  Image Processing
+    //  LFSR RX
     // --------------------------------
 
     jelly3_axi4s_if
             #(
-                .USE_STRB   (1      ),
-                .USE_LAST   (1      ),
-                .DATA_BITS  (32     )
+                .USE_STRB           (1                  ),
+                .USE_LAST           (1                  ),
+                .DATA_BITS          (32                 )
             )
-        axi4s_stream_rx
+        axi4s_lfsr_rx
             (
-                .aresetn    (~reset ),
-                .aclk       (clk    ),
-                .aclken     (1'b1   )
+                .aresetn            (~reset             ),
+                .aclk               (clk                ),
+                .aclken             (1'b1               )
             );
-    
+
     fifo32_cmd_axi4s_rx
-        u_fifo32_cmd_axi4s_rx
+        ufifo32_cmd_axi4s_rx
             (
-                .s_axi4s        (axi4s_ft601_rx[1].s),
-                .m_axi4s        (axi4s_stream_rx.m  )
+                .s_axi4s            (axi4s_ft601_rx[1].s),
+                .m_axi4s            (axi4s_lfsr_rx      )
             );
+
+    logic   lfsr_rx_error;
+
+    fifo32_lfsr_receiver
+            #(
+                .ASYNC              (0                  ),
+                .INIT_LFSR          (32'h1234_5678      ),
+                .POLYNOMIAL         (32'h8020_0003      )
+            )
+        u_fifo32_lfsr_receiver
+            (
+                .s_axi4l            (axi4l_dec[DEC_RX]  ),
+                .s_axi4s            (axi4s_lfsr_rx      ),
+                .mon_error          (lfsr_rx_error      )
+            );
+
+
+    // --------------------------------
+    //  LFSR TX
+    // --------------------------------
 
     jelly3_axi4s_if
             #(
-                .USE_STRB   (1      ),
-                .USE_LAST   (1      ),
-                .DATA_BITS  (32     )
+                .USE_STRB           (1                  ),
+                .USE_LAST           (1                  ),
+                .DATA_BITS          (32                 )
             )
-        axi4s_stream_tx
+        axi4s_lfsr_tx
             (
-                .aresetn    (~reset ),
-                .aclk       (clk    ),
-                .aclken     (1'b1   )
+                .aresetn            (~reset             ),
+                .aclk               (clk                ),
+                .aclken             (1'b1               )
             );
 
+
+    fifo32_lfsr_transmitter
+            #(
+                .ASYNC              (0                  ),
+                .INIT_LFSR          (32'h1234_5678      ),
+                .INIT_TX_LEN        (32'h0000_0000      ),
+                .POLYNOMIAL         (32'h8020_0003      )
+            )
+        u_fifo32_lfsr_transmitter
+            (
+                .s_axi4l            (axi4l_dec[DEC_TX].s),
+                .m_axi4s            (axi4s_lfsr_tx.m    )
+            );
+    
     fifo32_cmd_axi4s_tx
             #(
-                .ASYNC          (1                  ),
-                .DATA_BUF_SIZE  (1024               ),
-                .CMD_BUF_SIZE   (128                ),
-                .TIMER_BITS     (16                 )
+                .ASYNC              (1                  ),
+                .DATA_BUF_SIZE      (4096               ),
+                .CMD_BUF_SIZE       (256                ),
+                .TIMER_BITS         (16                 )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len        (control3[10:0]     ),
-                .limit_len      (control4[10:0]     ),
-                .timeout        (control5[15:0]     ),
+                .max_len            (control3[10:0]     ),
+                .limit_len          (control4[10:0]     ),
+                .timeout            (control5[15:0]     ),
 
-                .s_axi4s        (axi4s_stream_tx.s  ),
-                .m_axi4s        (axi4s_ft601_tx[1].m)
+                .s_axi4s            (axi4s_lfsr_tx.s    ),
+                .m_axi4s            (axi4s_ft601_tx[1].m)
             );
 
-
-    image_processing
+    logic   pkt_error;
+    fifo32_cmd_axi4s_checker
             #(
-                .WIDTH_BITS     (16                     ),
-                .HEIGHT_BITS    (16                     ),
-                .FILTER_NUM     (4                      ),
-                .FILTER_ROWS    (3                      ),
-                .FILTER_COLS    (3                      ),
-                .TAPS           (32                     ),
-                .MAX_COLS       (1024                   ),
-                .RAM_TYPE       ("block"                ),
-                .BYPASS_SIZE    (1'b1                   ),
-                .DEVICE         ("RTL"                  )
+                .MIN_PACKET_SIZE    (4                      ),
+                .MAX_PACKET_SIZE    (4096                   )
             )
-        u_image_processing
+        u_fifo32_cmd_axi4s_checker
             (
-                .in_update_req  (1'b1                   ),
-                .param_width    (control0[15:0]         ),
-                .param_height   (control1[15:0]         ),
+                .mon_axi4s          (axi4s_ft601_tx[1].mon  ),
 
-                .s_axi4s        (axi4s_stream_rx.s      ),
-                .m_axi4s        (axi4s_stream_tx.m      ),
-                
-                .s_axi4l        (axi4l_dec[DEC_IMG].s   )
+                .error              (pkt_error              )
             );
-
 
 
     // --------------------------------
@@ -405,24 +427,13 @@ module rtcl_tp25k_usb3_morphology_filter
     always_ff @(posedge ft601_clk) begin
         usb_counter <= usb_counter + 1'b1;
     end
+    
 
-    logic   pkt_error;
-    fifo32_cmd_axi4s_checker
-            #(
-                .MIN_PACKET_SIZE    (4                      ),
-                .MAX_PACKET_SIZE    (4096                   )
-            )
-        u_fifo32_cmd_axi4s_checker
-            (
-                .mon_axi4s          (axi4s_ft601_tx[1].mon  ),
-
-                .error              (pkt_error              )
-            );
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
     assign led[2] = pkt_error       ;
-    assign led[3] = 0               ;
+    assign led[3] = lfsr_rx_error   ;
 
 
     // --------------------------------
