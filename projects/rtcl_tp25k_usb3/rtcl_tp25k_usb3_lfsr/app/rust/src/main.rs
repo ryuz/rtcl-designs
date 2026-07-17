@@ -45,9 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
 
     for i in 0..2 {
-        axi4l.write_axi4l(REG_LFSR_TX_TX_LEN as u32,   2-1, 0xf)?;
+        axi4l.write_axi4l(REG_LFSR_TX_TX_LEN as u32, 1024-1, 0xf)?;
         axi4l.write_axi4l(REG_LFSR_TX_START  as u32,     1, 0xf)?;
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
     println!("End Test");

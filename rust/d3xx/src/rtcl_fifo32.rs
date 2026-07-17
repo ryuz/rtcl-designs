@@ -170,7 +170,8 @@ pub struct Axi4Stream {
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
     const OVERLAPS : usize = 16;
-    const READ_UNIT : usize = 1024;
+//  const READ_UNIT : usize = 1024;
+    const READ_UNIT : usize = 0x10000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
@@ -206,7 +207,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-        println!("recv_thread: rx_size: {} bytes", rx_size);
+//      println!("recv_thread: rx_size: {} bytes", rx_size);
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;
@@ -232,7 +233,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                 packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
                 assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
                 rx_buffer.drain(0..4);
-                println!("axi4s : tuser : {} packet_size: {} bytes", stream.tuser, packet_size);
+//              println!("axi4s : tuser : {} last : {}, packet_size: {} bytes", stream.tuser, packet_last, packet_size);
                 header = false;
             }
             else {
