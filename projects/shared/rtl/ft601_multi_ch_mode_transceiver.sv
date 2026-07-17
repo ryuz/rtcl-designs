@@ -105,7 +105,7 @@ module ft601_multi_ch_mode_transceiver
             reg_ft601_data_t <= 32'h0000_ff00;
             reg_ft601_data_o <= 32'hffff_ffff;
         end
-        else begin          
+        else begin
             case ( state )
             IDLE:
                 begin
@@ -129,7 +129,7 @@ module ft601_multi_ch_mode_transceiver
                     end
                     // write判定(優先)
                     for ( int i = 0; i < CHANNELS; i++ ) begin
-                        if ( ~reg_ft601_data_i[8+i] && s_fifo_valid[i] ) begin
+                        if ( ~reg_ft601_data_i[8+i] && (s_fifo_valid[i] || buf_en[i]) ) begin
                             state               <= WRITE_COMMAND;
                             channel             <= channel_t'(i);
                             reg_ft601_wr_n      <= 1'b0         ;
