@@ -192,229 +192,44 @@ module tb_main
             @(negedge ft601_clk);
         end
 
+        /* 
         $display("Write height");
         axi4l_write(BASE_SYSCTL + `REG_PERIPHERAL_SYSCTL_CONTROL0 * 4, 128/32, 4'hf);   // width
         #100;
         $display("Write width");
         axi4l_write(BASE_SYSCTL + `REG_PERIPHERAL_SYSCTL_CONTROL1 * 4, 8,      4'hf);   // height
-
-        $display("Write TX");
-        axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 32,  4'hf);  // tx_len
-        axi4l_write(BASE_LFSR_TX + 32'h10 * 4,  1,  4'hf);  // start
-        #100;
-
-        ft601_read(1, 32+4);
-
-        for ( int i = 0; i < 8; i++ ) begin
-            @(negedge ft601_clk);
-            if ( i == 0 ) begin
-                packet[0] = 32'h0040_8110;
-            end
-            else begin
-                packet[0] = 32'h0040_8010;
-            end
-            for ( int j = 0; j < 16; j++ ) begin
-                packet[j+1][8*0 +: 8] = i*16 + j*4 + 0;
-                packet[j+1][8*1 +: 8] = i*16 + j*4 + 1;
-                packet[j+1][8*2 +: 8] = i*16 + j*4 + 2;
-                packet[j+1][8*3 +: 8] = i*16 + j*4 + 3;
-            end
-
-            ft601_write(1, packet);
-            #100;
-        end
-
-        
-//       axi4l_write()
-
-        /*
-        // Read Command
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ef00;
-        @(negedge ft601_clk);
-
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
-        end
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h1         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0004_0003;   // read command
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h1         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0000_0000;   // read address
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-        @(negedge ft601_clk);
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        for ( int i = 0; i < 20; i++ ) begin
-            @(negedge ft601_clk);
-        end
-
-        // Ack
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_fe00;
-        @(negedge ft601_clk);
-
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
-        end
-        ft601_be_t   = 4'hf         ;
-        ft601_data_t = 32'hffff_ffff;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b0;
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-
-        #10000
-        @(negedge ft601_clk);
-
-        // Write Command
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ef00;
-        @(negedge ft601_clk);
-
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
-        end
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h1         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0008_f002;   // write command
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h1         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0004_0040;   // write address
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b0;
-        ft601_be_t   = 4'h0         ;
-        ft601_be_o   = 4'h1         ;
-        ft601_data_t = 32'h0000_0000;
-        ft601_data_o = 32'h0000_0001;   // write data
-        @(negedge ft601_clk);
-
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-        @(negedge ft601_clk);
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        for ( int i = 0; i < 20; i++ ) begin
-            @(negedge ft601_clk);
-        end
-
-        // Ack
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_fe00;
-        @(negedge ft601_clk);
-
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
-        end
-        ft601_be_t   = 4'hf         ;
-        ft601_data_t = 32'hffff_ffff;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b0;
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-
-        #100000;
-        @(negedge ft601_clk);
-
-        for ( int i = 0; i < 3; i++ ) begin
-
-            // 画像受信
-            ft601_rxf_n  = 1'b1;
-            ft601_data_t = 32'hffff_00ff;
-            ft601_data_o = 32'h0000_fd00;
-            @(negedge ft601_clk);
-
-
-            while ( dly_ft601_wr_n != 1'b0 ) begin
-                @(negedge ft601_clk);
-            end
-            ft601_be_t   = 4'hf         ;
-            ft601_data_t = 32'hffff_ffff;
-            @(negedge ft601_clk);
-            ft601_rxf_n  = 1'b0;
-
-            while ( dly_ft601_wr_n == 1'b0 ) begin
-                @(negedge ft601_clk);
-            end
-            ft601_rxf_n  = 1'b1;
-            ft601_data_t = 32'hffff_00ff;
-            ft601_data_o = 32'h0000_fd00;
-        end
-
-        #1000;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-
-        // end
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        for ( int i = 0; i < 100; i++ ) begin
-            @(negedge ft601_clk);
-        end
         */
 
-        #10000;
+        for ( int loop = 0; loop < 2; loop++ ) begin
+            $display("Write TX");
+            axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 1024-1,  4'hf);  // tx_len
+            axi4l_write(BASE_LFSR_TX + 32'h10 * 4,  1,      4'hf);  // start
+            #100;
 
+            ft601_read(1, 1024+1-4);
+
+            for ( int i = 0; i < 8; i++ ) begin
+                @(negedge ft601_clk);
+                if ( i == 0 ) begin
+                    packet[0] = 32'h0040_8110;
+                end
+                else begin
+                    packet[0] = 32'h0040_8010;
+                end
+                for ( int j = 0; j < 16; j++ ) begin
+                    packet[j+1][8*0 +: 8] = i*16 + j*4 + 0;
+                    packet[j+1][8*1 +: 8] = i*16 + j*4 + 1;
+                    packet[j+1][8*2 +: 8] = i*16 + j*4 + 2;
+                    packet[j+1][8*3 +: 8] = i*16 + j*4 + 3;
+                end
+            #1000;
+            end
+//          ft601_write(1, packet);
+        end
+        #1000;
         $finish;
+
+
     end
 
 
