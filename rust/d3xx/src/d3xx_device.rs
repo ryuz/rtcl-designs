@@ -410,6 +410,22 @@ impl D3xxReader {
         Ok(buffer[0..bytes_read as usize].to_vec())
     }
 
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    pub fn read_until_size(&self, len: usize, max_reads: usize) -> D3xxResult<Vec<u8>> {
+        let mut buffer = Vec::with_capacity(len);
+
+        for _ in 0..max_reads {
+            if buffer.len() >= len {
+                break;
+            }
+
+            let mut data = self.read(len - buffer.len())?;
+            buffer.append(&mut data);
+        }
+
+        Ok(buffer)
+    }
+
     pub fn initialize_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe { FT_InitializeOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
         if status != FT_OK {

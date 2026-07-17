@@ -116,6 +116,10 @@ impl RtclFifo32AxilD3xx {
 }
 
 impl RtRtclFifo32AxisRxD3xx {
+    pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
+        self.axi4s_reader.set_timeout(timeout_us)
+    }
+
     pub fn recv_axi4s(&mut self, size: usize) -> Result<AxiStream, Box<dyn Error>> {
         if size == 0 {
             return Err("AXI4S requested size must be > 0".into());
@@ -228,8 +232,9 @@ impl RtRtclFifo32AxisRxD3xx {
     }
 
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        let rx_data = self.axi4s_reader.read((width + 4) * height)?;
-        println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
+        self.axi4s_reader.set_timeout(5000)?;
+        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 2)?;
+//      println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
         let mut image = Vec::with_capacity(width * height);
         for y in 0..height {
             let start = y * (width + 4);

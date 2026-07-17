@@ -31,14 +31,18 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
+//  let width:  usize = 4096;
+//  let height: usize = 4096;
+    let width:  usize = 2048;
+    let height: usize = 2048;
 //  let width:  usize = 1024;
 //  let height: usize = 1024;
-//   let width:  usize = 512;
+//  let width:  usize = 512;
 //  let height: usize = 512;
 //  let width:  usize = 256;
 //  let height: usize = 256;
-    let width:  usize = 128;
-    let height: usize = 128;
+//  let width:  usize = 128;
+//  let height: usize = 128;
 
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
@@ -67,10 +71,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let line_bytes = width / 8;
     let mut tx_data = vec![0u8; line_bytes * height];
     {
+//      let mut file = File::open("input_4096x4096.bin").map_err(|e| e.to_string())?;
+        let mut file = File::open("input_2048x2048.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_1024x1024.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_512x512.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_256x256.bin").map_err(|e| e.to_string())?;
-        let mut file = File::open("input_128x128.bin").map_err(|e| e.to_string())?;
+//      let mut file = File::open("input_128x128.bin").map_err(|e| e.to_string())?;
         file.read_exact(&mut tx_data).map_err(|e| e.to_string())?;
     }
     println!("Input image loaded: {} bytes", tx_data.len());
@@ -89,6 +95,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //  std::thread::sleep(std::time::Duration::from_millis(10));
     let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
+        axi4s_rx.set_timeout(5000).map_err(|e| e.to_string())?;
         axi4s_rx
 //          .recv_image(line_bytes, height)
             .recv_frame(line_bytes, height)
