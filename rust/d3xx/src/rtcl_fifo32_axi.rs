@@ -88,6 +88,7 @@ impl RtclFifo32AxilD3xx {
         command.extend_from_slice(&addr.to_le_bytes());
         command.extend_from_slice(&data.to_le_bytes());
         self.axi4l_writer.write(&command)?;
+        std::thread::sleep(std::time::Duration::from_millis(1)); // 応答が返ってくるまで少し待つ
 
         // 応答受信
         let response = self.axi4l_reader.read(4)?;
@@ -105,6 +106,7 @@ impl RtclFifo32AxilD3xx {
         command.extend_from_slice(&4u16.to_le_bytes());
         command.extend_from_slice(&addr.to_le_bytes());
         self.axi4l_writer.write(&command)?;
+        std::thread::sleep(std::time::Duration::from_millis(1)); // 応答が返ってくるまで少し待つ
 
         // 応答受信
         let response = self.axi4l_reader.read(4*2)?;
@@ -233,7 +235,7 @@ impl RtRtclFifo32AxisRxD3xx {
 
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
         self.axi4s_reader.set_timeout(5000)?;
-        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 2)?;
+        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 10)?;
 //      println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
         let mut image = Vec::with_capacity(width * height);
         for y in 0..height {

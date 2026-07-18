@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use rtcl_d3xx::*;
 
 const BASE_SYSCTL : usize = 0x0000_0000;
@@ -27,6 +27,55 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 //const REG_MORPHO_PARAM_FILTER   : usize = 0x10;
 
 
+fn recv_video_timeout(
+    axi4s_rx: &RtclAxi4sRxD3xx,
+    line_bytes: usize,
+    height: usize,
+    timeout: Duration,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    if line_bytes == 0 || height == 0 {
+        return Err("line_bytes and height must be > 0".into());
+    }
+
+    let expected_size = line_bytes
+        .checked_mul(height)
+        .ok_or("frame size overflow")?;
+    let deadline = Instant::now() + timeout;
+    let mut frame = Vec::with_capacity(expected_size);
+    let mut started = false;
+
+    while frame.len() < expected_size {
+        let now = Instant::now();
+        if now >= deadline {
+            return Err("timeout waiting for video frame".into());
+        }
+        let remain = deadline.saturating_duration_since(now);
+        let packet = axi4s_rx.recv_axi4s_timeout(remain)?;
+
+        // tuser[0] is SOF. Resynchronize on every new frame start.
+        if (packet.tuser & 0x01) != 0 {
+            frame.clear();
+            started = true;
+        }
+        if !started {
+            continue;
+        }
+        if packet.tdata.len() != line_bytes {
+            return Err(format!(
+                "Received line with unexpected size: {} expected: {}",
+                packet.tdata.len(),
+                line_bytes
+            )
+            .into());
+        }
+
+        frame.extend_from_slice(&packet.tdata);
+    }
+
+    Ok(frame)
+}
+
+
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
@@ -45,7 +94,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 //  let height: usize = 128;
 
     // OpenDevice
-    let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
+    let (axi4l, axi4s_rx, axi4s_tx) = RtclVideoCaptureD3xx::new(0, 1)?;
 
     // direct read/write
     println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CORE_ID    ) as u32)?);
@@ -95,10 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //  std::thread::sleep(std::time::Duration::from_millis(10));
     let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
-        axi4s_rx.set_timeout(5000).map_err(|e| e.to_string())?;
-        axi4s_rx
-//          .recv_image(line_bytes, height)
-            .recv_frame(line_bytes, height)
+        recv_video_timeout(&axi4s_rx, line_bytes, height, Duration::from_millis(5000))
             .map_err(|e| e.to_string())
     });
 

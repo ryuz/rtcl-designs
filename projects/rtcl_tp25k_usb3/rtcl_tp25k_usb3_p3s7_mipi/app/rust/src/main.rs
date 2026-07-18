@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // OpenDevice
 //  let mut usb = RtclFifo32CtlD3xx::new(0)?;
-    let usb = RtclVideoCaptureD3xx::new(0, 10)?;
+    let usb = RtclVideoCaptureD3xx::new_capture(0, 10)?;
 
     // direct read/write
     println!("id : 0x{:08x}", usb.read_axi4l(0)?);

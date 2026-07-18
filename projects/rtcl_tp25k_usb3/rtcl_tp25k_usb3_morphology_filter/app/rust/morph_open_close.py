@@ -59,12 +59,12 @@ def main() -> None:
     t0 = time.perf_counter()
 
     # 1) opening part
-    stage1_erode = cv2.erode(img, kernel, iterations=1)
-    stage2_dilate = cv2.dilate(stage1_erode, kernel, iterations=1)
+    stage1_erode = cv2.erode(img, kernel, iterations=2)
+    stage2_dilate = cv2.dilate(stage1_erode, kernel, iterations=2)
 
     # 2) closing part
-    stage3_dilate = cv2.dilate(stage2_dilate, kernel, iterations=1)
-    stage4_erode = cv2.erode(stage3_dilate, kernel, iterations=1)
+    stage3_dilate = cv2.dilate(stage2_dilate, kernel, iterations=2)
+    stage4_erode = cv2.erode(stage3_dilate, kernel, iterations=2)
 
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
 

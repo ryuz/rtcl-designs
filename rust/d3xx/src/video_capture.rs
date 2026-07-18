@@ -5,7 +5,11 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use crate::rtcl_fifo32::{Axi4Stream, RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclFifo32CtlD3xx};
+use crate::rtcl_fifo32::{
+    Axi4Stream, RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx, RtclFifo32CtlD3xx,
+};
+
+pub type RtclVideoCaptureHandlesD3xx = (RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx);
 
 #[derive(Debug, Clone)]
 pub struct VideoFrame {
@@ -99,12 +103,28 @@ pub struct RtclVideoCaptureD3xx {
 }
 
 impl RtclVideoCaptureD3xx {
-    pub fn new(dev_index: usize, max_buffered_frames: usize) -> Result<Self, Box<dyn Error>> {
-        let (axi4l, axi4s_rx, _axi4s_tx) = RtclFifo32CtlD3xx::new(dev_index)?;
-        Self::with_handles(axi4l, axi4s_rx, max_buffered_frames)
+    pub fn new(
+        dev_index: usize,
+        _max_buffered_frames: usize,
+    ) -> Result<RtclVideoCaptureHandlesD3xx, Box<dyn Error>> {
+        RtclFifo32CtlD3xx::new(dev_index)
     }
 
     pub fn with_handles(
+        axi4l: RtclAxi4lD3xx,
+        axi4s_rx: RtclAxi4sRxD3xx,
+        axi4s_tx: RtclAxi4sTxD3xx,
+        _max_buffered_frames: usize,
+    ) -> Result<RtclVideoCaptureHandlesD3xx, Box<dyn Error>> {
+        Ok((axi4l, axi4s_rx, axi4s_tx))
+    }
+
+    pub fn new_capture(dev_index: usize, max_buffered_frames: usize) -> Result<Self, Box<dyn Error>> {
+        let (axi4l, axi4s_rx, _axi4s_tx) = RtclFifo32CtlD3xx::new(dev_index)?;
+        Self::with_capture_handles(axi4l, axi4s_rx, max_buffered_frames)
+    }
+
+    pub fn with_capture_handles(
         axi4l: RtclAxi4lD3xx,
         axi4s_rx: RtclAxi4sRxD3xx,
         max_buffered_frames: usize,
