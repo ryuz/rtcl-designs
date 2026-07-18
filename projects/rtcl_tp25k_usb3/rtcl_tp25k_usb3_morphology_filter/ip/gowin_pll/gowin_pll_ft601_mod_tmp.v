@@ -1,12 +1,12 @@
 //Copyright (C)2014-2026 Gowin Semiconductor Corporation.
 //All rights reserved.
 //File Title: Template file for instantiation
-//Tool Version: V1.9.12.02_SP2
+//Tool Version: V1.9.12.02_SP2 (64-bit)
 //IP Version: 1.0
 //Part Number: GW5A-LV25MG121NC1/I0
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Sun Jun 28 18:52:14 2026
+//Created Time: Fri Jul 17 21:15:41 2026
 
 //Change the instance name and port connections to the signal names
 //--------Copy here to design--------

@@ -18,7 +18,7 @@ module image_processing
             parameter   int     HEIGHT_BITS = 16                            ,
             parameter   type    width_t     = logic [WIDTH_BITS-1:0]        ,
             parameter   type    height_t    = logic [HEIGHT_BITS-1:0]       ,
-            parameter   int     FILTER_NUM  = 4                             ,
+            parameter   int     FILTER_NUM  = 4*3                           ,
             parameter   int     FILTER_ROWS = 3                             ,
             parameter   int     FILTER_COLS = 3                             ,
             parameter   int     TAPS        = 32                            ,
