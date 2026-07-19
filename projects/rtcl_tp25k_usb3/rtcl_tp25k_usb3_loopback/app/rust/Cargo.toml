@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 rand = "0.10.1"
-rtcl-d3xx = { path = "../../../../../rust/rtcl-d3xx-rs" }
+rtcl-d3xx = { path = "../../../../../rust/d3xx" }
 jelly-mem_access = { version="0.2.8" }
 jelly-pac = { version="0.1.3" }
 jelly-lib = { version="0.2.3" }

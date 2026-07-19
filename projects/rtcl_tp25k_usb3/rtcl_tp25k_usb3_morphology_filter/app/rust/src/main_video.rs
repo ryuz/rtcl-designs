@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -9,13 +10,23 @@ const BASE_SYSCTL : usize = 0x0000_0000;
 const BASE_MORPHO : usize = 0x1000_0000;
 
 
-const REGADR_SYSCTL_CORE_ID  : usize = 0x0;
-const REGADR_SYSCTL_CONTROL0 : usize = 0x10;    // width
-const REGADR_SYSCTL_CONTROL1 : usize = 0x11;    // height
-//const REGADR_SYSCTL_CONTROL2 : usize = 0x12;
-//const REGADR_SYSCTL_CONTROL3 : usize = 0x13;    // max
-//const REGADR_SYSCTL_CONTROL4 : usize = 0x14;    // limit
-//const REGADR_SYSCTL_CONTROL5 : usize = 0x15;    // timeout
+const REG_SYSCTL_CORE_ID  : usize = 0x0;
+const REG_SYSCTL_CONTROL0 : usize = 0x10;    // width
+const REG_SYSCTL_CONTROL1 : usize = 0x11;    // height
+const REG_SYSCTL_CONTROL2 : usize = 0x12;
+const REG_SYSCTL_CONTROL3 : usize = 0x13;    // max
+const REG_SYSCTL_CONTROL4 : usize = 0x14;    // limit
+const REG_SYSCTL_CONTROL5 : usize = 0x15;    // timeout
+const REG_SYSCTL_CONTROL6 : usize = 0x16;    // timeout
+const REG_SYSCTL_CONTROL7 : usize = 0x17;    // timeout
+const REG_SYSCTL_MONITOR0 : usize = 0x18;
+const REG_SYSCTL_MONITOR1 : usize = 0x19;
+const REG_SYSCTL_MONITOR2 : usize = 0x1a;
+const REG_SYSCTL_MONITOR3 : usize = 0x1b;
+const REG_SYSCTL_MONITOR4 : usize = 0x1c;
+const REG_SYSCTL_MONITOR5 : usize = 0x1d;
+const REG_SYSCTL_MONITOR6 : usize = 0x1e;
+const REG_SYSCTL_MONITOR7 : usize = 0x1f;
 
 const REG_MORPHO_CORE_ID        : usize = 0x00;
 const REG_MORPHO_CORE_VERSION   : usize = 0x01;
@@ -97,14 +108,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (axi4l, axi4s_rx, axi4s_tx) = RtclVideoCaptureD3xx::new(0, 1)?;
 
     // direct read/write
-    println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CORE_ID    ) as u32)?);
+    println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CORE_ID    ) as u32)?);
     println!("MORPHO_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_ID       ) as u32)?);
     println!("MORPHO_CORE_VERSION   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_VERSION  ) as u32)?);
     println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
     println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
 
-    axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
-    axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
+
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
 
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b11111111, 0xf)?;
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b00111100, 0xf)?;
@@ -148,6 +164,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             .map_err(|e| e.to_string())
     });
 
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
+
     tx_handle
         .join()
         .map_err(|_| "TX thread panicked".to_string())
@@ -160,7 +182,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 時間計測終了
     let elapsed = start_time.elapsed();
     println!("Processing time: {} microseconds", elapsed.as_micros());
-
 
     // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）
     println!("Writing output image...");

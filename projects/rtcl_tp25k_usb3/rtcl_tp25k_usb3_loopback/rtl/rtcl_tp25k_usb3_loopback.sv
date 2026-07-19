@@ -122,6 +122,12 @@ module rtcl_tp25k_usb3_loopback
                 .aclken     (1'b1   )
             );
 
+
+    logic               mon_ft601_wr_n  ;
+    logic               mon_ft601_rxf_n ;
+    logic               mon_ft601_txe_n ;
+    logic   [3:0]       mon_ft601_be    ;
+    logic   [31:0]      mon_ft601_data  ;
     ft601_multi_ch_mode
             #(
                 .CHANNELS           (4                          )
@@ -143,8 +149,13 @@ module rtcl_tp25k_usb3_loopback
                 .ft601_data_t       (ft601_data_t               ),
 
                 .s_axi4s_tx         (axi4s_ft601                ),
-                .m_axi4s_rx         (axi4s_ft601                )
+                .m_axi4s_rx         (axi4s_ft601                ),
 
+                .mon_wr_n           (mon_ft601_wr_n             ),
+                .mon_rxf_n          (mon_ft601_rxf_n            ),
+                .mon_txe_n          (mon_ft601_txe_n            ),
+                .mon_be             (mon_ft601_be               ),
+                .mon_data           (mon_ft601_data             )
             );
 
 

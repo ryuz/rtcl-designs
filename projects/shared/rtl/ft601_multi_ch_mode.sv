@@ -37,8 +37,13 @@ module ft601_multi_ch_mode
             jelly3_axi4s_if.m                           m_axi4s_rx  [CHANNELS]  ,
 
             output  var logic   [CHANNELS-1:0][31:0]    rx_counter              ,
-            output  var logic   [CHANNELS-1:0][31:0]    tx_counter          
+            output  var logic   [CHANNELS-1:0][31:0]    tx_counter              ,
 
+            output  var logic                           mon_wr_n                ,
+            output  var logic                           mon_rxf_n               ,
+            output  var logic                           mon_txe_n               ,
+            output  var be_t                            mon_be                  ,
+            output  var data_t                          mon_data                
         );
     
     be_t    [CHANNELS-1:0]  ft601_tx_fifo_strb       ;
@@ -83,7 +88,13 @@ module ft601_multi_ch_mode
                 .m_fifo_valid       (ft601_rx_fifo_valid        ),
 
                 .rx_counter         (rx_counter                 ),
-                .tx_counter         (tx_counter                 )
+                .tx_counter         (tx_counter                 ),
+
+                .mon_wr_n           (mon_wr_n                   ),
+                .mon_rxf_n          (mon_rxf_n                  ),
+                .mon_txe_n          (mon_txe_n                  ),
+                .mon_be             (mon_be                     ),
+                .mon_data           (mon_data                   )
             );
 
 

@@ -43,7 +43,13 @@ module ft601_multi_ch_mode_transceiver
             output  var logic   [CHANNELS-1:0]          m_fifo_valid        ,
 
             output  var logic   [CHANNELS-1:0][31:0]    rx_counter          ,
-            output  var logic   [CHANNELS-1:0][31:0]    tx_counter          
+            output  var logic   [CHANNELS-1:0][31:0]    tx_counter          ,
+
+            output  var logic                           mon_wr_n            ,
+            output  var logic                           mon_rxf_n           ,
+            output  var logic                           mon_txe_n           ,
+            output  var be_t                            mon_be              ,
+            output  var data_t                          mon_data            
         );
     
     localparam  int     CHANNELS_BITS = CHANNELS > 1 ? $clog2(CHANNELS) : 1;
@@ -101,6 +107,7 @@ module ft601_multi_ch_mode_transceiver
             buf_en           <= '0           ;
             buf_data         <= 'x           ;
             buf_strb         <= 'x           ;
+            mon_wr_n         <= 1'b1         ;
             reg_ft601_wr_n   <= 1'b1         ;
             reg_ft601_be_t   <= 4'h0         ;
             reg_ft601_be_o   <= 4'hf         ;
@@ -111,6 +118,7 @@ module ft601_multi_ch_mode_transceiver
             case ( state )
             IDLE:
                 begin
+                    mon_wr_n         <= 1'b1         ;
                     reg_ft601_wr_n   <= 1'b1         ;
                     reg_ft601_be_t   <= 4'h0         ;
                     reg_ft601_be_o   <= 4'hf         ;
@@ -121,6 +129,7 @@ module ft601_multi_ch_mode_transceiver
                         if ( ~reg_ft601_data_i[12+i] && !m_fifo_almost_full[i] ) begin
                             state               <= READ_COMMAND ;
                             channel             <= channel_t'(i);
+                            mon_wr_n            <= 1'b0         ;
                             reg_ft601_wr_n      <= 1'b0         ;
                             reg_ft601_be_t      <= 4'h0         ;
                             reg_ft601_be_o      <= 4'h0         ;
@@ -135,6 +144,7 @@ module ft601_multi_ch_mode_transceiver
                         if ( ~reg_ft601_data_i[8+i] && (s_fifo_valid[i] || buf_en[i]) ) begin
                             state               <= WRITE_COMMAND;
                             channel             <= channel_t'(i);
+                            mon_wr_n            <= 1'b0         ;
                             reg_ft601_wr_n      <= 1'b0         ;
                             reg_ft601_be_t      <= 4'h0         ;
                             reg_ft601_be_o      <= 4'h1         ;
@@ -149,6 +159,7 @@ module ft601_multi_ch_mode_transceiver
                 READ_COMMAND:
                     begin
                         state            <= READ_TA1     ;
+                        mon_wr_n         <= 1'b0         ;
                         reg_ft601_wr_n   <= 1'b0         ;
                         reg_ft601_be_t   <= 4'hf         ;
                         reg_ft601_data_t <= 32'hffff_ffff;
@@ -168,6 +179,7 @@ module ft601_multi_ch_mode_transceiver
                     begin
                         if ( ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
                             state            <= FINAL1       ;
+                            mon_wr_n         <= 1'b1         ;
                             reg_ft601_wr_n   <= 1'b1         ;
                             reg_ft601_be_t   <= 4'h0         ;
                             reg_ft601_be_o   <= 4'hf         ;
@@ -184,6 +196,7 @@ module ft601_multi_ch_mode_transceiver
                 WRITE_TA:
                     begin
                         state            <= WRITE_DATA          ;
+                        mon_wr_n         <= 1'b0                ;
                         reg_ft601_wr_n   <= 1'b0                ;
                         reg_ft601_data_t <= 32'h0000_0000       ;
                         if ( buf_en[channel] ) begin
@@ -203,6 +216,7 @@ module ft601_multi_ch_mode_transceiver
                         if ( !s_fifo_valid[channel] || ft601_rxf_n == 1'b1 ) begin
                             state            <= FINAL1                  ;
                             buf_en[channel]  <= ft601_rxf_n == 1'b1     ;
+                            mon_wr_n         <= 1'b1                    ;
                             reg_ft601_wr_n   <= 1'b1                    ;
                             reg_ft601_be_t   <= 4'h0                    ;
                             reg_ft601_be_o   <= 4'hf                    ;
@@ -222,6 +236,7 @@ module ft601_multi_ch_mode_transceiver
                 FINAL1:
                     begin
                         state            <= FINAL2       ;
+                        mon_wr_n         <= 1'b1         ;
                         reg_ft601_wr_n   <= 1'b1         ;
                         reg_ft601_be_t   <= 4'h0         ;
                         reg_ft601_be_o   <= 4'hf         ;
@@ -232,6 +247,7 @@ module ft601_multi_ch_mode_transceiver
                 FINAL2:
                     begin
                         state            <= IDLE         ;
+                        mon_wr_n         <= 1'b1         ;
                         reg_ft601_wr_n   <= 1'b1         ;
                         reg_ft601_be_t   <= 4'h0         ;
                         reg_ft601_be_o   <= 4'hf         ;
@@ -303,6 +319,11 @@ module ft601_multi_ch_mode_transceiver
     assign ft601_be_t   = reg_ft601_be_t    ;
     assign ft601_data_o = reg_ft601_data_o  ;
     assign ft601_data_t = reg_ft601_data_t  ;
+
+    assign mon_rxf_n    = reg_ft601_rxf_n   ;
+    assign mon_txe_n    = reg_ft601_txe_n   ;
+    assign mon_be       = reg_ft601_be_i    ;
+    assign mon_data     = reg_ft601_data_i  ;
 
 endmodule
 

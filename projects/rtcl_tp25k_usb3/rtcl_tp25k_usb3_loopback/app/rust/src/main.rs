@@ -2,7 +2,8 @@ use std::error::Error;
 use std::time::Instant;
 use rtcl_d3xx::*;
 
-const CHHANNELS: usize = 1;
+const CHHANNELS: usize = 4;
+
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 loopback test");
@@ -17,7 +18,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     const PACKET_SIZE: usize = 4*128;
     const ITERETIONS: usize = 1000;
-    
+
+    let mut tx_data = [0u8; PACKET_SIZE];
+
+    // 初期テスト
+    for ch in 0..CHHANNELS {
+        println!("channel{} write", ch);
+        wait_key_press();
+        usb_txs[ch].write(&tx_data)?;
+        println!("channel{} read", ch);
+        wait_key_press();
+        let rx_data = usb_rxs[ch].read(PACKET_SIZE)?;
+        if rx_data != tx_data {
+            eprintln!("Data mismatch on channel {}!", ch);
+        }
+    }
+
+
 //   for ch in 0..CHHANNELS {
 //      usb_txs[ch].set_stream_pipe(0x10000)?;
 //      usb_rxs[ch].set_stream_pipe(0x10000)?;
@@ -110,4 +127,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Throughput: {:.2} Mbit/s", mbit_per_sec);
 
     Ok(())
+}
+
+
+fn wait_key_press() {
+    use std::io::{self, Read};
+    println!("Press any key to continue...");
+    let _ = io::stdin().read(&mut [0u8]).unwrap();
 }
