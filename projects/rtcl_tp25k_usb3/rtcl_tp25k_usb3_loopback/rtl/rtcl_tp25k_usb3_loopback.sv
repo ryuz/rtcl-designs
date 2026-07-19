@@ -159,22 +159,20 @@ module rtcl_tp25k_usb3_loopback
         usb_counter <= usb_counter + 1'b1;
     end
 
-
-
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
     assign led[2] = ft601_wakeup_n  ;
     assign led[3] = reset           ;
 
     // PMOD
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_txe_n;
-    assign pmod[2] = ft601_wr_n;
-    assign pmod[3] = '0;
-    assign pmod[4] = ft601_data_i[8];
-    assign pmod[5] = ft601_data_i[9];
-    assign pmod[6] = ft601_data_i[12];
-    assign pmod[7] = ft601_data_i[13];
+    assign pmod[0] = ft601_data_i[8];
+    assign pmod[1] = ft601_data_i[9];
+    assign pmod[2] = ft601_data_i[10];
+    assign pmod[3] = ft601_data_i[11];
+    assign pmod[4] = ft601_data_i[12];
+    assign pmod[5] = ft601_data_i[13];
+    assign pmod[6] = ft601_data_i[14];
+    assign pmod[7] = ft601_data_i[15];
 
 
 endmodule

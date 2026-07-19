@@ -90,6 +90,83 @@ module tb_main
         assign ft601_data_i[i] = ft601_data_t[i] ? dly_ft601_data[i] : ft601_data_o[i];
     end
 
+    task ft601_write(input int ch, input [31:0] data[]);
+        begin
+            $display("ft601_write: ch=%0d, data=%p", ch, data);
+            @(negedge ft601_clk);
+            ft601_rxf_n  = 1'b1;
+            ft601_be_t   = 4'hf         ;
+            ft601_be_o   = 4'hf         ;
+            ft601_data_t = 32'hffff_00ff;
+            ft601_data_o = 32'h0000_ff00 & ~(1 << (12+ch));
+            @(negedge ft601_clk);
+
+            while ( dly_ft601_wr_n != 1'b0 ) begin
+                @(negedge ft601_clk);
+            end
+            @(negedge ft601_clk);
+            @(negedge ft601_clk);
+
+            for ( int i = 0; i < data.size(); i++ ) begin
+                $display("data: data=%h", data[i]);
+
+                ft601_rxf_n  = 1'b0;
+                ft601_be_t   = 4'h0         ;
+                ft601_be_o   = 4'h1         ;
+                ft601_data_t = 32'h0000_0000;
+                ft601_data_o = data[i]      ;
+                @(negedge ft601_clk);
+            end
+
+            ft601_rxf_n  = 1'b1;
+            ft601_be_t   = 4'hf         ;
+            ft601_be_o   = 4'h0         ;
+            ft601_data_t = 32'hffff_00ff;
+            ft601_data_o = 32'h0000_ff00;
+            @(negedge ft601_clk);
+            @(negedge ft601_clk);
+        end
+    endtask
+
+    task ft601_read(input int ch, input int size);
+        ft601_rxf_n  = 1'b1;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00 & (~(1 << (8+ch)));
+        @(negedge ft601_clk);
+
+        while ( dly_ft601_wr_n != 1'b0 ) begin
+            @(negedge ft601_clk);
+        end
+        ft601_be_t   = 4'hf         ;
+        ft601_data_t = 32'hffff_ffff;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b0;
+
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        for ( int i = 0; i < size; i++ ) begin
+            @(negedge ft601_clk);
+        end
+        ft601_rxf_n  = 1'b1;
+        @(negedge ft601_clk);
+        ft601_rxf_n  = 1'b1;
+        ft601_be_t   = 4'hf         ;
+        ft601_be_o   = 4'h3         ;
+        ft601_data_t = 32'hffff_00ff;
+        ft601_data_o = 32'h0000_ff00;
+    endtask
+
+    
+    logic  [31:0]  tx_packet [0:15];
+    initial begin
+        for ( int i = 0; i < 16; i++ ) begin
+            tx_packet[i][8*0 +: 8] = 8'(i*4 + 0);
+            tx_packet[i][8*1 +: 8] = 8'(i*4 + 1);
+            tx_packet[i][8*2 +: 8] = 8'(i*4 + 2);
+            tx_packet[i][8*3 +: 8] = 8'(i*4 + 3);
+        end
+    end
+
     initial begin
         ft601_rxf_n  = 1'b1;
         ft601_be_t   = 4'hf;
@@ -99,141 +176,21 @@ module tb_main
             @(negedge ft601_clk);
         end
 
-        // 受信
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ef00;
-        @(negedge ft601_clk);
+        for ( int ch = 0; ch < 4; ch++ ) begin
+            $display("Write ch=%0d", ch);
+            ft601_write(ch, tx_packet);
+            #100;
 
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
+            $display("Read ch=%0d", ch);
+            ft601_read(ch, 16);
+            #100;
         end
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
+        #1000;
 
-        for ( int i = 1; i < 11; i++ ) begin
-            ft601_rxf_n  = 1'b0;
-            ft601_be_t   = 4'h0         ;
-            ft601_be_o   = 4'h1         ;
-            ft601_data_t = 32'h0000_0000;
-            ft601_data_o = 32'(i);
-            @(negedge ft601_clk);
-        end
-
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-        @(negedge ft601_clk);
-
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        for ( int i = 0; i < 20; i++ ) begin
-            @(negedge ft601_clk);
-        end
-
-        // 送信1
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_fe00;
-        @(negedge ft601_clk);
-
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
-        end
-        ft601_be_t   = 4'hf         ;
-        ft601_data_t = 32'hffff_ffff;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b0;
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-
-        // interval
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-
-        // 送信2
-        ft601_rxf_n  = 1'b1;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_fe00;
-        @(negedge ft601_clk);
-
-        while ( dly_ft601_wr_n != 1'b0 ) begin
-            @(negedge ft601_clk);
-        end
-        ft601_be_t   = 4'hf         ;
-        ft601_data_t = 32'hffff_ffff;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b0;
-
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        @(negedge ft601_clk);
-        ft601_rxf_n  = 1'b1;
-        ft601_be_t   = 4'hf         ;
-        ft601_be_o   = 4'h3         ;
-        ft601_data_t = 32'hffff_00ff;
-        ft601_data_o = 32'h0000_ff00;
-
-
-        // end
-        @(negedge ft601_clk);
-        @(negedge ft601_clk);
-        for ( int i = 0; i < 100; i++ ) begin
-            @(negedge ft601_clk);
-        end
-
+        
         $finish;
     end
     
-
-
-    /*
-    // logging
-    int fp_tx = 0;
-    int fp_rx = 0;
-    initial begin
-        fp_tx = $fopen("tx_log.txt", "w");
-        fp_rx = $fopen("rx_log.txt", "w");
-    end
-
-    always_ff @(negedge ft601_clk) begin
-        if ( ft601_reset_n ) begin
-            if ( ~ft601_rxf_n && ~dly_ft601_rd_n && ~dly_ft601_oe_n ) begin
-                $fdisplay(fp_rx, "%h", ft601_data);
-            end
-        end
-    end
-
-    always_ff @(negedge ft601_clk) begin
-        if ( ft601_reset_n ) begin
-            if ( ~ft601_txe_n && ~dly_ft601_wr_n ) begin
-                $fdisplay(fp_tx, "%h", dly_ft601_data);
-            end
-        end
-    end
-    */
 
 endmodule
 
