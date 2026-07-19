@@ -127,30 +127,30 @@ module ft601_multi_ch_mode_transceiver
                     // read判定
                     for ( int i = 0; i < CHANNELS; i++ ) begin
                         if ( ~reg_ft601_data_i[12+i] && !m_fifo_almost_full[i] ) begin
-                            state               <= READ_COMMAND ;
-                            channel             <= channel_t'(i);
-                            mon_wr_n            <= 1'b0         ;
-                            reg_ft601_wr_n      <= 1'b0         ;
-                            reg_ft601_be_t      <= 4'h0         ;
-                            reg_ft601_be_o      <= 4'h0         ;
-                            reg_ft601_data_t    <= 32'h0000_ff00;
-                            reg_ft601_data_o    <= 32'hffff_ff00;
-                            reg_ft601_data_o[i] <= 1'b1         ;
+                            state                 <= READ_COMMAND ;
+                            channel               <= channel_t'(i);
+                            mon_wr_n              <= 1'b0         ;
+                            reg_ft601_wr_n        <= 1'b0         ;
+                            reg_ft601_be_t        <= 4'h0         ;
+                            reg_ft601_be_o        <= 4'h0         ;
+                            reg_ft601_data_t      <= 32'h0000_ff00;
+                            reg_ft601_data_o      <= 32'hffff_ff00;
+                            reg_ft601_data_o[2:0] <= 3'(i+1)      ;
                             break;
                         end
                     end
                     // write判定(優先)
                     for ( int i = 0; i < CHANNELS; i++ ) begin
                         if ( ~reg_ft601_data_i[8+i] && (s_fifo_valid[i] || buf_en[i]) ) begin
-                            state               <= WRITE_COMMAND;
-                            channel             <= channel_t'(i);
-                            mon_wr_n            <= 1'b0         ;
-                            reg_ft601_wr_n      <= 1'b0         ;
-                            reg_ft601_be_t      <= 4'h0         ;
-                            reg_ft601_be_o      <= 4'h1         ;
-                            reg_ft601_data_t    <= 32'h0000_ff00;
-                            reg_ft601_data_o    <= 32'hffff_ff00;
-                            reg_ft601_data_o[i] <= 1'b1         ;
+                            state                 <= WRITE_COMMAND;
+                            channel               <= channel_t'(i);
+                            mon_wr_n              <= 1'b0         ;
+                            reg_ft601_wr_n        <= 1'b0         ;
+                            reg_ft601_be_t        <= 4'h0         ;
+                            reg_ft601_be_o        <= 4'h1         ;
+                            reg_ft601_data_t      <= 32'h0000_ff00;
+                            reg_ft601_data_o      <= 32'hffff_ff00;
+                            reg_ft601_data_o[2:0] <= 3'(i+1)      ;
                             break;
                         end
                     end
