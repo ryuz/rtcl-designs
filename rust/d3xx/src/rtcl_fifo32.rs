@@ -222,6 +222,7 @@ pub struct Axi4Stream {
     pub tdata: Vec<u8>,
 }
 
+//#[cfg(target_os = "windows")]
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
     const OVERLAPS : usize = 16;
@@ -259,10 +260,12 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
         }
 
         // 受信
-        reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
+        reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], false)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-//      println!("recv_thread: rx_size: {} bytes", rx_size);
+        if rx_size > 0 {
+//          println!("recv_thread: rx_size: {} bytes", rx_size);
+        }
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;
@@ -314,6 +317,77 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     println!("recv_thread: exit");
     Ok(())
 }
+
+/*
+#[cfg(target_os = "linux")]
+fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
+
+//  const READ_UNIT : usize = 1024;
+    const READ_UNIT : usize = 0x10000;
+
+    reader.set_timeout(10)?;
+    reader.set_stream_pipe(0x100000)?;
+//  reader.set_stream_pipe(0x4)?;
+
+  
+    let mut stream = Axi4Stream {tuser: 0, tdata: Vec::<u8>::new()};
+
+    let mut header = true;
+    let mut rx_buffer = Vec::<u8>::new();
+    let mut packet_size = 0;
+    let mut packet_last = false;
+
+    loop {
+        if rx_stop.try_recv().is_ok() {
+            println!("recv_thread: stop");
+            break;
+        }
+
+        // 受信
+        let rx_data = reader.read(READ_UNIT)?;
+        rx_buffer.extend_from_slice(&rx_data);
+        if rx_data.len() > 0 {
+//          println!("recv_thread: rx_size: {} bytes", rx_data.len());
+        }
+
+        while rx_buffer.len() > 0 {
+            assert!(rx_buffer.len() % 4 == 0);  // 32bit単位でしか通信しない
+
+            if header {
+                let opcode = rx_buffer[0];
+                let operand = rx_buffer[1];
+                stream.tuser = operand & 0x7f;
+                packet_last = (operand & 0x80) != 0;
+                packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
+                assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+                rx_buffer.drain(0..4);
+//              println!("axi4s : tuser : {} last : {}, packet_size: {} bytes", stream.tuser, packet_last, packet_size);
+                header = false;
+            }
+            else {
+                if rx_buffer.len() >= packet_size {
+                    stream.tdata.extend_from_slice(&rx_buffer[0..packet_size]);
+                    rx_buffer.drain(0..packet_size);
+                    header = true;
+
+                    // 受信データを送信
+                    if packet_last {
+                        tx_stream.send(stream.clone())?;
+                        stream.tdata.clear();
+                    }
+                }
+                else {
+                    stream.tdata.extend_from_slice(&rx_buffer);
+                    packet_size -= rx_buffer.len();
+                    rx_buffer.clear();
+                }
+            }
+        }
+    }
+    println!("recv_thread: exit");
+    Ok(())
+}
+*/
 
 fn send_axi4s_thread(
     writer: D3xxWriter,
