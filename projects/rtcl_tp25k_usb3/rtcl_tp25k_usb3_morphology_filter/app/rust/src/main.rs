@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -9,13 +11,24 @@ const BASE_SYSCTL : usize = 0x0000_0000;
 const BASE_MORPHO : usize = 0x1000_0000;
 
 
-const REGADR_SYSCTL_CORE_ID  : usize = 0x0;
-const REGADR_SYSCTL_CONTROL0 : usize = 0x10;    // width
-const REGADR_SYSCTL_CONTROL1 : usize = 0x11;    // height
-//const REGADR_SYSCTL_CONTROL2 : usize = 0x12;
-//const REGADR_SYSCTL_CONTROL3 : usize = 0x13;    // max
-//const REGADR_SYSCTL_CONTROL4 : usize = 0x14;    // limit
-//const REGADR_SYSCTL_CONTROL5 : usize = 0x15;    // timeout
+const REG_SYSCTL_CORE_ID  : usize = 0x0;
+const REG_SYSCTL_CONTROL0 : usize = 0x10;    // width
+const REG_SYSCTL_CONTROL1 : usize = 0x11;    // height
+const REG_SYSCTL_CONTROL2 : usize = 0x12;
+const REG_SYSCTL_CONTROL3 : usize = 0x13;    // max
+const REG_SYSCTL_CONTROL4 : usize = 0x14;    // limit
+const REG_SYSCTL_CONTROL5 : usize = 0x15;    // timeout
+const REG_SYSCTL_CONTROL6 : usize = 0x16;
+const REG_SYSCTL_CONTROL7 : usize = 0x17;
+const REG_SYSCTL_MONITOR0 : usize = 0x18;
+const REG_SYSCTL_MONITOR1 : usize = 0x19;
+const REG_SYSCTL_MONITOR2 : usize = 0x1a;
+const REG_SYSCTL_MONITOR3 : usize = 0x1b;
+const REG_SYSCTL_MONITOR4 : usize = 0x1c;
+const REG_SYSCTL_MONITOR5 : usize = 0x1d;
+const REG_SYSCTL_MONITOR6 : usize = 0x1e;
+const REG_SYSCTL_MONITOR7 : usize = 0x1f;
+
 
 const REG_MORPHO_CORE_ID        : usize = 0x00;
 const REG_MORPHO_CORE_VERSION   : usize = 0x01;
@@ -33,8 +46,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //  let width:  usize = 4096;
 //  let height: usize = 4096;
-    let width:  usize = 2048;
-    let height: usize = 2048;
+//  let width:  usize = 2048;
+//  let height: usize = 2048;
 //  let width:  usize = 1024;
 //  let height: usize = 1024;
 //  let width:  usize = 512;
@@ -44,18 +57,37 @@ fn main() -> Result<(), Box<dyn Error>> {
 //  let width:  usize = 128;
 //  let height: usize = 128;
 
+    let width:  usize = 1024;
+    let height:  usize = width;
+    let filename = format!("input_{}x{}.bin", width, height);
+
+
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
 
     // direct read/write
-    println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CORE_ID    ) as u32)?);
+    println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CORE_ID       ) as u32)?);
     println!("MORPHO_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_ID       ) as u32)?);
     println!("MORPHO_CORE_VERSION   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_CORE_VERSION  ) as u32)?);
     println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
     println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
 
-    axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
-    axi4l.write_axi4l((BASE_SYSCTL + 4*REGADR_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
+    println!("RX[0] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR4) as u32)?);
+    println!("TX[0] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR5) as u32)?);
+
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
+//  return Ok(());
+
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL3) as u32, 512, 0xf)?;  // max
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL4) as u32, 0, 0xf)?;    // limit
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL5) as u32, 0, 0xf)?;    // timeout
+
+
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
+    axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
 
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b11111111, 0xf)?;
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b00111100, 0xf)?;
@@ -72,11 +104,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut tx_data = vec![0u8; line_bytes * height];
     {
 //      let mut file = File::open("input_4096x4096.bin").map_err(|e| e.to_string())?;
-        let mut file = File::open("input_2048x2048.bin").map_err(|e| e.to_string())?;
+//      let mut file = File::open("input_2048x2048.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_1024x1024.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_512x512.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_256x256.bin").map_err(|e| e.to_string())?;
 //      let mut file = File::open("input_128x128.bin").map_err(|e| e.to_string())?;
+        let mut file = File::open(filename).map_err(|e| e.to_string())?;
         file.read_exact(&mut tx_data).map_err(|e| e.to_string())?;
     }
     println!("Input image loaded: {} bytes", tx_data.len());
@@ -86,10 +119,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start_time = Instant::now();
 
     let tx_handle = thread::spawn(move || -> Result<(), String> {
-        axi4s_tx
-//          .send_image(line_bytes, height, &tx_data)
-            .send_frame(line_bytes, height, &tx_data)
-            .map_err(|e| e.to_string())?;
+        for _ in 0..1 {
+            axi4s_tx
+    //          .send_image(line_bytes, height, &tx_data)
+                .send_frame(line_bytes, height, &tx_data)
+                .map_err(|e| e.to_string())?;
+        }
         Ok(())
     });
 
@@ -114,6 +149,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 時間計測終了
     let elapsed = start_time.elapsed();
     println!("Processing time: {} microseconds", elapsed.as_micros());
+
+    println!("size = {}", (width/32+1) * height);
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
+    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
+    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
 
 
     // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）

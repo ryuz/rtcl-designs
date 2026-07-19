@@ -234,8 +234,11 @@ impl RtRtclFifo32AxisRxD3xx {
     }
 
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        self.axi4s_reader.set_timeout(5000)?;
+//      self.axi4s_reader.set_timeout(5000)?;
         let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 10)?;
+//      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
+//      return Ok(vec![0u8; width * height]);
+//      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
 //      println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
         let mut image = Vec::with_capacity(width * height);
         for y in 0..height {

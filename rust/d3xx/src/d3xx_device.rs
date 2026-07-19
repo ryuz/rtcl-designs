@@ -420,6 +420,8 @@ impl D3xxReader {
             }
 
             let mut data = self.read(len - buffer.len())?;
+//          println!("read_until_size: read {} bytes, total {} bytes", data.len(), buffer.len() + data.len());
+//          std::thread::sleep(std::time::Duration::from_millis(1));
             buffer.append(&mut data);
         }
 
