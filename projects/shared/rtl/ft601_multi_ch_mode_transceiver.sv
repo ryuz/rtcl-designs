@@ -17,30 +17,33 @@ module ft601_multi_ch_mode_transceiver
             localparam  type    strb_t   = be_t         
         )
         (
-            input   var logic                   reset               ,
-            input   var logic                   clk                 ,
+            input   var logic                           reset               ,
+            input   var logic                           clk                 ,
 
-            input   var logic                   ft601_rxf_n         ,
-            input   var logic                   ft601_txe_n         ,
-            output  var logic                   ft601_wr_n          ,
-            output  var logic                   ft601_rd_n          ,
-            output  var logic                   ft601_oe_n          ,
-            input   var be_t                    ft601_be_i          ,
-            output  var be_t                    ft601_be_o          ,
-            output  var be_t                    ft601_be_t          ,
-            input   var data_t                  ft601_data_i        ,
-            output  var data_t                  ft601_data_o        ,
-            output  var data_t                  ft601_data_t        ,
+            input   var logic                           ft601_rxf_n         ,
+            input   var logic                           ft601_txe_n         ,
+            output  var logic                           ft601_wr_n          ,
+            output  var logic                           ft601_rd_n          ,
+            output  var logic                           ft601_oe_n          ,
+            input   var be_t                            ft601_be_i          ,
+            output  var be_t                            ft601_be_o          ,
+            output  var be_t                            ft601_be_t          ,
+            input   var data_t                          ft601_data_i        ,
+            output  var data_t                          ft601_data_o        ,
+            output  var data_t                          ft601_data_t        ,
 
-            input   var strb_t  [CHANNELS-1:0]  s_fifo_strb         ,
-            input   var data_t  [CHANNELS-1:0]  s_fifo_data         ,
-            input   var logic   [CHANNELS-1:0]  s_fifo_valid        ,
-            output  var logic   [CHANNELS-1:0]  s_fifo_ready        ,
+            input   var strb_t  [CHANNELS-1:0]          s_fifo_strb         ,
+            input   var data_t  [CHANNELS-1:0]          s_fifo_data         ,
+            input   var logic   [CHANNELS-1:0]          s_fifo_valid        ,
+            output  var logic   [CHANNELS-1:0]          s_fifo_ready        ,
 
-            input   var logic   [CHANNELS-1:0]  m_fifo_almost_full  ,
-            output  var strb_t  [CHANNELS-1:0]  m_fifo_strb         ,
-            output  var data_t  [CHANNELS-1:0]  m_fifo_data         ,
-            output  var logic   [CHANNELS-1:0]  m_fifo_valid        
+            input   var logic   [CHANNELS-1:0]          m_fifo_almost_full  ,
+            output  var strb_t  [CHANNELS-1:0]          m_fifo_strb         ,
+            output  var data_t  [CHANNELS-1:0]          m_fifo_data         ,
+            output  var logic   [CHANNELS-1:0]          m_fifo_valid        ,
+
+            output  var logic   [CHANNELS-1:0][31:0]    rx_counter          ,
+            output  var logic   [CHANNELS-1:0][31:0]    tx_counter          
         );
     
     localparam  int     CHANNELS_BITS = CHANNELS > 1 ? $clog2(CHANNELS) : 1;
@@ -65,7 +68,6 @@ module ft601_multi_ch_mode_transceiver
         reg_ft601_be_i   <= ft601_be_i   ;
         reg_ft601_data_i <= ft601_data_i ;
     end
-
 
     // 状態定義
     typedef enum logic [3:0] {
@@ -162,7 +164,7 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_DATA:
                     begin
-                        if ( ft601_rxf_n == 1'b1 ) begin
+                        if ( ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
                             state            <= FINAL1       ;
                             reg_ft601_wr_n   <= 1'b1         ;
                             reg_ft601_be_t   <= 4'h0         ;
@@ -187,8 +189,10 @@ module ft601_multi_ch_mode_transceiver
                             reg_ft601_be_o   <= buf_strb[channel];
                         end
                         else begin
-                            reg_ft601_data_o <= s_fifo_data[channel];
-                            reg_ft601_be_o   <= s_fifo_strb[channel];
+                            reg_ft601_data_o  <= s_fifo_data[channel];
+                            reg_ft601_be_o    <= s_fifo_strb[channel];
+                            buf_strb[channel] <= s_fifo_strb[channel];
+                            buf_data[channel] <= s_fifo_data[channel];
                         end
                     end
 
@@ -253,7 +257,7 @@ module ft601_multi_ch_mode_transceiver
             m_fifo_data  <= 'x  ;
             m_fifo_valid <= '0  ;
             for ( int i = 0; i < CHANNELS; i++ ) begin
-                if ( channel == channel_t'(i) && state == READ_DATA && reg_ft601_rxf_n == 1'b0) begin
+                if ( channel == channel_t'(i) && state == READ_DATA && reg_ft601_rxf_n == 1'b0 ) begin
                     m_fifo_strb[i]  <= reg_ft601_be_i   ;
                     m_fifo_data[i]  <= reg_ft601_data_i ;
                     m_fifo_valid[i] <= 1'b1             ;
@@ -273,11 +277,28 @@ module ft601_multi_ch_mode_transceiver
         end
     end
 
+    always_ff @( posedge clk ) begin
+        if ( reset ) begin
+            tx_counter <= '0;
+            rx_counter <= '0;
+        end
+        else begin
+            for ( int i = 0; i < CHANNELS; i++ ) begin
+                if ( state == WRITE_DATA &&  ft601_rxf_n == 1'b0 && channel == channel_t'(i) ) begin
+                    tx_counter[i] <= tx_counter[i] + 1'b1;
+                end
+                if ( m_fifo_valid[i] ) begin
+                    rx_counter[i] <= rx_counter[i] + 1'b1;
+                end
+            end
+        end
+    end
+
     assign ft601_wr_n   = reg_ft601_wr_n    ;
     assign ft601_rd_n   = 1'b1              ;
     assign ft601_oe_n   = 1'b1              ;
     assign ft601_be_o   = reg_ft601_be_o    ;
-    assign ft601_be_t   = reg_ft601_be_t    ; 
+    assign ft601_be_t   = reg_ft601_be_t    ;
     assign ft601_data_o = reg_ft601_data_o  ;
     assign ft601_data_t = reg_ft601_data_t  ;
 
