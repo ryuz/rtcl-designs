@@ -277,7 +277,7 @@ module fifo32_cmd_axi4s_tx
         else if ( m_axi4s.aclken ) begin
             if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
                 if ( output_enable ) begin
-                    if ( m_axi4s.tlast && m_axi4s.tvalid && m_axi4s.tready ) begin
+                    if ( m_axi4s.tlast && m_axi4s.tvalid && m_axi4s.tready && !buf_rd_valid ) begin
                         if ( timeout > 0 ) begin
                             output_enable <= 1'b0   ;
                             timer_counter <= '0     ;

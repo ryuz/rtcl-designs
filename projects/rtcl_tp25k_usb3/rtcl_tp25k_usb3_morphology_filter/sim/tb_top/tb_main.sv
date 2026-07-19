@@ -180,7 +180,11 @@ module tb_main
     localparam BASE_SYSCTL = 32'h0000_0000;
     localparam BASE_MORPHO = 32'h1000_0000;
 
-    logic  [31:0]  packet [0:4];
+
+    localparam IMG_WIDTH  = 1024/32;
+    localparam IMG_HEIGHT = 128;
+
+    logic  [31:0]  packet [0:IMG_WIDTH];
 
     initial begin
         ft601_rxf_n  = 1'b1;
@@ -202,7 +206,7 @@ module tb_main
 //      axi4l_write(BASE_MORPHO + `REG_IMG_MORPHO_PARAM_DILATION * 4, 32'b0110,  4'hf);
         #100;
 
-        for ( int i = 0; i < 8; i++ ) begin
+        for ( int i = 0; i < IMG_HEIGHT; i++ ) begin
             @(negedge ft601_clk);
             if ( i == 0 ) begin
                 packet[0] = 32'h0010_8110;
@@ -210,7 +214,7 @@ module tb_main
             else begin
                 packet[0] = 32'h0010_8010;
             end
-            for ( int j = 0; j < 4; j++ ) begin
+            for ( int j = 0; j < IMG_WIDTH; j++ ) begin
                 packet[j+1][8*0 +: 8] = i*16 + j*4 + 0;
                 packet[j+1][8*1 +: 8] = i*16 + j*4 + 1;
                 packet[j+1][8*2 +: 8] = i*16 + j*4 + 2;
@@ -221,7 +225,7 @@ module tb_main
             #1000;
         end
 
-        ft601_read(1, 5*8);
+        ft601_read(1, (1+IMG_WIDTH)*IMG_HEIGHT);
         
 //       axi4l_write()
 

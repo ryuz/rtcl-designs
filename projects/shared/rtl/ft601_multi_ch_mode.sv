@@ -19,28 +19,31 @@ module ft601_multi_ch_mode
             localparam  type    be_t             = logic [3:0]  
         )
         (
-            input   var logic   ft601_reset             ,
-            input   var logic   ft601_clk               ,
-            input   var logic   ft601_rxf_n             ,
-            input   var logic   ft601_txe_n             ,
-            output  var logic   ft601_wr_n              ,
-            output  var logic   ft601_rd_n              ,
-            output  var logic   ft601_oe_n              ,
-            input   var be_t    ft601_be_i              ,
-            output  var be_t    ft601_be_o              ,
-            output  var be_t    ft601_be_t              ,
-            input   var data_t  ft601_data_i            ,
-            output  var data_t  ft601_data_o            ,
-            output  var data_t  ft601_data_t            ,
+            input   var logic                           ft601_reset             ,
+            input   var logic                           ft601_clk               ,
+            input   var logic                           ft601_rxf_n             ,
+            input   var logic                           ft601_txe_n             ,
+            output  var logic                           ft601_wr_n              ,
+            output  var logic                           ft601_rd_n              ,
+            output  var logic                           ft601_oe_n              ,
+            input   var be_t                            ft601_be_i              ,
+            output  var be_t                            ft601_be_o              ,
+            output  var be_t                            ft601_be_t              ,
+            input   var data_t                          ft601_data_i            ,
+            output  var data_t                          ft601_data_o            ,
+            output  var data_t                          ft601_data_t            ,
 
-            jelly3_axi4s_if.s   s_axi4s_tx  [CHANNELS]  ,
-            jelly3_axi4s_if.m   m_axi4s_rx  [CHANNELS]  ,
+            jelly3_axi4s_if.s                           s_axi4s_tx  [CHANNELS]  ,
+            jelly3_axi4s_if.m                           m_axi4s_rx  [CHANNELS]  ,
 
-            output  var logic   mon_wr_n                ,
-            output  var logic   mon_rxf_n               ,
-            output  var logic   mon_txe_n               ,
-            output  var be_t    mon_be                  ,
-            output  var data_t  mon_data                
+            output  var logic   [CHANNELS-1:0][31:0]    rx_counter              ,
+            output  var logic   [CHANNELS-1:0][31:0]    tx_counter              ,
+
+            output  var logic                           mon_wr_n                ,
+            output  var logic                           mon_rxf_n               ,
+            output  var logic                           mon_txe_n               ,
+            output  var be_t                            mon_be                  ,
+            output  var data_t                          mon_data                
         );
     
     be_t    [CHANNELS-1:0]  ft601_tx_fifo_strb       ;
@@ -83,6 +86,9 @@ module ft601_multi_ch_mode
                 .m_fifo_strb        (ft601_rx_fifo_strb         ),
                 .m_fifo_data        (ft601_rx_fifo_data         ),
                 .m_fifo_valid       (ft601_rx_fifo_valid        ),
+
+                .rx_counter         (rx_counter                 ),
+                .tx_counter         (tx_counter                 ),
 
                 .mon_wr_n           (mon_wr_n                   ),
                 .mon_rxf_n          (mon_rxf_n                  ),

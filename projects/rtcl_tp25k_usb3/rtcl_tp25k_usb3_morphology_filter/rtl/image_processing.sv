@@ -90,7 +90,7 @@ module image_processing
                 .cke        (cke            )
             );
     
-    localparam int  BLANK_LINES = (FILTER_ROWS) * FILTER_NUM + 2;
+    localparam int  BLANK_LINES = (FILTER_ROWS) * FILTER_NUM + 4;
     localparam int  BLANK_BITS  = $clog2(BLANK_LINES+1);
     localparam type blank_t = logic [BLANK_BITS-1:0];
     jelly3_axi4s_mat

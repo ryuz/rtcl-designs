@@ -30,7 +30,7 @@
 -clkout0_dt_step 0
 -dyn_pe0_sel false
 -clkout0_pe_coarse 0
--clkout0_pe_fine 0
+-clkout0_pe_fine 7
 -de0_en false
 -clkout0_dt_dir 1
 -clkout0_dt_step 0

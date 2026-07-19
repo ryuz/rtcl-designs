@@ -171,9 +171,16 @@ module rtcl_tp25k_usb3_morphology_filter
                 .aclken     (1'b1   )
             );
 
+
+    logic   [1:0][31:0]    ft601_rx_counter ;
+    logic   [1:0][31:0]    ft601_tx_counter ;
+
     ft601_multi_ch_mode
             #(
-                .CHANNELS           (2                          )
+                .CHANNELS           (2                          ),
+                .RX_FIFO_PTR_BITS   (9                          ),
+                .TX_FIFO_PTR_BITS   (9                          )
+
             )
         u_ft601_multi_ch_mode
             (
@@ -192,7 +199,10 @@ module rtcl_tp25k_usb3_morphology_filter
                 .ft601_data_t       (ft601_data_t               ),
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
-                .m_axi4s_rx         (axi4s_ft601_rx             )
+                .m_axi4s_rx         (axi4s_ft601_rx             ),
+
+                .rx_counter         (ft601_rx_counter           ),
+                .tx_counter         (ft601_tx_counter           )
             );
 
 
@@ -272,6 +282,16 @@ module rtcl_tp25k_usb3_morphology_filter
     logic   [31:0]      control3;
     logic   [31:0]      control4;
     logic   [31:0]      control5;
+
+    logic   [31:0]      monitor0;
+    logic   [31:0]      monitor1;
+    logic   [31:0]      monitor2;
+    logic   [31:0]      monitor3;
+    logic   [31:0]      monitor4;
+    logic   [31:0]      monitor5;
+    logic   [31:0]      monitor6;
+    logic   [31:0]      monitor7;
+
     jelly3_system_control
         #(
                 .DATA_BITS          (32                 ),
@@ -280,9 +300,9 @@ module rtcl_tp25k_usb3_morphology_filter
                 .INIT_CONTROL0      (128/32             ),  // width
                 .INIT_CONTROL1      (128                ),  // height
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      (512                ),  // max_len
-                .INIT_CONTROL4      (0                  ),  // limit_len
-                .INIT_CONTROL5      (0                  ),  // timeout
+                .INIT_CONTROL3      (256                ),  // max_len
+                .INIT_CONTROL4      (512                ),  // limit_len
+                .INIT_CONTROL5      (10000              ),  // timeout
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -299,14 +319,14 @@ module rtcl_tp25k_usb3_morphology_filter
                 .control6           (                   ),
                 .control7           (                   ),
 
-                .monitor0           ('0                 ),
-                .monitor1           ('0                 ),
-                .monitor2           ('0                 ),
-                .monitor3           ('0                 ),
-                .monitor4           ('0                 ),
-                .monitor5           ('0                 ),
-                .monitor6           ('0                 ),
-                .monitor7           ('0                 )
+                .monitor0           (monitor0           ),
+                .monitor1           (monitor1           ),
+                .monitor2           (monitor2           ),
+                .monitor3           (monitor3           ),
+                .monitor4           (monitor4           ),
+                .monitor5           (monitor5           ),
+                .monitor6           (monitor6           ),
+                .monitor7           (monitor7           )
             );
 
 
@@ -350,7 +370,7 @@ module rtcl_tp25k_usb3_morphology_filter
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .DATA_BUF_SIZE  (1024               ),
+                .DATA_BUF_SIZE  (4096               ),
                 .CMD_BUF_SIZE   (128                ),
                 .TIMER_BITS     (16                 )
             )
@@ -390,6 +410,37 @@ module rtcl_tp25k_usb3_morphology_filter
                 .s_axi4l        (axi4l_dec[DEC_IMG].s   )
             );
 
+    // --------------------------------
+    //  counter
+    // --------------------------------
+
+    logic   [1:0][31:0]  rx_counter;
+    logic   [1:0][31:0]  tx_counter;
+    for ( genvar i = 0; i < 2; i++ ) begin
+        always_ff @(posedge clk) begin
+        if ( reset ) begin
+                rx_counter[i] <= '0;
+                tx_counter[i] <= '0;
+            end
+            else begin
+                if ( axi4s_ft601_rx[i].tvalid && axi4s_ft601_rx[i].tready ) begin
+                    rx_counter[i] <= rx_counter[i] + 1'b1;
+                end
+                if ( axi4s_ft601_tx[i].tvalid && axi4s_ft601_tx[i].tready ) begin
+                    tx_counter[i] <= tx_counter[i] + 1'b1;
+                end
+            end
+        end
+    end
+
+    assign monitor0 = rx_counter[0];
+    assign monitor1 = tx_counter[0];
+    assign monitor2 = rx_counter[1];
+    assign monitor3 = tx_counter[1];
+    assign monitor4 = ft601_rx_counter[0];
+    assign monitor5 = ft601_tx_counter[0];
+    assign monitor6 = ft601_rx_counter[1];
+    assign monitor7 = ft601_tx_counter[1];
 
 
     // --------------------------------
@@ -429,14 +480,14 @@ module rtcl_tp25k_usb3_morphology_filter
     //  PMOD
     // --------------------------------
     
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_wr_n;
+    assign pmod[0] = '0;//ft601_rxf_n;
+    assign pmod[1] = '0;//ft601_wr_n;
     assign pmod[2] = axi4s_ft601_rx[1].tready;
     assign pmod[3] = axi4s_ft601_rx[1].tvalid;
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
-    assign pmod[6] = ft601_data_i[9];   // tx[1]
-    assign pmod[7] = ft601_data_i[13];  // rx[1]
+    assign pmod[6] = '0;//ft601_data_i[9];   // tx[1]
+    assign pmod[7] = '0;//ft601_data_i[13];  // rx[1]
 
     /*
     assign pmod[0] = dphy_byte_ready;

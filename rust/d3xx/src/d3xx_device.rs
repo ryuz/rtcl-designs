@@ -403,7 +403,6 @@ impl D3xxReader {
                 std::ptr::null_mut(),
             )
         };
-//      println!("bytes_read: {}, status: {}", bytes_read, status);
         if status != FT_TIMEOUT {
             status_to_result(status)?;
         }
@@ -434,7 +433,7 @@ impl D3xxReader {
             return Err(D3xxError::from_status(status));
         }
         Ok(())
-    }    
+    }
 
     pub fn release_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe { FT_ReleaseOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
@@ -494,4 +493,4 @@ impl D3xxReader {
         }
         Ok(())
     }
- }
+}
