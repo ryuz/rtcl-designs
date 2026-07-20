@@ -176,14 +176,17 @@ module rtcl_tp25k_usb3_loopback
     assign led[3] = reset           ;
 
     // PMOD
-    assign pmod[0] = mon_ft601_wr_n; // ft601_data_i[8];
-    assign pmod[1] = mon_ft601_rxf_n; //ft601_data_i[9];
-    assign pmod[2] = mon_ft601_txe_n; //ft601_data_i[10];
+//    assign pmod[0] = mon_ft601_wr_n; // ft601_data_i[8];
+//    assign pmod[1] = mon_ft601_rxf_n; //ft601_data_i[9];
+//    assign pmod[2] = mon_ft601_txe_n; //ft601_data_i[10];
+    assign pmod[0] = ft601_data_i[8];
+    assign pmod[1] = ft601_data_i[9];
+    assign pmod[2] = ft601_data_i[10];
     assign pmod[3] = ft601_data_i[11];
     assign pmod[4] = ft601_data_i[12];
     assign pmod[5] = ft601_data_i[13];
     assign pmod[6] = ft601_data_i[14];
-    assign pmod[7] = ft601_data_i[15];
+    assign pmod[7] = mon_ft601_wr_n;// ft601_data_i[15];
 
 
 endmodule

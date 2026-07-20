@@ -171,9 +171,28 @@ module rtcl_tp25k_usb3_lfsr
                 .aclken     (1'b1   )
             );
 
+
+    localparam  int  FT601_CHANNELS     = 2;
+    localparam  int  FT601_TIMEOUT_BITS = 16;
+    localparam  type ft601_timeout_t    = logic [FT601_TIMEOUT_BITS-1:0];
+
+    ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
+    assign ft601_tx_timeout[0] = 0        ;
+    assign ft601_tx_timeout[1] = 10000    ;
+
+    logic   [31:0]  ft601_rx_counter;
+    logic   [31:0]  ft601_tx_counter;
+    logic           mon_ft601_wr_n  ;
+    logic           mon_ft601_rxf_n ;
+    logic           mon_ft601_txe_n ;
+    logic   [3:0]   mon_ft601_be    ;
+    logic   [31:0]  mon_ft601_data  ;
+
     ft601_multi_ch_mode
             #(
-                .CHANNELS           (2                          )
+                .CHANNELS           (FT601_CHANNELS             ),
+                .RX_FIFO_PTR_BITS   ('{9,  9}                   ),
+                .TX_FIFO_PTR_BITS   ('{9, 12}                   )
             )
         u_ft601_multi_ch_mode
             (
@@ -191,8 +210,19 @@ module rtcl_tp25k_usb3_lfsr
                 .ft601_data_o       (ft601_data_o               ),
                 .ft601_data_t       (ft601_data_t               ),
 
+                .tx_timeout         (ft601_tx_timeout           ),
+
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
-                .m_axi4s_rx         (axi4s_ft601_rx             )
+                .m_axi4s_rx         (axi4s_ft601_rx             ),
+
+                .rx_counter         (ft601_rx_counter           ),
+                .tx_counter         (ft601_tx_counter           ),
+
+                .mon_wr_n           (mon_ft601_wr_n             ),
+                .mon_rxf_n          (mon_ft601_rxf_n            ),
+                .mon_txe_n          (mon_ft601_txe_n            ),
+                .mon_be             (mon_ft601_be               ),
+                .mon_data           (mon_ft601_data             )
             );
 
 
@@ -386,16 +416,12 @@ module rtcl_tp25k_usb3_lfsr
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC              (1                  ),
-                .DATA_BUF_SIZE      (4096               ),
-                .CMD_BUF_SIZE       (256                ),
-                .TIMER_BITS         (16                 )
+                .DATA_BUF_SIZE      (512                ),
+                .CMD_BUF_SIZE       (64                 ),
+                .MAX_LEN            (512-1              )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len            (control3[10:0]     ),
-                .limit_len          (control4[10:0]     ),
-                .timeout            (control5[15:0]     ),
-
                 .s_axi4s            (axi4s_lfsr_tx.s    ),
                 .m_axi4s            (axi4s_ft601_tx[1].m)
             );

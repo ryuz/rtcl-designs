@@ -11,12 +11,17 @@
 
 module ft601_multi_ch_mode
         #(
-            parameter   int     CHANNELS         = 4            ,
-            parameter   bit     ASYNC            = 1            ,
-            parameter   int     RX_FIFO_PTR_BITS = 8            ,
-            parameter   int     TX_FIFO_PTR_BITS = 8            ,
-            localparam  type    data_t           = logic [31:0] ,
-            localparam  type    be_t             = logic [3:0]  
+            parameter   int     CHANNELS                    = 1                         ,
+            parameter   int     TIMEOUT_BITS                = 16                        ,
+            parameter   type    timeout_t                   = logic [TIMEOUT_BITS-1:0]  ,
+            parameter   int     COUNTER_BITS                = 32                        ,
+            parameter   type    counter_t                   = logic [COUNTER_BITS-1:0]  ,
+            parameter   bit     ASYNC                       = 1                         ,
+            parameter   int     RX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}             ,
+            parameter   int     TX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}             ,
+            parameter   int     TX_THRESHOLD     [CHANNELS] = '{default: 256}           ,
+            localparam  type    data_t                      = logic [31:0]              ,
+            localparam  type    be_t                        = logic [3:0]               
         )
         (
             input   var logic                           ft601_reset             ,
@@ -33,11 +38,13 @@ module ft601_multi_ch_mode
             output  var data_t                          ft601_data_o            ,
             output  var data_t                          ft601_data_t            ,
 
+            input   var timeout_t   [CHANNELS-1:0]      tx_timeout              ,
+
             jelly3_axi4s_if.s                           s_axi4s_tx  [CHANNELS]  ,
             jelly3_axi4s_if.m                           m_axi4s_rx  [CHANNELS]  ,
 
-            output  var logic   [CHANNELS-1:0][31:0]    rx_counter              ,
-            output  var logic   [CHANNELS-1:0][31:0]    tx_counter              ,
+            output  var counter_t   [CHANNELS-1:0]      rx_counter              ,
+            output  var counter_t   [CHANNELS-1:0]      tx_counter              ,
 
             output  var logic                           mon_wr_n                ,
             output  var logic                           mon_rxf_n               ,
@@ -46,15 +53,18 @@ module ft601_multi_ch_mode
             output  var data_t                          mon_data                
         );
     
-    be_t    [CHANNELS-1:0]  ft601_tx_fifo_strb       ;
-    data_t  [CHANNELS-1:0]  ft601_tx_fifo_data       ;
-    logic   [CHANNELS-1:0]  ft601_tx_fifo_valid      ;
-    logic   [CHANNELS-1:0]  ft601_tx_fifo_ready      ;
+    timeout_t   [CHANNELS-1:0]  ft601_tx_timeout            ;
+    logic       [CHANNELS-1:0]  ft601_tx_enough_data        ;
+    be_t        [CHANNELS-1:0]  ft601_tx_fifo_strb          ;
+    data_t      [CHANNELS-1:0]  ft601_tx_fifo_data          ;
+    logic       [CHANNELS-1:0]  ft601_tx_fifo_valid         ;
+    logic       [CHANNELS-1:0]  ft601_tx_fifo_ready         ;
 
-    logic   [CHANNELS-1:0]  ft601_rx_fifo_almost_full;
-    be_t    [CHANNELS-1:0]  ft601_rx_fifo_strb       ;
-    data_t  [CHANNELS-1:0]  ft601_rx_fifo_data       ;
-    logic   [CHANNELS-1:0]  ft601_rx_fifo_valid      ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_almost_full   ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_enough_space  ;
+    be_t        [CHANNELS-1:0]  ft601_rx_fifo_strb          ;
+    data_t      [CHANNELS-1:0]  ft601_rx_fifo_data          ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_valid         ;
     
     ft601_multi_ch_mode_transceiver
             #(
@@ -77,12 +87,15 @@ module ft601_multi_ch_mode
                 .ft601_data_o       (ft601_data_o               ),
                 .ft601_data_t       (ft601_data_t               ),
 
+                .s_fifo_timeout     (ft601_tx_timeout           ),
+                .s_fifo_enough_data (ft601_tx_enough_data       ),
                 .s_fifo_strb        (ft601_tx_fifo_strb         ),
                 .s_fifo_data        (ft601_tx_fifo_data         ),
                 .s_fifo_valid       (ft601_tx_fifo_valid        ),
                 .s_fifo_ready       (ft601_tx_fifo_ready        ),
 
                 .m_fifo_almost_full (ft601_rx_fifo_almost_full  ),
+                .m_fifo_enough_space(ft601_rx_fifo_enough_space ),
                 .m_fifo_strb        (ft601_rx_fifo_strb         ),
                 .m_fifo_data        (ft601_rx_fifo_data         ),
                 .m_fifo_valid       (ft601_rx_fifo_valid        ),
@@ -105,17 +118,17 @@ module ft601_multi_ch_mode
     for ( genvar i = 0; i < CHANNELS; i++ ) begin : gen_ch
 
         // RX FIFO
-        logic  [RX_FIFO_PTR_BITS:0] fifo_rx_free_size   ;
+        logic  [RX_FIFO_PTR_BITS[i]:0]  fifo_rx_free_size   ;
 
-        logic   [3:0]               cmd_rx_fifo_strb    ;
-        logic   [31:0]              cmd_rx_fifo_data    ;
-        logic                       cmd_rx_fifo_valid   ;
-        logic                       cmd_rx_fifo_ready   ;
+        logic   [3:0]                   cmd_rx_fifo_strb    ;
+        logic   [31:0]                  cmd_rx_fifo_data    ;
+        logic                           cmd_rx_fifo_valid   ;
+        logic                           cmd_rx_fifo_ready   ;
 
         jelly3_stream_fifo
                 #(
                     .ASYNC          (ASYNC                  ),
-                    .PTR_BITS       (RX_FIFO_PTR_BITS       ),
+                    .PTR_BITS       (RX_FIFO_PTR_BITS[i]    ),
                     .DATA_BITS      (4+32                   ),
                     .S_SYNC_FF      (3                      ),
                     .M_SYNC_FF      (3                      ),
@@ -148,24 +161,22 @@ module ft601_multi_ch_mode
                 );
 
         always_ff @(posedge ft601_clk) begin
-            if ( ft601_reset ) begin
-                ft601_rx_fifo_almost_full[i] <= 1'b0;
-            end
-            else begin
-                ft601_rx_fifo_almost_full[i] <= fifo_rx_free_size < 64;
-            end
+            ft601_rx_fifo_almost_full[i]  <= fifo_rx_free_size < 64;
+            ft601_rx_fifo_enough_space[i] <= fifo_rx_free_size >= (1 << RX_FIFO_PTR_BITS[i]) / 2;
         end
 
         // TX FIFO
-        logic   [3:0]   cmd_tx_fifo_strb    ;
-        logic   [31:0]  cmd_tx_fifo_data    ;
-        logic           cmd_tx_fifo_valid   ;
-        logic           cmd_tx_fifo_ready   ;
+        logic   [3:0]                   cmd_tx_fifo_strb    ;
+        logic   [31:0]                  cmd_tx_fifo_data    ;
+        logic                           cmd_tx_fifo_valid   ;
+        logic                           cmd_tx_fifo_ready   ;
+
+        logic  [RX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size   ;
 
         jelly3_stream_fifo
                 #(
                     .ASYNC          (ASYNC                  ),
-                    .PTR_BITS       (TX_FIFO_PTR_BITS       ),
+                    .PTR_BITS       (TX_FIFO_PTR_BITS[i]    ),
                     .DATA_BITS      (4+32                   ),
                     .S_SYNC_FF      (3                      ),
                     .M_SYNC_FF      (3                      ),
@@ -194,8 +205,13 @@ module ft601_multi_ch_mode
                                     }),
                     .m_valid        (ft601_tx_fifo_valid[i] ),
                     .m_ready        (ft601_tx_fifo_ready[i] ),
-                    .m_data_size    (                       )
+                    .m_data_size    (fifo_tx_data_size      )
                 );
+
+        always_ff @(posedge ft601_clk) begin
+            ft601_tx_timeout[i]     <= tx_timeout[i];
+            ft601_tx_enough_data[i] <= fifo_tx_data_size >= TX_THRESHOLD[i];
+        end
     end
 
 endmodule

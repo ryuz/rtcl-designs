@@ -6,50 +6,59 @@
 //  https://rtc-lab.com/
 // -----------------------------------------------------------------------------
 
+
 `timescale 1ps/1ps
 `default_nettype none
 
+
 module ft601_multi_ch_mode_transceiver
         #(
-            parameter   int     CHANNELS = 4            ,
-            localparam  type    data_t   = logic [31:0] ,
-            localparam  type    be_t     = logic [3:0]  ,
-            localparam  type    strb_t   = be_t         
+            parameter   int     CHANNELS     = 4                        ,
+            parameter   int     TIMEOUT_BITS = 16                       ,
+            parameter   type    timeout_t    = logic [TIMEOUT_BITS-1:0] ,
+            parameter   int     COUNTER_BITS = 32                       ,
+            parameter   type    counter_t    = logic [COUNTER_BITS-1:0] ,
+            localparam  type    data_t       = logic [31:0]             ,
+            localparam  type    be_t         = logic [3:0]              ,
+            localparam  type    strb_t       = be_t                     
         )
         (
-            input   var logic                           reset               ,
-            input   var logic                           clk                 ,
+            input   var logic                       reset               ,
+            input   var logic                       clk                 ,
 
-            input   var logic                           ft601_rxf_n         ,
-            input   var logic                           ft601_txe_n         ,
-            output  var logic                           ft601_wr_n          ,
-            output  var logic                           ft601_rd_n          ,
-            output  var logic                           ft601_oe_n          ,
-            input   var be_t                            ft601_be_i          ,
-            output  var be_t                            ft601_be_o          ,
-            output  var be_t                            ft601_be_t          ,
-            input   var data_t                          ft601_data_i        ,
-            output  var data_t                          ft601_data_o        ,
-            output  var data_t                          ft601_data_t        ,
+            input   var logic                       ft601_rxf_n         ,
+            input   var logic                       ft601_txe_n         ,
+            output  var logic                       ft601_wr_n          ,
+            output  var logic                       ft601_rd_n          ,
+            output  var logic                       ft601_oe_n          ,
+            input   var be_t                        ft601_be_i          ,
+            output  var be_t                        ft601_be_o          ,
+            output  var be_t                        ft601_be_t          ,
+            input   var data_t                      ft601_data_i        ,
+            output  var data_t                      ft601_data_o        ,
+            output  var data_t                      ft601_data_t        ,
 
-            input   var strb_t  [CHANNELS-1:0]          s_fifo_strb         ,
-            input   var data_t  [CHANNELS-1:0]          s_fifo_data         ,
-            input   var logic   [CHANNELS-1:0]          s_fifo_valid        ,
-            output  var logic   [CHANNELS-1:0]          s_fifo_ready        ,
+            input   var timeout_t   [CHANNELS-1:0]  s_fifo_timeout      ,
+            input   var logic       [CHANNELS-1:0]  s_fifo_enough_data  ,
+            input   var strb_t      [CHANNELS-1:0]  s_fifo_strb         ,
+            input   var data_t      [CHANNELS-1:0]  s_fifo_data         ,
+            input   var logic       [CHANNELS-1:0]  s_fifo_valid        ,
+            output  var logic       [CHANNELS-1:0]  s_fifo_ready        ,
 
-            input   var logic   [CHANNELS-1:0]          m_fifo_almost_full  ,
-            output  var strb_t  [CHANNELS-1:0]          m_fifo_strb         ,
-            output  var data_t  [CHANNELS-1:0]          m_fifo_data         ,
-            output  var logic   [CHANNELS-1:0]          m_fifo_valid        ,
+            input   var logic       [CHANNELS-1:0]  m_fifo_almost_full  ,
+            input   var logic       [CHANNELS-1:0]  m_fifo_enough_space ,
+            output  var strb_t      [CHANNELS-1:0]  m_fifo_strb         ,
+            output  var data_t      [CHANNELS-1:0]  m_fifo_data         ,
+            output  var logic       [CHANNELS-1:0]  m_fifo_valid        ,
 
-            output  var logic   [CHANNELS-1:0][31:0]    rx_counter          ,
-            output  var logic   [CHANNELS-1:0][31:0]    tx_counter          ,
+            output  var counter_t   [CHANNELS-1:0]  rx_counter          ,
+            output  var counter_t   [CHANNELS-1:0]  tx_counter          ,
 
-            output  var logic                           mon_wr_n            ,
-            output  var logic                           mon_rxf_n           ,
-            output  var logic                           mon_txe_n           ,
-            output  var be_t                            mon_be              ,
-            output  var data_t                          mon_data            
+            output  var logic                       mon_wr_n            ,
+            output  var logic                       mon_rxf_n           ,
+            output  var logic                       mon_txe_n           ,
+            output  var be_t                        mon_be              ,
+            output  var data_t                      mon_data            
         );
     
     localparam  int     CHANNELS_BITS = CHANNELS > 1 ? $clog2(CHANNELS) : 1;
@@ -100,6 +109,43 @@ module ft601_multi_ch_mode_transceiver
     data_t                      reg_ft601_data_o = 32'hffff_ffff;
     data_t                      reg_ft601_data_t = 32'h0000_ff00;
 
+    // タイムアウト監視
+    timeout_t   [CHANNELS-1:0]  tx_timeout_count;
+    logic       [CHANNELS-1:0]  tx_enable       ;
+    always_ff @( posedge clk or posedge reset ) begin
+        if ( reset ) begin
+            tx_timeout_count <= '0;
+            tx_enable        <= '0;
+        end
+        else begin
+            for ( int i = 0; i < CHANNELS; i++ ) begin
+                if ( state == WRITE_DATA && channel == channel_t'(i) && ft601_rxf_n == 1'b0 ) begin
+                    // 送信発生でタイムアウトカウントをリセット
+                    tx_timeout_count[i] <= '0;
+                    tx_enable[i]        <= 1'b0;
+                end
+                else if ( s_fifo_valid[i] || buf_en[i] ) begin
+                    // 送信データあり
+                    if ( s_fifo_enough_data[i] || tx_timeout_count[i] >= s_fifo_timeout[i] ) begin
+                        // 十分なデータがあるかタイムアウトなら送信許可
+                        tx_enable[i] <= 1'b1;
+                    end
+                    else begin
+                        // 十分なデータがないのでタイムアウトまで貯める
+                        tx_timeout_count[i] <= tx_timeout_count[i] + 1'b1;
+                        tx_enable[i]        <= 1'b0;
+                    end
+                end
+                else begin
+                    // 送信データなし
+                    tx_timeout_count[i] <= '0;
+                    tx_enable[i]        <= 1'b0;
+                end
+            end
+        end
+    end
+
+    // 制御
     always_ff @( posedge clk or posedge reset ) begin
         if ( reset ) begin
             state            <= IDLE         ;
@@ -126,7 +172,7 @@ module ft601_multi_ch_mode_transceiver
                     reg_ft601_data_o <= 32'hffff_ffff;
                     // read判定
                     for ( int i = 0; i < CHANNELS; i++ ) begin
-                        if ( ~reg_ft601_data_i[12+i] && !m_fifo_almost_full[i] ) begin
+                        if ( ~reg_ft601_data_i[12+i] && m_fifo_enough_space[i] ) begin
                             state                 <= READ_COMMAND ;
                             channel               <= channel_t'(i);
                             mon_wr_n              <= 1'b0         ;
@@ -141,7 +187,7 @@ module ft601_multi_ch_mode_transceiver
                     end
                     // write判定(優先)
                     for ( int i = 0; i < CHANNELS; i++ ) begin
-                        if ( ~reg_ft601_data_i[8+i] && (s_fifo_valid[i] || buf_en[i]) ) begin
+                        if ( ~reg_ft601_data_i[8+i] && tx_enable[i] ) begin
                             state                 <= WRITE_COMMAND;
                             channel               <= channel_t'(i);
                             mon_wr_n              <= 1'b0         ;

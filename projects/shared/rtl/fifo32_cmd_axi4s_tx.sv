@@ -20,15 +20,11 @@ module fifo32_cmd_axi4s_tx
             parameter   int     CND_PTR_BITS  = $clog2(CMD_BUF_SIZE)    ,
             parameter   int     LEN_BITS      = DATA_PTR_BITS + 1       ,
             parameter   type    len_t         = logic [LEN_BITS-1:0]    ,
-            parameter   int     TIMER_BITS    = 16                      ,
-            parameter   type    timer_t       = logic [TIMER_BITS-1:0]  
+            parameter   int     MAX_LEN       = DATA_BUF_SIZE-1         
         )
         (
             jelly3_axi4s_if.s   s_axi4s     ,
-            jelly3_axi4s_if.m   m_axi4s     ,
-            input   var len_t   max_len     ,
-            input   var len_t   limit_len   ,
-            input   var timer_t timeout     
+            jelly3_axi4s_if.m   m_axi4s     
         );
     
     localparam int      SIZE_BITS      = DATA_PTR_BITS + 1    ;
@@ -177,7 +173,7 @@ module fifo32_cmd_axi4s_tx
                 cmd_wr_valid <= 1'b0    ;
             end
             if ( s_axi4s.tvalid && s_axi4s.tready ) begin
-                if ( s_axi4s.tlast || buf_counter >= max_len ) begin
+                if ( s_axi4s.tlast || buf_counter >= len_t'(MAX_LEN) ) begin
                     buf_counter  <= '0;
                     cmd_wr_last  <= s_axi4s.tlast   ;
                     cmd_wr_len   <= buf_counter     ;
@@ -265,49 +261,13 @@ module fifo32_cmd_axi4s_tx
     assign cmd_rd_ready = !send_busy && (!out_tvalid || out_tready);
     assign buf_rd_ready =  send_busy && (!out_tvalid || out_tready);
 
+    assign m_axi4s.tuser  = out_tuser       ;
+    assign m_axi4s.tlast  = out_tlast       ;
+    assign m_axi4s.tdata  = out_tdata       ;
+    assign m_axi4s.tstrb  = out_tstrb       ;
+    assign m_axi4s.tvalid = out_tvalid      ;
 
-    // timeout
-    timer_t     timer_counter   ;
-    logic       output_enable   ;
-    always_ff @(posedge m_axi4s.aclk) begin
-        if ( ~m_axi4s.aresetn ) begin
-            timer_counter <= '0     ;
-            output_enable <= 1'b0   ;
-        end
-        else if ( m_axi4s.aclken ) begin
-            if ( !m_axi4s.tvalid || m_axi4s.tready ) begin
-                if ( output_enable ) begin
-                    if ( m_axi4s.tlast && m_axi4s.tvalid && m_axi4s.tready && !buf_rd_valid ) begin
-                        if ( timeout > 0 ) begin
-                            output_enable <= 1'b0   ;
-                            timer_counter <= '0     ;
-                        end
-                    end
-                end
-                else begin
-                    if ( buf_rd_valid ) begin
-                        if ( buf_rd_size >= size_t'(limit_len) ) begin
-                            output_enable <= 1'b1   ;
-                        end
-                        if ( timer_counter >= timeout ) begin
-                            output_enable <= 1'b1   ;
-                        end
-                        timer_counter <= timer_counter + 1;
-                    end
-                    else begin
-                        timer_counter <= '0;
-                    end
-                end
-            end
-        end
-    end
-
-    assign m_axi4s.tuser  = out_tuser  ;
-    assign m_axi4s.tlast  = out_tlast  ;
-    assign m_axi4s.tdata  = out_tdata  ;
-    assign m_axi4s.tstrb  = out_tstrb  ;
-    assign m_axi4s.tvalid = out_tvalid     & output_enable;
-    assign out_tready     = m_axi4s.tready & output_enable;
+    assign out_tready     = m_axi4s.tready  ;
 
  endmodule
 
