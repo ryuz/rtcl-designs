@@ -171,7 +171,7 @@ module ft601_multi_ch_mode
         logic                           cmd_tx_fifo_valid   ;
         logic                           cmd_tx_fifo_ready   ;
 
-        logic  [RX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size   ;
+        logic  [TX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size   ;
 
         jelly3_stream_fifo
                 #(
@@ -210,7 +210,7 @@ module ft601_multi_ch_mode
 
         always_ff @(posedge ft601_clk) begin
             ft601_tx_timeout[i]     <= tx_timeout[i];
-            ft601_tx_enough_data[i] <= fifo_tx_data_size >= TX_THRESHOLD[i];
+            ft601_tx_enough_data[i] <= fifo_tx_data_size >= (TX_FIFO_PTR_BITS[i]+1)'(TX_THRESHOLD[i]);
         end
     end
 

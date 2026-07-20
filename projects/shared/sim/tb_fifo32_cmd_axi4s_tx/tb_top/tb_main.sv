@@ -14,14 +14,13 @@ module tb_main
     // -------------------------
 
     parameter   bit     ASYNC         = 0                       ;
-    parameter   int     DATA_BUF_SIZE = 256                     ;
-    parameter   int     CMD_BUF_SIZE  = 16                      ;
+    parameter   int     MAX_LEN       = 64                      ;
+    parameter   int     DATA_BUF_SIZE = MAX_LEN                 ;
+    parameter   int     CMD_BUF_SIZE  = 64                      ;
     parameter   int     DATA_PTR_BITS = $clog2(DATA_BUF_SIZE)   ;
     parameter   int     CND_PTR_BITS  = $clog2(CMD_BUF_SIZE)    ;
     parameter   int     LEN_BITS      = DATA_PTR_BITS + 1       ;
     parameter   type    len_t         = logic [LEN_BITS-1:0]    ;
-    parameter   int     TIMER_BITS    = 16                      ;
-    parameter   type    timer_t       = logic [TIMER_BITS-1:0]  ;
 
     jelly3_axi4s_if
             #(
@@ -48,27 +47,21 @@ module tb_main
             );
 
 
-    len_t   max_len     ;
-    len_t   limit_len   ;
-    timer_t timeout     ;
-
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (ASYNC          ),
+                .MAX_LEN        (MAX_LEN        ),
                 .DATA_BUF_SIZE  (DATA_BUF_SIZE  ),
                 .CMD_BUF_SIZE   (CMD_BUF_SIZE   ),
                 .DATA_PTR_BITS  (DATA_PTR_BITS  ),
                 .CND_PTR_BITS   (CND_PTR_BITS   ),
                 .LEN_BITS       (LEN_BITS       ),
-                .TIMER_BITS     (TIMER_BITS     )
+                .len_t          (len_t          )
             )
         u_fifo32_cmd_axi4s_tx
             (
                 .s_axi4s        (s_axi4s        ),
-                .m_axi4s        (m_axi4s        ),
-                .max_len        (max_len        ),
-                .limit_len      (limit_len      ),
-                .timeout        (timeout        )
+                .m_axi4s        (m_axi4s        )
             );
 
 
@@ -76,7 +69,7 @@ module tb_main
     fifo32_cmd_axi4s_checker
             #(
                 .MIN_PACKET_SIZE    (4              ),
-                .MAX_PACKET_SIZE    (64*4           )
+                .MAX_PACKET_SIZE    (MAX_LEN*4      )
             )
         u_fifo32_cmd_axi4s_checker
             (
@@ -88,10 +81,6 @@ module tb_main
     // -------------------------
     //  Simulation
     // -------------------------
-
-    assign max_len     = 64-1   ;
-    assign limit_len   = 128    ;
-    assign timeout     = 100    ;
 
     logic   [0:0]    tuser  ;
     logic   [31:0]   tdata  ;
@@ -112,7 +101,7 @@ module tb_main
             end
             if ( !s_axi4s.tvalid || s_axi4s.tready ) begin
                 tvalid <= $urandom_range(0, 99) < 1;
-                tlast  <= $urandom_range(0, 99) < 3;
+                tlast  <= 0;//$urandom_range(0, 99) < 3;
             end
         end
     end

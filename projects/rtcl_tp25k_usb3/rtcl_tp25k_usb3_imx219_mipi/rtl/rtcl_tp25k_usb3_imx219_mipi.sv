@@ -406,12 +406,12 @@ module rtcl_tp25k_usb3_imx219_mipi
             );
 
     localparam  int  FT601_CHANNELS     = 2;
-    localparam  int  FT601_TIMEOUT_BITS = 20;
+    localparam  int  FT601_TIMEOUT_BITS = 16;
     localparam  type ft601_timeout_t    = logic [FT601_TIMEOUT_BITS-1:0];
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
-    assign ft601_tx_timeout[1] = 100000   ;
+    assign ft601_tx_timeout[1] = 1000     ;
 
     logic   [31:0]  ft601_rx_counter;
     logic   [31:0]  ft601_tx_counter;
@@ -427,7 +427,7 @@ module rtcl_tp25k_usb3_imx219_mipi
                 .TIMEOUT_BITS       (FT601_TIMEOUT_BITS         ),
                 .RX_FIFO_PTR_BITS   ('{9,  9}                   ),
                 .TX_FIFO_PTR_BITS   ('{9, 14}                   ),
-                .TX_THRESHOLD       ('{1, 8192}                 )
+                .TX_THRESHOLD       ('{1, 1024}                 )
             )
         u_ft601_multi_ch_mode
             (
@@ -695,9 +695,7 @@ module rtcl_tp25k_usb3_imx219_mipi
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC              (1                  ),
-                .DATA_BUF_SIZE      (512                ),
-                .CMD_BUF_SIZE       (64                 ),
-                .MAX_LEN            (512-1              )
+                .MAX_LEN            (512                )
             )
         u_fifo32_cmd_axi4s_tx
             (
@@ -808,8 +806,8 @@ module rtcl_tp25k_usb3_imx219_mipi
     // --------------------------------
 
     
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_wr_n;
+    assign pmod[0] = mon_ft601_rxf_n;
+    assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_frame.tready;
     assign pmod[3] = axi4s_frame.tvalid;
 //    assign pmod[4] = ft601_data_i[8];
@@ -819,8 +817,8 @@ module rtcl_tp25k_usb3_imx219_mipi
 
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
-    assign pmod[6] = ft601_txe_n;
-    assign pmod[7] = ft601_data_i[9];
+    assign pmod[6] = mon_ft601_data[9];   // tx[1]
+    assign pmod[7] = mon_ft601_data[13];  // rx[1]
 
     /*
     assign pmod[0] = dphy_byte_ready;
