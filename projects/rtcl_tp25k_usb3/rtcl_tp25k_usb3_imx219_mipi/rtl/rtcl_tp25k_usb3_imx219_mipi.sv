@@ -299,10 +299,13 @@ module rtcl_tp25k_usb3_imx219_mipi
         else if (dphy_hsrx_cnt>0 ) dphy_hsrx_cnt <= dphy_hsrx_cnt - 6'd1;
     end
 
+    logic  [63:0]  dphy_rx_drst_dly;
     always_ff @(posedge dphy_clk) begin
         dphy_lp0_reg_0   <= dphy_di_lprx0;
         dphy_lp0_reg_1   <= dphy_lp0_reg_0;
-        dphy_rx_drst_n   <= ~(dphy_reg3to1&dphy_from1to0);
+//      dphy_rx_drst_n   <= ~(dphy_reg3to1&dphy_from1to0);
+        dphy_rx_drst_dly[0]    <= ~(dphy_reg3to1&dphy_from1to0);
+        dphy_rx_drst_dly[31:1] <= dphy_rx_drst_dly[30:0];
         dphy_hsrx_en_msk <= (dphy_hsrx_cnt>0);
         dphy_byte_ready  <= dphy_hsrx_en_msk & dphy_hsrxd_vld[0];
         dphy_byte_d0     <= dphy_d0ln_hsrxd[7:0];
@@ -310,8 +313,146 @@ module rtcl_tp25k_usb3_imx219_mipi
     end
     assign dphy_hsrx_odten = {(dphy_di_lprx3==0), (dphy_di_lprx2==0), (dphy_di_lprx1==0), (dphy_di_lprx0==0)} & {4{dphy_odt_en_msk}};
 
+//  assign dphy_rx_drst_n = dphy_rx_drst_dly[10];
+    
 
+    logic   [1:0]   ff0_dphy_di_lprx0, ff1_dphy_di_lprx0 ;
+    always_ff @(posedge dphy_clk) begin
+        ff0_dphy_di_lprx0 <= dphy_di_lprx0;
+        ff1_dphy_di_lprx0 <= ff0_dphy_di_lprx0;
+    end
 
+    typedef enum logic [1:0] {
+        DPHY_STATE_LP11 = 2'd0,
+        DPHY_STATE_LP01 = 2'd1,
+        DPHY_STATE_LP00 = 2'd2,
+        DPHY_STATE_HS   = 2'd3
+    } dphy_state_t;
+
+    dphy_state_t    dphy_state  ;
+    logic   [11:0]  dphy_count  ;
+    logic           dphy_rst_n  ;
+    logic   [15:0]  dphy_bytes  ;
+    logic           dphy_valid  ;
+    logic           dphy_odten  ;
+    always_ff @(posedge dphy_clk or posedge reset) begin
+        if ( reset ) begin
+            dphy_state  <= DPHY_STATE_LP11;
+            dphy_count  <= '0;
+            dphy_rst_n  <= 1'b1;
+            dphy_bytes  <= '0;
+            dphy_valid  <= '0;
+            dphy_odten  <= '0;
+        end
+        else begin
+            dphy_rst_n  <= 1'b1;
+            dphy_bytes  <= {dphy_d1ln_hsrxd[7:0], dphy_d0ln_hsrxd[7:0]};
+            dphy_valid  <= '0;
+            dphy_odten  <= '0;
+
+            if ( dphy_count != '1 ) begin
+                dphy_count <= dphy_count + 1'b1;
+            end
+
+            case ( dphy_state )
+            DPHY_STATE_LP11:
+                begin
+                    if ( ff1_dphy_di_lprx0 != 2'b11 ) begin
+                        dphy_count <= '0;
+                    end
+                    if ( ff1_dphy_di_lprx0 == 2'b01 && dphy_count > 10 ) begin
+                        dphy_state <= DPHY_STATE_LP01;
+                        dphy_count <= '0;
+                    end
+                end
+
+            DPHY_STATE_LP01:
+                begin
+                    if ( ff1_dphy_di_lprx0 == 2'b00 ) begin
+                        dphy_state <= DPHY_STATE_LP00;
+                        dphy_count <= '0;
+                    end
+                    else if ( ff1_dphy_di_lprx0 != 2'b01 ) begin
+                        dphy_state <= DPHY_STATE_LP11;
+                        dphy_count <= '0;
+                    end
+                end
+
+            DPHY_STATE_LP00:
+                begin
+                    dphy_odten <= '1;
+                    if ( dphy_count == 10 ) begin
+                        dphy_state  <= DPHY_STATE_HS;
+                        dphy_count  <= '0;
+                        dphy_rst_n  <= 1'b0;
+                    end
+                    else if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
+                        dphy_state  <= DPHY_STATE_LP11;
+                        dphy_count  <= '0;
+                    end
+                end
+
+            DPHY_STATE_HS:
+                begin
+                    dphy_odten <= '1;
+                    dphy_valid <= &dphy_hsrxd_vld[0];
+                    if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
+                        dphy_state <= DPHY_STATE_LP11;
+                        dphy_count  <= '0;
+                    end
+                end
+
+            default:
+                begin
+                    dphy_state <= DPHY_STATE_LP11;
+                    dphy_count  <= '0;
+                end
+            endcase
+        end
+    end
+
+    assign dphy_rx_drst_n = dphy_rst_n;
+
+    /*
+//    for ( genvar i = 0; i < 2; i++ ) begin : lane_rx
+        gowin_dphy_lane_rx
+                #(
+                    .IDLE_MASK_COUNT    (8                  ),
+                    .LS01_MASK_COUNT    (3                  ),
+                    .HS_MASK_COUNT      (32                 )
+                )
+            u_gowin_dphy_lane_rx_0
+                (
+                    .reset              (reset              ),
+                    .clk                (dphy_clk           ),
+                    .dphy_lp            (dphy_di_lprx0      ),
+                    .dphy_hs_data       (dphy_d0ln_hsrxd    ),
+                    .dphy_hs_valid      (dphy_hsrxd_vld[0]  ),
+                    .dphy_term_en       (                   ),
+                    .out_data           (                   ),
+                    .out_valid          (                   )
+                );
+
+        gowin_dphy_lane_rx
+                #(
+                    .IDLE_MASK_COUNT    (8                  ),
+                    .LS01_MASK_COUNT    (3                  ),
+                    .HS_MASK_COUNT      (16                 )
+                )
+            u_gowin_dphy_lane_rx_1
+                (
+                    .reset              (reset              ),
+                    .clk                (dphy_clk           ),
+                    .dphy_lp            (dphy_di_lprx1      ),
+                    .dphy_hs_data       (dphy_d1ln_hsrxd    ),
+                    .dphy_hs_valid      (dphy_hsrxd_vld[1]  ),
+                    .dphy_term_en       (                   ),
+                    .out_data           (                   ),
+                    .out_valid          (                   )
+                );
+
+//    end
+    */
 
     // -------------------------------
     //  FT601
@@ -646,7 +787,9 @@ module rtcl_tp25k_usb3_imx219_mipi
         u_gowin_dphy_lane2_to_fifo32
             (
                 .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-                .dphy_valid (dphy_byte_ready                ),
+//                .dphy_valid (dphy_byte_ready                ),
+//                .dphy_data  (dphy_bytes                     ),
+                .dphy_valid (dphy_valid                     ),
                 .data_type  (8'h2b                          ),
 
                 .m_axi4s    (axi4s_dphy.m                   )
