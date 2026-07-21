@@ -33,6 +33,7 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_pulse_async.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_data_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_addr_decoder.sv
@@ -80,9 +81,8 @@ clean:
 run: $(FS_FILE)
 	openFPGALoader -c digilent_hs2 $(FS_FILE)
 
-run2:
-	programmer_cli --device GW5A-25B --run 2 --fsFile $(TARGET).fs --location `programmer_cli --scan-cable | grep -oP 'USB location:\K\d+'`
-
+run_wsl: $(FS_FILE)
+	programmer_cli --device GW5A-25B --run 2 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
 rom_write:
 #	openFPGALoader -c digilent_hs2 -b tangprimer25k -f $(FS_FILE)

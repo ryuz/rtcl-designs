@@ -404,9 +404,29 @@ module rtcl_tp25k_usb3_p3s7_mipi
                 .aclken     (1'b1   )
             );
 
+   localparam  int  FT601_CHANNELS     = 2;
+    localparam  int  FT601_TIMEOUT_BITS = 16;
+    localparam  type ft601_timeout_t    = logic [FT601_TIMEOUT_BITS-1:0];
+
+    ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
+    assign ft601_tx_timeout[0] = 0        ;
+    assign ft601_tx_timeout[1] = 1000     ;
+
+    logic   [31:0]  ft601_rx_counter;
+    logic   [31:0]  ft601_tx_counter;
+    logic           mon_ft601_wr_n  ;
+    logic           mon_ft601_rxf_n ;
+    logic           mon_ft601_txe_n ;
+    logic   [3:0]   mon_ft601_be    ;
+    logic   [31:0]  mon_ft601_data  ;
+
     ft601_multi_ch_mode
             #(
-                .CHANNELS           (2                          )
+                .CHANNELS           (FT601_CHANNELS             ),
+                .TIMEOUT_BITS       (FT601_TIMEOUT_BITS         ),
+                .RX_FIFO_PTR_BITS   ('{9,  9}                   ),
+                .TX_FIFO_PTR_BITS   ('{9, 14}                   ),
+                .TX_THRESHOLD       ('{1, 1024}                 )
             )
         u_ft601_multi_ch_mode
             (
@@ -424,8 +444,19 @@ module rtcl_tp25k_usb3_p3s7_mipi
                 .ft601_data_o       (ft601_data_o               ),
                 .ft601_data_t       (ft601_data_t               ),
 
+                .tx_timeout         (ft601_tx_timeout           ),
+
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
-                .m_axi4s_rx         (axi4s_ft601_rx             )
+                .m_axi4s_rx         (axi4s_ft601_rx             ),
+
+                .rx_counter         (ft601_rx_counter           ),
+                .tx_counter         (ft601_tx_counter           ),
+
+                .mon_wr_n           (mon_ft601_wr_n             ),
+                .mon_rxf_n          (mon_ft601_rxf_n            ),
+                .mon_txe_n          (mon_ft601_txe_n            ),
+                .mon_be             (mon_ft601_be               ),
+                .mon_data           (mon_ft601_data             )
             );
 
 
@@ -647,17 +678,11 @@ module rtcl_tp25k_usb3_p3s7_mipi
 
     fifo32_cmd_axi4s_tx
             #(
-                .ASYNC          (1                  ),
-                .DATA_BUF_SIZE  (1024*16            ),
-                .CMD_BUF_SIZE   (1024               ),
-                .TIMER_BITS     (16                 )
+                .ASYNC              (1                  ),
+                .MAX_LEN            (512                )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len        (control3[13:0]     ),
-                .limit_len      (control4[13:0]     ),
-                .timeout        (control5[15:0]     ),
-
                 .s_axi4s        (axi4s_frame.s      ),
                 .m_axi4s        (axi4s_ft601_tx[1].m)
             );
@@ -771,19 +796,19 @@ module rtcl_tp25k_usb3_p3s7_mipi
     // --------------------------------
 
     
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_wr_n;
+    assign pmod[0] = mon_ft601_rxf_n;
+    assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_frame.tready;
     assign pmod[3] = axi4s_frame.tvalid;
-    // assign pmod[4] = ft601_data_i[8];
-    // assign pmod[5] = ft601_data_i[9];
-    // assign pmod[6] = ft601_data_i[12];
-    // assign pmod[7] = ft601_data_i[13];
+    // assign pmod[4] = mon_ft601_data[8];
+    // assign pmod[5] = mon_ft601_data[9];
+    // assign pmod[6] = mon_ft601_data[12];
+    // assign pmod[7] = mon_ft601_data[13];
 
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
-    assign pmod[6] = ft601_txe_n;
-    assign pmod[7] = ft601_data_i[9];
+    assign pmod[6] = mon_ft601_txe_n;
+    assign pmod[7] = mon_ft601_data[9];
     
     /*
     assign pmod[0] = dphy_byte_ready;

@@ -14,13 +14,13 @@
 module fifo32_cmd_axi4s_tx
         #(
             parameter   bit     ASYNC         = 0                       ,
-            parameter   int     DATA_BUF_SIZE = 1024                    ,
-            parameter   int     CMD_BUF_SIZE  = 128                     ,
+            parameter   int     MAX_LEN       = 1024                    ,
+            parameter   int     DATA_BUF_SIZE = MAX_LEN                 ,
+            parameter   int     CMD_BUF_SIZE  = 64                      ,
             parameter   int     DATA_PTR_BITS = $clog2(DATA_BUF_SIZE)   ,
             parameter   int     CND_PTR_BITS  = $clog2(CMD_BUF_SIZE)    ,
             parameter   int     LEN_BITS      = DATA_PTR_BITS + 1       ,
-            parameter   type    len_t         = logic [LEN_BITS-1:0]    ,
-            parameter   int     MAX_LEN       = DATA_BUF_SIZE-1         
+            parameter   type    len_t         = logic [LEN_BITS-1:0]    
         )
         (
             jelly3_axi4s_if.s   s_axi4s     ,
@@ -173,7 +173,7 @@ module fifo32_cmd_axi4s_tx
                 cmd_wr_valid <= 1'b0    ;
             end
             if ( s_axi4s.tvalid && s_axi4s.tready ) begin
-                if ( s_axi4s.tlast || buf_counter >= len_t'(MAX_LEN) ) begin
+                if ( s_axi4s.tlast || buf_counter >= len_t'(MAX_LEN-1) ) begin
                     buf_counter  <= '0;
                     cmd_wr_last  <= s_axi4s.tlast   ;
                     cmd_wr_len   <= buf_counter     ;
