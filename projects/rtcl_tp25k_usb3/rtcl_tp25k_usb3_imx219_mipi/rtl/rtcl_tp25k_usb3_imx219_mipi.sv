@@ -266,6 +266,7 @@ module rtcl_tp25k_usb3_imx219_mipi
     assign dphy_d3ln_deskew_req = 0;
     
     // control terminator
+    /*
     logic               dphy_byte_ready  ;
     logic   [7:0]       dphy_byte_d0     ;
     logic   [7:0]       dphy_byte_d1     ;
@@ -314,7 +315,7 @@ module rtcl_tp25k_usb3_imx219_mipi
     assign dphy_hsrx_odten = {(dphy_di_lprx3==0), (dphy_di_lprx2==0), (dphy_di_lprx1==0), (dphy_di_lprx0==0)} & {4{dphy_odt_en_msk}};
 
 //  assign dphy_rx_drst_n = dphy_rx_drst_dly[10];
-    
+    */
 
     logic   [1:0]   ff0_dphy_di_lprx0, ff1_dphy_di_lprx0 ;
     always_ff @(posedge dphy_clk) begin
@@ -371,6 +372,7 @@ module rtcl_tp25k_usb3_imx219_mipi
                     if ( ff1_dphy_di_lprx0 == 2'b00 ) begin
                         dphy_state <= DPHY_STATE_LP00;
                         dphy_count <= '0;
+                        dphy_odten <= '1;
                     end
                     else if ( ff1_dphy_di_lprx0 != 2'b01 ) begin
                         dphy_state <= DPHY_STATE_LP11;
@@ -412,6 +414,9 @@ module rtcl_tp25k_usb3_imx219_mipi
     end
 
     assign dphy_rx_drst_n = dphy_rst_n;
+
+    assign dphy_hsrx_odten = {4{dphy_odten}};
+
 
     /*
 //    for ( genvar i = 0; i < 2; i++ ) begin : lane_rx
@@ -786,9 +791,9 @@ module rtcl_tp25k_usb3_imx219_mipi
     gowin_dphy_lane2_to_fifo32
         u_gowin_dphy_lane2_to_fifo32
             (
-                .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
+//              .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
 //                .dphy_valid (dphy_byte_ready                ),
-//                .dphy_data  (dphy_bytes                     ),
+               .dphy_data  (dphy_bytes                     ),
                 .dphy_valid (dphy_valid                     ),
                 .data_type  (8'h2b                          ),
 
