@@ -101,7 +101,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
 //  cam.set_dphy_speed(950000000.0)?;
-    cam.set_sensor_pgood_enable(true)?;
+    cam.set_sensor_pgood_enable(false)?;
     cam.set_sensor_power_enable(false)?;
     cam.set_dphy_reset(true)?;
     std::thread::sleep(std::time::Duration::from_millis(10));

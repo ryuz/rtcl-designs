@@ -227,14 +227,14 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 
     const OVERLAPS : usize = 16;
 //  const READ_UNIT : usize = 1024;
-    const READ_UNIT : usize = 0x10000;
+    const READ_UNIT : usize = 0x8000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
 
     reader.set_timeout(10)?;
-    reader.set_stream_pipe(0x100000)?;
+    reader.set_stream_pipe(READ_UNIT)?;
 //  reader.set_stream_pipe(0x4)?;
 
     // 読み出し要求を発行
@@ -260,7 +260,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
         }
 
         // 受信
-        reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], false)?;
+        reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
         if rx_size > 0 {
