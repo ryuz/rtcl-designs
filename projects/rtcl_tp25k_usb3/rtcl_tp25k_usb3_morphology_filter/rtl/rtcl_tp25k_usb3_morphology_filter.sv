@@ -94,6 +94,8 @@ module rtcl_tp25k_usb3_morphology_filter
                 .mdclk              (in_clk50       ),
                 .reset              (reset          )
             );
+//  assign ft601_clk  = ft601_clk_in    ;
+//  assign ft601_lock = ~reset          ;
 
     logic ft601_reset;
     jelly3_reset_async
@@ -172,15 +174,30 @@ module rtcl_tp25k_usb3_morphology_filter
             );
 
 
-    logic   [1:0][31:0]    ft601_rx_counter ;
-    logic   [1:0][31:0]    ft601_tx_counter ;
+    localparam  int  FT601_CHANNELS     = 2;
+    localparam  int  FT601_TIMEOUT_BITS = 16;
+    localparam  type ft601_timeout_t    = logic [FT601_TIMEOUT_BITS-1:0];
+
+    ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
+    assign ft601_tx_timeout[0] = 0        ;
+    assign ft601_tx_timeout[1] = 1000     ;
+
+    logic   [31:0]  ft601_rx_counter;
+    logic   [31:0]  ft601_tx_counter;
+    logic           mon_ft601_wr_n  ;
+    logic           mon_ft601_rxf_n ;
+    logic           mon_ft601_txe_n ;
+    logic   [3:0]   mon_ft601_be    ;
+    logic   [31:0]  mon_ft601_data  ;
 
     ft601_multi_ch_mode
             #(
-                .CHANNELS           (2                          ),
-                .RX_FIFO_PTR_BITS   (9                          ),
-                .TX_FIFO_PTR_BITS   (9                          )
-
+                .CHANNELS           (FT601_CHANNELS             ),
+                .TIMEOUT_BITS       (FT601_TIMEOUT_BITS         ),
+                .RX_FIFO_PTR_BITS   ('{  9,   11}               ),
+                .TX_FIFO_PTR_BITS   ('{  9,   11}               ),
+                .RX_THRESHOLD       ('{256, 1024}               ),
+                .TX_THRESHOLD       ('{  0, 1024}               )
             )
         u_ft601_multi_ch_mode
             (
@@ -202,7 +219,13 @@ module rtcl_tp25k_usb3_morphology_filter
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
                 .rx_counter         (ft601_rx_counter           ),
-                .tx_counter         (ft601_tx_counter           )
+                .tx_counter         (ft601_tx_counter           ),
+
+                .mon_wr_n           (mon_ft601_wr_n             ),
+                .mon_rxf_n          (mon_ft601_rxf_n            ),
+                .mon_txe_n          (mon_ft601_txe_n            ),
+                .mon_be             (mon_ft601_be               ),
+                .mon_data           (mon_ft601_data             )
             );
 
 
@@ -370,16 +393,10 @@ module rtcl_tp25k_usb3_morphology_filter
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .DATA_BUF_SIZE  (4096               ),
-                .CMD_BUF_SIZE   (128                ),
-                .TIMER_BITS     (16                 )
+                .MAX_LEN        (512                )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .max_len        (control3[10:0]     ),
-                .limit_len      (control4[10:0]     ),
-                .timeout        (control5[15:0]     ),
-
                 .s_axi4s        (axi4s_stream_tx.s  ),
                 .m_axi4s        (axi4s_ft601_tx[1].m)
             );
