@@ -14,7 +14,7 @@ module gowin_dphy_rx
             parameter int LANES             = 4     ,
             parameter int DPHY_RESET_TIMING = 16    ,
             parameter int IDLE_MASK_COUNT   = 16    ,
-            parameter int LS01_MASK_COUNT   = 3     ,
+            parameter int LP01_MASK_COUNT   = 3     ,
             parameter int HS_MASK_COUNT     = 3     
         )
         (
@@ -68,7 +68,7 @@ module gowin_dphy_rx
             case ( state )
             STATE_IDLE:
                 begin
-                    if ( dphy_lprx[0] != 2'b11 ) begin
+                    if ( dphy_lprx != '1 ) begin
                         counter <= '0;
                     end
                     if ( dphy_lprx[0] == 2'b01 && counter > count_t'(IDLE_MASK_COUNT) ) begin
@@ -79,7 +79,7 @@ module gowin_dphy_rx
 
             STATE_LP01:
                 begin
-                    if ( dphy_lprx == '0 && counter > count_t'(LS01_MASK_COUNT) ) begin
+                    if ( dphy_lprx == '0 && counter > count_t'(LP01_MASK_COUNT) ) begin
                         state        <= STATE_LP00;
                         counter      <= '0;
                         dphy_odten   <= '1;
