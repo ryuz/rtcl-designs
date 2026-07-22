@@ -45,6 +45,8 @@ module dphy_rx_lane
         if ( reset ) begin
             state        <= STATE_IDLE;
             counter      <= '0;
+            rx_data      <= 'x;
+            bit_align    <= 'x;
             out_data     <= '0;
             out_valid    <= '0;
             dphy_term_en <= '0;
