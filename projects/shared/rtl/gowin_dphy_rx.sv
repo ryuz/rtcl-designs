@@ -15,7 +15,8 @@ module gowin_dphy_rx
             parameter int DPHY_RESET_TIMING = 16    ,
             parameter int IDLE_MASK_COUNT   = 16    ,
             parameter int LP01_MASK_COUNT   = 3     ,
-            parameter int HS_MASK_COUNT     = 3     
+            parameter int HS_MASK_COUNT     = 3     ,
+            parameter int FINAL_COUNT       = 10    
         )
         (
             input   var logic                       reset           ,
@@ -46,11 +47,12 @@ module gowin_dphy_rx
 
     localparam type count_t = logic [11:0];
 
-    typedef enum logic [1:0] {
-        STATE_IDLE = 2'd0,
-        STATE_LP01 = 2'd1,
-        STATE_LP00 = 2'd2,
-        STATE_HS   = 2'd3
+    typedef enum {
+        STATE_IDLE ,
+        STATE_LP01 ,
+        STATE_LP00 ,
+        STATE_HS   ,
+        STATE_FINAL
     } state_t;
 
     state_t         state       ;
@@ -117,8 +119,18 @@ module gowin_dphy_rx
             STATE_HS:
                 begin
                     dphy_odten <= '1;
-                    out_valid  <= &dphy_hsrxd_vld[0] && counter >= count_t'(HS_MASK_COUNT);
+                    out_valid  <= dphy_hsrxd_vld[0] && counter >= count_t'(HS_MASK_COUNT);
                     if ( ff1_dphy_lprx != 2'b00 ) begin
+                        state        <= STATE_FINAL;
+                        counter      <= '0;
+                    end
+                end
+
+            STATE_FINAL:
+                begin
+                    // lprx と hsrxd でタイムラグがあるようなので吸収
+                    out_valid <= dphy_hsrxd_vld[0];
+                    if ( counter >= count_t'(FINAL_COUNT) ) begin
                         state        <= STATE_IDLE;
                         counter      <= '0;
                     end

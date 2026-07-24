@@ -323,25 +323,22 @@ module rtcl_tp25k_usb3_imx219_mipi
         gowin_dphy_rx
                 #(
                     .LANES              (2                                          ),
-    //              .DPHY_RESET_TIMING  (11                                         ),
-                    .DPHY_RESET_TIMING  (10                                         ),
-                    .IDLE_MASK_COUNT    (11                                         ),
-                    .LP01_MASK_COUNT    (0                                          ),
-                    .HS_MASK_COUNT      (0                                          )
+                    .DPHY_RESET_TIMING  (0                                          ),
+                    .IDLE_MASK_COUNT    (4                                          ),
+                    .LP01_MASK_COUNT    (4                                          ),
+                    .HS_MASK_COUNT      (0                                          ),
+                    .FINAL_COUNT        (10                                         )
                 )
             u_gowin_dphy_rx
                 (
                     .reset              (reset                                      ),
                     .clk                (dphy_clk                                   ),
-    //              .dphy_lprx          ({dphy_lprx      [1], dphy_lprx      [0]}   ),
                     .dphy_lprx_n        ({dphy_lprx_n    [1], dphy_lprx_n    [0]}   ),
                     .dphy_lprx_p        ({dphy_lprx_p    [1], dphy_lprx_p    [0]}   ),
                     .dphy_hsrxd         ({dphy_hsrxd     [1], dphy_hsrxd     [0]}   ),
                     .dphy_hsrxd_vld     ({dphy_hsrxd_vld [1], dphy_hsrxd_vld [0]}   ),
                     .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
                     .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
-    //                .dphy_odten         (                                           ),
-    //                .dphy_rx_drst_n     (                                           ),
                     .out_data           (dphy_bytes_data                            ),
                     .out_valid          (dphy_bytes_valid                           )
                 );
