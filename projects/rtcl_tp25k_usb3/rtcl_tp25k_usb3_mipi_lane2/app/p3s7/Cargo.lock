@@ -359,7 +359,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rtcl_tp25k_usb3_p3s7_mipi"
+name = "rtcl_tp25k_usb3_mipi_lane2_p3s7"
 version = "0.1.0"
 dependencies = [
  "jelly-lib",
