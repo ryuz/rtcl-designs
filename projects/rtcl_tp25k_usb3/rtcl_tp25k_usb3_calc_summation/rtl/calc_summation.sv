@@ -38,7 +38,7 @@ module calc_summation
         end
     end
 
-    // 送信データの受付が保留誰てなければ、入力を受け付け可能
+    // 送信データの受付が保留されていなければ、入力を受け付け可能
     assign s_axi4s.tready = !(m_axi4s.tvalid && ~m_axi4s.tready);
 
 endmodule
