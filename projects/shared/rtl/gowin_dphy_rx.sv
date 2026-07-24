@@ -36,6 +36,12 @@ module gowin_dphy_rx
     // 仕組みのようなのでやや乱暴だが、レーン0 のみ見て
     // 全レーンを纏めて処理する
 
+    logic   [LANES-1:0][1:0]    ff0_dphy_lprx, ff1_dphy_lprx ;
+    always_ff @(posedge clk) begin
+        ff0_dphy_lprx <= dphy_lprx;
+        ff1_dphy_lprx <= ff0_dphy_lprx;
+    end
+
     localparam type count_t = logic [7:0];
 
     typedef enum logic [1:0] {
@@ -68,10 +74,10 @@ module gowin_dphy_rx
             case ( state )
             STATE_IDLE:
                 begin
-                    if ( dphy_lprx != '1 ) begin
+                    if ( ff1_dphy_lprx != '1 ) begin
                         counter <= '0;
                     end
-                    if ( dphy_lprx[0] == 2'b01 && counter > count_t'(IDLE_MASK_COUNT) ) begin
+                    if ( ff1_dphy_lprx[0] == 2'b01 && counter > count_t'(IDLE_MASK_COUNT) ) begin
                         state   <= STATE_LP01;
                         counter <= '0;
                     end
@@ -79,12 +85,12 @@ module gowin_dphy_rx
 
             STATE_LP01:
                 begin
-                    if ( dphy_lprx == '0 && counter > count_t'(LP01_MASK_COUNT) ) begin
+                    if ( ff1_dphy_lprx == '0 && counter > count_t'(LP01_MASK_COUNT) ) begin
                         state        <= STATE_LP00;
                         counter      <= '0;
-                        dphy_odten   <= '1;
+//                      dphy_odten   <= '1;
                     end
-                    else if ( dphy_lprx[0] != 2'b01 && dphy_lprx[0] != 2'b00 ) begin
+                    else if ( ff1_dphy_lprx[0] != 2'b01 && ff1_dphy_lprx[0] != 2'b00 ) begin
                         state   <= STATE_IDLE;
                         counter <= '0;
                     end
@@ -98,7 +104,7 @@ module gowin_dphy_rx
                         counter        <= '0        ;
                         dphy_rx_drst_n <= 1'b0      ;
                     end
-                    if ( dphy_lprx != '0 ) begin
+                    if ( ff1_dphy_lprx != '0 ) begin
                         state          <= STATE_IDLE;
                         counter        <= '0;
                         dphy_odten     <= '0;
@@ -110,7 +116,7 @@ module gowin_dphy_rx
                     dphy_odten <= '1;
                     out_data   <= dphy_hsrxd;
                     out_valid  <= &dphy_hsrxd_vld && counter > count_t'(HS_MASK_COUNT);
-                    if ( dphy_lprx != '0 ) begin
+                    if ( ff1_dphy_lprx != '0 ) begin
                         state        <= STATE_IDLE;
                         counter      <= '0;
                         dphy_odten   <= '0;

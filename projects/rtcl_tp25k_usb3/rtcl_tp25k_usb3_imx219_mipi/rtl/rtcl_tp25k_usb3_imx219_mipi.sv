@@ -297,7 +297,13 @@ module rtcl_tp25k_usb3_imx219_mipi
             DPHY_STATE_LP00:
                 begin
                     dphy_odten <= '1;
-                    if ( dphy_count == 10 ) begin
+//                  if ( dphy_count == 10 ) begin   // OK
+//                  if ( dphy_count == 9 ) begin    // OK
+//                  if ( dphy_count == 8 ) begin    // OK
+//                  if ( dphy_count == 11 ) begin   // OK
+//                  if ( dphy_count == 15 ) begin   // NG
+//                  if ( dphy_count == 0 ) begin   // OK
+                    if ( dphy_count == 10 ) begin   // OK
                         dphy_state  <= DPHY_STATE_HS;
                         dphy_count  <= '0;
                         dphy_rst_n  <= 1'b0;
@@ -327,9 +333,8 @@ module rtcl_tp25k_usb3_imx219_mipi
         end
     end
 
-    assign dphy_rx_drst_n = dphy_rst_n;
-
-    assign dphy_hsrx_odten = {4{dphy_odten}};
+//    assign dphy_rx_drst_n = dphy_rst_n;
+//    assign dphy_hsrx_odten = {4{dphy_odten}};
     
 
     logic   [1:0][7:0]  dphy_bytes_data     ;
@@ -350,15 +355,15 @@ module rtcl_tp25k_usb3_imx219_mipi
                 .dphy_lprx          ({dphy_lprx      [1], dphy_lprx      [0]}   ),
                 .dphy_hsrxd         ({dphy_hsrxd     [1], dphy_hsrxd     [0]}   ),
                 .dphy_hsrxd_vld     ({dphy_hsrxd_vld [1], dphy_hsrxd_vld [0]}   ),
-//              .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
-//              .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
-                .dphy_odten         (                                           ),
-                .dphy_rx_drst_n     (                                           ),
+                .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
+                .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
+//                .dphy_odten         (                                           ),
+//                .dphy_rx_drst_n     (                                           ),
                 .out_data           (dphy_bytes_data                            ),
                 .out_valid          (dphy_bytes_valid                           )
             );
 
-//  assign dphy_hsrx_odten[3:2] = 2'b11;
+    assign dphy_hsrx_odten[3:2] = 2'b11;
 
 
     // -------------------------------
@@ -695,10 +700,11 @@ module rtcl_tp25k_usb3_imx219_mipi
             (
 //              .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
 //                .dphy_valid (dphy_byte_ready                ),
-//                .dphy_data  (dphy_bytes_data                     ),
-//                .dphy_valid (dphy_bytes_valid                     ),
-                .dphy_data  (dphy_bytes                     ),
-                .dphy_valid (dphy_valid                     ),
+
+                .dphy_data  (dphy_bytes_data                     ),
+                .dphy_valid (dphy_bytes_valid                     ),
+//                .dphy_data  (dphy_bytes                     ),
+//                .dphy_valid (dphy_valid                     ),
                 .data_type  (8'h2b                          ),
 
                 .m_axi4s    (axi4s_dphy.m                   )
@@ -857,7 +863,16 @@ module rtcl_tp25k_usb3_imx219_mipi
     //  PMOD
     // --------------------------------
 
-    
+    assign pmod[0] = dphy_bytes_valid   ;
+    assign pmod[1] = axi4s_dphy.tvalid  ;
+    assign pmod[2] = dphy_hsrxd_vld[0]  ;
+    assign pmod[3] = dphy_valid         ;
+    assign pmod[4] = 0;
+    assign pmod[5] = 0;
+    assign pmod[6] = dphy_lprx[0][0] ;
+    assign pmod[7] = dphy_lprx[0][1] ;
+
+    /*
     assign pmod[0] = mon_ft601_rxf_n;
     assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_frame.tready;
@@ -871,7 +886,7 @@ module rtcl_tp25k_usb3_imx219_mipi
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
     assign pmod[6] = mon_ft601_data[9];   // tx[1]
     assign pmod[7] = mon_ft601_data[13];  // rx[1]
-
+    */
     /*
     assign pmod[0] = dphy_byte_ready;
     assign pmod[1] = dphy_hsrxd_vld[0];

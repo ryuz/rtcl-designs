@@ -33,6 +33,7 @@
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219_mipi/ip/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219_mipi/ip/pll_init.v" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219_mipi/rtl/rtcl_tp25k_usb3_imx219_mipi.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/dphy_rx.sv" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_arbiter.sv" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_axi4l.sv" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_axi4s_checker.sv" type="file.verilog" enable="1"/>
@@ -41,7 +42,9 @@
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/ft601_multi_ch_mode.sv" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/ft601_multi_ch_mode_transceiver.sv" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/gowin_dphy_lane2_to_fifo32.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/gowin_dphy_rx.sv" type="file.verilog" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219_mipi/constrain/rtcl_tp25k_usb3_imx219_mipi.cst" type="file.cst" enable="1"/>
         <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_imx219_mipi/constrain/rtcl_tp25k_usb3_imx219_mipi.sdc" type="file.sdc" enable="1"/>
+        <File path="src/rtcl_tp25k_usb3_imx219_mipi.rao" type="file.gao" enable="1"/>
     </FileList>
 </Project>
