@@ -98,18 +98,20 @@ module rtcl_tp25k_usb3_imx219_mipi
     logic               dphy_clk                ;
     logic   [3:0][7:0]  dphy_hsrxd              ;
     logic   [3:0]       dphy_hsrxd_vld          ;
-    logic   [3:0][1:0]  dphy_lprx               ;
+    logic   [3:0]       dphy_lprx_n             ;
+    logic   [3:0]       dphy_lprx_p             ;
     logic   [1:0]       dphy_lprxck             ;
     logic   [3:0]       dphy_deskew_done        ;
     logic   [3:0]       dphy_deskew_error       ;
-    logic   [3:0]       dphy_lptxen             ;
-    logic   [3:0][1:0]  dphy_lptx               ;
-    logic               dphy_lprx_en_ck         ;
+//    logic   [3:0]       dphy_lptxen             ;
+//    logic   [3:0]       dphy_lptx_n             ;
+//    logic   [3:0]       dphy_lptx_p             ;
+//    logic               dphy_lprx_en_ck         ;
     logic   [3:0]       dphy_hsrx_en_d          ;
     logic   [3:0]       dphy_hsrx_odten         ;
     logic   [3:0]       dphy_lprx_en_d          ;
     logic               dphy_rx_drst_n          ;
-    logic   [3:0]       dphy_deskew_req         ;
+//  logic   [3:0]       dphy_deskew_req         ;
 
     Gowin_MIPI_DPHY
         u_mipi_dphy
@@ -123,14 +125,14 @@ module rtcl_tp25k_usb3_imx219_mipi
                 .d1ln_hsrxd_vld     (dphy_hsrxd_vld[1]      ), //output d1ln_hsrxd_vld
                 .d2ln_hsrxd_vld     (dphy_hsrxd_vld[2]      ), //output d2ln_hsrxd_vld
                 .d3ln_hsrxd_vld     (dphy_hsrxd_vld[3]      ), //output d3ln_hsrxd_vld
-                .di_lprx0_n         (dphy_lprx[0][0]        ), //output di_lprx0_n
-                .di_lprx0_p         (dphy_lprx[0][1]        ), //output di_lprx0_p
-                .di_lprx1_n         (dphy_lprx[1][0]        ), //output di_lprx1_n
-                .di_lprx1_p         (dphy_lprx[1][1]        ), //output di_lprx1_p
-                .di_lprx2_n         (dphy_lprx[2][0]        ), //output di_lprx2_n
-                .di_lprx2_p         (dphy_lprx[2][1]        ), //output di_lprx2_p
-                .di_lprx3_n         (dphy_lprx[3][0]        ), //output di_lprx3_n
-                .di_lprx3_p         (dphy_lprx[3][1]        ), //output di_lprx3_p
+                .di_lprx0_n         (dphy_lprx_n[0]         ), //output di_lprx0_n
+                .di_lprx0_p         (dphy_lprx_p[0]         ), //output di_lprx0_p
+                .di_lprx1_n         (dphy_lprx_n[1]         ), //output di_lprx1_n
+                .di_lprx1_p         (dphy_lprx_p[1]         ), //output di_lprx1_p
+                .di_lprx2_n         (dphy_lprx_n[2]         ), //output di_lprx2_n
+                .di_lprx2_p         (dphy_lprx_p[2]         ), //output di_lprx2_p
+                .di_lprx3_n         (dphy_lprx_n[3]         ), //output di_lprx3_n
+                .di_lprx3_p         (dphy_lprx_p[3]         ), //output di_lprx3_p
                 .di_lprxck_n        (dphy_lprxck[0]         ), //output di_lprxck_n
                 .di_lprxck_p        (dphy_lprxck[1]         ), //output di_lprxck_p
                 .d0ln_deskew_done   (dphy_deskew_done[0]    ), //output d0ln_deskew_done
@@ -157,37 +159,37 @@ module rtcl_tp25k_usb3_imx219_mipi
                 .lptxen_ln2         (1'b0                   ), //input lptxen_ln2
                 .lptxen_ln3         (1'b0                   ), //input lptxen_ln3
                 .lptxen_lnck        (1'b0                   ), //input lptxen_lnck
-                .do_lptx0_n         (1'b0                   ), //input do_lptx0_n
-                .do_lptx1_n         (1'b0                   ), //input do_lptx1_n
-                .do_lptx2_n         (1'b0                   ), //input do_lptx2_n
-                .do_lptx3_n         (1'b0                   ), //input do_lptx3_n
-                .do_lptxck_n        (1'b0                   ), //input do_lptxck_n
-                .do_lptx0_p         (1'b0                   ), //input do_lptx0_p
-                .do_lptx1_p         (1'b0                   ), //input do_lptx1_p
-                .do_lptx2_p         (1'b0                   ), //input do_lptx2_p
-                .do_lptx3_p         (1'b0                   ), //input do_lptx3_p
-                .do_lptxck_p        (1'b0                   ), //input do_lptxck_p
+                .do_lptx0_n         (1'b1                   ), //input do_lptx0_n
+                .do_lptx1_n         (1'b1                   ), //input do_lptx1_n
+                .do_lptx2_n         (1'b1                   ), //input do_lptx2_n
+                .do_lptx3_n         (1'b1                   ), //input do_lptx3_n
+                .do_lptxck_n        (1'b1                   ), //input do_lptxck_n
+                .do_lptx0_p         (1'b1                   ), //input do_lptx0_p
+                .do_lptx1_p         (1'b1                   ), //input do_lptx1_p
+                .do_lptx2_p         (1'b1                   ), //input do_lptx2_p
+                .do_lptx3_p         (1'b1                   ), //input do_lptx3_p
+                .do_lptxck_p        (1'b1                   ), //input do_lptxck_p
 
                 .hsrx_en_ck         (1'b1                   ), //input hsrx_en_ck
-                .hsrx_en_d0         (dphy_hsrx_en_d[0]      ), //input hsrx_en_d0
-                .hsrx_en_d1         (dphy_hsrx_en_d[1]      ), //input hsrx_en_d1
-                .hsrx_en_d2         (dphy_hsrx_en_d[2]      ), //input hsrx_en_d2
-                .hsrx_en_d3         (dphy_hsrx_en_d[3]      ), //input hsrx_en_d3
+                .hsrx_en_d0         (1'b1                   ), //input hsrx_en_d0
+                .hsrx_en_d1         (1'b1                   ), //input hsrx_en_d1
+                .hsrx_en_d2         (1'b1                   ), //input hsrx_en_d2
+                .hsrx_en_d3         (1'b1                   ), //input hsrx_en_d3
                 .hsrx_odten_ck      (1'b1                   ), //input hsrx_odten_ck
                 .hsrx_odten_d0      (dphy_hsrx_odten[0]     ), //input hsrx_odten_d0
                 .hsrx_odten_d1      (dphy_hsrx_odten[1]     ), //input hsrx_odten_d1
                 .hsrx_odten_d2      (dphy_hsrx_odten[2]     ), //input hsrx_odten_d2
                 .hsrx_odten_d3      (dphy_hsrx_odten[3]     ), //input hsrx_odten_d3
                 .lprx_en_ck         (1'b1                   ), //input lprx_en_ck
-                .lprx_en_d0         (dphy_lprx_en_d[0]      ), //input lprx_en_d0
-                .lprx_en_d1         (dphy_lprx_en_d[1]      ), //input lprx_en_d1
-                .lprx_en_d2         (dphy_lprx_en_d[2]      ), //input lprx_en_d2
-                .lprx_en_d3         (dphy_lprx_en_d[3]      ), //input lprx_en_d3
+                .lprx_en_d0         (1'b1                   ), //input lprx_en_d0
+                .lprx_en_d1         (1'b1                   ), //input lprx_en_d1
+                .lprx_en_d2         (1'b1                   ), //input lprx_en_d2
+                .lprx_en_d3         (1'b1                   ), //input lprx_en_d3
                 .rx_drst_n          (dphy_rx_drst_n         ), //input rx_drst_n
-                .d0ln_deskew_req    (dphy_deskew_req[0]     ), //input d0ln_deskew_req
-                .d1ln_deskew_req    (dphy_deskew_req[1]     ), //input d1ln_deskew_req
-                .d2ln_deskew_req    (dphy_deskew_req[2]     ), //input d2ln_deskew_req
-                .d3ln_deskew_req    (dphy_deskew_req[3]     )  //input d3ln_deskew_req
+                .d0ln_deskew_req    (1'b0                   ), //input d0ln_deskew_req
+                .d1ln_deskew_req    (1'b0                   ), //input d1ln_deskew_req
+                .d2ln_deskew_req    (1'b0                   ), //input d2ln_deskew_req
+                .d3ln_deskew_req    (1'b0                   )  //input d3ln_deskew_req
             );
 
     jelly3_reset_async
@@ -203,37 +205,12 @@ module rtcl_tp25k_usb3_imx219_mipi
                 .out_reset          (dphy_reset         )
             );
 
-    assign dphy_lptxen[0]    = 0;
-    assign dphy_lptxen[1]    = 0;
-    assign dphy_lptxen[2]    = 0;
-    assign dphy_lptxen[3]    = 0;
-    assign dphy_lptx[0][0]   = 0;
-    assign dphy_lptx[1][0]   = 0;
-    assign dphy_lptx[2][0]   = 0;
-    assign dphy_lptx[3][0]   = 0;
-    assign dphy_lptx[0][1]   = 0;
-    assign dphy_lptx[1][1]   = 0;
-    assign dphy_lptx[2][1]   = 0;
-    assign dphy_lptx[3][1]   = 0;
 
-    assign dphy_hsrx_en_d[0]  = 1;
-    assign dphy_hsrx_en_d[1]  = 1;
-    assign dphy_hsrx_en_d[2]  = 1;
-    assign dphy_hsrx_en_d[3]  = 1;
-    assign dphy_lprx_en_d[0]  = 1;
-    assign dphy_lprx_en_d[1]  = 1;
-    assign dphy_lprx_en_d[2]  = 1;
-    assign dphy_lprx_en_d[3]  = 1;
 
-    assign dphy_deskew_req[0] = 0;
-    assign dphy_deskew_req[1] = 0;
-    assign dphy_deskew_req[2] = 0;
-    assign dphy_deskew_req[3] = 0;
-    
-    
     logic   [1:0]   ff0_dphy_di_lprx0, ff1_dphy_di_lprx0 ;
     always_ff @(posedge dphy_clk) begin
-        ff0_dphy_di_lprx0 <= dphy_lprx[0];
+//      ff0_dphy_di_lprx0 <= dphy_lprx[0];
+        ff0_dphy_di_lprx0 <= {dphy_lprx_p[0], dphy_lprx_n[0]};
         ff1_dphy_di_lprx0 <= ff0_dphy_di_lprx0;
     end
 
@@ -333,8 +310,8 @@ module rtcl_tp25k_usb3_imx219_mipi
         end
     end
 
-//    assign dphy_rx_drst_n = dphy_rst_n;
-//    assign dphy_hsrx_odten = {4{dphy_odten}};
+    assign dphy_rx_drst_n = dphy_rst_n;
+    assign dphy_hsrx_odten = {4{dphy_odten}};
     
 
     logic   [1:0][7:0]  dphy_bytes_data     ;
@@ -343,27 +320,29 @@ module rtcl_tp25k_usb3_imx219_mipi
             #(
                 .LANES              (2                                          ),
 //              .DPHY_RESET_TIMING  (11                                         ),
-                .DPHY_RESET_TIMING  (12                                         ),
-                .IDLE_MASK_COUNT    (10                                         ),
-                .LP01_MASK_COUNT    (1                                          ),
-                .HS_MASK_COUNT      (1                                          )
+                .DPHY_RESET_TIMING  (10                                          ),
+                .IDLE_MASK_COUNT    (8                                          ),
+                .LP01_MASK_COUNT    (2                                          ),
+                .HS_MASK_COUNT      (2                                          )
             )
         u_gowin_dphy_rx
             (
                 .reset              (reset                                      ),
                 .clk                (dphy_clk                                   ),
-                .dphy_lprx          ({dphy_lprx      [1], dphy_lprx      [0]}   ),
+//              .dphy_lprx          ({dphy_lprx      [1], dphy_lprx      [0]}   ),
+                .dphy_lprx_n        ({dphy_lprx_n    [1], dphy_lprx_n    [0]}   ),
+                .dphy_lprx_p        ({dphy_lprx_p    [1], dphy_lprx_p    [0]}   ),
                 .dphy_hsrxd         ({dphy_hsrxd     [1], dphy_hsrxd     [0]}   ),
                 .dphy_hsrxd_vld     ({dphy_hsrxd_vld [1], dphy_hsrxd_vld [0]}   ),
-                .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
-                .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
-//                .dphy_odten         (                                           ),
-//                .dphy_rx_drst_n     (                                           ),
+//                .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
+//                .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
+                .dphy_odten         (                                           ),
+                .dphy_rx_drst_n     (                                           ),
                 .out_data           (dphy_bytes_data                            ),
                 .out_valid          (dphy_bytes_valid                           )
             );
 
-    assign dphy_hsrx_odten[3:2] = 2'b11;
+//    assign dphy_hsrx_odten[3:2] = dphy_hsrx_odten[1:0];
 
 
     // -------------------------------
@@ -698,16 +677,13 @@ module rtcl_tp25k_usb3_imx219_mipi
     gowin_dphy_lane2_to_fifo32
         u_gowin_dphy_lane2_to_fifo32
             (
-//              .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-//                .dphy_valid (dphy_byte_ready                ),
+//              .dphy_data  (dphy_bytes_data            ),
+//              .dphy_valid (dphy_bytes_valid           ),
+                .dphy_data  (dphy_bytes                 ),
+                .dphy_valid (dphy_valid                 ),
+                .data_type  (8'h2b                      ),
 
-                .dphy_data  (dphy_bytes_data                     ),
-                .dphy_valid (dphy_bytes_valid                     ),
-//                .dphy_data  (dphy_bytes                     ),
-//                .dphy_valid (dphy_valid                     ),
-                .data_type  (8'h2b                          ),
-
-                .m_axi4s    (axi4s_dphy.m                   )
+                .m_axi4s    (axi4s_dphy.m               )
             );
 
     jelly3_axi4s_if
@@ -866,11 +842,11 @@ module rtcl_tp25k_usb3_imx219_mipi
     assign pmod[0] = dphy_bytes_valid   ;
     assign pmod[1] = axi4s_dphy.tvalid  ;
     assign pmod[2] = dphy_hsrxd_vld[0]  ;
-    assign pmod[3] = dphy_valid         ;
+    assign pmod[3] = 0;//dphy_valid         ;
     assign pmod[4] = 0;
     assign pmod[5] = 0;
-    assign pmod[6] = dphy_lprx[0][0] ;
-    assign pmod[7] = dphy_lprx[0][1] ;
+    assign pmod[6] = dphy_lprx_n[0]     ;
+    assign pmod[7] = dphy_lprx_p[0]     ;
 
     /*
     assign pmod[0] = mon_ft601_rxf_n;
