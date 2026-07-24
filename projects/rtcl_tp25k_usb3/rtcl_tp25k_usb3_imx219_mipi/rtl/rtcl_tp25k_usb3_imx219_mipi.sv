@@ -208,7 +208,7 @@ module rtcl_tp25k_usb3_imx219_mipi
     logic   [1:0][7:0]  dphy_bytes_data     ;
     logic               dphy_bytes_valid    ;
 
-    if ( 1 ) begin : old_impl
+    if ( 0 ) begin : old_impl
         logic   [1:0]   ff0_dphy_di_lprx0, ff1_dphy_di_lprx0 ;
         always_ff @(posedge dphy_clk) begin
     //      ff0_dphy_di_lprx0 <= dphy_lprx[0];
@@ -217,7 +217,7 @@ module rtcl_tp25k_usb3_imx219_mipi
         end
 
         typedef enum logic [1:0] {
-            DPHY_STATE_LP11 = 2'd0,
+            DPHY_STATE_IDLE = 2'd0,
             DPHY_STATE_LP01 = 2'd1,
             DPHY_STATE_LP00 = 2'd2,
             DPHY_STATE_HS   = 2'd3
@@ -231,7 +231,7 @@ module rtcl_tp25k_usb3_imx219_mipi
         logic           dphy_odten  ;
         always_ff @(posedge dphy_clk or posedge reset) begin
             if ( reset ) begin
-                dphy_state  <= DPHY_STATE_LP11;
+                dphy_state  <= DPHY_STATE_IDLE;
                 dphy_count  <= '0;
                 dphy_rst_n  <= 1'b1;
                 dphy_bytes  <= '0;
@@ -249,12 +249,12 @@ module rtcl_tp25k_usb3_imx219_mipi
                 end
 
                 case ( dphy_state )
-                DPHY_STATE_LP11:
+                DPHY_STATE_IDLE:
                     begin
                         if ( ff1_dphy_di_lprx0 != 2'b11 ) begin
                             dphy_count <= '0;
                         end
-                        if ( ff1_dphy_di_lprx0 == 2'b01 && dphy_count > 10 ) begin
+                        if ( ff1_dphy_di_lprx0 == 2'b01 && dphy_count >= 11 ) begin
                             dphy_state <= DPHY_STATE_LP01;
                             dphy_count <= '0;
                         end
@@ -268,7 +268,7 @@ module rtcl_tp25k_usb3_imx219_mipi
                             dphy_odten <= '1;
                         end
                         else if ( ff1_dphy_di_lprx0 != 2'b01 ) begin
-                            dphy_state <= DPHY_STATE_LP11;
+                            dphy_state <= DPHY_STATE_IDLE;
                             dphy_count <= '0;
                         end
                     end
@@ -288,7 +288,7 @@ module rtcl_tp25k_usb3_imx219_mipi
                             dphy_rst_n  <= 1'b0;
                         end
                         else if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
-                            dphy_state  <= DPHY_STATE_LP11;
+                            dphy_state  <= DPHY_STATE_IDLE;
                             dphy_count  <= '0;
                         end
                     end
@@ -298,14 +298,14 @@ module rtcl_tp25k_usb3_imx219_mipi
                         dphy_odten <= '1;
                         dphy_valid <= dphy_hsrxd_vld[0];
                         if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
-                            dphy_state <= DPHY_STATE_LP11;
+                            dphy_state <= DPHY_STATE_IDLE;
                             dphy_count  <= '0;
                         end
                     end
 
                 default:
                     begin
-                        dphy_state <= DPHY_STATE_LP11;
+                        dphy_state <= DPHY_STATE_IDLE;
                         dphy_count  <= '0;
                     end
                 endcase

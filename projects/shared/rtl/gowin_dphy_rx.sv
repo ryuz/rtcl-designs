@@ -65,10 +65,10 @@ module gowin_dphy_rx
             out_valid      <= '0;
         end
         else begin
-            dphy_odten     <= '0        ;
             dphy_rx_drst_n <= 1'b1      ;
             out_data       <= dphy_hsrxd;
             out_valid      <= 1'b0      ;
+            dphy_odten     <= '0        ;
 
             if ( counter != '1 ) begin
                 counter <= counter + 1'b1;
@@ -117,13 +117,10 @@ module gowin_dphy_rx
             STATE_HS:
                 begin
                     dphy_odten <= '1;
-//                  out_data   <= dphy_hsrxd;
                     out_valid  <= &dphy_hsrxd_vld[0] && counter >= count_t'(HS_MASK_COUNT);
                     if ( ff1_dphy_lprx != 2'b00 ) begin
                         state        <= STATE_IDLE;
                         counter      <= '0;
-                        dphy_odten   <= '0;
-                        out_valid    <= 1'b0;
                     end
                 end
 
