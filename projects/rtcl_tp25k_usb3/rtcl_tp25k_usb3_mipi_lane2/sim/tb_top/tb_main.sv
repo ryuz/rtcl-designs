@@ -338,21 +338,19 @@ module tb_main
             @(negedge dphy_clk);
             di_lprx0_n      = 1;
             di_lprx0_p      = 1;
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
+            for ( int i = 0; i < 20; i++ ) begin
+                @(negedge dphy_clk);
+            end
             di_lprx0_n      = 1;
             di_lprx0_p      = 0;
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
+            for ( int i = 0; i < 20; i++ ) begin
+                @(negedge dphy_clk);
+            end
             di_lprx0_n      = 0;
             di_lprx0_p      = 0;
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
-            @(negedge dphy_clk);
+            for ( int i = 0; i < 20; i++ ) begin
+                @(negedge dphy_clk);
+            end
             d0ln_hsrxd_vld = 1;
             d1ln_hsrxd_vld = 1;
             d0ln_hsrxd = 8'hb8;
@@ -377,21 +375,19 @@ module tb_main
                 @(negedge dphy_clk);
                 di_lprx0_n      = 1;
                 di_lprx0_p      = 1;
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
+                for ( int i = 0; i < 20; i++ ) begin
+                    @(negedge dphy_clk);
+                end
                 di_lprx0_n      = 1;
                 di_lprx0_p      = 0;
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
+                for ( int i = 0; i < 20; i++ ) begin
+                    @(negedge dphy_clk);
+                end
                 di_lprx0_n      = 0;
                 di_lprx0_p      = 0;
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
-                @(negedge dphy_clk);
+                for ( int i = 0; i < 20; i++ ) begin
+                    @(negedge dphy_clk);
+                end
                 d0ln_hsrxd_vld = 1;
                 d1ln_hsrxd_vld = 1;
                 d0ln_hsrxd = 8'hb8;

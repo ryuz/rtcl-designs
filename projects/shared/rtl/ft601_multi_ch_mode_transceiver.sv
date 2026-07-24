@@ -51,9 +51,8 @@ module ft601_multi_ch_mode_transceiver
             output  var data_t      [CHANNELS-1:0]  m_fifo_data         ,
             output  var logic       [CHANNELS-1:0]  m_fifo_valid        ,
 
-            output  var counter_t   [CHANNELS-1:0]  rx_counter          ,
-            output  var counter_t   [CHANNELS-1:0]  tx_counter          ,
-
+            output  var counter_t   [CHANNELS-1:0]  mon_rx_counter      ,
+            output  var counter_t   [CHANNELS-1:0]  mon_tx_counter      ,
             output  var logic                       mon_wr_n            ,
             output  var logic                       mon_rxf_n           ,
             output  var logic                       mon_txe_n           ,
@@ -341,23 +340,6 @@ module ft601_multi_ch_mode_transceiver
         end
     end
 
-    always_ff @( posedge clk ) begin
-        if ( reset ) begin
-            tx_counter <= '0;
-            rx_counter <= '0;
-        end
-        else begin
-            for ( int i = 0; i < CHANNELS; i++ ) begin
-                if ( state == WRITE_DATA &&  ft601_rxf_n == 1'b0 && channel == channel_t'(i) ) begin
-                    tx_counter[i] <= tx_counter[i] + 1'b1;
-                end
-                if ( m_fifo_valid[i] ) begin
-                    rx_counter[i] <= rx_counter[i] + 1'b1;
-                end
-            end
-        end
-    end
-
     assign ft601_wr_n   = reg_ft601_wr_n    ;
     assign ft601_rd_n   = 1'b1              ;
     assign ft601_oe_n   = 1'b1              ;
@@ -365,6 +347,24 @@ module ft601_multi_ch_mode_transceiver
     assign ft601_be_t   = reg_ft601_be_t    ;
     assign ft601_data_o = reg_ft601_data_o  ;
     assign ft601_data_t = reg_ft601_data_t  ;
+
+
+    always_ff @( posedge clk ) begin
+        if ( reset ) begin
+            mon_tx_counter <= '0;
+            mon_rx_counter <= '0;
+        end
+        else begin
+            for ( int i = 0; i < CHANNELS; i++ ) begin
+                if ( state == WRITE_DATA &&  ft601_rxf_n == 1'b0 && channel == channel_t'(i) ) begin
+                    mon_tx_counter[i] <= mon_tx_counter[i] + 1'b1;
+                end
+                if ( m_fifo_valid[i] ) begin
+                    mon_rx_counter[i] <= mon_rx_counter[i] + 1'b1;
+                end
+            end
+        end
+    end
 
     assign mon_rxf_n    = reg_ft601_rxf_n   ;
     assign mon_txe_n    = reg_ft601_txe_n   ;

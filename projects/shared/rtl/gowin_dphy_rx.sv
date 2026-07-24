@@ -12,10 +12,10 @@
 module gowin_dphy_rx
         #(
             parameter int LANES             = 4     ,
-            parameter int DPHY_RESET_TIMING = 16    ,
-            parameter int IDLE_MASK_COUNT   = 16    ,
-            parameter int LP01_MASK_COUNT   = 3     ,
-            parameter int HS_MASK_COUNT     = 3     ,
+            parameter int DPHY_RESET_TIMING = 8     ,
+            parameter int IDLE_MASK_COUNT   = 4     ,
+            parameter int LP01_MASK_COUNT   = 4     ,
+            parameter int HS_MASK_COUNT     = 1     ,
             parameter int FINAL_COUNT       = 10    
         )
         (
