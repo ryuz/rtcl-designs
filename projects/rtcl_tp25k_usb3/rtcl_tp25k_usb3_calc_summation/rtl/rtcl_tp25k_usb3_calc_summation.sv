@@ -9,7 +9,7 @@
 `timescale 1ps/1ps
 `default_nettype none
 
-module rtcl_tp25k_usb3_morphology_filter
+module rtcl_tp25k_usb3_calc_summation
         (
             input   var logic           in_clk50        ,
 
@@ -182,13 +182,13 @@ module rtcl_tp25k_usb3_morphology_filter
     assign ft601_tx_timeout[0] = 0        ;
     assign ft601_tx_timeout[1] = 1000     ;
 
-    logic   [1:0][31:0] mon_ft601_rx_counter;
-    logic   [1:0][31:0] mon_ft601_tx_counter;
-    logic               mon_ft601_wr_n      ;
-    logic               mon_ft601_rxf_n     ;
-    logic               mon_ft601_txe_n     ;
-    logic   [3:0]       mon_ft601_be        ;
-    logic   [31:0]      mon_ft601_data      ;
+    logic   [31:0]  mon_ft601_rx_counter;
+    logic   [31:0]  mon_ft601_tx_counter;
+    logic           mon_ft601_wr_n      ;
+    logic           mon_ft601_rxf_n     ;
+    logic           mon_ft601_txe_n     ;
+    logic   [3:0]   mon_ft601_be        ;
+    logic   [31:0]  mon_ft601_data      ;
 
     ft601_multi_ch_mode
             #(
@@ -264,8 +264,7 @@ module rtcl_tp25k_usb3_morphology_filter
     // ----------------------------------------
 
     localparam DEC_CTL  = 0;
-    localparam DEC_IMG  = 1;
-    localparam DEC_NUM  = 2;
+    localparam DEC_NUM  = 1;
 
     jelly3_axi4l_if
             #(
@@ -281,7 +280,6 @@ module rtcl_tp25k_usb3_morphology_filter
     
     // address map
     assign {axi4l_dec[DEC_CTL].addr_base, axi4l_dec[DEC_CTL].addr_high} = {32'h0000_0000, 32'h0000_ffff};
-    assign {axi4l_dec[DEC_IMG].addr_base, axi4l_dec[DEC_IMG].addr_high} = {32'h1000_0000, 32'h1fff_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
@@ -319,12 +317,12 @@ module rtcl_tp25k_usb3_morphology_filter
                 .DATA_BITS          (32                 ),
                 .CORE_ID            (32'h527a_0001      ),
                 .CORE_VERSION       (32'h0003_0001      ),
-                .INIT_CONTROL0      (128/32             ),  // width
-                .INIT_CONTROL1      (128                ),  // height
+                .INIT_CONTROL0      ('0                 ),
+                .INIT_CONTROL1      ('0                 ),
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      (256                ),  // max_len
-                .INIT_CONTROL4      (512                ),  // limit_len
-                .INIT_CONTROL5      (10000              ),  // timeout
+                .INIT_CONTROL3      ('0                 ),
+                .INIT_CONTROL4      ('0                 ),
+                .INIT_CONTROL5      ('0                 ),
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -401,62 +399,13 @@ module rtcl_tp25k_usb3_morphology_filter
             );
 
 
-    image_processing
-            #(
-                .WIDTH_BITS     (16                     ),
-                .HEIGHT_BITS    (16                     ),
-                .FILTER_NUM     (4*2                    ),
-                .FILTER_ROWS    (3                      ),
-                .FILTER_COLS    (3                      ),
-                .TAPS           (32                     ),
-                .MAX_COLS       (128                    ),
-                .RAM_TYPE       ("block"                ),
-                .BYPASS_SIZE    (1'b1                   ),
-                .DEVICE         ("RTL"                  )
-            )
-        u_image_processing
+    calc_summation
+        u_calc_summation
             (
-                .in_update_req  (1'b1                   ),
-                .param_width    (control0[15:0]         ),
-                .param_height   (control1[15:0]         ),
-
                 .s_axi4s        (axi4s_stream_rx.s      ),
-                .m_axi4s        (axi4s_stream_tx.m      ),
-                
-                .s_axi4l        (axi4l_dec[DEC_IMG].s   )
+                .m_axi4s        (axi4s_stream_tx.m      )
             );
 
-    // --------------------------------
-    //  counter
-    // --------------------------------
-
-    logic   [1:0][31:0]  rx_counter;
-    logic   [1:0][31:0]  tx_counter;
-    for ( genvar i = 0; i < 2; i++ ) begin
-        always_ff @(posedge clk) begin
-        if ( reset ) begin
-                rx_counter[i] <= '0;
-                tx_counter[i] <= '0;
-            end
-            else begin
-                if ( axi4s_ft601_rx[i].tvalid && axi4s_ft601_rx[i].tready ) begin
-                    rx_counter[i] <= rx_counter[i] + 1'b1;
-                end
-                if ( axi4s_ft601_tx[i].tvalid && axi4s_ft601_tx[i].tready ) begin
-                    tx_counter[i] <= tx_counter[i] + 1'b1;
-                end
-            end
-        end
-    end
-
-    assign monitor0 = rx_counter[0];
-    assign monitor1 = tx_counter[0];
-    assign monitor2 = rx_counter[1];
-    assign monitor3 = tx_counter[1];
-    assign monitor4 = mon_ft601_rx_counter[0];
-    assign monitor5 = mon_ft601_tx_counter[0];
-    assign monitor6 = mon_ft601_rx_counter[1];
-    assign monitor7 = mon_ft601_tx_counter[1];
 
 
     // --------------------------------
@@ -496,25 +445,14 @@ module rtcl_tp25k_usb3_morphology_filter
     //  PMOD
     // --------------------------------
     
-    assign pmod[0] = '0;//ft601_rxf_n;
-    assign pmod[1] = '0;//ft601_wr_n;
-    assign pmod[2] = axi4s_ft601_rx[1].tready;
-    assign pmod[3] = axi4s_ft601_rx[1].tvalid;
-    assign pmod[4] = axi4s_ft601_tx[1].tready;
-    assign pmod[5] = axi4s_ft601_tx[1].tvalid;
-    assign pmod[6] = '0;//ft601_data_i[9];   // tx[1]
-    assign pmod[7] = '0;//ft601_data_i[13];  // rx[1]
-
-    /*
-    assign pmod[0] = dphy_byte_ready;
-    assign pmod[1] = dphy_hsrxd_vld[0];
-    assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = '0;
-    assign pmod[4] = '0;
-    assign pmod[5] = '0;
-    assign pmod[6] = '0;
-    assign pmod[7] = '0;
-    */
+    assign pmod[0] = mon_ft601_rxf_n            ;
+    assign pmod[1] = mon_ft601_wr_n             ;
+    assign pmod[2] = axi4s_ft601_rx[1].tready   ;
+    assign pmod[3] = axi4s_ft601_rx[1].tvalid   ;
+    assign pmod[4] = axi4s_ft601_tx[1].tready   ;
+    assign pmod[5] = axi4s_ft601_tx[1].tvalid   ;
+    assign pmod[6] = mon_ft601_data[9]          ;   // tx[1]
+    assign pmod[7] = mon_ft601_data[13]         ;   // rx[1]
 
 endmodule
 
