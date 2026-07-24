@@ -205,144 +205,149 @@ module rtcl_tp25k_usb3_imx219_mipi
                 .out_reset          (dphy_reset         )
             );
 
-
-
-    logic   [1:0]   ff0_dphy_di_lprx0, ff1_dphy_di_lprx0 ;
-    always_ff @(posedge dphy_clk) begin
-//      ff0_dphy_di_lprx0 <= dphy_lprx[0];
-        ff0_dphy_di_lprx0 <= {dphy_lprx_p[0], dphy_lprx_n[0]};
-        ff1_dphy_di_lprx0 <= ff0_dphy_di_lprx0;
-    end
-
-    typedef enum logic [1:0] {
-        DPHY_STATE_LP11 = 2'd0,
-        DPHY_STATE_LP01 = 2'd1,
-        DPHY_STATE_LP00 = 2'd2,
-        DPHY_STATE_HS   = 2'd3
-    } dphy_state_t;
-
-    dphy_state_t    dphy_state  ;
-    logic   [11:0]  dphy_count  ;
-    logic           dphy_rst_n  ;
-    logic   [15:0]  dphy_bytes  ;
-    logic           dphy_valid  ;
-    logic           dphy_odten  ;
-    always_ff @(posedge dphy_clk or posedge reset) begin
-        if ( reset ) begin
-            dphy_state  <= DPHY_STATE_LP11;
-            dphy_count  <= '0;
-            dphy_rst_n  <= 1'b1;
-            dphy_bytes  <= '0;
-            dphy_valid  <= '0;
-            dphy_odten  <= '0;
-        end
-        else begin
-            dphy_rst_n  <= 1'b1;
-            dphy_bytes  <= {dphy_hsrxd[1][7:0], dphy_hsrxd[0][7:0]};
-            dphy_valid  <= '0;
-            dphy_odten  <= '0;
-
-            if ( dphy_count != '1 ) begin
-                dphy_count <= dphy_count + 1'b1;
-            end
-
-            case ( dphy_state )
-            DPHY_STATE_LP11:
-                begin
-                    if ( ff1_dphy_di_lprx0 != 2'b11 ) begin
-                        dphy_count <= '0;
-                    end
-                    if ( ff1_dphy_di_lprx0 == 2'b01 && dphy_count > 10 ) begin
-                        dphy_state <= DPHY_STATE_LP01;
-                        dphy_count <= '0;
-                    end
-                end
-
-            DPHY_STATE_LP01:
-                begin
-                    if ( ff1_dphy_di_lprx0 == 2'b00 ) begin
-                        dphy_state <= DPHY_STATE_LP00;
-                        dphy_count <= '0;
-                        dphy_odten <= '1;
-                    end
-                    else if ( ff1_dphy_di_lprx0 != 2'b01 ) begin
-                        dphy_state <= DPHY_STATE_LP11;
-                        dphy_count <= '0;
-                    end
-                end
-
-            DPHY_STATE_LP00:
-                begin
-                    dphy_odten <= '1;
-//                  if ( dphy_count == 10 ) begin   // OK
-//                  if ( dphy_count == 9 ) begin    // OK
-//                  if ( dphy_count == 8 ) begin    // OK
-//                  if ( dphy_count == 11 ) begin   // OK
-//                  if ( dphy_count == 15 ) begin   // NG
-//                  if ( dphy_count == 0 ) begin   // OK
-                    if ( dphy_count == 10 ) begin   // OK
-                        dphy_state  <= DPHY_STATE_HS;
-                        dphy_count  <= '0;
-                        dphy_rst_n  <= 1'b0;
-                    end
-                    else if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
-                        dphy_state  <= DPHY_STATE_LP11;
-                        dphy_count  <= '0;
-                    end
-                end
-
-            DPHY_STATE_HS:
-                begin
-                    dphy_odten <= '1;
-                    dphy_valid <= &dphy_hsrxd_vld[0];
-                    if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
-                        dphy_state <= DPHY_STATE_LP11;
-                        dphy_count  <= '0;
-                    end
-                end
-
-            default:
-                begin
-                    dphy_state <= DPHY_STATE_LP11;
-                    dphy_count  <= '0;
-                end
-            endcase
-        end
-    end
-
-    assign dphy_rx_drst_n = dphy_rst_n;
-    assign dphy_hsrx_odten = {4{dphy_odten}};
-    
-
     logic   [1:0][7:0]  dphy_bytes_data     ;
     logic               dphy_bytes_valid    ;
-    gowin_dphy_rx
-            #(
-                .LANES              (2                                          ),
-//              .DPHY_RESET_TIMING  (11                                         ),
-                .DPHY_RESET_TIMING  (10                                          ),
-                .IDLE_MASK_COUNT    (8                                          ),
-                .LP01_MASK_COUNT    (2                                          ),
-                .HS_MASK_COUNT      (2                                          )
-            )
-        u_gowin_dphy_rx
-            (
-                .reset              (reset                                      ),
-                .clk                (dphy_clk                                   ),
-//              .dphy_lprx          ({dphy_lprx      [1], dphy_lprx      [0]}   ),
-                .dphy_lprx_n        ({dphy_lprx_n    [1], dphy_lprx_n    [0]}   ),
-                .dphy_lprx_p        ({dphy_lprx_p    [1], dphy_lprx_p    [0]}   ),
-                .dphy_hsrxd         ({dphy_hsrxd     [1], dphy_hsrxd     [0]}   ),
-                .dphy_hsrxd_vld     ({dphy_hsrxd_vld [1], dphy_hsrxd_vld [0]}   ),
-//                .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
-//                .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
-                .dphy_odten         (                                           ),
-                .dphy_rx_drst_n     (                                           ),
-                .out_data           (dphy_bytes_data                            ),
-                .out_valid          (dphy_bytes_valid                           )
-            );
 
-//    assign dphy_hsrx_odten[3:2] = dphy_hsrx_odten[1:0];
+    if ( 1 ) begin : old_impl
+        logic   [1:0]   ff0_dphy_di_lprx0, ff1_dphy_di_lprx0 ;
+        always_ff @(posedge dphy_clk) begin
+    //      ff0_dphy_di_lprx0 <= dphy_lprx[0];
+            ff0_dphy_di_lprx0 <= {dphy_lprx_p[0], dphy_lprx_n[0]};
+            ff1_dphy_di_lprx0 <= ff0_dphy_di_lprx0;
+        end
+
+        typedef enum logic [1:0] {
+            DPHY_STATE_LP11 = 2'd0,
+            DPHY_STATE_LP01 = 2'd1,
+            DPHY_STATE_LP00 = 2'd2,
+            DPHY_STATE_HS   = 2'd3
+        } dphy_state_t;
+
+        dphy_state_t    dphy_state  ;
+        logic   [11:0]  dphy_count  ;
+        logic           dphy_rst_n  ;
+        logic   [15:0]  dphy_bytes  ;
+        logic           dphy_valid  ;
+        logic           dphy_odten  ;
+        always_ff @(posedge dphy_clk or posedge reset) begin
+            if ( reset ) begin
+                dphy_state  <= DPHY_STATE_LP11;
+                dphy_count  <= '0;
+                dphy_rst_n  <= 1'b1;
+                dphy_bytes  <= '0;
+                dphy_valid  <= '0;
+                dphy_odten  <= '0;
+            end
+            else begin
+                dphy_rst_n  <= 1'b1;
+                dphy_bytes  <= {dphy_hsrxd[1][7:0], dphy_hsrxd[0][7:0]};
+                dphy_valid  <= '0;
+                dphy_odten  <= '0;
+
+                if ( dphy_count != '1 ) begin
+                    dphy_count <= dphy_count + 1'b1;
+                end
+
+                case ( dphy_state )
+                DPHY_STATE_LP11:
+                    begin
+                        if ( ff1_dphy_di_lprx0 != 2'b11 ) begin
+                            dphy_count <= '0;
+                        end
+                        if ( ff1_dphy_di_lprx0 == 2'b01 && dphy_count > 10 ) begin
+                            dphy_state <= DPHY_STATE_LP01;
+                            dphy_count <= '0;
+                        end
+                    end
+
+                DPHY_STATE_LP01:
+                    begin
+                        if ( ff1_dphy_di_lprx0 == 2'b00 ) begin
+                            dphy_state <= DPHY_STATE_LP00;
+                            dphy_count <= '0;
+                            dphy_odten <= '1;
+                        end
+                        else if ( ff1_dphy_di_lprx0 != 2'b01 ) begin
+                            dphy_state <= DPHY_STATE_LP11;
+                            dphy_count <= '0;
+                        end
+                    end
+
+                DPHY_STATE_LP00:
+                    begin
+                        dphy_odten <= '1;
+    //                  if ( dphy_count == 10 ) begin   // OK
+    //                  if ( dphy_count == 9 ) begin    // OK
+    //                  if ( dphy_count == 8 ) begin    // OK
+    //                  if ( dphy_count == 11 ) begin   // OK
+    //                  if ( dphy_count == 15 ) begin   // NG
+    //                  if ( dphy_count == 0 ) begin   // OK
+                        if ( dphy_count == 10 ) begin   // OK
+                            dphy_state  <= DPHY_STATE_HS;
+                            dphy_count  <= '0;
+                            dphy_rst_n  <= 1'b0;
+                        end
+                        else if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
+                            dphy_state  <= DPHY_STATE_LP11;
+                            dphy_count  <= '0;
+                        end
+                    end
+
+                DPHY_STATE_HS:
+                    begin
+                        dphy_odten <= '1;
+                        dphy_valid <= dphy_hsrxd_vld[0];
+                        if ( ff1_dphy_di_lprx0 != 2'b00 ) begin
+                            dphy_state <= DPHY_STATE_LP11;
+                            dphy_count  <= '0;
+                        end
+                    end
+
+                default:
+                    begin
+                        dphy_state <= DPHY_STATE_LP11;
+                        dphy_count  <= '0;
+                    end
+                endcase
+            end
+        end
+
+        assign dphy_rx_drst_n = dphy_rst_n;
+        assign dphy_hsrx_odten = {4{dphy_odten}};
+    
+        assign dphy_bytes_data  = dphy_bytes    ;
+        assign dphy_bytes_valid = dphy_valid    ;
+
+    end
+    else begin : new_impl
+        gowin_dphy_rx
+                #(
+                    .LANES              (2                                          ),
+    //              .DPHY_RESET_TIMING  (11                                         ),
+                    .DPHY_RESET_TIMING  (10                                         ),
+                    .IDLE_MASK_COUNT    (11                                         ),
+                    .LP01_MASK_COUNT    (0                                          ),
+                    .HS_MASK_COUNT      (0                                          )
+                )
+            u_gowin_dphy_rx
+                (
+                    .reset              (reset                                      ),
+                    .clk                (dphy_clk                                   ),
+    //              .dphy_lprx          ({dphy_lprx      [1], dphy_lprx      [0]}   ),
+                    .dphy_lprx_n        ({dphy_lprx_n    [1], dphy_lprx_n    [0]}   ),
+                    .dphy_lprx_p        ({dphy_lprx_p    [1], dphy_lprx_p    [0]}   ),
+                    .dphy_hsrxd         ({dphy_hsrxd     [1], dphy_hsrxd     [0]}   ),
+                    .dphy_hsrxd_vld     ({dphy_hsrxd_vld [1], dphy_hsrxd_vld [0]}   ),
+                    .dphy_odten         ({dphy_hsrx_odten[1], dphy_hsrx_odten[0]}   ),
+                    .dphy_rx_drst_n     (dphy_rx_drst_n                             ),
+    //                .dphy_odten         (                                           ),
+    //                .dphy_rx_drst_n     (                                           ),
+                    .out_data           (dphy_bytes_data                            ),
+                    .out_valid          (dphy_bytes_valid                           )
+                );
+
+        assign dphy_hsrx_odten[3:2] = {2{dphy_hsrx_odten[0]}};
+    end
 
 
     // -------------------------------
@@ -677,10 +682,10 @@ module rtcl_tp25k_usb3_imx219_mipi
     gowin_dphy_lane2_to_fifo32
         u_gowin_dphy_lane2_to_fifo32
             (
-//              .dphy_data  (dphy_bytes_data            ),
-//              .dphy_valid (dphy_bytes_valid           ),
-                .dphy_data  (dphy_bytes                 ),
-                .dphy_valid (dphy_valid                 ),
+                .dphy_data  (dphy_bytes_data            ),
+                .dphy_valid (dphy_bytes_valid           ),
+  //              .dphy_data  (dphy_bytes                 ),
+  //              .dphy_valid (dphy_valid                 ),
                 .data_type  (8'h2b                      ),
 
                 .m_axi4s    (axi4s_dphy.m               )

@@ -44,7 +44,7 @@ module gowin_dphy_rx
     end
 
 
-    localparam type count_t = logic [7:0];
+    localparam type count_t = logic [11:0];
 
     typedef enum logic [1:0] {
         STATE_IDLE = 2'd0,
@@ -65,9 +65,10 @@ module gowin_dphy_rx
             out_valid      <= '0;
         end
         else begin
-            dphy_odten     <= '0    ;
-            dphy_rx_drst_n <= 1'b1  ;
-            out_valid      <= 1'b0  ;
+            dphy_odten     <= '0        ;
+            dphy_rx_drst_n <= 1'b1      ;
+            out_data       <= dphy_hsrxd;
+            out_valid      <= 1'b0      ;
 
             if ( counter != '1 ) begin
                 counter <= counter + 1'b1;
@@ -79,7 +80,7 @@ module gowin_dphy_rx
                     if ( ff1_dphy_lprx != 2'b11 ) begin
                         counter <= '0;
                     end
-                    if ( ff1_dphy_lprx == 2'b01 && counter > count_t'(IDLE_MASK_COUNT) ) begin
+                    if ( ff1_dphy_lprx == 2'b01 && counter >= count_t'(IDLE_MASK_COUNT) ) begin
                         state   <= STATE_LP01;
                         counter <= '0;
                     end
@@ -87,7 +88,7 @@ module gowin_dphy_rx
 
             STATE_LP01:
                 begin
-                    if ( ff1_dphy_lprx == 2'b00 && counter > count_t'(LP01_MASK_COUNT) ) begin
+                    if ( ff1_dphy_lprx == 2'b00 && counter >= count_t'(LP01_MASK_COUNT) ) begin
                         state        <= STATE_LP00;
                         counter      <= '0;
                         dphy_odten   <= '1;
@@ -116,8 +117,8 @@ module gowin_dphy_rx
             STATE_HS:
                 begin
                     dphy_odten <= '1;
-                    out_data   <= dphy_hsrxd;
-                    out_valid  <= &dphy_hsrxd_vld && counter > count_t'(HS_MASK_COUNT);
+//                  out_data   <= dphy_hsrxd;
+                    out_valid  <= &dphy_hsrxd_vld[0] && counter >= count_t'(HS_MASK_COUNT);
                     if ( ff1_dphy_lprx != 2'b00 ) begin
                         state        <= STATE_IDLE;
                         counter      <= '0;
