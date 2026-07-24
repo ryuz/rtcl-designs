@@ -1,0 +1,45 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW5A-25A" pn="GW5A-LV25MG121NC1/I0">gw5a25a-002</Device>
+    <FileList>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/bus/jelly3_axi4l_addr_decoder.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/bus/jelly3_axi4l_if.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/bus/jelly3_axi4s_if.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_fifo_async.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_fifo_fwft_read.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_fifo_sync.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_ram_simple_dualport.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_ram_singleport.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_reset_async.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_reset_sync.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_stream_fifo.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_stream_fifo_async.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/library/jelly3_stream_fifo_sync.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/peripheral/jelly3_system_control.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/primitive/jelly3_cdc_array_single.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/primitive/jelly3_cdc_gray.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/primitive/jelly3_cdc_single.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/jelly/rtl/v3/primitive/jelly3_shift_register.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/ip/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/ip/gowin_pll/gowin_pll_ft601.v" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/ip/gowin_pll/gowin_pll_ft601_mod.v" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/ip/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/ip/pll_init.v" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/rtl/calc_summation.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/rtl/rtcl_tp25k_usb3_calc_summation.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_arbiter.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_axi4l.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_axi4s_checker.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_axi4s_rx.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/fifo32_cmd_axi4s_tx.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/frame_controller.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/ft601_multi_ch_mode.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/shared/rtl/ft601_multi_ch_mode_transceiver.sv" type="file.verilog" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/constrain/rtcl_tp25k_usb3_calc_summation.cst" type="file.cst" enable="1"/>
+        <File path="//wsl.localhost/Ubuntu-20/home/ryuji/git-work/rtcl-design-rtcl_tp25k_usb3/projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_calc_summation/constrain/rtcl_tp25k_usb3_calc_summation.sdc" type="file.sdc" enable="1"/>
+        <File path="src/rtcl_tp25k_usb3_calc_summation.rao" type="file.gao" enable="1"/>
+    </FileList>
+</Project>
