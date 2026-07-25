@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 rand = "0.10.2"
+chrono = "0.4"
 opencv = "0.99.0"
 rtcl-d3xx = { path = "../../../../../rust/d3xx" }
 rtcl-lib = { path = "../../../../../rust/lib" }

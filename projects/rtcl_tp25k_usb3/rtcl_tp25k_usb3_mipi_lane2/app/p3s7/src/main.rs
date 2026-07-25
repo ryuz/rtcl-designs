@@ -1,6 +1,7 @@
 use std::error::Error;
 use rtcl_d3xx::*;
 use std::time::Duration;
+use opencv::prelude::*;
 
 use rtcl_lib::rtcl_p3s7_module_driver::*;
 
@@ -95,8 +96,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::io::stdin().read_line(&mut input)?;
     */
 
-    let width  = 416;
-    let height = 416;
+//    let width  = 416;
+//    let height = 416;
+    let width  = 256;
+    let height = 256;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
@@ -121,7 +124,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // xsm_delay
 //  let xsm_delay = cam.calc_xsm_delay(width);
-    cam.set_xsm_delay(255)?; // xsm_delay)?;
+//  cam.set_xsm_delay(255)?; // xsm_delay)?;
+    cam.set_xsm_delay(100)?; // xsm_delay)?;
     cam.set_nzrot_xsm_delay_enable(true)?;
     cam.set_zero_rot_enable(true)?;
 
@@ -131,11 +135,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // ROI 設定
     cam.set_roi0(width as u16, height as u16, None, None)?;
-    cam.set_gain_db(1.0)?;
+    cam.set_gain_db(10.0)?;
 
     cam.set_mult_timer0(72)?;
-    cam.set_fr_length0(33000)?;
-    cam.set_exposure0(30000)?;
+//  cam.set_fr_length0(33000)?;
+//  cam.set_exposure0(30000)?;
+    cam.set_fr_length0(800)?;
+    cam.set_exposure0(700)?;
 
     cam.set_slave_mode(false)?;
     cam.set_triggered_mode(false)?;
@@ -244,6 +250,31 @@ fn main() -> Result<(), Box<dyn Error>> {
         if (key & 0xff) == 27 { // ESC
             break;
         }
+
+        if (key & 0xff) == 'r' as i32 {
+            println!("start record");
+            let mut frames = Vec::<VideoFrame>::new();
+            for _ in 0..1000 {
+                let frame = match usb.recv_video_timeout(Duration::from_millis(1000)) {
+                    Ok(frame) => frame,
+                    Err(_) => {
+                        continue;
+                    }
+                };
+                frames.push(frame);
+            }
+            println!("end record");
+
+            // record/時刻 でディレクトリを作って、連番静止画で保存
+            let now = chrono::Local::now();
+            let dir_name = format!("record/{}", now.format("%Y%m%d_%H%M%S"));
+            std::fs::create_dir_all(&dir_name)?;
+            for (i, frame) in frames.iter().enumerate() {
+                let mat = frame_to_mat(frame);
+                let file_name = format!("{}/frame_{:04}.png", dir_name, i);
+                opencv::imgcodecs::imwrite(&file_name, &mat, &opencv::core::Vector::new())?;
+            }
+        }
     }
     
 
@@ -253,6 +284,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn frame_to_mat(frame: &VideoFrame) -> opencv::core::Mat {
+    let h = frame.height as usize;
+    let line_bytes = frame.width;
+    let image_width = (line_bytes / 5) * 4;
+    let mut image = vec![vec![0u16; image_width]; h];
+    for y in 0..h {
+        let line = &frame.data[(y * line_bytes)..((y + 1) * line_bytes)];
+        for x in 0..(image_width / 4) {
+            image[y][x * 4 + 0] = (((line[x * 5 + 0] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 0) & 0x03) * 64;
+            image[y][x * 4 + 1] = (((line[x * 5 + 1] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 2) & 0x03) * 64;
+            image[y][x * 4 + 2] = (((line[x * 5 + 2] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 4) & 0x03) * 64;
+            image[y][x * 4 + 3] = (((line[x * 5 + 3] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 6) & 0x03) * 64;
+        }
+    }
+    let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
+    let mat_ref = opencv::core::Mat::new_rows_cols_with_data(
+        h as i32,
+        image_width as i32,
+        &flat_image,
+    ).unwrap();
+    let mut mat = opencv::core::Mat::default();
+    mat_ref.copy_to(&mut mat).unwrap();
+    mat
+}
 
 
 

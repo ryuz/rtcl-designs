@@ -128,7 +128,7 @@ impl RtRtclFifo32AxisRxD3xx {
         }
 
         let request_size = 4 + size;
-        let mut rx_data = self.axi4s_reader.read(request_size)?;
+        let mut rx_data = self.axi4s_reader.read_until_size(request_size, 1000)?;
         while rx_data.len() < request_size {
             let remain_size = request_size - rx_data.len();
             let mut remain_data = self.axi4s_reader.read(remain_size)?;
@@ -169,6 +169,11 @@ impl RtRtclFifo32AxisRxD3xx {
             tuser: operand & 0x7f,
             tdata: rx_data[4..].to_vec(),
         })
+    }
+
+    pub fn recv_data(&mut self, size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let stream = self.recv_axi4s(size)?;
+        Ok(stream.tdata)
     }
 
 
@@ -277,6 +282,24 @@ impl RtclFifo32AxisTxD3xx {
 
         self.axi4s_writer.write(&packet)?;
         Ok(())
+    }
+
+    pub fn send_data(&self, tdata : &[u8], tuser : usize) -> Result<(), Box<dyn Error>> {
+        if (tdata.len() & 0x3) != 0 {
+            return Err("AXI4S payload size must be 4-byte aligned".into());
+        }
+
+        let mut le_data = Vec::with_capacity(tdata.len());
+        for chunk in tdata.chunks_exact(4) {
+            let word = u32::from_ne_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+            le_data.extend_from_slice(&word.to_le_bytes());
+        }
+
+        let stream = AxiStream {
+            tuser: tuser as u8,
+            tdata: le_data,
+        };
+        self.send_axi4s(&stream)
     }
 
     pub fn send_frame(&self, width: usize, height: usize, image: &[u8]) -> Result<(), Box<dyn Error>> {
