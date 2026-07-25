@@ -171,28 +171,35 @@ module rtcl_tp25k_usb3_lfsr
                 .aclken     (1'b1   )
             );
 
+    localparam  int     FT601_CHANNELS             = 2                              ;
+    localparam  int     FT601_TIMEOUT_BITS         = 16                             ;
+    localparam  type    ft601_timeout_t            = logic [FT601_TIMEOUT_BITS-1:0] ;
+    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,    9}                   ;
+    parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   14}                   ;
+    parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
+    parameter   int     FT601_TX_THRESHOLD     [2] = '{256,  256}                   ;
 
-    localparam  int  FT601_CHANNELS     = 2;
-    localparam  int  FT601_TIMEOUT_BITS = 16;
-    localparam  type ft601_timeout_t    = logic [FT601_TIMEOUT_BITS-1:0];
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
-    assign ft601_tx_timeout[1] = 10000    ;
+    assign ft601_tx_timeout[1] = 1000     ;
 
-    logic   [31:0]  ft601_rx_counter;
-    logic   [31:0]  ft601_tx_counter;
-    logic           mon_ft601_wr_n  ;
-    logic           mon_ft601_rxf_n ;
-    logic           mon_ft601_txe_n ;
-    logic   [3:0]   mon_ft601_be    ;
-    logic   [31:0]  mon_ft601_data  ;
+    logic   [1:0][31:0] mon_ft601_rx_counter;
+    logic   [1:0][31:0] mon_ft601_tx_counter;
+    logic               mon_ft601_wr_n      ;
+    logic               mon_ft601_rxf_n     ;
+    logic               mon_ft601_txe_n     ;
+    logic   [3:0]       mon_ft601_be        ;
+    logic   [31:0]      mon_ft601_data      ;
 
     ft601_multi_ch_mode
             #(
                 .CHANNELS           (FT601_CHANNELS             ),
-                .RX_FIFO_PTR_BITS   ('{9,  9}                   ),
-                .TX_FIFO_PTR_BITS   ('{9, 12}                   )
+                .TIMEOUT_BITS       (FT601_TIMEOUT_BITS         ),
+                .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
+                .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
+                .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
+                .TX_THRESHOLD       (FT601_TX_THRESHOLD         )
             )
         u_ft601_multi_ch_mode
             (
@@ -215,9 +222,8 @@ module rtcl_tp25k_usb3_lfsr
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
-                .rx_counter         (ft601_rx_counter           ),
-                .tx_counter         (ft601_tx_counter           ),
-
+                .mon_rx_counter     (mon_ft601_rx_counter       ),
+                .mon_tx_counter     (mon_ft601_tx_counter       ),
                 .mon_wr_n           (mon_ft601_wr_n             ),
                 .mon_rxf_n          (mon_ft601_rxf_n            ),
                 .mon_txe_n          (mon_ft601_txe_n            ),
