@@ -424,7 +424,7 @@ module rtcl_tp25k_usb3_lfsr
                 .ASYNC              (1                  ),
                 .DATA_BUF_SIZE      (512                ),
                 .CMD_BUF_SIZE       (64                 ),
-                .MAX_LEN            (512-1              )
+                .MAX_LEN            (512                )
             )
         u_fifo32_cmd_axi4s_tx
             (
