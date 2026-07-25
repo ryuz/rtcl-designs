@@ -383,9 +383,10 @@ module rtcl_tp25k_usb3_mipi_lane2
     localparam  int     FT601_CHANNELS             = 2                              ;
     localparam  int     FT601_TIMEOUT_BITS         = 16                             ;
     localparam  type    ft601_timeout_t            = logic [FT601_TIMEOUT_BITS-1:0] ;
-    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{9,  9}                       ;
-    parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{9, 14}                       ;
-    parameter   int     FT601_TX_THRESHOLD     [2] = '{1, 1024}                     ;
+    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,    9}                   ;
+    parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   14}                   ;
+    parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
+    parameter   int     FT601_TX_THRESHOLD     [2] = '{  1, 1024}                   ;
 
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
@@ -406,6 +407,7 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .TIMEOUT_BITS       (FT601_TIMEOUT_BITS         ),
                 .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
+                .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
                 .TX_THRESHOLD       (FT601_TX_THRESHOLD         )
             )
         u_ft601_multi_ch_mode
