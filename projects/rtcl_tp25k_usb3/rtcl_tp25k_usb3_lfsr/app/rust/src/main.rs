@@ -78,7 +78,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
     // OpenDevice
-    let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32CtlD3xx::new(0)?;
+//  let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
+    let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32::new(0)?;
 
     // direct read/write
     println!("SYSCTL_CORE_ID    : 0x{:08x}", axi4l.read_axi4l((REG_SYSCTL_CORE_ID   ) as u32)?);
@@ -86,14 +87,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
 
     // Recwive Test
-    let data_size : u32 = 16*1024*1024;
+    let data_size : u32 = 1*1024*1024;
     let tx_seed: u32 = 0x12345678;
     axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,      tx_seed, 0xf)?;
     axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
 
     let rx_start = Instant::now();  // 時間計測開始
     axi4l.write_axi4l(REG_LFSR_TX_START     ,            1, 0xf)?;
-    let rx_data = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(5000))?;
+    let rx_data = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
+//  let rx_data = axi4s_rx.recv_axi4s(data_size as usize)?;
     let rx_elapsed = rx_start.elapsed();
 
     // AXI4S payload bytes -> u32 words (little-endian)

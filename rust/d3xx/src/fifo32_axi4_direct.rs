@@ -124,47 +124,78 @@ impl D3xxFifo32DirectAxi4sRx {
             return Err("AXI4S requested size must be > 0".into());
         }
 
-        let request_size = 4 + size;
-        let mut rx_data = self.axi4s_reader.read_until_size(request_size, 1000)?;
-        while rx_data.len() < request_size {
-            let remain_size = request_size - rx_data.len();
-            let mut remain_data = self.axi4s_reader.read(remain_size)?;
-            if remain_data.is_empty() {
+        let mut stream_tuser: Option<u8> = None;
+        let mut tdata = Vec::<u8>::with_capacity(size);
+
+        loop {
+            let mut header = self.axi4s_reader.read_until_size(4, 1000)?;
+            while header.len() < 4 {
+                let remain_size = 4 - header.len();
+                let mut remain_data = self.axi4s_reader.read(remain_size)?;
+                if remain_data.is_empty() {
+                    break;
+                }
+                header.append(&mut remain_data);
+            }
+            if header.len() != 4 {
+                return Err(format!("AXI4S header receive size mismatch: {} != {}", header.len(), 4).into());
+            }
+
+            let opcode = header[0];
+            let operand = header[1];
+            let packet_last = (operand & 0x80) != 0;
+            let packet_size = u16::from_le_bytes([header[2], header[3]]) as usize;
+            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+
+            if let Some(tuser) = stream_tuser {
+                if tuser != (operand & 0x7f) {
+                    return Err(format!(
+                        "AXI4S tuser mismatch across packets: {} != {}",
+                        tuser,
+                        operand & 0x7f
+                    )
+                    .into());
+                }
+            }
+            else {
+                stream_tuser = Some(operand & 0x7f);
+            }
+
+            let mut payload = self.axi4s_reader.read_until_size(packet_size, 1000)?;
+            while payload.len() < packet_size {
+                let remain_size = packet_size - payload.len();
+                let mut remain_data = self.axi4s_reader.read(remain_size)?;
+                if remain_data.is_empty() {
+                    break;
+                }
+                payload.append(&mut remain_data);
+            }
+
+            if payload.len() != packet_size {
+                return Err(format!(
+                    "AXI4S payload receive size mismatch: {} != {}",
+                    payload.len(),
+                    packet_size
+                )
+                .into());
+            }
+
+            tdata.extend_from_slice(&payload);
+
+            if packet_last {
                 break;
             }
-            rx_data.append(&mut remain_data);
-        }
-        if rx_data.len() != request_size {
-            return Err(format!(
-                "AXI4S receive size mismatch: {} != {}",
-                rx_data.len(),
-                request_size
-            )
-            .into());
-        }
-        assert!((rx_data.len() & 0x3) == 0); // 32bit単位でしか通信しない
-
-        let opcode = rx_data[0];
-        let operand = rx_data[1];
-        let packet_last = (operand & 0x80) != 0;
-        let packet_size = u16::from_le_bytes([rx_data[2], rx_data[3]]) as usize;
-        assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
-        if packet_size != size {
-            return Err(format!(
-                "AXI4S payload size mismatch in header: {} != {}",
-                packet_size,
-                size
-            )
-            .into());
         }
 
-        if !packet_last {
-            return Err("AXI4S stream is not terminated at requested size".into());
+        if tdata.len() != size {
+            return Err(format!("AXI4S receive size mismatch: {} != {}", tdata.len(), size).into());
         }
+
+        assert!((tdata.len() & 0x3) == 0); // 32bit単位でしか通信しない
 
         Ok(AxiStream {
-            tuser: operand & 0x7f,
-            tdata: rx_data[4..].to_vec(),
+            tuser: stream_tuser.unwrap_or(0),
+            tdata,
         })
     }
 
