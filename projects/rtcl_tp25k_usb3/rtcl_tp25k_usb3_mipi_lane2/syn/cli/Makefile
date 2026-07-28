@@ -83,7 +83,6 @@ run: $(FS_FILE)
 	openFPGALoader -c digilent_hs2 $(FS_FILE)
 
 rom_write:
-#	openFPGALoader -c digilent_hs2 -b tangprimer25k -f $(FS_FILE)
 	openFPGALoader -c digilent_hs2 -f $(FS_FILE)
 
 
