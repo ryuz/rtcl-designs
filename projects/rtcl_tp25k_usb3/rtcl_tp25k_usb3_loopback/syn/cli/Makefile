@@ -64,6 +64,8 @@ run: $(FS_FILE)
 run_wsl: $(FS_FILE)
 	programmer_cli --device GW5A-25B --run 2 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
+rom_write_wsl: $(FS_FILE)
+	programmer_cli --device GW5A-25B --run 54 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
 rom_write:
 #	openFPGALoader -c digilent_hs2 -b tangprimer25k -f $(FS_FILE)

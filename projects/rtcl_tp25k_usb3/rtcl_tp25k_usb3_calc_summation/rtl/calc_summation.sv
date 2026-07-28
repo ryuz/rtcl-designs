@@ -21,6 +21,7 @@ module calc_summation
         if ( ~s_axi4s.aresetn ) begin
             m_axi4s.tlast  <= 1'b1  ;
             m_axi4s.tdata  <= 32'd0 ;
+            m_axi4s.tstrb  <= '1    ;
             m_axi4s.tvalid <= 1'b0  ;
         end
         else begin
@@ -33,6 +34,7 @@ module calc_summation
             if ( s_axi4s.tvalid && s_axi4s.tready ) begin
                 m_axi4s.tlast  <= 1'b1                          ;   // 1つだけ送信するのでtlastは常に1
                 m_axi4s.tdata  <= m_axi4s.tdata + s_axi4s.tdata ;   // 累算
+                m_axi4s.tstrb  <= '1                            ;   // すべてのバイトを有効(32bit)
                 m_axi4s.tvalid <= s_axi4s.tlast                 ;   // 最後のデータの時に送信有効
             end
         end

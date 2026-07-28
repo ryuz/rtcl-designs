@@ -172,6 +172,9 @@ module ft601_multi_ch_mode
 
         logic  [TX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size   ;
 
+        logic   [3:0]                  s_axi4s_tx_tstrb;
+        assign s_axi4s_tx_tstrb = s_axi4s_tx[i].USE_STRB ? s_axi4s_tx[i].tstrb : '1;
+
         jelly3_stream_fifo
                 #(
                     .ASYNC          (ASYNC                  ),
@@ -188,7 +191,7 @@ module ft601_multi_ch_mode
                     .s_clk          (s_axi4s_tx[i].aclk     ),
                     .s_cke          (s_axi4s_tx[i].aclken   ),
                     .s_data         ({
-                                        s_axi4s_tx[i].tstrb,
+                                        s_axi4s_tx_tstrb    ,
                                         s_axi4s_tx[i].tdata
                                     }),
                     .s_valid        (s_axi4s_tx[i].tvalid   ),
