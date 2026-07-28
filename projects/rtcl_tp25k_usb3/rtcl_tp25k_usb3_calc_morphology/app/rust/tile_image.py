@@ -6,9 +6,9 @@ import numpy as np
 
 expand = 2
 tile_w, tile_h = 128, 128
-#out_w, out_h = 256, 256
+out_w, out_h = 256, 256
 #out_w, out_h = 512, 512
-out_w, out_h = 4096, 4096
+#out_w, out_h = 4096, 4096
 scaled_tile_w = tile_w * expand
 scaled_tile_h = tile_h * expand
 cols = out_w // scaled_tile_w

@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     // OpenDevice
-    let usb = RtclVideoCaptureD3xx::new_capture(0, 10)?;
+    let usb = D3xxVideoCapture::new_capture(0, 10)?;
 
     // direct read/write
     println!("id : 0x{:08x}", usb.read_axi4l(0)?);
@@ -254,11 +254,11 @@ use jelly_lib::imx219_sensor_driver::Imx219SensorDriver;
 
 
 struct RtclD3xxAxi4lBus {
-    d3xx: Arc<RtclVideoCaptureD3xx>,
+    d3xx: Arc<D3xxVideoCapture>,
 }
 
 impl RtclD3xxAxi4lBus {
-    fn new(d3xx: Arc<RtclVideoCaptureD3xx>) -> Self {
+    fn new(d3xx: Arc<D3xxVideoCapture>) -> Self {
         Self { d3xx }
     }
 

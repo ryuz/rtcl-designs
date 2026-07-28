@@ -71,6 +71,11 @@ def main() -> None:
     if not cv2.imwrite(str(args.output), stage4_erode):
         raise OSError(f"Failed to write output image: {args.output}")
 
+    cv2.imwrite("stage1.png", stage1_erode)
+    cv2.imwrite("stage2.png", stage2_dilate)
+    cv2.imwrite("stage3.png", stage3_dilate)
+    cv2.imwrite("stage4.png", stage4_erode)
+
     if args.save_stages:
         base = args.output.with_suffix("")
         ext = args.output.suffix if args.output.suffix else ".pgm"
