@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // OpenDevice
 //  let mut usb = RtclFifo32CtlD3xx::new(0)?;
-    let usb = RtclVideoCaptureD3xx::new_capture(0, 10)?;
+    let usb = D3xxVideoCapture::new_capture(0, 10)?;
 
     // direct read/write
     println!("id : 0x{:08x}", usb.read_axi4l(0)?);
@@ -321,11 +321,11 @@ use jelly_pac::i2c_device::*;
 
 
 struct RtclD3xxAxi4lBus {
-    d3xx: Arc<RtclVideoCaptureD3xx>,
+    d3xx: Arc<D3xxVideoCapture>,
 }
 
 impl RtclD3xxAxi4lBus {
-    fn new(d3xx: Arc<RtclVideoCaptureD3xx>) -> Self {
+    fn new(d3xx: Arc<D3xxVideoCapture>) -> Self {
         Self { d3xx }
     }
 
