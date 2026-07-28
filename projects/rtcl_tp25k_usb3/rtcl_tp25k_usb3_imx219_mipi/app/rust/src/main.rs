@@ -10,7 +10,7 @@ const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
 const REGADR_SYSCTL_CONTROL4 : usize = 0x14;
 const REGADR_SYSCTL_CONTROL5 : usize = 0x15;
 
-type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
+type UsbAccessor = SharedBusAccessor<D3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     // OpenDevice
-    let usb = RtclVideoCaptureD3xx::new_capture(0, 10)?;
+    let usb = D3xxVideoCapture::new_capture(0, 10)?;
 
     // direct read/write
     println!("id : 0x{:08x}", usb.read_axi4l(0)?);
@@ -39,8 +39,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Read data: {:04x}", data);
 
     let usb = Arc::new(usb);
-    let axi4l_bus = RtclD3xxAxi4lBus::new(usb.clone());
-    let usb_accessor = SharedBusAccessor::<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>::new(axi4l_bus);
+    let axi4l_bus = D3xxAxi4lBus::new(usb.clone());
+    let usb_accessor = SharedBusAccessor::<D3xxAxi4lBus, u32, u32, u8, LittleEndian>::new(axi4l_bus);
 
     let ctl_acc = usb_accessor.subclone(0x0000_0000, 0x1000);
     let i2c_acc = usb_accessor.subclone(0x0001_0000, 0x1000);
@@ -253,12 +253,12 @@ use jelly_pac::i2c_device::*;
 use jelly_lib::imx219_sensor_driver::Imx219SensorDriver;
 
 
-struct RtclD3xxAxi4lBus {
-    d3xx: Arc<RtclVideoCaptureD3xx>,
+struct D3xxAxi4lBus {
+    d3xx: Arc<D3xxVideoCapture>,
 }
 
-impl RtclD3xxAxi4lBus {
-    fn new(d3xx: Arc<RtclVideoCaptureD3xx>) -> Self {
+impl D3xxAxi4lBus {
+    fn new(d3xx: Arc<D3xxVideoCapture>) -> Self {
         Self { d3xx }
     }
 
@@ -271,7 +271,7 @@ impl RtclD3xxAxi4lBus {
     }
 }
 
-impl Bus<u32, u32, u8> for RtclD3xxAxi4lBus {
+impl Bus<u32, u32, u8> for D3xxAxi4lBus {
     type Error = Box<dyn Error>;
 
     fn write(&mut self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {

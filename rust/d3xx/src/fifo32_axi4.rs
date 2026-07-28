@@ -7,42 +7,39 @@ use crate::d3xx_device::*;
 #[cfg(target_os = "linux")]
 use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
 
-
-const OPCODE_AXI4L_WRITE: u8 = 0x02;
-const OPCODE_AXI4L_READ: u8 = 0x03;
-const OPCODE_AXI4S_TRANS: u8 = 0x10;
+use super::*;
 
 
-pub struct RtclFifo32CtlD3xx;
+pub struct D3xxFifo32;
 
-pub struct RtclAxi4lD3xx {
+pub struct D3xxFifo32Axi4l {
     axi4l_writer: D3xxWriter,
     axi4l_reader: D3xxReader,
 }
 
-unsafe impl Send for RtclAxi4lD3xx {}
-unsafe impl Sync for RtclAxi4lD3xx {}
+unsafe impl Send for D3xxFifo32Axi4l {}
+unsafe impl Sync for D3xxFifo32Axi4l {}
 
-pub struct RtclAxi4sRxD3xx {
+pub struct D3xxFifo32Axi4sRx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
     rx_stream: mpsc::Receiver<Axi4Stream>,
     tx_stop: mpsc::Sender<()>,
 }
 
-unsafe impl Send for RtclAxi4sRxD3xx {}
-unsafe impl Sync for RtclAxi4sRxD3xx {}
+unsafe impl Send for D3xxFifo32Axi4sRx {}
+unsafe impl Sync for D3xxFifo32Axi4sRx {}
 
-pub struct RtclAxi4sTxD3xx {
+pub struct D3xxFifo32Axi4sTx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
     tx_queue: mpsc::Sender<Vec<u8>>,
     tx_stop: mpsc::Sender<()>,
 }
 
-unsafe impl Send for RtclAxi4sTxD3xx {}
-unsafe impl Sync for RtclAxi4sTxD3xx {}
+unsafe impl Send for D3xxFifo32Axi4sTx {}
+unsafe impl Sync for D3xxFifo32Axi4sTx {}
 
-impl RtclFifo32CtlD3xx {
-    pub fn new(dev_index: usize) -> Result<(RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx), Box<dyn Error>> {
+impl D3xxFifo32 {
+    pub fn new(dev_index: usize) -> Result<(D3xxFifo32Axi4l, D3xxFifo32Axi4sRx, D3xxFifo32Axi4sTx), Box<dyn Error>> {
         #[cfg(target_os = "linux")]
         {
             let mut transfer_conf = FT_TRANSFER_CONF::default();
@@ -83,16 +80,16 @@ impl RtclFifo32CtlD3xx {
             }
         });
 
-        let axi4l = RtclAxi4lD3xx {
+        let axi4l = D3xxFifo32Axi4l {
             axi4l_writer: axi4l_writer,
             axi4l_reader: axi4l_reader,
         };
-        let axi4s_rx = RtclAxi4sRxD3xx {
+        let axi4s_rx = D3xxFifo32Axi4sRx {
             thread_handle: Some(thread_handle_rx),
             rx_stream: rx_stream,
             tx_stop: tx_stop,
         };
-        let axi4s_tx = RtclAxi4sTxD3xx {
+        let axi4s_tx = D3xxFifo32Axi4sTx {
             thread_handle: Some(thread_handle_tx),
             tx_queue: tx_queue,
             tx_stop: tx_stop_tx,
@@ -102,7 +99,7 @@ impl RtclFifo32CtlD3xx {
     }
 }
 
-impl RtclAxi4lD3xx {
+impl D3xxFifo32Axi4l {
     pub fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
         // コマンド送信
         let mut command = Vec::<u8>::with_capacity(4*3);
@@ -139,7 +136,7 @@ impl RtclAxi4lD3xx {
     }
 }
 
-impl RtclAxi4sRxD3xx {
+impl D3xxFifo32Axi4sRx {
     pub fn recv_axi4s(&self) -> Result<Axi4Stream, Box<dyn Error>> {
         self.rx_stream.recv().map_err(|e| e.into())
     }
@@ -161,7 +158,7 @@ impl RtclAxi4sRxD3xx {
     }
 }
 
-impl RtclAxi4sTxD3xx {
+impl D3xxFifo32Axi4sTx {
     pub fn send_axi4s(&self, stream: &Axi4Stream) -> Result<(), Box<dyn Error>> {
         if stream.tdata.len() > u16::MAX as usize {
             return Err("AXI4S payload too large (must be <= 65535 bytes)".into());
@@ -215,12 +212,6 @@ impl RtclAxi4sTxD3xx {
     }
 }
 
-
-#[derive(Debug, Clone)]
-pub struct Axi4Stream {
-    pub tuser: u8,
-    pub tdata: Vec<u8>,
-}
 
 //#[cfg(target_os = "windows")]
 fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
@@ -483,7 +474,7 @@ fn send_axi4s_thread(
 }
 
 
-impl Drop for RtclAxi4sRxD3xx {
+impl Drop for D3xxFifo32Axi4sRx {
     fn drop(&mut self) {
         let _ = self.tx_stop.send(());  // 受信スレッドに停止を通知
         if let Some(handle) = self.thread_handle.take() {
@@ -492,7 +483,7 @@ impl Drop for RtclAxi4sRxD3xx {
     }
 }
 
-impl Drop for RtclAxi4sTxD3xx {
+impl Drop for D3xxFifo32Axi4sTx {
     fn drop(&mut self) {
         let _ = self.tx_stop.send(());  // 送信スレッドに停止を通知
         if let Some(handle) = self.thread_handle.take() {

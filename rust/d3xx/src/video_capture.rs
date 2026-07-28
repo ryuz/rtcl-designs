@@ -5,19 +5,17 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use crate::rtcl_fifo32::{
-    Axi4Stream, RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx, RtclFifo32CtlD3xx,
+use super::*;
+
+/*
+use crate::fifo32_axi4::{
+    D3xxFifo32Axi4l, D3xxFifo32Axi4l, RtclAxi4sTxD3xx, RtclFifo32CtlD3xx,
 };
+*/
 
-pub type RtclVideoCaptureHandlesD3xx = (RtclAxi4lD3xx, RtclAxi4sRxD3xx, RtclAxi4sTxD3xx);
+pub type RtclVideoCaptureHandlesD3xx = (D3xxFifo32Axi4l, D3xxFifo32Axi4sRx, D3xxFifo32Axi4sTx);
 
-#[derive(Debug, Clone)]
-pub struct VideoFrame {
-    pub frame_id: u64,
-    pub height: u32,
-    pub width: usize,
-    pub data: Vec<u8>,
-}
+
 
 #[derive(Debug, Clone, Default)]
 pub struct VideoCaptureStats {
@@ -94,39 +92,39 @@ struct FrameQueueState {
     max_frames: usize,
 }
 
-pub struct RtclVideoCaptureD3xx {
-    axi4l: RtclAxi4lD3xx,
+pub struct D3xxVideoCapture {
+    axi4l: D3xxFifo32Axi4l,
     stop: Arc<AtomicBool>,
     frame_queue: Arc<(Mutex<FrameQueueState>, Condvar)>,
     thread_handle: Option<thread::JoinHandle<()>>,
     stats: Arc<Mutex<VideoCaptureStats>>,
 }
 
-impl RtclVideoCaptureD3xx {
+impl D3xxVideoCapture {
     pub fn new(
         dev_index: usize,
         _max_buffered_frames: usize,
     ) -> Result<RtclVideoCaptureHandlesD3xx, Box<dyn Error>> {
-        RtclFifo32CtlD3xx::new(dev_index)
+        D3xxFifo32::new(dev_index)
     }
 
     pub fn with_handles(
-        axi4l: RtclAxi4lD3xx,
-        axi4s_rx: RtclAxi4sRxD3xx,
-        axi4s_tx: RtclAxi4sTxD3xx,
+        axi4l: D3xxFifo32Axi4l,
+        axi4s_rx: D3xxFifo32Axi4sRx,
+        axi4s_tx: D3xxFifo32Axi4sTx,
         _max_buffered_frames: usize,
     ) -> Result<RtclVideoCaptureHandlesD3xx, Box<dyn Error>> {
         Ok((axi4l, axi4s_rx, axi4s_tx))
     }
 
     pub fn new_capture(dev_index: usize, max_buffered_frames: usize) -> Result<Self, Box<dyn Error>> {
-        let (axi4l, axi4s_rx, _axi4s_tx) = RtclFifo32CtlD3xx::new(dev_index)?;
+        let (axi4l, axi4s_rx, _axi4s_tx) = D3xxFifo32::new(dev_index)?;
         Self::with_capture_handles(axi4l, axi4s_rx, max_buffered_frames)
     }
 
     pub fn with_capture_handles(
-        axi4l: RtclAxi4lD3xx,
-        axi4s_rx: RtclAxi4sRxD3xx,
+        axi4l: D3xxFifo32Axi4l,
+        axi4s_rx: D3xxFifo32Axi4sRx,
         max_buffered_frames: usize,
     ) -> Result<Self, Box<dyn Error>> {
         let max_frames = max_buffered_frames.max(1);
@@ -238,7 +236,7 @@ impl RtclVideoCaptureD3xx {
 }
 
 fn recv_video_thread(
-    axi4s_rx: RtclAxi4sRxD3xx,
+    axi4s_rx: D3xxFifo32Axi4sRx,
     frame_queue: Arc<(Mutex<FrameQueueState>, Condvar)>,
     stop: Arc<AtomicBool>,
     stats: Arc<Mutex<VideoCaptureStats>>,
@@ -345,7 +343,7 @@ where
     }
 }
 
-impl Drop for RtclVideoCaptureD3xx {
+impl Drop for D3xxVideoCapture {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
         let (_, cvar) = &*self.frame_queue;

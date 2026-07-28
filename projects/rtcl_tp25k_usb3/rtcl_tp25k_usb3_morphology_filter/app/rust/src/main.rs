@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     // OpenDevice
-    let (axi4l, mut axi4s_rx, axi4s_tx) = RtclFifo32AxiD3xx::new(0)?;
+    let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
 
     // direct read/write
     println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CORE_ID       ) as u32)?);

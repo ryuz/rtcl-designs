@@ -4,38 +4,35 @@ use crate::d3xx_device::*;
 #[cfg(target_os = "linux")]
 use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
 
-
-const OPCODE_AXI4L_WRITE: u8 = 0x02;
-const OPCODE_AXI4L_READ: u8 = 0x03;
-const OPCODE_AXI4S_TRANS: u8 = 0x10;
+use super::*;
 
 
-pub struct RtclFifo32AxiD3xx;
+pub struct D3xxFifo32Direct;
 
-pub struct RtclFifo32AxilD3xx {
+pub struct D3xxFifo32DirectAxi4l {
     axi4l_writer: D3xxWriter,
     axi4l_reader: D3xxReader,
 }
 
-unsafe impl Send for RtclFifo32AxilD3xx {}
-unsafe impl Sync for RtclFifo32AxilD3xx {}
+unsafe impl Send for D3xxFifo32DirectAxi4l {}
+unsafe impl Sync for D3xxFifo32DirectAxi4l {}
 
-pub struct RtRtclFifo32AxisRxD3xx {
+pub struct D3xxFifo32DirectAxi4sRx {
     axi4s_reader: D3xxReader,
 }
 
-unsafe impl Send for RtRtclFifo32AxisRxD3xx {}
-unsafe impl Sync for RtRtclFifo32AxisRxD3xx {}
+unsafe impl Send for D3xxFifo32DirectAxi4sRx {}
+unsafe impl Sync for D3xxFifo32DirectAxi4sRx {}
 
-pub struct RtclFifo32AxisTxD3xx {
+pub struct D3xxFifo32DirectAxi4sTx {
     axi4s_writer: D3xxWriter,
 }
 
-unsafe impl Send for RtclFifo32AxisTxD3xx {}
-unsafe impl Sync for RtclFifo32AxisTxD3xx {}
+unsafe impl Send for D3xxFifo32DirectAxi4sTx {}
+unsafe impl Sync for D3xxFifo32DirectAxi4sTx {}
 
-impl RtclFifo32AxiD3xx {
-    pub fn new(dev_index: usize) -> Result<(RtclFifo32AxilD3xx, RtRtclFifo32AxisRxD3xx, RtclFifo32AxisTxD3xx), Box<dyn Error>> {
+impl D3xxFifo32Direct {
+    pub fn new(dev_index: usize) -> Result<(D3xxFifo32DirectAxi4l, D3xxFifo32DirectAxi4sRx, D3xxFifo32DirectAxi4sTx), Box<dyn Error>> {
         #[cfg(target_os = "linux")]
         {
             let mut transfer_conf = FT_TRANSFER_CONF::default();
@@ -63,14 +60,14 @@ impl RtclFifo32AxiD3xx {
         axi4s_reader.set_stream_pipe(0x100000)?;
         */
         
-        let axi4l = RtclFifo32AxilD3xx {
+        let axi4l = D3xxFifo32DirectAxi4l {
             axi4l_writer: axi4l_writer,
             axi4l_reader: axi4l_reader,
         };
-        let axi4s_rx = RtRtclFifo32AxisRxD3xx {
+        let axi4s_rx = D3xxFifo32DirectAxi4sRx {
             axi4s_reader: axi4s_reader,
         };
-        let axi4s_tx = RtclFifo32AxisTxD3xx {
+        let axi4s_tx = D3xxFifo32DirectAxi4sTx {
             axi4s_writer: axi4s_writer,
         };
 
@@ -78,7 +75,7 @@ impl RtclFifo32AxiD3xx {
     }
 }
 
-impl RtclFifo32AxilD3xx {
+impl D3xxFifo32DirectAxi4l {
     pub fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
         // コマンド送信
         let mut command = Vec::<u8>::with_capacity(4*3);
@@ -117,7 +114,7 @@ impl RtclFifo32AxilD3xx {
     }
 }
 
-impl RtRtclFifo32AxisRxD3xx {
+impl D3xxFifo32DirectAxi4sRx {
     pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
         self.axi4s_reader.set_timeout(timeout_us)
     }
@@ -264,7 +261,7 @@ impl RtRtclFifo32AxisRxD3xx {
 }
 
 
-impl RtclFifo32AxisTxD3xx {
+impl D3xxFifo32DirectAxi4sTx {
     pub fn send_axi4s(&self, stream: &AxiStream) -> Result<(), Box<dyn Error>> {
         if stream.tdata.len() > u16::MAX as usize {
             return Err("AXI4S payload too large (must be <= 65535 bytes)".into());
