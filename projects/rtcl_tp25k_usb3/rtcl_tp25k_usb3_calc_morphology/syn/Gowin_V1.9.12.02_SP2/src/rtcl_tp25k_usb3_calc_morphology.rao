@@ -2,7 +2,7 @@
 <GAO_CONFIG>
     <Version>3.0</Version>
     <Mode>Standard</Mode>
-    <AoCore index="0" sample_clock="ft601_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_morphology_filter" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+    <AoCore index="0" sample_clock="ft601_clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_calc_morphology" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
             <Bus capture_enable="true" name="u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[3:0]">
                 <Signal>u_ft601_multi_ch_mode/u_ft601_multi_ch_mode_transceiver/state[3]</Signal>
@@ -103,7 +103,7 @@
             <Expression>M0</Expression>
         </Expressions>
     </AoCore>
-    <AoCore index="1" sample_clock="clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_morphology_filter" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+    <AoCore index="1" sample_clock="clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="0" module_name="rtcl_tp25k_usb3_calc_morphology" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
             <Bus capture_enable="true" name="u_image_processing/img_src.de[31:0]">
                 <Signal>u_image_processing/img_src.de[31]</Signal>
@@ -357,7 +357,7 @@
             <Expression>M0</Expression>
         </Expressions>
     </AoCore>
-    <AoCore index="2" sample_clock="clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="64" module_name="rtcl_tp25k_usb3_morphology_filter" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
+    <AoCore index="2" sample_clock="clk" trig_type="0" storage_depth="1024" window_num="1" capture_amount="1024" implementation="0" trigger_pos="64" module_name="rtcl_tp25k_usb3_calc_morphology" force_trigger_by_falling_edge="false" capture_init_data_enabled="false">
         <SignalList>
             <Bus capture_enable="true" name="u_image_processing/img_sink.de[31:0]">
                 <Signal>u_image_processing/img_sink.de[31]</Signal>

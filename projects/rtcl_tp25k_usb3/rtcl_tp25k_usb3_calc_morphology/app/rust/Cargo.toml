@@ -1,5 +1,5 @@
 [package]
-name = "rtcl_tp25k_usb3_morphology_filter"
+name = "rtcl_tp25k_usb3_calc_morphology"
 version = "0.1.0"
 edition = "2024"
 

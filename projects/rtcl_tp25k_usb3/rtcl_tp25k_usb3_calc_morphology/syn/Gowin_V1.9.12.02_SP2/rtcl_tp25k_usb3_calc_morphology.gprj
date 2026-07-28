@@ -51,7 +51,7 @@
         <File path="../../ip/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1" />
         <File path="../../ip/pll_init.v" type="file.verilog" enable="1" />
         <File path="../../rtl/image_processing.sv" type="file.verilog" enable="1" />
-        <File path="../../rtl/rtcl_tp25k_usb3_morphology_filter.sv" type="file.verilog" enable="1" />
+        <File path="../../rtl/rtcl_tp25k_usb3_calc_morphology.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_arbiter.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_axi4l.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_axi4s_checker.sv" type="file.verilog" enable="1" />
@@ -61,7 +61,7 @@
         <File path="../../../../shared/rtl/ft601_multi_ch_mode.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/ft601_multi_ch_mode_transceiver.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/gowin_dphy_lane2_to_fifo32.sv" type="file.verilog" enable="1" />
-        <File path="../../constrain/rtcl_tp25k_usb3_morphology_filter.cst" type="file.cst" enable="1" />
-        <File path="../../constrain/rtcl_tp25k_usb3_morphology_filter.sdc" type="file.sdc" enable="1" />
+        <File path="../../constrain/rtcl_tp25k_usb3_calc_morphology.cst" type="file.cst" enable="1" />
+        <File path="../../constrain/rtcl_tp25k_usb3_calc_morphology.sdc" type="file.sdc" enable="1" />
     </FileList>
 </Project>

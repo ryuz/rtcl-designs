@@ -9,7 +9,7 @@
 `timescale 1ps/1ps
 `default_nettype none
 
-module rtcl_tp25k_usb3_morphology_filter
+module rtcl_tp25k_usb3_calc_morphology
         (
             input   var logic           in_clk50        ,
 

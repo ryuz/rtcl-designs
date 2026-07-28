@@ -32,8 +32,8 @@ module tb_main
     logic   [3:0]   led             ;
     logic   [7:0]   pmod            ;
 
-    rtcl_tp25k_usb3_morphology_filter
-        u_rtcl_tp25k_usb3_morphology_filter
+    rtcl_tp25k_usb3_calc_morphology
+        u_rtcl_tp25k_usb3_calc_morphology
             (
                 .in_clk50           (clk50          ),
                 .ft601_reset_n      (ft601_reset_n  ),
