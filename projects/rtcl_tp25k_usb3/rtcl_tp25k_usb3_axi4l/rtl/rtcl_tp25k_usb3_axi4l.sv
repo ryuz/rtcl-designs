@@ -162,9 +162,18 @@ module rtcl_tp25k_usb3_axi4l
                 .ft601_data_o       (ft601_data_o               ),
                 .ft601_data_t       (ft601_data_t               ),
 
-                .s_axi4s_tx         (axi4s_ft601_tx             ),
-                .m_axi4s_rx         (axi4s_ft601_rx             )
+                .tx_timeout         ('0                         ),
 
+                .s_axi4s_tx         (axi4s_ft601_tx             ),
+                .m_axi4s_rx         (axi4s_ft601_rx             ),
+
+                .mon_rx_counter     (                           ),
+                .mon_tx_counter     (                           ),
+                .mon_wr_n           (                           ),
+                .mon_rxf_n          (                           ),
+                .mon_txe_n          (                           ),
+                .mon_be             (                           ),
+                .mon_data           (                           )
             );
 
     // --------------------------------
