@@ -194,7 +194,7 @@ module fifo32_lfsr_receiver
         end
     end
 
-    
+
     logic  [31:0]   expected_lfsr;
     jelly3_lfsr
             #(
@@ -217,12 +217,10 @@ module fifo32_lfsr_receiver
 
     always_ff @(posedge s_axi4s.aclk) begin
         if ( ~s_axi4s.aresetn ) begin
-            ctl_lfsr     <= INIT_LFSR;
             ctl_rx_count <= '0;
             ctl_error    <= 1'b0;
         end
         else if ( s_axi4s.aclken ) begin
-            ctl_lfsr     <= reg_lfsr;
             if ( s_axi4s.tvalid && s_axi4s.tready ) begin
                 if ( s_axi4s.tdata != expected_lfsr ) begin
                     ctl_error <= 1'b1;

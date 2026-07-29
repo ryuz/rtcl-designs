@@ -472,14 +472,14 @@ module rtcl_tp25k_usb3_lfsr
     //  PMOD
     // --------------------------------
     
-    assign pmod[0] = ft601_rxf_n;
-    assign pmod[1] = ft601_wr_n;
+    assign pmod[0] = mon_ft601_rxf_n;
+    assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_ft601_rx[1].tready;
     assign pmod[3] = axi4s_ft601_rx[1].tvalid;
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
-    assign pmod[6] = ft601_data_i[9];   // tx[1]
-    assign pmod[7] = ft601_data_i[13];  // rx[1]
+    assign pmod[6] = mon_ft601_data[9];   // tx[1]
+    assign pmod[7] = mon_ft601_data[13];  // rx[1]
 
     /*
     assign pmod[0] = dphy_byte_ready;
