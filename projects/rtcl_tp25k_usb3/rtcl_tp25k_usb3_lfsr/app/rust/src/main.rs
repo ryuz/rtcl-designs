@@ -122,7 +122,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let send_mbyte_per_sec = send_byte_per_sec / 1_000_000.0;
         let send_mbits_per_sec = (send_byte_per_sec * 8.0) / 1_000_000.0;
         println!(
-            "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
+            "PC => FPGA throughput: {:.3} MByte/s, {:.3} Mbits/s",
             send_mbyte_per_sec, send_mbits_per_sec
         );
     }
