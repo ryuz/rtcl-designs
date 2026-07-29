@@ -160,21 +160,38 @@ impl D3xxFifo32Axi4sRx {
 
 impl D3xxFifo32Axi4sTx {
     pub fn send_axi4s(&self, stream: &Axi4Stream) -> Result<(), Box<dyn Error>> {
-        if stream.tdata.len() > u16::MAX as usize {
-            return Err("AXI4S payload too large (must be <= 65535 bytes)".into());
-        }
-
         if (stream.tdata.len() & 0x3) != 0 {
             return Err("AXI4S payload size must be 4-byte aligned".into());
         }
 
-        let mut packet = Vec::<u8>::with_capacity(4 + stream.tdata.len());
-        packet.push(OPCODE_AXI4S_TRANS);
-        packet.push((stream.tuser & 0x7f) | 0x80);
-        packet.extend_from_slice(&(stream.tdata.len() as u16).to_le_bytes());
-        packet.extend_from_slice(&stream.tdata);
+        const MAX_CHUNK_SIZE: usize = (u16::MAX as usize) & !0x3; // keep each packet 4-byte aligned
 
-        self.tx_queue.send(packet)?;
+        // Preserve zero-length transfer behavior with a single TLAST packet.
+        if stream.tdata.is_empty() {
+            let mut packet = Vec::<u8>::with_capacity(4);
+            packet.push(OPCODE_AXI4S_TRANS);
+            packet.push((stream.tuser & 0x7f) | 0x80);
+            packet.extend_from_slice(&0u16.to_le_bytes());
+            self.tx_queue.send(packet)?;
+            return Ok(());
+        }
+
+        let mut offset = 0usize;
+        while offset < stream.tdata.len() {
+            let remain = stream.tdata.len() - offset;
+            let chunk_size = remain.min(MAX_CHUNK_SIZE);
+            let is_last = offset + chunk_size >= stream.tdata.len();
+
+            let mut packet = Vec::<u8>::with_capacity(4 + chunk_size);
+            packet.push(OPCODE_AXI4S_TRANS);
+            packet.push((stream.tuser & 0x7f) | if is_last { 0x80 } else { 0x00 });
+            packet.extend_from_slice(&(chunk_size as u16).to_le_bytes());
+            packet.extend_from_slice(&stream.tdata[offset..offset + chunk_size]);
+
+            self.tx_queue.send(packet)?;
+            offset += chunk_size;
+        }
+
         Ok(())
     }
 

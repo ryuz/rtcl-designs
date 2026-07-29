@@ -33,6 +33,109 @@ const REG_LFSR_TX_LFSR_VALUE   : u32 = BASE_LSFR_TX + 4 * 0x11;
 const REG_LFSR_TX_TX_LEN       : u32 = BASE_LSFR_TX + 4 * 0x12;
 
 
+fn main() -> Result<(), Box<dyn Error>> {
+    println!("FT601 test");
+
+    // OpenDevice
+//  let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
+    let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32::new(0)?;
+
+    // direct read/write
+    println!("SYSCTL_CORE_ID    : 0x{:08x}", axi4l.read_axi4l((REG_SYSCTL_CORE_ID   ) as u32)?);
+    println!("LFSR_RX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_RX_CORE_ID  ) as u32)?);
+    println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
+
+    let data_size : u32 = 16*1024*1024;
+    let lfsr_seed: u32 = 0x12345678;
+
+
+    // -----------------------------
+    //  Receive Test
+    // -----------------------------
+
+    // FPGA側の送信設定
+    axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,    lfsr_seed, 0xf)?;
+    axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
+
+    let recv_start = Instant::now();    // 受信時間計測開始
+    axi4l.write_axi4l(REG_LFSR_TX_START     ,            1, 0xf)?;
+    let recv_stream = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
+//  let recv_stream = axi4s_rx.recv_axi4s(data_size as usize)?;
+    let recv_elapsed = recv_start.elapsed();    // 受信時間計測終了
+
+    let words_count = recv_stream.tdata.len() / 4;
+
+    // Check LFSR sequence corruption
+    let check = check_lfsr_words(&recv_stream, lfsr_seed);
+
+    println!(
+        "Recv done: bytes={}, words={}, elapsed={:.3}s",
+        recv_stream.tdata.len(),
+        words_count,
+        recv_elapsed.as_secs_f64()
+    );
+
+    let recv_seconds = recv_elapsed.as_secs_f64();
+    if recv_seconds > 0.0 {
+        let recv_byte_per_sec = recv_stream.tdata.len() as f64 / recv_seconds;
+        let recv_mbyte_per_sec = recv_byte_per_sec / 1_000_000.0;
+        let recv_mbits_per_sec = (recv_byte_per_sec * 8.0) / 1_000_000.0;
+        println!(
+            "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
+            recv_mbyte_per_sec, recv_mbits_per_sec
+        );
+    }
+
+    if check.error_count == 0 {
+        println!("LFSR check OK: no mismatch");
+    } else if let Some((idx, exp, act)) = check.first_error {
+        println!(
+            "LFSR check NG: mismatches={}, first at [{}] expected=0x{:08x}, actual=0x{:08x}",
+            check.error_count, idx, exp, act
+        );
+    } else {
+        println!("LFSR check NG: mismatches={}", check.error_count);
+    }
+
+
+    // -----------------------------
+    //  Send Test
+    // -----------------------------
+
+    // FPGA側受信準備
+    axi4l.write_axi4l(REG_LFSR_RX_CLEAR, 1, 0xf)?;
+    axi4l.write_axi4l(REG_LFSR_RX_LFSR_VALUE, lfsr_seed, 0xf)?;
+
+    let send_start = Instant::now();  // 受信時間計測開始
+    axi4s_tx.send_axi4s(&recv_stream)?;
+    while axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)? < words_count as u32 {
+    }
+    let send_elapsed = send_start.elapsed();
+    
+    let rx_count = axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)?;
+    let rx_error = axi4l.read_axi4l(REG_LFSR_RX_LFSR_ERROR)?;
+    println!("FPGA RX count: {}, RX error: {}", rx_count, rx_error);
+
+    let send_seconds = send_elapsed.as_secs_f64();
+    if send_seconds > 0.0 {
+        let send_byte_per_sec = recv_stream.tdata.len() as f64 / send_seconds;
+        let send_mbyte_per_sec = send_byte_per_sec / 1_000_000.0;
+        let send_mbits_per_sec = (send_byte_per_sec * 8.0) / 1_000_000.0;
+        println!(
+            "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
+            send_mbyte_per_sec, send_mbits_per_sec
+        );
+    }
+
+    println!("End Test");
+
+    Ok(())
+}
+
+
+
+
+
 fn calc_lfsr(lfsr: u32) -> u32 {
     let bit = ((lfsr >> 0) ^ (lfsr >> 1) ^ (lfsr >> 21) ^ (lfsr >> 31)) & 1;
     (lfsr >> 1) | (bit << 31)
@@ -46,12 +149,22 @@ struct LfsrCheckResult {
 }
 
 
-fn check_lfsr_words(words: &[u32], seed: u32) -> LfsrCheckResult {
+fn check_lfsr_words(rx_data: &Axi4Stream, seed: u32) -> LfsrCheckResult {
     let mut expected = seed;
     let mut error_count: usize = 0;
     let mut first_error: Option<(usize, u32, u32)> = None;
 
-    for (i, &actual) in words.iter().enumerate() {
+    let remain = rx_data.tdata.len() % 4;
+    if remain != 0 {
+        println!(
+            "WARNING: received payload is not 4-byte aligned: {} bytes (remain={})",
+            rx_data.tdata.len(),
+            remain
+        );
+    }
+
+    for (i, actual) in rx_data.tdata.chunks_exact(4).enumerate() {
+        let actual = u32::from_le_bytes([actual[0], actual[1], actual[2], actual[3]]);
         if actual != expected {
             error_count += 1;
             if first_error.is_none() {
@@ -71,87 +184,6 @@ fn check_lfsr_words(words: &[u32], seed: u32) -> LfsrCheckResult {
         error_count,
         first_error,
     }
-}
-
-
-fn main() -> Result<(), Box<dyn Error>> {
-    println!("FT601 test");
-
-    // OpenDevice
-//  let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
-    let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32::new(0)?;
-
-    // direct read/write
-    println!("SYSCTL_CORE_ID    : 0x{:08x}", axi4l.read_axi4l((REG_SYSCTL_CORE_ID   ) as u32)?);
-    println!("LFSR_RX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_RX_CORE_ID  ) as u32)?);
-    println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
-
-    // Recwive Test
-    let data_size : u32 = 1*1024*1024;
-    let tx_seed: u32 = 0x12345678;
-    axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,      tx_seed, 0xf)?;
-    axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
-
-    let rx_start = Instant::now();  // 時間計測開始
-    axi4l.write_axi4l(REG_LFSR_TX_START     ,            1, 0xf)?;
-    let rx_data = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
-//  let rx_data = axi4s_rx.recv_axi4s(data_size as usize)?;
-    let rx_elapsed = rx_start.elapsed();
-
-    // AXI4S payload bytes -> u32 words (little-endian)
-    let words_count = rx_data.tdata.len() / 4;
-    let rx_words: Vec<u32> = rx_data
-        .tdata
-        .chunks_exact(4)
-        .map(|chunk| u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
-        .collect();
-
-    let remain = rx_data.tdata.len() % 4;
-    if remain != 0 {
-        println!(
-            "WARNING: received payload is not 4-byte aligned: {} bytes (remain={})",
-            rx_data.tdata.len(),
-            remain
-        );
-    }
-
-    // Check LFSR sequence corruption
-    let check = check_lfsr_words(&rx_words, tx_seed);
-
-    println!(
-        "RX done: bytes={}, words={}, elapsed={:.3}s",
-        rx_data.tdata.len(),
-        words_count,
-        rx_elapsed.as_secs_f64()
-    );
-
-    let rx_seconds = rx_elapsed.as_secs_f64();
-    if rx_seconds > 0.0 {
-        let rx_byte_per_sec = rx_data.tdata.len() as f64 / rx_seconds;
-        let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
-        let rx_mbits_per_sec = (rx_byte_per_sec * 8.0) / 1_000_000.0;
-        println!(
-            "RX throughput: {:.3} MByte/s, {:.3} Mbits/s",
-            rx_mbyte_per_sec, rx_mbits_per_sec
-        );
-    }
-
-    if check.error_count == 0 {
-        println!("LFSR check OK: no mismatch");
-    } else if let Some((idx, exp, act)) = check.first_error {
-        println!(
-            "LFSR check NG: mismatches={}, first at [{}] expected=0x{:08x}, actual=0x{:08x}",
-            check.error_count, idx, exp, act
-        );
-    } else {
-        println!("LFSR check NG: mismatches={}", check.error_count);
-    }
-
-    std::thread::sleep(std::time::Duration::from_millis(5000));
-
-    println!("End Test");
-
-    Ok(())
 }
 
 
