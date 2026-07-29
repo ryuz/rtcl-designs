@@ -33,47 +33,6 @@ const REG_LFSR_TX_LFSR_VALUE   : u32 = BASE_LSFR_TX + 4 * 0x11;
 const REG_LFSR_TX_TX_LEN       : u32 = BASE_LSFR_TX + 4 * 0x12;
 
 
-fn calc_lfsr(lfsr: u32) -> u32 {
-    let bit = ((lfsr >> 0) ^ (lfsr >> 1) ^ (lfsr >> 21) ^ (lfsr >> 31)) & 1;
-    (lfsr >> 1) | (bit << 31)
-}
-
-
-#[derive(Debug, Clone, Copy)]
-struct LfsrCheckResult {
-    error_count: usize,
-    first_error: Option<(usize, u32, u32)>,
-}
-
-
-fn check_lfsr_words(words: &[u32], seed: u32) -> LfsrCheckResult {
-    let mut expected = seed;
-    let mut error_count: usize = 0;
-    let mut first_error: Option<(usize, u32, u32)> = None;
-
-    for (i, &actual) in words.iter().enumerate() {
-        if actual != expected {
-            error_count += 1;
-            if first_error.is_none() {
-                first_error = Some((i, expected, actual));
-            }
-            if error_count <= 8 {
-                println!(
-                    "LFSR mismatch[{}]: expected=0x{:08x}, actual=0x{:08x}",
-                    i, expected, actual
-                );
-            }
-        }
-        expected = calc_lfsr(expected);
-    }
-
-    LfsrCheckResult {
-        error_count,
-        first_error,
-    }
-}
-
-
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
@@ -98,25 +57,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 //  let rx_data = axi4s_rx.recv_axi4s(data_size as usize)?;
     let rx_elapsed = rx_start.elapsed();
 
-    // AXI4S payload bytes -> u32 words (little-endian)
     let words_count = rx_data.tdata.len() / 4;
-    let rx_words: Vec<u32> = rx_data
-        .tdata
-        .chunks_exact(4)
-        .map(|chunk| u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
-        .collect();
-
-    let remain = rx_data.tdata.len() % 4;
-    if remain != 0 {
-        println!(
-            "WARNING: received payload is not 4-byte aligned: {} bytes (remain={})",
-            rx_data.tdata.len(),
-            remain
-        );
-    }
 
     // Check LFSR sequence corruption
-    let check = check_lfsr_words(&rx_words, tx_seed);
+    let check = check_lfsr_words(&rx_data, tx_seed);
 
     println!(
         "RX done: bytes={}, words={}, elapsed={:.3}s",
@@ -147,11 +91,75 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("LFSR check NG: mismatches={}", check.error_count);
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(5000));
+
+//  axi4l.write_axi4l(REG_LFSR_RX_CLEAR, 1, 0xf)?;
+    axi4l.write_axi4l(REG_LFSR_RX_LFSR_VALUE, tx_seed, 0xf)?;
+    axi4s_tx.send_axi4s(&rx_data)?;
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    
+    let rx_count = axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)?;
+    let rx_error = axi4l.read_axi4l(REG_LFSR_RX_LFSR_ERROR)?;
+    println!("RX count: {}, RX error: {}", rx_count, rx_error);
+
+
 
     println!("End Test");
 
     Ok(())
+}
+
+
+
+
+
+fn calc_lfsr(lfsr: u32) -> u32 {
+    let bit = ((lfsr >> 0) ^ (lfsr >> 1) ^ (lfsr >> 21) ^ (lfsr >> 31)) & 1;
+    (lfsr >> 1) | (bit << 31)
+}
+
+
+#[derive(Debug, Clone, Copy)]
+struct LfsrCheckResult {
+    error_count: usize,
+    first_error: Option<(usize, u32, u32)>,
+}
+
+
+fn check_lfsr_words(rx_data: &Axi4Stream, seed: u32) -> LfsrCheckResult {
+    let mut expected = seed;
+    let mut error_count: usize = 0;
+    let mut first_error: Option<(usize, u32, u32)> = None;
+
+    let remain = rx_data.tdata.len() % 4;
+    if remain != 0 {
+        println!(
+            "WARNING: received payload is not 4-byte aligned: {} bytes (remain={})",
+            rx_data.tdata.len(),
+            remain
+        );
+    }
+
+    for (i, actual) in rx_data.tdata.chunks_exact(4).enumerate() {
+        let actual = u32::from_le_bytes([actual[0], actual[1], actual[2], actual[3]]);
+        if actual != expected {
+            error_count += 1;
+            if first_error.is_none() {
+                first_error = Some((i, expected, actual));
+            }
+            if error_count <= 8 {
+                println!(
+                    "LFSR mismatch[{}]: expected=0x{:08x}, actual=0x{:08x}",
+                    i, expected, actual
+                );
+            }
+        }
+        expected = calc_lfsr(expected);
+    }
+
+    LfsrCheckResult {
+        error_count,
+        first_error,
+    }
 }
 
 
