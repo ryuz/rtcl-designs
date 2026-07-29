@@ -45,38 +45,44 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("LFSR_RX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_RX_CORE_ID  ) as u32)?);
     println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
 
-    // Recwive Test
-    let data_size : u32 = 1*1024*1024;
-    let tx_seed: u32 = 0x12345678;
-    axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,      tx_seed, 0xf)?;
+    let data_size : u32 = 16*1024*1024;
+    let lfsr_seed: u32 = 0x12345678;
+
+
+    // -----------------------------
+    //  Receive Test
+    // -----------------------------
+
+    // FPGA側の送信設定
+    axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,    lfsr_seed, 0xf)?;
     axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
 
-    let rx_start = Instant::now();  // 時間計測開始
+    let recv_start = Instant::now();    // 受信時間計測開始
     axi4l.write_axi4l(REG_LFSR_TX_START     ,            1, 0xf)?;
-    let rx_data = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
-//  let rx_data = axi4s_rx.recv_axi4s(data_size as usize)?;
-    let rx_elapsed = rx_start.elapsed();
+    let recv_stream = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
+//  let recv_stream = axi4s_rx.recv_axi4s(data_size as usize)?;
+    let recv_elapsed = recv_start.elapsed();    // 受信時間計測終了
 
-    let words_count = rx_data.tdata.len() / 4;
+    let words_count = recv_stream.tdata.len() / 4;
 
     // Check LFSR sequence corruption
-    let check = check_lfsr_words(&rx_data, tx_seed);
+    let check = check_lfsr_words(&recv_stream, lfsr_seed);
 
     println!(
-        "RX done: bytes={}, words={}, elapsed={:.3}s",
-        rx_data.tdata.len(),
+        "Recv done: bytes={}, words={}, elapsed={:.3}s",
+        recv_stream.tdata.len(),
         words_count,
-        rx_elapsed.as_secs_f64()
+        recv_elapsed.as_secs_f64()
     );
 
-    let rx_seconds = rx_elapsed.as_secs_f64();
-    if rx_seconds > 0.0 {
-        let rx_byte_per_sec = rx_data.tdata.len() as f64 / rx_seconds;
-        let rx_mbyte_per_sec = rx_byte_per_sec / 1_000_000.0;
-        let rx_mbits_per_sec = (rx_byte_per_sec * 8.0) / 1_000_000.0;
+    let recv_seconds = recv_elapsed.as_secs_f64();
+    if recv_seconds > 0.0 {
+        let recv_byte_per_sec = recv_stream.tdata.len() as f64 / recv_seconds;
+        let recv_mbyte_per_sec = recv_byte_per_sec / 1_000_000.0;
+        let recv_mbits_per_sec = (recv_byte_per_sec * 8.0) / 1_000_000.0;
         println!(
-            "RX throughput: {:.3} MByte/s, {:.3} Mbits/s",
-            rx_mbyte_per_sec, rx_mbits_per_sec
+            "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
+            recv_mbyte_per_sec, recv_mbits_per_sec
         );
     }
 
@@ -92,16 +98,34 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
 
-//  axi4l.write_axi4l(REG_LFSR_RX_CLEAR, 1, 0xf)?;
-    axi4l.write_axi4l(REG_LFSR_RX_LFSR_VALUE, tx_seed, 0xf)?;
-    axi4s_tx.send_axi4s(&rx_data)?;
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    // -----------------------------
+    //  Send Test
+    // -----------------------------
+
+    // FPGA側受信準備
+    axi4l.write_axi4l(REG_LFSR_RX_CLEAR, 1, 0xf)?;
+    axi4l.write_axi4l(REG_LFSR_RX_LFSR_VALUE, lfsr_seed, 0xf)?;
+
+    let send_start = Instant::now();  // 受信時間計測開始
+    axi4s_tx.send_axi4s(&recv_stream)?;
+    while axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)? < words_count as u32 {
+    }
+    let send_elapsed = send_start.elapsed();
     
     let rx_count = axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)?;
     let rx_error = axi4l.read_axi4l(REG_LFSR_RX_LFSR_ERROR)?;
-    println!("RX count: {}, RX error: {}", rx_count, rx_error);
+    println!("FPGA RX count: {}, RX error: {}", rx_count, rx_error);
 
-
+    let send_seconds = send_elapsed.as_secs_f64();
+    if send_seconds > 0.0 {
+        let send_byte_per_sec = recv_stream.tdata.len() as f64 / send_seconds;
+        let send_mbyte_per_sec = send_byte_per_sec / 1_000_000.0;
+        let send_mbits_per_sec = (send_byte_per_sec * 8.0) / 1_000_000.0;
+        println!(
+            "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
+            send_mbyte_per_sec, send_mbits_per_sec
+        );
+    }
 
     println!("End Test");
 
