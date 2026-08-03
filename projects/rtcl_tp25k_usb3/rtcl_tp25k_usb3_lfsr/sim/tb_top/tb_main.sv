@@ -217,10 +217,10 @@ module tb_main
                     packet[0] = 32'h0040_8010;
                 end
                 for ( int j = 0; j < 16; j++ ) begin
-                    packet[j+1][8*0 +: 8] = i*16 + j*4 + 0;
-                    packet[j+1][8*1 +: 8] = i*16 + j*4 + 1;
-                    packet[j+1][8*2 +: 8] = i*16 + j*4 + 2;
-                    packet[j+1][8*3 +: 8] = i*16 + j*4 + 3;
+                    packet[j+1][8*0 +: 8] = 8'(i*16 + j*4 + 0);
+                    packet[j+1][8*1 +: 8] = 8'(i*16 + j*4 + 1);
+                    packet[j+1][8*2 +: 8] = 8'(i*16 + j*4 + 2);
+                    packet[j+1][8*3 +: 8] = 8'(i*16 + j*4 + 3);
                 end
             #1000;
             end

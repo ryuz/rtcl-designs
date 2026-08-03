@@ -13,12 +13,13 @@ SIM_LIB_DIRS += ../../../../../shared/rtl
 FLAGS  = --binary -j 0
 FLAGS += --assert
 FLAGS += --trace-fst --trace-params --trace-structs --trace-underscore
+FLAGS += -I$(JELLY_TOP_DIR)/include
 FLAGS += -D__VERILATOR__ -D__SIMULATION__
 FLAGS += $(addprefix -y ,$(SIM_LIB_DIRS))
 FLAGS += -Wno-SIDEEFFECT
 
 SRCS  = ../$(TOP_MODULE).sv
-SRCS += ../../../rtl/rtcl_tp25k_usb3_morphology_filter.sv
+SRCS += ../../../rtl/rtcl_tp25k_usb3_lfsr.sv
 SRCS += ../../stub/IOBUF.sv
 SRCS += ../../stub/gowin_pll.v
 SRCS += ../../stub/gowin_pll_ft601.v
