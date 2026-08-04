@@ -18,4 +18,4 @@ set_clock_groups -asynchronous -group [get_clocks {in_clk50}] -group [get_clocks
 set_input_delay  -clock ft601_clk -min 1.0 [get_ports {ft601_rxf_n ft601_txe_n ft601_data[*] ft601_de[*]}]
 set_input_delay  -clock ft601_clk -max 9.0 [get_ports {ft601_rxf_n ft601_txe_n ft601_data[*] ft601_de[*]}]
 set_output_delay -clock ft601_clk -min 0.0 [get_ports {ft601_wr_n ft601_rd_n ft601_oe_n ft601_data[*] ft601_de[*]}]
-set_output_delay -clock ft601_clk -max 0.0 [get_ports {ft601_wr_n ft601_rd_n ft601_oe_n ft601_data[*] ft601_de[*]}]
+set_output_delay -clock ft601_clk -max 2.5 [get_ports {ft601_wr_n ft601_rd_n ft601_oe_n ft601_data[*] ft601_de[*]}]
