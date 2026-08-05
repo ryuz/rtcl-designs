@@ -97,8 +97,7 @@ $(FS_FILE): $(VLOG_SOURCES) $(SDC_SOURCES) $(CST_SOURCES)
 
 .PHONY: timing_check
 timing_check:
-	-python3 $(JELLY_DIR)/scripts/gowin_check_timing_report.py $(TIMING_REPORT) impl/pnr/$(TOP_MODULE)_tr_content.html
-
+	-@python3 $(JELLY_DIR)/scripts/gowin_check_timing_report.py $(TIMING_REPORT) impl/pnr/$(TOP_MODULE)_tr_content.html
 
 # openFPGALoader (Digilent HS2) で書き込み
 run: build
