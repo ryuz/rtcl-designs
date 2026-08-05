@@ -229,7 +229,8 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_DATA:
                     begin
-                        if ( reg_ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
+//                      if ( reg_ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
+                        if ( reg_ft601_rxf_n == 1'b1 ) begin
                             state            <= FINAL1       ;
                             mon_ft601_wr_n   <= 1'b1         ;
                             reg_ft601_wr_n   <= 1'b1         ;

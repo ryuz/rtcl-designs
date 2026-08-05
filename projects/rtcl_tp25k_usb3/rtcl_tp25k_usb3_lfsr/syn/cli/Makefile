@@ -81,24 +81,37 @@ export ROUTE_OPTION=2
 export CO_PLACE_IO_REGISTERS=1
 export WSLENV=DEVICE_PART_NUMBER:DEVICE_NAME:TOP_MODULE:OUTPUT_BASE_NAME:VLOG_SOURCES:SDC_SOURCES:CST_SOURCES:USE_CPU_AS_GPIO:USE_I2C_AS_GPIO:USE_DONE_AS_GPIO:USE_READY_AS_GPIO:PLACE_OPTION:ROUTE_OPTION:CO_PLACE_IO_REGISTERS
 
-all: $(FS_FILE)
+
+.PHONY: all
+all: build
+
+.PHONY: build
+build: $(FS_FILE) timing_check
+
+.PHONY: clean
+clean:
+	rm -fr impl
 
 $(FS_FILE): $(VLOG_SOURCES) $(SDC_SOURCES) $(CST_SOURCES)
 	gw_sh $(JELLY_DIR)/scripts/gowin_build.tcl
 
-clean:
-	rm -fr impl
+timing_check:
+	-python3 $(JELLY_DIR)/scripts/gowin_check_timing_report.py $(TIMING_REPORT) impl/pnr/$(TOP_MODULE)_tr_content.html
 
-run: $(FS_FILE)
+
+# openFPGALoader (Digilent HS2) で書き込み
+run: build
 	openFPGALoader -c digilent_hs2 $(FS_FILE)
 
-rom_write:
+rom_write: build
 	openFPGALoader -c digilent_hs2 -f $(FS_FILE)
 
 
 # WSL から Windows 版 programmer を使う場合
 # programmer_cli --scan-cable
 # で PROGRAMMER_CLI_OPTIONS に --location を指定しておく
-run_wsl: $(FS_FILE)
+run_wsl: build
 	programmer_cli --device GW5A-25B --run 2 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
+rom_write_wsl: $(FS_FILE)
+	programmer_cli --device GW5A-25B --run 54 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
