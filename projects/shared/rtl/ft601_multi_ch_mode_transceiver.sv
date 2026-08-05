@@ -92,8 +92,8 @@ module ft601_multi_ch_mode_transceiver
         READ_COMMAND  = 1   ,
         READ_TA1      = 2   ,
         READ_TA2      = 3   ,
-        READ_DATA0    = 4   ,
-        READ_DATA1    = 5   ,
+        READ_TA3    = 4   ,
+        READ_DATA    = 5   ,
         WRITE_COMMAND = 6   ,
         WRITE_TA      = 7   ,
         WRITE_DATA    = 8   ,
@@ -219,15 +219,15 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_TA2:
                     begin
-                        state <= READ_DATA0 ;
+                        state <= READ_TA3 ;
                     end
 
-                READ_DATA0:
+                READ_TA3:
                     begin
-                        state <= READ_DATA1 ;
+                        state <= READ_DATA ;
                     end
 
-                READ_DATA1:
+                READ_DATA:
                     begin
                         if ( reg_ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
                             state            <= FINAL1       ;
@@ -319,7 +319,7 @@ module ft601_multi_ch_mode_transceiver
             m_fifo_data  <= 'x  ;
             m_fifo_valid <= '0  ;
             for ( int i = 0; i < CHANNELS; i++ ) begin
-                if ( channel == channel_t'(i) && (state == READ_DATA0 || state == READ_DATA1) && reg_ft601_rxf_n == 1'b0 ) begin
+                if ( channel == channel_t'(i) && state == READ_DATA && reg_ft601_rxf_n == 1'b0 ) begin
                     m_fifo_strb[i]  <= reg_ft601_be_i   ;
                     m_fifo_data[i]  <= reg_ft601_data_i ;
                     m_fifo_valid[i] <= 1'b1             ;

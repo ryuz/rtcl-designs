@@ -11,18 +11,18 @@
 
 module ft601_multi_ch_mode
         #(
-            parameter   int     CHANNELS                    = 1                         ,
-            parameter   int     TIMEOUT_BITS                = 16                        ,
-            parameter   type    timeout_t                   = logic [TIMEOUT_BITS-1:0]  ,
-            parameter   int     COUNTER_BITS                = 32                        ,
-            parameter   type    counter_t                   = logic [COUNTER_BITS-1:0]  ,
-            parameter   bit     ASYNC                       = 1                         ,
-            parameter   int     RX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}             ,
-            parameter   int     TX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}             ,
-            parameter   int     TX_THRESHOLD     [CHANNELS] = '{default: 256}           ,
-            parameter   int     RX_THRESHOLD     [CHANNELS] = '{default: 256}           ,
-            localparam  type    data_t                      = logic [31:0]              ,
-            localparam  type    be_t                        = logic [3:0]               
+            parameter   int     CHANNELS                    = 1                             ,
+            parameter   int     TIMEOUT_BITS                = 16                            ,
+            parameter   type    timeout_t                   = logic [TIMEOUT_BITS-1:0]      ,
+            parameter   int     COUNTER_BITS                = 32                            ,
+            parameter   type    counter_t                   = logic [COUNTER_BITS-1:0]      ,
+            parameter   bit     ASYNC                       = 1                             ,
+            parameter   int     RX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
+            parameter   int     TX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
+            parameter   int     TX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
+            parameter   int     RX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
+            localparam  type    data_t                      = logic [31:0]                  ,
+            localparam  type    be_t                        = logic [3:0]                   
         )
         (
             input   var logic                           ft601_reset             ,
