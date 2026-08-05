@@ -95,6 +95,7 @@ clean:
 $(FS_FILE): $(VLOG_SOURCES) $(SDC_SOURCES) $(CST_SOURCES)
 	gw_sh $(JELLY_DIR)/scripts/gowin_build.tcl
 
+.PHONY: timing_check
 timing_check:
 	-python3 $(JELLY_DIR)/scripts/gowin_check_timing_report.py $(TIMING_REPORT) impl/pnr/$(TOP_MODULE)_tr_content.html
 
@@ -113,5 +114,5 @@ rom_write: build
 run_wsl: build
 	programmer_cli --device GW5A-25B --run 2 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
-rom_write_wsl: $(FS_FILE)
+rom_write_wsl: build
 	programmer_cli --device GW5A-25B --run 54 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
