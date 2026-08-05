@@ -99,10 +99,13 @@ $(FS_FILE): $(VLOG_SOURCES) $(SDC_SOURCES) $(CST_SOURCES)
 timing_check:
 	-@python3 $(JELLY_DIR)/scripts/gowin_check_timing_report.py impl/pnr/$(TOP_MODULE)_tr_content.html
 
+
 # openFPGALoader (Digilent HS2) で書き込み
+.PHONY: run
 run: build
 	openFPGALoader -c digilent_hs2 $(FS_FILE)
 
+.PHONY: rom_write
 rom_write: build
 	openFPGALoader -c digilent_hs2 -f $(FS_FILE)
 
@@ -110,8 +113,10 @@ rom_write: build
 # WSL から Windows 版 programmer を使う場合
 # programmer_cli --scan-cable
 # で PROGRAMMER_CLI_OPTIONS に --location を指定しておく
+.PHONY: run_wsl
 run_wsl: build
 	programmer_cli --device GW5A-25B --run 2 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
+.PHONY: rom_write_wsl
 rom_write_wsl: build
 	programmer_cli --device GW5A-25B --run 54 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
