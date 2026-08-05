@@ -340,7 +340,15 @@ impl D3xxFifo32DirectAxi4sTx {
             let end = start + width;
             packet.extend_from_slice(&image[start..end]);
         }
-        self.axi4s_writer.write(&packet)?;
+
+        const CHUNK_SIZE: usize = 1024*2;
+        if packet.len() > CHUNK_SIZE {
+            for chunk in packet.chunks(CHUNK_SIZE) {
+                self.axi4s_writer.write(chunk)?;
+            }
+        } else {
+            self.axi4s_writer.write(&packet)?;
+        }
 
         Ok(())
     }
