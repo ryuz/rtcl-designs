@@ -1,0 +1,11 @@
+[package]
+name = "rtcl_tp25k_usb3_fifo_loopback"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rand = "0.10.1"
+rtcl-d3xx = { path = "../../../../../rust/rtcl-d3xx-rs" }
+jelly-mem_access = { version="0.2.8" }
+jelly-pac = { version="0.1.3" }
+jelly-lib = { version="0.2.3" }
