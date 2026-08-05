@@ -7,8 +7,11 @@
 ## リポジトリ構成
 
 - `projects/` : 各種プロジェクトの設計データ
-  - `rtcl_p3s7_mipi/` : RTCL-P3S70-MIPI カメラモジュール用
+  - `rtcl_p3s7_mipi/` : [RTCL-P3S70-MIPI](https://github.com/ryuz/rtcl-p3s7-mipi-pcb) グローバルシャッター高速度MIPIカメラモジュール用
     - `rtcl_p3s7_mipi/` : カメラモジュール用FPGA設計
+  - `rtcl_tp25k_usb3/` : [RTCL_TP25K_USB3](https://github.com/ryuz/rtcl-tp25k-usb3-pcb) Primer 25k USB3ボード用
+    - `rtcl_tp25k_usb3_mipi_lane2/` : MIPI-CSI2 2レーンサンプル(ラズパイカメラ／RTCL-P3S70-MIPI)
+    - `rtcl_tp25k_usb3_lfsr/` : LFSRデータ送受信サンプル
   - `kv260/` : KV260 用
     - `kv260_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
     - `kv260_rtcl_p3s7_csi2/` : RTCL-P3S70-MIPI CSI2 仕様実験版
