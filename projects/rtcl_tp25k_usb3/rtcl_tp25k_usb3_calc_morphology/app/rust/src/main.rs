@@ -57,8 +57,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 //  let width:  usize = 128;
 //  let height: usize = 128;
 
-//  let width:  usize = 1024;
-    let width:  usize = 4096;
+    let width:  usize = 256;
+//  let width:  usize = 4096;
     let height:  usize = width;
     let filename = format!("input_{}x{}.bin", width, height);
 
