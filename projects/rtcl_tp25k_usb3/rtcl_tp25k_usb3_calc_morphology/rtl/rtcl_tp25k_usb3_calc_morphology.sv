@@ -505,6 +505,7 @@ module rtcl_tp25k_usb3_calc_morphology
     assign pmod[6] = mon_ft601_data[9];   // tx[1]
     assign pmod[7] = mon_ft601_data[13];  // rx[1]
 
+
 endmodule
 
 
