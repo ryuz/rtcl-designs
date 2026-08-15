@@ -68,7 +68,7 @@ python3 bin2pgm.py result.bin resutl_4096x4096.pgm 4096 4096
 なお Python では OpenCV などを利用していますので、Python 環境に OpenCV がインストールされている必要があります。
 
 
-[PGM形式](https://ja.wikipedia.org/wiki/PNM_(%E7%94%BB%E5%83%8F%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88)の画像は、[GIMP](https://www.gimp.org/) や [IrfanView](https://www.irfanview.com/) や [ImageMagick](https://imagemagick.org/) などで開くことができる形式です。
+[PGM形式](https://en.wikipedia.org/wiki/Netpbm#File_formats)の画像は、[GIMP](https://www.gimp.org/) や [IrfanView](https://www.irfanview.com/) や [ImageMagick](https://imagemagick.org/) などで開くことができる形式です。
 
 このアプリは以下の処理を行います。
 
