@@ -101,8 +101,8 @@ timing_check:
 
 
 # openFPGALoader (Digilent HS2) で書き込み
-.PHONY: run
-run: build
+.PHONY: load
+load: build
 	openFPGALoader -c digilent_hs2 $(FS_FILE)
 
 .PHONY: rom_write
@@ -113,8 +113,8 @@ rom_write: build
 # WSL から Windows 版 programmer を使う場合
 # programmer_cli --scan-cable
 # で PROGRAMMER_CLI_OPTIONS に --location を指定しておく
-.PHONY: run_wsl
-run_wsl: build
+.PHONY: load_wsl
+load_wsl: build
 	programmer_cli --device GW5A-25B --run 2 --fsFile `wslpath -w $(FS_FILE)` $(PROGRAMMER_CLI_OPTIONS)
 
 .PHONY: rom_write_wsl

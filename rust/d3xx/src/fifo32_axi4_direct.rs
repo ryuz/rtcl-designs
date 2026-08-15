@@ -114,6 +114,41 @@ impl D3xxFifo32DirectAxi4l {
     }
 }
 
+fn parse_axi4s_packet(data: &[u8], expected_size: usize) -> Result<AxiStream, Box<dyn Error>> {
+    if data.len() != 4 + expected_size {
+        return Err(format!(
+            "AXI4S receive size mismatch: {} != {}",
+            data.len(),
+            4 + expected_size
+        )
+        .into());
+    }
+
+    let opcode = data[0];
+    let operand = data[1];
+    let packet_last = (operand & 0x80) != 0;
+    let packet_size = u16::from_le_bytes([data[2], data[3]]) as usize;
+    assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+
+    if packet_size != expected_size {
+        return Err(format!(
+            "AXI4S payload size mismatch in header: {} != {}",
+            packet_size,
+            expected_size
+        )
+        .into());
+    }
+
+    if !packet_last {
+        return Err("AXI4S stream is not terminated at requested size".into());
+    }
+
+    Ok(AxiStream {
+        tuser: operand & 0x7f,
+        tdata: data[4..].to_vec(),
+    })
+}
+
 impl D3xxFifo32DirectAxi4sRx {
     pub fn set_timeout(&mut self, timeout_us: u32) -> D3xxResult<()> {
         self.axi4s_reader.set_timeout(timeout_us)
@@ -124,79 +159,29 @@ impl D3xxFifo32DirectAxi4sRx {
             return Err("AXI4S requested size must be > 0".into());
         }
 
-        let mut stream_tuser: Option<u8> = None;
-        let mut tdata = Vec::<u8>::with_capacity(size);
-
-        loop {
-            let mut header = self.axi4s_reader.read_until_size(4, 1000)?;
-            while header.len() < 4 {
-                let remain_size = 4 - header.len();
-                let mut remain_data = self.axi4s_reader.read(remain_size)?;
-                if remain_data.is_empty() {
-                    break;
-                }
-                header.append(&mut remain_data);
-            }
-            if header.len() != 4 {
-                return Err(format!("AXI4S header receive size mismatch: {} != {}", header.len(), 4).into());
-            }
-
-            let opcode = header[0];
-            let operand = header[1];
-            let packet_last = (operand & 0x80) != 0;
-            let packet_size = u16::from_le_bytes([header[2], header[3]]) as usize;
-            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
-
-            if let Some(tuser) = stream_tuser {
-                if tuser != (operand & 0x7f) {
-                    return Err(format!(
-                        "AXI4S tuser mismatch across packets: {} != {}",
-                        tuser,
-                        operand & 0x7f
-                    )
-                    .into());
-                }
-            }
-            else {
-                stream_tuser = Some(operand & 0x7f);
-            }
-
-            let mut payload = self.axi4s_reader.read_until_size(packet_size, 1000)?;
-            while payload.len() < packet_size {
-                let remain_size = packet_size - payload.len();
-                let mut remain_data = self.axi4s_reader.read(remain_size)?;
-                if remain_data.is_empty() {
-                    break;
-                }
-                payload.append(&mut remain_data);
-            }
-
-            if payload.len() != packet_size {
-                return Err(format!(
-                    "AXI4S payload receive size mismatch: {} != {}",
-                    payload.len(),
-                    packet_size
-                )
-                .into());
-            }
-
-            tdata.extend_from_slice(&payload);
-
-            if packet_last {
+        let request_size = 4 + size;
+        let mut rx_data = self.axi4s_reader.read_until_size(request_size, 1000)?;
+        while rx_data.len() < request_size {
+            let remain_size = request_size - rx_data.len();
+            let mut remain_data = self.axi4s_reader.read(remain_size)?;
+            if remain_data.is_empty() {
                 break;
             }
+            rx_data.append(&mut remain_data);
         }
 
-        if tdata.len() != size {
-            return Err(format!("AXI4S receive size mismatch: {} != {}", tdata.len(), size).into());
+        if rx_data.len() != request_size {
+            return Err(format!(
+                "AXI4S receive size mismatch: {} != {}",
+                rx_data.len(),
+                request_size
+            )
+            .into());
         }
 
-        assert!((tdata.len() & 0x3) == 0); // 32bit単位でしか通信しない
+        assert!((rx_data.len() & 0x3) == 0); // 32bit単位でしか通信しない
 
-        Ok(AxiStream {
-            tuser: stream_tuser.unwrap_or(0),
-            tdata,
-        })
+        parse_axi4s_packet(&rx_data, size)
     }
 
     pub fn recv_data(&mut self, size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -268,7 +253,7 @@ impl D3xxFifo32DirectAxi4sRx {
 
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
 //      self.axi4s_reader.set_timeout(5000)?;
-        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 100)?;
+        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 1000)?;
 //      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
 //      return Ok(vec![0u8; width * height]);
 //      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
@@ -352,80 +337,6 @@ impl D3xxFifo32DirectAxi4sTx {
 
         Ok(())
     }
-
-
-    pub fn send_image(&self, width: usize, height: usize, image: &[u8]) -> Result<(), Box<dyn Error>> {
-        assert!(width > 0, "image width must be > 0");
-        assert!(height > 0, "image height must be > 0");
-
-        let image_size = width * height;
-        assert!(image.len() == image_size, "image buffer size mismatch: {} != {}", image.len(), image_size);
-        assert!(width <= u16::MAX as usize, "image line width too large: {}", width);
-
-        let line_transfer_size = width + 4;
-        assert!((line_transfer_size & 0x3) == 0, "image line transfer size (width + 4) must be 4-byte aligned");
-
-        const MAX_OVERLAPS: usize = 16;
-        let overlaps = height.min(MAX_OVERLAPS);
-        let mut overlapped = vec![Overlapped::new(); overlaps];
-        let mut buffers = vec![vec![0u8; line_transfer_size]; overlaps];
-        let mut bytes_transferred = vec![0u32; overlaps];
-
-        // 先行してoverlap本数分の書き込み要求を発行
-        for i in 0..overlaps {
-            let line_index = i;
-            let src_offset = line_index * width;
-            let line_buf = &mut buffers[i];
-            line_buf[0] = OPCODE_AXI4S_TRANS;
-            line_buf[1] = if i == 0 { 0x81 } else { 0x80 };
-            line_buf[2..4].copy_from_slice(&(width as u16).to_le_bytes());
-            line_buf[4..].copy_from_slice(&image[src_offset..src_offset + width]);
-
-            self.axi4s_writer.initialize_overlapped(&mut overlapped[i])?;
-            bytes_transferred[i] = buffers[i].len() as u32;
-            self.axi4s_writer.write_async(&buffers[i], &mut bytes_transferred[i], &mut overlapped[i])?;
-//          println!("Issued line {}: {} bytes", line_index, line_transfer_size);
-        }
-
-        let mut issued_lines = overlaps;
-        let mut completed_lines = 0usize;
-        let mut index = 0usize;
-
-        while completed_lines < height {
-            self.axi4s_writer.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
-            let tx_size = bytes_transferred[index] as usize;
-            assert!(tx_size == line_transfer_size, "AXI4S image line transfer size mismatch at line {}: {} != {}", completed_lines, tx_size, line_transfer_size);
-//          println!("Completed line {}: {} bytes", completed_lines, tx_size);
-            completed_lines += 1;
-
-            if issued_lines < height {
-                let line_index = issued_lines;
-                let src_offset = line_index * width;
-                let line_buf = &mut buffers[index];
-                line_buf[0] = OPCODE_AXI4S_TRANS;
-                line_buf[1] = 0x80;
-                line_buf[2..4].copy_from_slice(&(width as u16).to_le_bytes());
-                line_buf[4..].copy_from_slice(&image[src_offset..src_offset + width]);
-                
-                bytes_transferred[index] = buffers[index].len() as u32;
-                self.axi4s_writer.write_async(
-                    &buffers[index],
-                    &mut bytes_transferred[index],
-                    &mut overlapped[index],
-                )?;
-//              println!("Issued line {}: {} bytes", line_index, line_transfer_size);
-                issued_lines += 1;
-            }
-
-            index = (index + 1) % overlaps;
-        }
-
-        for i in 0..overlaps {
-            let _ = self.axi4s_writer.release_overlapped(&mut overlapped[i]);
-        }
-
-        Ok(())
-    }
 }
 
 
@@ -433,5 +344,24 @@ impl D3xxFifo32DirectAxi4sTx {
 pub struct AxiStream {
     pub tuser: u8,
     pub tdata: Vec<u8>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_axi4s_payload_accepts_single_packet_of_expected_size() {
+        let expected = vec![0x11, 0x22, 0x33, 0x44];
+        let mut data = Vec::with_capacity(4 + expected.len());
+        data.push(OPCODE_AXI4S_TRANS);
+        data.push(0x81);
+        data.extend_from_slice(&(expected.len() as u16).to_le_bytes());
+        data.extend_from_slice(&expected);
+
+        let stream = parse_axi4s_packet(&data, expected.len()).unwrap();
+        assert_eq!(stream.tuser, 0x01);
+        assert_eq!(stream.tdata, expected);
+    }
 }
 

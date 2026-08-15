@@ -42,26 +42,11 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("FT601 test");
+    println!("Tang Ptimer25k Calc Morphology");
 
-//  let width:  usize = 4096;
-//  let height: usize = 4096;
-//  let width:  usize = 2048;
-//  let height: usize = 2048;
-//  let width:  usize = 1024;
-//  let height: usize = 1024;
-//  let width:  usize = 512;
-//  let height: usize = 512;
-//  let width:  usize = 256;
-//  let height: usize = 256;
-//  let width:  usize = 128;
-//  let height: usize = 128;
-
-//  let width:  usize = 1024;
     let width:  usize = 4096;
     let height:  usize = width;
     let filename = format!("input_{}x{}.bin", width, height);
-
 
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
@@ -73,14 +58,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
     println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
 
+    /*
     println!("RX[0] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR4) as u32)?);
     println!("TX[0] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR5) as u32)?);
-
     println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
     println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
     println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
     println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
-//  return Ok(());
+    */
 
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL3) as u32, 512, 0xf)?;  // max
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL4) as u32, 0, 0xf)?;    // limit
@@ -92,9 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b11111111, 0xf)?;
     axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b00111100, 0xf)?;
-//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32, 0b0000, 0xf)?;
-//  axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32, 0b0000, 0xf)?;
-    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_CTL_CONTROL   ) as u32,      3, 0xf)?;
+    axi4l.write_axi4l((BASE_MORPHO + 4*REG_MORPHO_CTL_CONTROL   ) as u32,       0b11, 0xf)?;
 
     println!("MORPHO_PARAM_ENABLE   : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_ENABLE  ) as u32)?);
     println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
@@ -104,12 +87,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let line_bytes = width / 8;
     let mut tx_data = vec![0u8; line_bytes * height];
     {
-//      let mut file = File::open("input_4096x4096.bin").map_err(|e| e.to_string())?;
-//      let mut file = File::open("input_2048x2048.bin").map_err(|e| e.to_string())?;
-//      let mut file = File::open("input_1024x1024.bin").map_err(|e| e.to_string())?;
-//      let mut file = File::open("input_512x512.bin").map_err(|e| e.to_string())?;
-//      let mut file = File::open("input_256x256.bin").map_err(|e| e.to_string())?;
-//      let mut file = File::open("input_128x128.bin").map_err(|e| e.to_string())?;
         let mut file = File::open(filename).map_err(|e| e.to_string())?;
         file.read_exact(&mut tx_data).map_err(|e| e.to_string())?;
     }
@@ -122,7 +99,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tx_handle = thread::spawn(move || -> Result<(), String> {
         for _ in 0..1 {
             axi4s_tx
-    //          .send_image(line_bytes, height, &tx_data)
                 .send_frame(line_bytes, height, &tx_data)
                 .map_err(|e| e.to_string())?;
         }
@@ -133,7 +109,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
         axi4s_rx.set_timeout(5000).map_err(|e| e.to_string())?;
         axi4s_rx
-//          .recv_image(line_bytes, height)
             .recv_frame(line_bytes, height)
             .map_err(|e| e.to_string())
     });
@@ -152,11 +127,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Processing time: {} microseconds", elapsed.as_micros());
 
     println!("size = {}", (width/32+1) * height);
+    /*
     println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
     println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
     println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
     println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
-
+    */
 
     // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）
     println!("Writing output image...");
