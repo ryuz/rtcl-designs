@@ -1,8 +1,8 @@
-# Tang Primer 25k + USB3.0 基板(RTCL-TP25K-USB3-MIPI)用 MIPI-CSI2 2レーンカメラキャプチャサンプル
+# Tang Primer 25k + USB3.0 基板(RTCL-TP25K-USB3)用 MIPI-CSI2 2レーンカメラキャプチャサンプル
 
 ## 概要
 
-RTCL-TP25K-USB3-MIPI にて、Raspberry Pi カメラモジュールV2(Sony IMX219)と[グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)を MIPI-CSI2 2レーンで接続し、USB3.0 経由で PC に画像を転送するサンプルです。
+RTCL-TP25K-USB3 にて、Raspberry Pi カメラモジュールV2(Sony IMX219)と[グローバルシャッターMIPI高速度カメラ](https://rtc-lab.com/products/rtcl-cam-p3s7-mipi/)を MIPI-CSI2 2レーンで接続し、USB3.0 経由で PC に画像を転送するサンプルです。
 
 
 ## 環境構築
