@@ -659,14 +659,41 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .m_axi4s    (axi4s_frame.m          )
             );
 
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1          ),
+                .USE_LAST   (1          ),
+                .USER_BITS  (1          ),
+                .DATA_BITS  (32         ),
+                .STRB_BITS  (4          )
+            )
+        axi4s_frame_ff
+            (
+                .aresetn    (~dphy_reset),
+                .aclk       (dphy_clk   ),
+                .aclken     (1'b1       )
+            );
+
+    jelly3_axi4s_ff
+            #(
+                .S_REG      (1                  ),
+                .M_REG      (1                  )
+            )
+        u_axi4s_ff
+            (
+                .s_axi4s    (axi4s_frame.s      ),
+                .m_axi4s    (axi4s_frame_ff.m   )
+            );
+
+
     fifo32_cmd_axi4s_tx
             #(
-                .ASYNC              (1                  ),
-                .MAX_LEN            (512                )
+                .ASYNC          (1                  ),
+                .MAX_LEN        (512                )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .s_axi4s        (axi4s_frame.s      ),
+                .s_axi4s        (axi4s_frame_ff.s   ),
                 .m_axi4s        (axi4s_ft601_tx[1].m)
             );
 

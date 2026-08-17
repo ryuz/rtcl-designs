@@ -61,7 +61,8 @@ module fifo32_cmd_axi4s_tx
                                  + $bits(len_t)     ),
                 .S_SYNC_FF      (4                  ),
                 .M_SYNC_FF      (4                  ),
-                .RAM_TYPE       ("distributed"      )
+                .RAM_TYPE       ("distributed"      ),
+                .DOUT_REG       (1'b1               )
             )
         u_stream_fifo_cmd
             (
@@ -109,7 +110,8 @@ module fifo32_cmd_axi4s_tx
                 .PTR_BITS       (DATA_PTR_BITS      ),
                 .DATA_BITS      ($bits(strb_t)
                                 + $bits(data_t)     ),
-                .RAM_TYPE       ("block"            )
+                .RAM_TYPE       ("block"            ),
+                .DOUT_REG       (1'b1               )
             )
         u_stream_fifo_data
             (

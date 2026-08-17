@@ -174,7 +174,7 @@ module rtcl_tp25k_usb3_lfsr
     localparam  int     FT601_CHANNELS             = 2                              ;
     localparam  int     FT601_TIMEOUT_BITS         = 16                             ;
     localparam  type    ft601_timeout_t            = logic [FT601_TIMEOUT_BITS-1:0] ;
-    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,    9}                   ;
+    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,   10}                   ;
     parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   14}                   ;
     parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
     parameter   int     FT601_TX_THRESHOLD     [2] = '{256,  256}                   ;
