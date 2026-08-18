@@ -13,17 +13,18 @@
 
 module ft601_multi_ch_mode_transceiver
         #(
-            parameter   int     CHANNELS       = 4                          ,
-            parameter   int     MAX_TRANSFER   = 1024 / CHANNELS            ,
-            parameter   int     TIMEOUT_BITS   = 16                         ,
-            parameter   int     COUNT_BITS     = $clog2(MAX_TRANSFER)       ,
-            parameter   type    count_t        = logic [COUNT_BITS-1:0]     ,
-            parameter   type    timeout_t      = logic [TIMEOUT_BITS-1:0]   ,
-            parameter   int     MON_COUNT_BITS = 32                         ,
-            parameter   type    mon_count_t    = logic [MON_COUNT_BITS-1:0] ,
-            localparam  type    data_t         = logic [31:0]               ,
-            localparam  type    be_t           = logic [3:0]                ,
-            localparam  type    strb_t         = be_t                       
+            parameter   int                     CHANNELS       = 4                          ,
+            parameter   int                     MAX_TRANSFER   = 1024 / CHANNELS            ,
+            parameter   int                     TIMEOUT_BITS   = 16                         ,
+            parameter   int                     COUNT_BITS     = $clog2(MAX_TRANSFER)       ,
+            parameter   type                    count_t        = logic [COUNT_BITS-1:0]     ,
+            parameter   type                    timeout_t      = logic [TIMEOUT_BITS-1:0]   ,
+            parameter   logic  [CHANNELS-1:0]   FIX_SIZE_TX    = '0                         ,
+            parameter   int                     MON_COUNT_BITS = 32                         ,
+            parameter   type                    mon_count_t    = logic [MON_COUNT_BITS-1:0] ,
+            localparam  type                    data_t         = logic [31:0]               ,
+            localparam  type                    be_t           = logic [3:0]                ,
+            localparam  type                    strb_t         = be_t                       
         )
         (
             input   var logic                       reset               ,
@@ -262,7 +263,7 @@ module ft601_multi_ch_mode_transceiver
                     begin
                         tx_count              <= tx_count - 1'b1        ;
                         s_fifo_ready[channel] <= (tx_count - 1'b1) != 0 ;
-                        if ( !s_fifo_valid[channel] || !s_fifo_ready[channel] ) begin
+                        if ( (!FIX_SIZE_TX[channel] && !s_fifo_valid[channel]) || !s_fifo_ready[channel] ) begin
                             state                 <= FINAL1             ;
                             tx_count              <= 'x                 ;
                             s_fifo_ready[channel] <= 1'b0               ;
@@ -275,9 +276,9 @@ module ft601_multi_ch_mode_transceiver
                         end
                         else begin
                             reg_ft601_be_t    <= 4'h0                   ;
-                            reg_ft601_be_o    <= s_fifo_strb[channel]   ;
+                            reg_ft601_be_o    <= s_fifo_valid[channel] ? s_fifo_strb[channel] : '1;
                             reg_ft601_data_t  <= 32'h0000_0000          ;
-                            reg_ft601_data_o  <= s_fifo_data[channel]   ;
+                            reg_ft601_data_o  <= s_fifo_valid[channel] ? s_fifo_data[channel] : '0;
                         end
                     end
                 
