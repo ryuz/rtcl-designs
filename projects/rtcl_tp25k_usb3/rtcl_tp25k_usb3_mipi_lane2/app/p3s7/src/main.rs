@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // カメラOFF
     println!("camera power off");
     unsafe {
-//      ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
         std::thread::sleep(Duration::from_millis(100));
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
         std::thread::sleep(Duration::from_millis(100));
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 1);
         std::thread::sleep(Duration::from_millis(100));
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 1);
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(500));
     }
 
     const P3S7_DEVADR: u8 =     0x10;    // 7bit address
@@ -88,18 +88,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let module_ver = cam.module_version()?;
     println!("module_ver : 0x{:04x}", module_ver);
 
-    /*
-    // キー入力待ち
-    print!("Press Enter to start...");
-    std::io::stdout().flush()?;
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    */
-
-//    let width  = 416;
-//    let height = 416;
+    /* 1000fps
     let width  = 256;
     let height = 256;
+    let fr_length0 = 800;
+    let exposure0 = 700;
+    */
+
+    let width  = 640  + 16*2;
+    let height = 480  + 16*2;
+    let fr_length0 = 16000;
+    let exposure0  = 15000;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
@@ -140,8 +139,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_mult_timer0(72)?;
 //  cam.set_fr_length0(33000)?;
 //  cam.set_exposure0(30000)?;
-    cam.set_fr_length0(800)?;
-    cam.set_exposure0(700)?;
+    cam.set_fr_length0(fr_length0)?;
+    cam.set_exposure0(exposure0)?;
 
     cam.set_slave_mode(false)?;
     cam.set_triggered_mode(false)?;
@@ -280,6 +279,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("End Test");
 
+    // カメラOFF
+    println!("camera power off");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
+        std::thread::sleep(Duration::from_millis(100));
+    }
 
     Ok(())
 }
