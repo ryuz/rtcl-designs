@@ -69,7 +69,10 @@ module ft601_multi_ch_mode
     
     ft601_multi_ch_mode_transceiver
             #(
-                .CHANNELS           (CHANNELS                   )
+                .CHANNELS           (CHANNELS                   ),
+                .TIMEOUT_BITS       ($bits(timeout_t)           ),
+                .FIX_SIZE_TX        (FIX_SIZE_TX                ),
+                .MON_COUNT_BITS     (COUNTER_BITS               )
             )
         u_ft601_multi_ch_mode_transceiver
             (
@@ -196,6 +199,13 @@ module ft601_multi_ch_mode
             assign ft601_tx_fifo_data[i]  = axi4s_smoother.tdata    ;
             assign ft601_tx_fifo_valid[i] = axi4s_smoother.tvalid   ;
             assign axi4s_smoother.tready  = ft601_tx_fifo_ready[i]  ;
+
+            assign ft601_tx_enough_data[i] = axi4s_smoother.tvalid  ;
+            always_ff @(posedge ft601_clk) begin
+                ft601_tx_timeout[i]     <= tx_timeout[i];
+            end
+
+
         end
         else begin : fifo
             logic   [3:0]                   cmd_tx_fifo_strb    ;

@@ -202,7 +202,8 @@ module tb_main
 
         for ( int loop = 0; loop < 2; loop++ ) begin
             $display("Write TX");
-            axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 1024-1,  4'hf);  // tx_len
+//          axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 1024-1,  4'hf);  // tx_len
+            axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 17-1,  4'hf);  // tx_len
             axi4l_write(BASE_LFSR_TX + 32'h10 * 4,  1,      4'hf);  // start
             #100;
 
