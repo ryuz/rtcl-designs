@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::env;
 use rtcl_d3xx::*;
 use std::time::Duration;
 use opencv::prelude::*;
@@ -12,7 +13,50 @@ const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
 
 type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
+struct CameraConfig {
+    width: u16,
+    height: u16,
+    fr_length0: u16,
+    exposure0: u16,
+}
+
+fn parse_args() -> Result<CameraConfig, Box<dyn Error>> {
+    let mut config = CameraConfig {
+        width: 640 + 16 * 2,
+        height: 480 + 16 * 2,
+        fr_length0: 16000,
+        exposure0: 15000,
+    };
+    let mut args = env::args().skip(1);
+
+    while let Some(arg) = args.next() {
+        if arg == "-h" || arg == "--help" {
+            println!("Usage: p3s7 [--width N] [--height N] [--fr-length0 N] [--exposure0 N]");
+            std::process::exit(0);
+        }
+
+        let (name, value) = if let Some((name, value)) = arg.split_once('=') {
+            (name, value.to_owned())
+        } else {
+            let name = arg.as_str();
+            let value = args.next().ok_or_else(|| format!("missing value for {name}"))?;
+            (name, value)
+        };
+
+        match name {
+            "--width" => config.width = value.parse()?,
+            "--height" => config.height = value.parse()?,
+            "--fr-length0" => config.fr_length0 = value.parse()?,
+            "--exposure0" => config.exposure0 = value.parse()?,
+            _ => return Err(format!("unknown option: {name}").into()),
+        }
+    }
+
+    Ok(config)
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
+    let config = parse_args()?;
     println!("FT601 test");
 
     // OpenDevice
@@ -95,10 +139,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let exposure0 = 700;
     */
 
-    let width  = 640  + 16*2;
-    let height = 480  + 16*2;
-    let fr_length0 = 16000;
-    let exposure0  = 15000;
+    let width = config.width;
+    let height = config.height;
+    let fr_length0 = config.fr_length0;
+    let exposure0 = config.exposure0;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
