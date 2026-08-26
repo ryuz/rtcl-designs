@@ -119,13 +119,21 @@ module ft601_multi_ch_mode
     // -------------------------------
 
     for ( genvar i = 0; i < CHANNELS; i++ ) begin : gen_ch
-        // RX FIFO
-        logic  [RX_FIFO_PTR_BITS[i]:0]  fifo_rx_free_size   ;
+        // type
+        localparam int          RX_FIFO_SIZE_BITS = RX_FIFO_PTR_BITS[i] + 1         ;
+        localparam type         rx_size_t         = logic [RX_FIFO_SIZE_BITS-1:0]   ;
+        localparam rx_size_t    RX_FIFO_TH        = rx_size_t'(RX_THRESHOLD[i])     ;
+        localparam int          TX_FIFO_SIZE_BITS = TX_FIFO_PTR_BITS[i] + 1         ;
+        localparam type         tx_size_t         = logic [TX_FIFO_SIZE_BITS-1:0]   ;
+        localparam tx_size_t    TX_FIFO_TH        = tx_size_t'(TX_THRESHOLD[i])     ;
 
-        logic   [3:0]                   cmd_rx_fifo_strb    ;
-        logic   [31:0]                  cmd_rx_fifo_data    ;
-        logic                           cmd_rx_fifo_valid   ;
-        logic                           cmd_rx_fifo_ready   ;
+        // RX FIFO
+        rx_size_t       fifo_rx_free_size   ;
+
+        logic   [3:0]   cmd_rx_fifo_strb    ;
+        logic   [31:0]  cmd_rx_fifo_data    ;
+        logic           cmd_rx_fifo_valid   ;
+        logic           cmd_rx_fifo_ready   ;
 
         jelly3_stream_fifo
                 #(
@@ -164,10 +172,11 @@ module ft601_multi_ch_mode
 
         always_ff @(posedge ft601_clk) begin
             ft601_rx_fifo_almost_full[i]  <= fifo_rx_free_size < 64;
-            ft601_rx_fifo_enough_space[i] <= fifo_rx_free_size >= (RX_FIFO_PTR_BITS[i]+1)'(RX_THRESHOLD[i]);
+            ft601_rx_fifo_enough_space[i] <= (fifo_rx_free_size > RX_FIFO_TH);
         end
 
         // TX FIFO
+        tx_size_t   fifo_tx_data_size   ;
         if ( FIX_SIZE_TX[i] ) begin : smoother
             jelly3_axi4s_if
                     #(
@@ -181,7 +190,6 @@ module ft601_multi_ch_mode
                         .aclken     (1'b1                   )
                     );
             
-            logic  [TX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size;
             jelly3_axi4s_packet_smoother
                     #(
                         .ASYNC          (ASYNC              ),
@@ -203,20 +211,14 @@ module ft601_multi_ch_mode
             assign ft601_tx_fifo_valid[i] = axi4s_smoother.tvalid   ;
             assign axi4s_smoother.tready  = ft601_tx_fifo_ready[i]  ;
 
-            always_ff @(posedge ft601_clk) begin
-                ft601_tx_enough_data[i] <= fifo_tx_data_size >= (TX_FIFO_PTR_BITS[i]+1)'(TX_THRESHOLD[i]);
-                ft601_tx_timeout[i]     <= tx_timeout[i];
-            end
         end
         else begin : fifo
-            logic   [3:0]                   cmd_tx_fifo_strb    ;
-            logic   [31:0]                  cmd_tx_fifo_data    ;
-            logic                           cmd_tx_fifo_valid   ;
-            logic                           cmd_tx_fifo_ready   ;
+            logic   [3:0]       cmd_tx_fifo_strb    ;
+            logic   [31:0]      cmd_tx_fifo_data    ;
+            logic               cmd_tx_fifo_valid   ;
+            logic               cmd_tx_fifo_ready   ;
 
-            logic  [TX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size   ;
-
-            logic   [3:0]                  s_axi4s_tx_tstrb;
+            logic   [3:0]       s_axi4s_tx_tstrb    ;
             assign s_axi4s_tx_tstrb = s_axi4s_tx[i].USE_STRB ? s_axi4s_tx[i].tstrb : '1;
 
             jelly3_stream_fifo
@@ -253,11 +255,10 @@ module ft601_multi_ch_mode
                         .m_ready        (ft601_tx_fifo_ready[i] ),
                         .m_data_size    (fifo_tx_data_size      )
                     );
-
-            always_ff @(posedge ft601_clk) begin
-                ft601_tx_timeout[i]     <= tx_timeout[i];
-                ft601_tx_enough_data[i] <= fifo_tx_data_size >= (TX_FIFO_PTR_BITS[i]+1)'(TX_THRESHOLD[i]);
-            end
+        end
+        always_ff @(posedge ft601_clk) begin
+            ft601_tx_timeout[i]     <= tx_timeout[i];
+            ft601_tx_enough_data[i] <= fifo_tx_data_size > TX_FIFO_TH;
         end
     end
 
