@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::env;
 use rtcl_d3xx::*;
 use std::time::Duration;
 use opencv::prelude::*;
@@ -12,7 +13,50 @@ const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
 
 type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
+struct CameraConfig {
+    width: u16,
+    height: u16,
+    fr_length0: u16,
+    exposure0: u16,
+}
+
+fn parse_args() -> Result<CameraConfig, Box<dyn Error>> {
+    let mut config = CameraConfig {
+        width: 640 + 16 * 2,
+        height: 480 + 16 * 2,
+        fr_length0: 16000,
+        exposure0: 15000,
+    };
+    let mut args = env::args().skip(1);
+
+    while let Some(arg) = args.next() {
+        if arg == "-h" || arg == "--help" {
+            println!("Usage: p3s7 [--width N] [--height N] [--fr-length0 N] [--exposure0 N]");
+            std::process::exit(0);
+        }
+
+        let (name, value) = if let Some((name, value)) = arg.split_once('=') {
+            (name, value.to_owned())
+        } else {
+            let name = arg.as_str();
+            let value = args.next().ok_or_else(|| format!("missing value for {name}"))?;
+            (name, value)
+        };
+
+        match name {
+            "--width" => config.width = value.parse()?,
+            "--height" => config.height = value.parse()?,
+            "--fr-length0" => config.fr_length0 = value.parse()?,
+            "--exposure0" => config.exposure0 = value.parse()?,
+            _ => return Err(format!("unknown option: {name}").into()),
+        }
+    }
+
+    Ok(config)
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
+    let config = parse_args()?;
     println!("FT601 test");
 
     // OpenDevice
@@ -63,7 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // カメラOFF
     println!("camera power off");
     unsafe {
-//      ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
         std::thread::sleep(Duration::from_millis(100));
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
         std::thread::sleep(Duration::from_millis(100));
@@ -75,7 +119,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 1);
         std::thread::sleep(Duration::from_millis(100));
         ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 1);
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(500));
     }
 
     const P3S7_DEVADR: u8 =     0x10;    // 7bit address
@@ -88,18 +132,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let module_ver = cam.module_version()?;
     println!("module_ver : 0x{:04x}", module_ver);
 
-    /*
-    // キー入力待ち
-    print!("Press Enter to start...");
-    std::io::stdout().flush()?;
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    */
-
-//    let width  = 416;
-//    let height = 416;
+    /* 1000fps
     let width  = 256;
     let height = 256;
+    let fr_length0 = 800;
+    let exposure0 = 700;
+    */
+
+    let width = config.width;
+    let height = config.height;
+    let fr_length0 = config.fr_length0;
+    let exposure0 = config.exposure0;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
@@ -140,8 +183,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_mult_timer0(72)?;
 //  cam.set_fr_length0(33000)?;
 //  cam.set_exposure0(30000)?;
-    cam.set_fr_length0(800)?;
-    cam.set_exposure0(700)?;
+    cam.set_fr_length0(fr_length0)?;
+    cam.set_exposure0(exposure0)?;
 
     cam.set_slave_mode(false)?;
     cam.set_triggered_mode(false)?;
@@ -280,6 +323,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("End Test");
 
+    // カメラOFF
+    println!("camera power off");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
+        std::thread::sleep(Duration::from_millis(100));
+    }
 
     Ok(())
 }
