@@ -169,7 +169,6 @@ module ft601_multi_ch_mode
 
         // TX FIFO
         if ( FIX_SIZE_TX[i] ) begin : smoother
-
             jelly3_axi4s_if
                     #(
                         .USE_STRB   (s_axi4s_tx[i].USE_STRB ),
@@ -182,6 +181,7 @@ module ft601_multi_ch_mode
                         .aclken     (1'b1                   )
                     );
             
+            logic  [TX_FIFO_PTR_BITS[i]:0]  fifo_tx_data_size;
             jelly3_axi4s_packet_smoother
                     #(
                         .ASYNC          (ASYNC              ),
@@ -192,7 +192,10 @@ module ft601_multi_ch_mode
                 u_axi4s_packet_smoother
                     (
                         .s_axi4s        (s_axi4s_tx[i]      ),
-                        .m_axi4s        (axi4s_smoother     )
+                        .s_free_size    (                   ),
+
+                        .m_axi4s        (axi4s_smoother     ),
+                        .m_data_size    (fifo_tx_data_size  )
                     );
 
             assign ft601_tx_fifo_strb[i]  = axi4s_smoother.USE_STRB ? axi4s_smoother.tstrb : '1;
@@ -200,12 +203,10 @@ module ft601_multi_ch_mode
             assign ft601_tx_fifo_valid[i] = axi4s_smoother.tvalid   ;
             assign axi4s_smoother.tready  = ft601_tx_fifo_ready[i]  ;
 
-            assign ft601_tx_enough_data[i] = axi4s_smoother.tvalid  ;
             always_ff @(posedge ft601_clk) begin
+                ft601_tx_enough_data[i] <= fifo_tx_data_size >= (TX_FIFO_PTR_BITS[i]+1)'(TX_THRESHOLD[i]);
                 ft601_tx_timeout[i]     <= tx_timeout[i];
             end
-
-
         end
         else begin : fifo
             logic   [3:0]                   cmd_tx_fifo_strb    ;
