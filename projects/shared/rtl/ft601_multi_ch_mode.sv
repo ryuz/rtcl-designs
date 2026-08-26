@@ -172,7 +172,7 @@ module ft601_multi_ch_mode
 
         always_ff @(posedge ft601_clk) begin
             ft601_rx_fifo_almost_full[i]  <= fifo_rx_free_size < 64;
-            ft601_rx_fifo_enough_space[i] <= (fifo_rx_free_size > RX_FIFO_TH);
+            ft601_rx_fifo_enough_space[i] <= (fifo_rx_free_size >= RX_FIFO_TH);
         end
 
         // TX FIFO
@@ -210,7 +210,6 @@ module ft601_multi_ch_mode
             assign ft601_tx_fifo_data[i]  = axi4s_smoother.tdata    ;
             assign ft601_tx_fifo_valid[i] = axi4s_smoother.tvalid   ;
             assign axi4s_smoother.tready  = ft601_tx_fifo_ready[i]  ;
-
         end
         else begin : fifo
             logic   [3:0]       cmd_tx_fifo_strb    ;
@@ -258,7 +257,7 @@ module ft601_multi_ch_mode
         end
         always_ff @(posedge ft601_clk) begin
             ft601_tx_timeout[i]     <= tx_timeout[i];
-            ft601_tx_enough_data[i] <= fifo_tx_data_size > TX_FIFO_TH;
+            ft601_tx_enough_data[i] <= ft601_tx_fifo_valid[i] && (fifo_tx_data_size >= TX_FIFO_TH);
         end
     end
 

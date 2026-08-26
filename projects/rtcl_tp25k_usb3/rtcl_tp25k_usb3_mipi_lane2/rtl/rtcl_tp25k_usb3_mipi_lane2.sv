@@ -391,7 +391,7 @@ module rtcl_tp25k_usb3_mipi_lane2
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
-    assign ft601_tx_timeout[1] = 1000     ;
+    assign ft601_tx_timeout[1] = 2000     ;
 
     logic   [1:0][31:0] mon_ft601_rx_counter;
     logic   [1:0][31:0] mon_ft601_tx_counter;
@@ -626,8 +626,6 @@ module rtcl_tp25k_usb3_mipi_lane2
     gowin_dphy_lane2_to_fifo32
         u_gowin_dphy_lane2_to_fifo32
             (
-//              .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-//              .dphy_valid (dphy_byte_ready                ),
                 .dphy_data  (dphy_bytes_data                ),
                 .dphy_valid (dphy_bytes_valid               ),
                 .data_type  (8'h2b                          ),
