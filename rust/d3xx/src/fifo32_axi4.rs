@@ -36,7 +36,6 @@ unsafe impl Sync for D3xxFifo32Axi4sRx {}
 pub struct D3xxFifo32Axi4sTx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
     wr_packet_tx: mpsc::Sender<Vec<u8>>,
-    wr_stop_rx: mpsc::Sender<()>,
 }
 
 unsafe impl Send for D3xxFifo32Axi4sTx {}
@@ -70,7 +69,6 @@ impl D3xxFifo32 {
         let (wr_axi4s_rx, rd_axi4s_rx) = mpsc::channel::<Axi4Stream>();
         let (wr_stop_rx, rd_stop_rx) = mpsc::channel::<()>();
         let (wr_packet_tx, rd_packet_tx) = mpsc::channel::<Vec<u8>>();
-        let (wr_stop_tx, rd_stop_tx) = mpsc::channel::<()>();
         
         let thread_handle_rx = std::thread::spawn(move || {
             if let Err(err) = recv_axi4s_thread(axi4s_reader, wr_axi4s_rx, rd_stop_rx) {
@@ -79,7 +77,7 @@ impl D3xxFifo32 {
         });
 
         let thread_handle_tx = std::thread::spawn(move || {
-            if let Err(err) = send_axi4s_thread(axi4s_writer, rd_packet_tx, rd_stop_tx) {
+            if let Err(err) = send_axi4s_thread(axi4s_writer, rd_packet_tx) {
                 eprintln!("send_axi4s_thread error: {}", err);
             }
         });
@@ -96,7 +94,6 @@ impl D3xxFifo32 {
         let axi4s_tx = D3xxFifo32Axi4sTx {
             thread_handle: Some(thread_handle_tx),
             wr_packet_tx: wr_packet_tx,
-            wr_stop_rx: wr_stop_tx,
         };
 
         Ok((axi4l, axi4s_rx, axi4s_tx))
@@ -408,7 +405,6 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
 fn send_axi4s_thread(
     writer: D3xxWriter,
     rd_packet_tx: mpsc::Receiver<Vec<u8>>,
-    rd_stop_rx: mpsc::Receiver<()>,
 ) -> Result<(), Box<dyn Error>> {
     const OVERLAPS: usize = 8;
     const WRITE_UNIT: usize = 2048;
@@ -433,6 +429,10 @@ fn send_axi4s_thread(
     loop {
         while !stop {
             match rd_packet_tx.try_recv() {
+                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => {
+                    stop = true;
+                    break;
+                }
                 Ok(packet) => fifo.extend(packet),
                 Err(mpsc::TryRecvError::Empty) => break,
                 Err(mpsc::TryRecvError::Disconnected) => {
@@ -440,10 +440,6 @@ fn send_axi4s_thread(
                     break;
                 }
             }
-        }
-
-        if !stop && rd_stop_rx.try_recv().is_ok() {
-            stop = true;
         }
 
         while pending_count < OVERLAPS && !fifo.is_empty() {
@@ -471,6 +467,7 @@ fn send_axi4s_thread(
 
         if pending_count == 0 {
             match rd_packet_tx.recv_timeout(Duration::from_millis(1)) {
+                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => stop = true,
                 Ok(packet) => fifo.extend(packet),
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => stop = true,
@@ -514,7 +511,7 @@ impl Drop for D3xxFifo32Axi4sRx {
 
 impl Drop for D3xxFifo32Axi4sTx {
     fn drop(&mut self) {
-        let _ = self.wr_stop_rx.send(());  // 送信スレッドに停止を通知
+        let _ = self.wr_packet_tx.send(vec![OPCODE_THREAD_STOP]);
         if let Some(handle) = self.thread_handle.take() {
             let _ = handle.join();
         }
