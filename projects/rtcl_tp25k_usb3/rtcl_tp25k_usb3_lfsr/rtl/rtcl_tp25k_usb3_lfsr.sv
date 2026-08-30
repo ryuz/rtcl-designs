@@ -200,7 +200,7 @@ module rtcl_tp25k_usb3_lfsr
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
                 .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
-                .FIX_SIZE_TX        (2'b10                      )
+                .FIX_SIZE_TX        (2'b00                      )
             )
         u_ft601_multi_ch_mode
             (
@@ -425,7 +425,7 @@ module rtcl_tp25k_usb3_lfsr
                 .ASYNC              (1                  ),
                 .DATA_BUF_SIZE      (512                ),
                 .CMD_BUF_SIZE       (64                 ),
-                .MAX_LEN            (512                )
+                .MAX_LEN            (512-1              )
             )
         u_fifo32_cmd_axi4s_tx
             (

@@ -45,7 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("LFSR_RX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_RX_CORE_ID  ) as u32)?);
     println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
 
-    let data_size : u32 = 16*1024*1024;
+
+    let packet_size : u32 = 512 - 1;
+    let data_size : u32 = 16*1024*packet_size;
     let lfsr_seed : u32 = 0x12345678;
 
 
@@ -53,78 +55,86 @@ fn main() -> Result<(), Box<dyn Error>> {
     //  Receive Test
     // -----------------------------
 
-    // FPGA側の送信設定
-    axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,    lfsr_seed, 0xf)?;
-    axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
+    if false {
+        // FPGA側の送信設定
+        axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,    lfsr_seed, 0xf)?;
+        axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
 
-    let recv_start = Instant::now();    // 受信時間計測開始
-    axi4l.write_axi4l(REG_LFSR_TX_START     ,            1, 0xf)?;
-    let recv_stream = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
-//  let recv_stream = axi4s_rx.recv_axi4s(data_size as usize)?;
-    let recv_elapsed = recv_start.elapsed();    // 受信時間計測終了
+        let recv_start = Instant::now();            // 受信時間計測開始
+        axi4l.write_axi4l(REG_LFSR_TX_START     ,            1, 0xf)?;
+        let recv_stream = axi4s_rx.recv_axi4s_timeout(Duration::from_millis(10000))?;
+    //  let recv_stream = axi4s_rx.recv_axi4s(data_size as usize)?;
+        let recv_elapsed = recv_start.elapsed();    // 受信時間計測終了
 
-    let words_count = recv_stream.tdata.len() / 4;
+        let words_count = recv_stream.tdata.len() / 4;
 
-    // Check LFSR sequence corruption
-    let check = check_lfsr_words(&recv_stream, lfsr_seed);
+        // Check LFSR sequence corruption
+        let check = check_lfsr_words(&recv_stream, lfsr_seed);
 
-    println!(
-        "Recv done: bytes={}, words={}, elapsed={:.3}s",
-        recv_stream.tdata.len(),
-        words_count,
-        recv_elapsed.as_secs_f64()
-    );
-
-    let recv_seconds = recv_elapsed.as_secs_f64();
-    if recv_seconds > 0.0 {
-        let recv_byte_per_sec = recv_stream.tdata.len() as f64 / recv_seconds;
-        let recv_mbyte_per_sec = recv_byte_per_sec / 1_000_000.0;
-        let recv_mbits_per_sec = (recv_byte_per_sec * 8.0) / 1_000_000.0;
         println!(
-            "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
-            recv_mbyte_per_sec, recv_mbits_per_sec
+            "Recv done: bytes={}, words={}, elapsed={:.3}s",
+            recv_stream.tdata.len(),
+            words_count,
+            recv_elapsed.as_secs_f64()
         );
-    }
 
-    if check.error_count == 0 {
-        println!("LFSR check OK: no mismatch");
-    } else if let Some((idx, exp, act)) = check.first_error {
-        println!(
-            "LFSR check NG: mismatches={}, first at [{}] expected=0x{:08x}, actual=0x{:08x}",
-            check.error_count, idx, exp, act
-        );
-    } else {
-        println!("LFSR check NG: mismatches={}", check.error_count);
-    }
+        let recv_seconds = recv_elapsed.as_secs_f64();
+        if recv_seconds > 0.0 {
+            let recv_byte_per_sec = recv_stream.tdata.len() as f64 / recv_seconds;
+            let recv_mbyte_per_sec = recv_byte_per_sec / 1_000_000.0;
+            let recv_mbits_per_sec = (recv_byte_per_sec * 8.0) / 1_000_000.0;
+            println!(
+                "FPGA => PC throughput: {:.3} MByte/s, {:.3} Mbits/s",
+                recv_mbyte_per_sec, recv_mbits_per_sec
+            );
+        }
 
+        if check.error_count == 0 {
+            println!("LFSR check OK: no mismatch");
+        } else if let Some((idx, exp, act)) = check.first_error {
+            println!(
+                "LFSR check NG: mismatches={}, first at [{}] expected=0x{:08x}, actual=0x{:08x}",
+                check.error_count, idx, exp, act
+            );
+        } else {
+            println!("LFSR check NG: mismatches={}", check.error_count);
+        }
+    }
+    
 
     // -----------------------------
     //  Send Test
     // -----------------------------
 
-    // FPGA側受信準備
-    axi4l.write_axi4l(REG_LFSR_RX_CLEAR, 1, 0xf)?;
-    axi4l.write_axi4l(REG_LFSR_RX_LFSR_VALUE, lfsr_seed, 0xf)?;
+    if true {
 
-    let send_start = Instant::now();  // 受信時間計測開始
-    axi4s_tx.send_axi4s(&recv_stream)?;
-    while axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)? < words_count as u32 {
-    }
-    let send_elapsed = send_start.elapsed();
-    
-    let rx_count = axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)?;
-    let rx_error = axi4l.read_axi4l(REG_LFSR_RX_LFSR_ERROR)?;
-    println!("FPGA RX count: {}, RX error: {}", rx_count, rx_error);
+        // FPGA側受信準備
+        axi4l.write_axi4l(REG_LFSR_RX_CLEAR, 1, 0xf)?;
+        axi4l.write_axi4l(REG_LFSR_RX_LFSR_VALUE, lfsr_seed, 0xf)?;
 
-    let send_seconds = send_elapsed.as_secs_f64();
-    if send_seconds > 0.0 {
-        let send_byte_per_sec = recv_stream.tdata.len() as f64 / send_seconds;
-        let send_mbyte_per_sec = send_byte_per_sec / 1_000_000.0;
-        let send_mbits_per_sec = (send_byte_per_sec * 8.0) / 1_000_000.0;
-        println!(
-            "PC => FPGA throughput: {:.3} MByte/s, {:.3} Mbits/s",
-            send_mbyte_per_sec, send_mbits_per_sec
-        );
+        let send_stream = make_lfsr_words(data_size as usize, lfsr_seed);
+        let words_count = send_stream.tdata.len() / 4;
+
+        let send_start = Instant::now();  // 受信時間計測開始
+        axi4s_tx.send_axi4s(&send_stream)?;
+        while axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)? < words_count as u32 {
+        }
+        let send_elapsed = send_start.elapsed();
+        
+        let rx_count = axi4l.read_axi4l(REG_LFSR_RX_RX_COUNT)?;
+        let rx_error = axi4l.read_axi4l(REG_LFSR_RX_LFSR_ERROR)?;
+        println!("FPGA RX count: {}, RX error: {}", rx_count, rx_error);
+
+        let send_seconds = send_elapsed.as_secs_f64();
+        if send_seconds > 0.0 {
+            let send_byte_per_sec = send_stream.tdata.len() as f64 / send_seconds;
+            let send_mbyte_per_sec = send_byte_per_sec / 1_000_000.0;
+            let send_mbits_per_sec = (send_byte_per_sec * 8.0) / 1_000_000.0;
+            println!(
+                "PC => FPGA throughput: {:.3} MByte/s, {:.3} Mbits/s",
+                send_mbyte_per_sec, send_mbits_per_sec
+            );
+        }
     }
 
     println!("End Test");
@@ -139,6 +149,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn calc_lfsr(lfsr: u32) -> u32 {
     let bit = ((lfsr >> 0) ^ (lfsr >> 1) ^ (lfsr >> 21) ^ (lfsr >> 31)) & 1;
     (lfsr >> 1) | (bit << 31)
+}
+
+
+fn make_lfsr_words(size: usize, seed: u32) -> Axi4Stream {
+    let words_count = size / 4;
+    let mut tdata = Vec::with_capacity(words_count * 4);
+    let mut value = seed;
+
+    for _ in 0..words_count {
+        tdata.extend_from_slice(&value.to_le_bytes());
+        value = calc_lfsr(value);
+    }
+
+    Axi4Stream { tuser: 0, tdata }
 }
 
 
