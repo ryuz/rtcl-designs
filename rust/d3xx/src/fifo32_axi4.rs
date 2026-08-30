@@ -45,11 +45,12 @@ impl D3xxFifo32 {
     pub fn new(dev_index: usize) -> Result<(D3xxFifo32Axi4l, D3xxFifo32Axi4sRx, D3xxFifo32Axi4sTx), Box<dyn Error>> {
         #[cfg(target_os = "linux")]
         {
+            // FT_Create 前に設定必須。スレッドセーフ転送のままだと非同期書き込みが直列化される
             let mut transfer_conf = FT_TRANSFER_CONF::default();
-            transfer_conf.pipe[0].dwURBBufferSize = 1024;
-            transfer_conf.pipe[1].dwURBBufferSize = 1024;
-//          D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
-//          D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+            transfer_conf.pipe[0].fNonThreadSafeTransfer = 1;
+            transfer_conf.pipe[1].fNonThreadSafeTransfer = 1;
+            D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+            D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
         }
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
@@ -403,98 +404,93 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
 */
 
 fn send_axi4s_thread(
-    writer: D3xxWriter,
+    mut writer: D3xxWriter,
     rd_packet_tx: mpsc::Receiver<Vec<u8>>,
 ) -> Result<(), Box<dyn Error>> {
     const OVERLAPS: usize = 8;
-    const WRITE_UNIT: usize = 2048;
-//  const WRITE_UNIT: usize = 0x10000;
+//  const WRITE_UNIT: usize = 2048;
+    const WRITE_UNIT: usize = 0x10000;
 
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffers = vec![vec![0u8; WRITE_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
-    let mut pending = vec![false; OVERLAPS];
-    let mut pending_count = 0usize;
-    let mut issue_index = 0usize;
-    let mut wait_index = 0usize;
+    let mut pending_count = 0usize;     // オーバーラップ発行中の個数
+    let mut issue_index = 0usize;       // 次に発行するスロット
+    let mut wait_index = 0usize;        // 次に完了を待つスロット
     let mut fifo = VecDeque::<u8>::new();
     let mut stop = false;
-
+   
     println!("start send_thread"); std::io::stdout().flush().ok();
+
+//  writer.set_timeout(10)?;
+    writer.set_stream_pipe(WRITE_UNIT)?;    // stream size は毎回の転送サイズと一致させる
 
     for i in 0..OVERLAPS {
         writer.initialize_overlapped(&mut overlapped[i])?;
     }
 
     loop {
-        while !stop {
-            match rd_packet_tx.try_recv() {
-                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => {
-                    stop = true;
-                    break;
-                }
+        // 送信データ受信 (fifo が空で継続中のときのみブロックして待つ)
+        if !stop && fifo.is_empty() {
+            match rd_packet_tx.recv() {
+                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => stop = true,
                 Ok(packet) => fifo.extend(packet),
-                Err(mpsc::TryRecvError::Empty) => break,
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    stop = true;
-                    break;
-                }
+                Err(_) => stop = true,
             }
         }
 
-        while pending_count < OVERLAPS && !fifo.is_empty() {
-            while pending[issue_index] {
-                issue_index = (issue_index + 1) % OVERLAPS;
+        // 後続が溜まっていれば纏めて取り込む
+        while !stop {
+            match rd_packet_tx.try_recv() {
+                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => stop = true,
+                Ok(packet) => fifo.extend(packet),
+                Err(mpsc::TryRecvError::Empty) => break,
+                Err(mpsc::TryRecvError::Disconnected) => stop = true,
             }
+        }
 
+        // 発行順に完了チェック (待たない)
+        while pending_count > 0 {
+            if writer.get_async_result(&mut overlapped[wait_index], &mut bytes_transferred[wait_index], false).is_err() {
+                break;
+            }
+            wait_index = (wait_index + 1) % OVERLAPS;
+            pending_count -= 1;
+        }
+
+        // 空きがある分だけオーバーラップ転送を発行
+        while pending_count < OVERLAPS && !fifo.is_empty() {
             let slot = issue_index;
             let tx_size = fifo.len().min(WRITE_UNIT);
-            let tx_buf = &mut buffers[slot];
-            for i in 0..tx_size {
-                tx_buf[i] = fifo.pop_front().expect("fifo should have enough bytes");
+            let (front, back) = fifo.as_slices();
+            let front_len = front.len().min(tx_size);
+            buffers[slot][..front_len].copy_from_slice(&front[..front_len]);
+            if front_len < tx_size {
+                buffers[slot][front_len..tx_size].copy_from_slice(&back[..tx_size - front_len]);
             }
-
-            bytes_transferred[slot] = tx_size as u32;
-            writer.write_async(&tx_buf[..tx_size], &mut bytes_transferred[slot], &mut overlapped[slot])?;
-            pending[slot] = true;
-            pending_count += 1;
+            fifo.drain(..tx_size);
+            writer.write_async(&buffers[slot][..tx_size], &mut bytes_transferred[slot], &mut overlapped[slot])?;
             issue_index = (issue_index + 1) % OVERLAPS;
+            pending_count += 1;
         }
 
         if stop && fifo.is_empty() && pending_count == 0 {
             break;
         }
 
-        if pending_count == 0 {
-            match rd_packet_tx.recv_timeout(Duration::from_millis(1)) {
-                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => stop = true,
-                Ok(packet) => fifo.extend(packet),
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
-                Err(mpsc::RecvTimeoutError::Disconnected) => stop = true,
-            }
-            continue;
-        }
-
-        while !pending[wait_index] {
+        // これ以上発行できない場合のみ、1つだけ完了を待つ
+        if pending_count > 0 && (pending_count == OVERLAPS || (stop && fifo.is_empty())) {
+            writer.get_async_result(&mut overlapped[wait_index], &mut bytes_transferred[wait_index], true)?;
             wait_index = (wait_index + 1) % OVERLAPS;
-        }
-
-        let slot = wait_index;
-        if writer.get_async_result(&mut overlapped[slot], &mut bytes_transferred[slot], false).is_ok() {
-            let tx_size = bytes_transferred[slot] as usize;
-            if tx_size > WRITE_UNIT {
-                return Err(format!("invalid async tx size: {}", tx_size).into());
-            }
-
-            pending[slot] = false;
             pending_count -= 1;
-            wait_index = (wait_index + 1) % OVERLAPS;
         }
     }
 
     for i in 0..OVERLAPS {
         let _ = writer.release_overlapped(&mut overlapped[i]);
     }
+
+    println!("send_thread: exit");
 
     Ok(())
 }

@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //  Receive Test
     // -----------------------------
 
-    if false {
+    if true {
         // FPGA側の送信設定
         axi4l.write_axi4l(REG_LFSR_TX_LFSR_VALUE,    lfsr_seed, 0xf)?;
         axi4l.write_axi4l(REG_LFSR_TX_TX_LEN    ,    data_size, 0xf)?;
