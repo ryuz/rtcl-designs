@@ -160,7 +160,7 @@ impl D3xxFifo32DirectAxi4sRx {
         }
 
         let request_size = 4 + size;
-        let mut rx_data = self.axi4s_reader.read_until_size(request_size, 1000)?;
+        let mut rx_data = self.axi4s_reader.read_with_timeout(request_size, std::time::Duration::from_secs(1))?;
         while rx_data.len() < request_size {
             let remain_size = request_size - rx_data.len();
             let mut remain_data = self.axi4s_reader.read(remain_size)?;
@@ -253,7 +253,7 @@ impl D3xxFifo32DirectAxi4sRx {
 
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
 //      self.axi4s_reader.set_timeout(5000)?;
-        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 1000)?;
+        let rx_data = self.axi4s_reader.read_with_timeout((width + 4) * height, std::time::Duration::from_secs(1))?;
 //      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
 //      return Ok(vec![0u8; width * height]);
 //      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
