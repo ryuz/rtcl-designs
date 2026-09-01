@@ -9,6 +9,7 @@
 ```bash
 pip install maturin
 cd python/rtcl-d3xx
+rm -rf target/wheels                        # 古いビルド失敗時の不完全な .whl が残っていると誤検出されるため
 maturin build --release --skip-auditwheel   # patchelf があれば --skip-auditwheel 不要
 pip install target/wheels/rtcl_d3xx-*.whl
 # 開発時は: maturin develop --release
