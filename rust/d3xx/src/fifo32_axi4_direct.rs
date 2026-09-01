@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use crate::d3xx_device::*;
-#[cfg(target_os = "linux")]
-use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
+// #[cfg(target_os = "linux")]
+// use crate::ffi::FT_TRANSFER_CONF;
 
 use super::*;
 
@@ -33,14 +33,14 @@ unsafe impl Sync for D3xxFifo32DirectAxi4sTx {}
 
 impl D3xxFifo32Direct {
     pub fn new(dev_index: usize) -> Result<(D3xxFifo32DirectAxi4l, D3xxFifo32DirectAxi4sRx, D3xxFifo32DirectAxi4sTx), Box<dyn Error>> {
-        #[cfg(target_os = "linux")]
-        {
-            let mut transfer_conf = FT_TRANSFER_CONF::default();
-//            transfer_conf.pipe[0].dwURBBufferSize = 1024;
-//            transfer_conf.pipe[1].dwURBBufferSize = 1024;
-//          D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
-//          D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
-        }
+        // #[cfg(target_os = "linux")]
+        // {
+        //     let mut transfer_conf = FT_TRANSFER_CONF::default();
+        //     transfer_conf.pipe[0].dwURBBufferSize = 1024;
+        //     transfer_conf.pipe[1].dwURBBufferSize = 1024;
+        //     D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+        //     D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+        // }
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
@@ -154,7 +154,7 @@ impl D3xxFifo32DirectAxi4sRx {
         self.axi4s_reader.set_timeout(timeout_us)
     }
 
-    pub fn recv_axi4s(&mut self, size: usize) -> Result<AxiStream, Box<dyn Error>> {
+    pub fn recv_axi4s_exact(&mut self, size: usize) -> Result<AxiStream, Box<dyn Error>> {
         if size == 0 {
             return Err("AXI4S requested size must be > 0".into());
         }
@@ -184,8 +184,8 @@ impl D3xxFifo32DirectAxi4sRx {
         parse_axi4s_packet(&rx_data, size)
     }
 
-    pub fn recv_data(&mut self, size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        let stream = self.recv_axi4s(size)?;
+    pub fn recv_data_exact(&mut self, size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let stream = self.recv_axi4s_exact(size)?;
         Ok(stream.tdata)
     }
 

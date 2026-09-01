@@ -9,7 +9,7 @@ const OPCODE_THREAD_STOP: u8 = 0xff;
 
 use crate::d3xx_device::*;
 #[cfg(target_os = "linux")]
-use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
+use crate::ffi::FT_TRANSFER_CONF;
 
 use super::*;
 
@@ -30,8 +30,8 @@ pub struct D3xxFifo32Axi4sRx {
     wr_stop_rx: mpsc::Sender<()>,
 }
 
-unsafe impl Send for D3xxFifo32Axi4sRx {}
-unsafe impl Sync for D3xxFifo32Axi4sRx {}
+//unsafe impl Send for D3xxFifo32Axi4sRx {}
+//unsafe impl Sync for D3xxFifo32Axi4sRx {}
 
 pub struct D3xxFifo32Axi4sTx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
@@ -55,7 +55,7 @@ impl D3xxFifo32 {
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
-        let [axi4l_writer, mut axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
+        let [axi4l_writer, axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
             Ok(writers) => writers,
             Err(_) => panic!("Expected 2 writers"),
         };
@@ -229,7 +229,6 @@ impl D3xxFifo32Axi4sTx {
 }
 
 
-//#[cfg(target_os = "windows")]
 fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Stream>, rd_stop_rx: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
     const OVERLAPS : usize = 8;     // 8以上に増やすとLinuxで発行待ちが起こる？
