@@ -183,6 +183,9 @@ module rtcl_tp25k_usb3_lfsr
     assign ft601_tx_timeout[0] = 0        ;
     assign ft601_tx_timeout[1] = 1000     ;
 
+    logic               rx_error            ;
+    logic               tx_error            ;
+
     logic   [1:0][31:0] mon_ft601_rx_counter;
     logic   [1:0][31:0] mon_ft601_tx_counter;
     logic               mon_ft601_wr_n      ;
@@ -199,7 +202,7 @@ module rtcl_tp25k_usb3_lfsr
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
                 .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
-                .FIX_SIZE_TX        (2'b00                      )
+                .FIX_SIZE_TX        (2'b10                      )
             )
         u_ft601_multi_ch_mode
             (
@@ -221,6 +224,9 @@ module rtcl_tp25k_usb3_lfsr
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
+
+                .rx_error           (rx_error                   ),
+                .tx_error           (tx_error                   ),
 
                 .mon_rx_counter     (mon_ft601_rx_counter       ),
                 .mon_tx_counter     (mon_ft601_tx_counter       ),
@@ -464,8 +470,8 @@ module rtcl_tp25k_usb3_lfsr
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = pkt_error       ;
-    assign led[3] = lfsr_rx_error   ;
+    assign led[2] = rx_error | pkt_error    ;
+    assign led[3] = tx_error | lfsr_rx_error;
 
 
     // --------------------------------

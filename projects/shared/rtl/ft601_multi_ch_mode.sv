@@ -45,6 +45,9 @@ module ft601_multi_ch_mode
             jelly3_axi4s_if.s                           s_axi4s_tx  [CHANNELS]  ,
             jelly3_axi4s_if.m                           m_axi4s_rx  [CHANNELS]  ,
 
+            output  var logic                           rx_error                ,
+            output  var logic                           tx_error                ,
+
             output  var counter_t   [CHANNELS-1:0]      mon_rx_counter          ,
             output  var counter_t   [CHANNELS-1:0]      mon_tx_counter          ,
             output  var logic                           mon_wr_n                ,
@@ -66,6 +69,7 @@ module ft601_multi_ch_mode
     be_t        [CHANNELS-1:0]  ft601_rx_fifo_strb          ;
     data_t      [CHANNELS-1:0]  ft601_rx_fifo_data          ;
     logic       [CHANNELS-1:0]  ft601_rx_fifo_valid         ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_ready         ;
     
     ft601_multi_ch_mode_transceiver
             #(
@@ -103,6 +107,10 @@ module ft601_multi_ch_mode
                 .m_fifo_strb        (ft601_rx_fifo_strb         ),
                 .m_fifo_data        (ft601_rx_fifo_data         ),
                 .m_fifo_valid       (ft601_rx_fifo_valid        ),
+                .m_fifo_ready       (ft601_rx_fifo_ready        ),
+
+                .rx_error           (rx_error                   ),
+                .tx_error           (tx_error                   ),
 
                 .mon_rx_counter     (mon_rx_counter             ),
                 .mon_tx_counter     (mon_tx_counter             ),
@@ -155,7 +163,7 @@ module ft601_multi_ch_mode
                                         ft601_rx_fifo_data[i]
                                     }),
                     .s_valid        (ft601_rx_fifo_valid[i] ),
-                    .s_ready        (),
+                    .s_ready        (ft601_rx_fifo_ready[i] ),
                     .s_free_size    (fifo_rx_free_size      ),
 
                     .m_reset        (~m_axi4s_rx[i].aresetn ),

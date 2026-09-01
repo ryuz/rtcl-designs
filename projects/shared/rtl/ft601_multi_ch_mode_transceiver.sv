@@ -54,6 +54,10 @@ module ft601_multi_ch_mode_transceiver
             output  var strb_t      [CHANNELS-1:0]  m_fifo_strb         ,
             output  var data_t      [CHANNELS-1:0]  m_fifo_data         ,
             output  var logic       [CHANNELS-1:0]  m_fifo_valid        ,
+            input   var logic       [CHANNELS-1:0]  m_fifo_ready        ,
+
+            output  var logic                       rx_error            ,
+            output  var logic                       tx_error            ,
 
             output  var mon_count_t [CHANNELS-1:0]  mon_rx_counter      ,
             output  var mon_count_t [CHANNELS-1:0]  mon_tx_counter      ,
@@ -339,6 +343,31 @@ module ft601_multi_ch_mode_transceiver
     assign ft601_data_t = reg_ft601_data_t  ;
 
 
+    // error check
+    logic   wr_state;
+    always_ff @( posedge clk ) begin
+        if ( reset ) begin
+            rx_error <= 1'b0;
+            wr_state <= 1'b0;
+            tx_error <= 1'b0;
+        end
+        else begin
+            // read check
+            for ( int i = 0; i < CHANNELS; i++ ) begin
+                if (  m_fifo_valid[i] && !m_fifo_ready[i] ) begin
+                    rx_error <= 1'b1;
+                end
+            end
+
+            // write check
+            wr_state <= (state == WRITE_DATA);
+            if ( wr_state && ~mon_ft601_wr_n && reg_ft601_rxf_n ) begin
+                tx_error <= 1'b1;
+            end
+        end
+    end
+
+    // monitor
     always_ff @( posedge clk ) begin
         if ( reset ) begin
             mon_tx_counter <= '0;
