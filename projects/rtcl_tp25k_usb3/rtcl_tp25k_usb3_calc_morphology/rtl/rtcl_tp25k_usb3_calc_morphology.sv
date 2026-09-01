@@ -179,7 +179,7 @@ module rtcl_tp25k_usb3_calc_morphology
     localparam  type    ft601_timeout_t            = logic [FT601_TIMEOUT_BITS-1:0] ;
     parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,   11}                   ;
     parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   11}                   ;
-    parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
+    parameter   int     FT601_RX_THRESHOLD     [2] = '{256, 1024}                   ;
     parameter   int     FT601_TX_THRESHOLD     [2] = '{  1, 1024}                   ;
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
