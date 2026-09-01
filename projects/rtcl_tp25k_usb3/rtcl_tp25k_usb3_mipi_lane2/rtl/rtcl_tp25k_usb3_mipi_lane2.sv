@@ -688,7 +688,7 @@ module rtcl_tp25k_usb3_mipi_lane2
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .MAX_LEN        (512                )
+                .MAX_LEN        (512-1              )
             )
         u_fifo32_cmd_axi4s_tx
             (

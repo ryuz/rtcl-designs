@@ -174,13 +174,17 @@ module rtcl_tp25k_usb3_calc_morphology
             );
 
 
-    localparam  int  FT601_CHANNELS     = 2;
-    localparam  int  FT601_TIMEOUT_BITS = 16;
-    localparam  type ft601_timeout_t    = logic [FT601_TIMEOUT_BITS-1:0];
+    localparam  int     FT601_CHANNELS             = 2                              ;
+    localparam  int     FT601_TIMEOUT_BITS         = 16                             ;
+    localparam  type    ft601_timeout_t            = logic [FT601_TIMEOUT_BITS-1:0] ;
+    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,   11}                   ;
+    parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   11}                   ;
+    parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
+    parameter   int     FT601_TX_THRESHOLD     [2] = '{  1, 1024}                   ;
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
-    assign ft601_tx_timeout[1] = 1000     ;
+    assign ft601_tx_timeout[1] = 2000     ;
 
     logic   [1:0][31:0] mon_ft601_rx_counter;
     logic   [1:0][31:0] mon_ft601_tx_counter;
@@ -194,10 +198,11 @@ module rtcl_tp25k_usb3_calc_morphology
             #(
                 .CHANNELS           (FT601_CHANNELS             ),
                 .TIMEOUT_BITS       (FT601_TIMEOUT_BITS         ),
-                .RX_FIFO_PTR_BITS   ('{  9,   11}               ),
-                .TX_FIFO_PTR_BITS   ('{  9,   11}               ),
-                .RX_THRESHOLD       ('{256, 1024}               ),
-                .TX_THRESHOLD       ('{  0, 1024}               )
+                .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
+                .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
+                .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
+                .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
+                .FIX_SIZE_TX        (2'b00                      )
             )
         u_ft601_multi_ch_mode
             (
@@ -392,7 +397,7 @@ module rtcl_tp25k_usb3_calc_morphology
     fifo32_cmd_axi4s_tx
             #(
                 .ASYNC          (1                  ),
-                .MAX_LEN        (512                )
+                .MAX_LEN        (512-1              )
             )
         u_fifo32_cmd_axi4s_tx
             (
