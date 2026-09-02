@@ -44,6 +44,7 @@ module ft601_multi_ch_mode_transceiver
 
             input   var timeout_t   [CHANNELS-1:0]  s_fifo_timeout      ,
             input   var logic       [CHANNELS-1:0]  s_fifo_enough_data  ,
+            input   var logic       [CHANNELS-1:0]  s_fifo_last         ,
             input   var strb_t      [CHANNELS-1:0]  s_fifo_strb         ,
             input   var data_t      [CHANNELS-1:0]  s_fifo_data         ,
             input   var logic       [CHANNELS-1:0]  s_fifo_valid        ,
@@ -267,6 +268,9 @@ module ft601_multi_ch_mode_transceiver
                     begin
                         tx_count              <= tx_count - 1'b1        ;
                         s_fifo_ready[channel] <= (tx_count - 1'b1) != 0 ;
+                        if ( !FIX_SIZE_TX[channel] && s_fifo_valid[channel] && s_fifo_last[channel] ) begin
+                            s_fifo_ready[channel] <= 1'b0;  // 固定サイズでないときに last が来たら終える
+                        end
                         if ( (!FIX_SIZE_TX[channel] && !s_fifo_valid[channel]) || !s_fifo_ready[channel] ) begin
                             state                 <= FINAL1             ;
                             tx_count              <= 'x                 ;

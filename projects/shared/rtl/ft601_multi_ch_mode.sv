@@ -59,6 +59,7 @@ module ft601_multi_ch_mode
     
     timeout_t   [CHANNELS-1:0]  ft601_tx_timeout            ;
     logic       [CHANNELS-1:0]  ft601_tx_enough_data        ;
+    logic       [CHANNELS-1:0]  ft601_tx_fifo_last          ;
     be_t        [CHANNELS-1:0]  ft601_tx_fifo_strb          ;
     data_t      [CHANNELS-1:0]  ft601_tx_fifo_data          ;
     logic       [CHANNELS-1:0]  ft601_tx_fifo_valid         ;
@@ -97,6 +98,7 @@ module ft601_multi_ch_mode
 
                 .s_fifo_timeout     (ft601_tx_timeout           ),
                 .s_fifo_enough_data (ft601_tx_enough_data       ),
+                .s_fifo_last        (ft601_tx_fifo_last         ),
                 .s_fifo_strb        (ft601_tx_fifo_strb         ),
                 .s_fifo_data        (ft601_tx_fifo_data         ),
                 .s_fifo_valid       (ft601_tx_fifo_valid        ),
@@ -185,7 +187,8 @@ module ft601_multi_ch_mode
 
         // TX FIFO
         tx_size_t   fifo_tx_data_size   ;
-        if ( FIX_SIZE_TX[i] ) begin : smoother
+//      if ( FIX_SIZE_TX[i] ) begin : smoother
+        if ( 1 ) begin : smoother
             jelly3_axi4s_if
                     #(
                         .USE_STRB   (s_axi4s_tx[i].USE_STRB ),
@@ -214,6 +217,7 @@ module ft601_multi_ch_mode
                         .m_data_size    (fifo_tx_data_size  )
                     );
 
+            assign ft601_tx_fifo_last[i]  = axi4s_smoother.tlast    ;
             assign ft601_tx_fifo_strb[i]  = axi4s_smoother.USE_STRB ? axi4s_smoother.tstrb : '1;
             assign ft601_tx_fifo_data[i]  = axi4s_smoother.tdata    ;
             assign ft601_tx_fifo_valid[i] = axi4s_smoother.tvalid   ;
@@ -232,7 +236,7 @@ module ft601_multi_ch_mode
                     #(
                         .ASYNC          (ASYNC                  ),
                         .PTR_BITS       (TX_FIFO_PTR_BITS[i]    ),
-                        .DATA_BITS      (4+32                   ),
+                        .DATA_BITS      (1+4+32                 ),
                         .S_SYNC_FF      (3                      ),
                         .M_SYNC_FF      (3                      ),
                         .RAM_TYPE       ("block"                ),
@@ -244,6 +248,7 @@ module ft601_multi_ch_mode
                         .s_clk          (s_axi4s_tx[i].aclk     ),
                         .s_cke          (s_axi4s_tx[i].aclken   ),
                         .s_data         ({
+                                            s_axi4s_tx[i].tlast ,
                                             s_axi4s_tx_tstrb    ,
                                             s_axi4s_tx[i].tdata
                                         }),
@@ -255,6 +260,7 @@ module ft601_multi_ch_mode
                         .m_clk          (ft601_clk              ),
                         .m_cke          (1'b1                   ),
                         .m_data         ({
+                                            ft601_tx_fifo_last[i],
                                             ft601_tx_fifo_strb[i],
                                             ft601_tx_fifo_data[i]
                                         }),
