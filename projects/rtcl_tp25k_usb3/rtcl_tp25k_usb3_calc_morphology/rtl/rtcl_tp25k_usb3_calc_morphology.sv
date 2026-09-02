@@ -163,7 +163,7 @@ module rtcl_tp25k_usb3_calc_morphology
     jelly3_axi4s_if
             #(
                 .USE_STRB   (1      ),
-                .USE_LAST   (0      ),
+                .USE_LAST   (1      ),
                 .DATA_BITS  (32     )
             )
         axi4s_ft601_tx [2]

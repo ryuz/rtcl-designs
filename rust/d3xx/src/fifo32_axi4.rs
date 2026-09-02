@@ -233,7 +233,8 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
 
     const OVERLAPS : usize = 8;     // 8以上に増やすとLinuxで発行待ちが起こる？
 //  const READ_UNIT : usize = 2048;
-    const READ_UNIT : usize = 0x8000;
+//  const READ_UNIT : usize = 0x8000;
+    const READ_UNIT : usize = 0x1000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];

@@ -251,13 +251,10 @@ impl D3xxFifo32DirectAxi4sRx {
         Ok(image)
     }
 
+    /*
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
 //      self.axi4s_reader.set_timeout(5000)?;
         let rx_data = self.axi4s_reader.read_with_timeout((width + 4) * height, std::time::Duration::from_secs(1))?;
-//      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
-//      return Ok(vec![0u8; width * height]);
-//      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
-//      println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
         let mut image = Vec::with_capacity(width * height);
         for y in 0..height {
             let start = y * (width + 4);
@@ -274,6 +271,25 @@ impl D3xxFifo32DirectAxi4sRx {
         }
         Ok(image)
     }
+    */
+
+    pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+//      self.axi4s_reader.set_timeout(5000)?;
+        let mut image = Vec::with_capacity(width * height);
+        for y in 0..height {
+            let rx_line = self.axi4s_reader.read_with_timeout(width + 4, std::time::Duration::from_secs(1))?;
+            let opcode  = rx_line[0];
+            let operand = rx_line[1];
+            let packet_last = (operand & 0x80) != 0;
+            let packet_size = u16::from_le_bytes([rx_line[2], rx_line[3]]) as usize;
+            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S y={} opcode={:02x}, oprand={:02x}, size={:04x}", y, opcode, operand, packet_size);
+            assert!(y < height-1 || packet_last, "Expected AXI4S packet_last to be set");
+            assert!(packet_size == width, "Expected AXI4S packet_size to match width: {} != {}", packet_size, width);
+            image.extend_from_slice(&rx_line[4..]);
+        }
+        Ok(image)
+    }
+
 }
 
 
