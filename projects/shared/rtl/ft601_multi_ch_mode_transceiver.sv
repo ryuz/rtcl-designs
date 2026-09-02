@@ -15,11 +15,12 @@ module ft601_multi_ch_mode_transceiver
         #(
             parameter   int                     CHANNELS       = 4                          ,
             parameter   int                     MAX_TRANSFER   = 1024 / CHANNELS            ,
+            parameter   int                     STREAM_SIZE    = 1024                       ,
             parameter   int                     TIMEOUT_BITS   = 16                         ,
             parameter   int                     COUNT_BITS     = $clog2(MAX_TRANSFER)       ,
             parameter   type                    count_t        = logic [COUNT_BITS-1:0]     ,
             parameter   type                    timeout_t      = logic [TIMEOUT_BITS-1:0]   ,
-            parameter   logic  [CHANNELS-1:0]   FIX_SIZE_TX    = '0                         ,
+            parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX  = '0                         ,
             parameter   int                     MON_COUNT_BITS = 32                         ,
             parameter   type                    mon_count_t    = logic [MON_COUNT_BITS-1:0] ,
             localparam  type                    data_t         = logic [31:0]               ,
@@ -72,6 +73,12 @@ module ft601_multi_ch_mode_transceiver
     localparam  int     CHANNELS_BITS = CHANNELS > 1 ? $clog2(CHANNELS) : 1;
     localparam  type    channel_t     = logic [CHANNELS_BITS-1:0];
 
+    // FT_SetStreamPipe のサイズまで MAX_TRANSFER を繰り返すカウンタ
+    parameter   int     STREAM_COUNT      = STREAM_SIZE / MAX_TRANSFER;
+    parameter   int     STREAM_COUNT_BITS = STREAM_COUNT > 1 ? $clog2(STREAM_COUNT) : 1;
+    localparam  type    scount_t          = logic [STREAM_COUNT_BITS-1:0];
+
+
     // 入力信号ラッチ
     logic       reg_ft601_rxf_n  = 1'b1 ;
     logic       reg_ft601_txe_n  = 1'b1 ;
@@ -110,6 +117,7 @@ module ft601_multi_ch_mode_transceiver
     state_t                     state            = IDLE         ;
     channel_t                   channel                         ;
     count_t                     tx_count                        ;
+    scount_t    [CHANNELS-1:0]  stream_count                    ;
     logic                       mon_ft601_wr_n                  ;
     logic                       reg_ft601_wr_n   = 1'b1         ;
     be_t                        reg_ft601_be_o   = 4'hf         ;
@@ -148,6 +156,10 @@ module ft601_multi_ch_mode_transceiver
                     // 送信データなし
                     tx_timeout_count[i] <= '0;
                     tx_enable[i]        <= 1'b0;
+                    if ( FIXED_SIZE_TX[i] && stream_count[i] != 0 ) begin
+                        // 固定サイズ送信でストリームカウントが残っている場合は送信許可
+                        tx_enable[i] <= 1'b1;
+                    end
                 end
             end
         end
@@ -160,6 +172,7 @@ module ft601_multi_ch_mode_transceiver
             channel          <= 'x           ;
             s_fifo_ready     <= '0           ;
             tx_count         <= 'x           ;
+            stream_count     <= '0           ;
             mon_ft601_wr_n   <= 1'b1         ;
             reg_ft601_wr_n   <= 1'b1         ;
             reg_ft601_be_t   <= 4'h0         ;
@@ -257,6 +270,9 @@ module ft601_multi_ch_mode_transceiver
                     begin
                         state            <= WRITE_DATA              ;
                         tx_count         <= count_t'(MAX_TRANSFER-1);
+                        if ( FIXED_SIZE_TX[channel] && STREAM_COUNT > 0 ) begin
+                            stream_count[channel] <= stream_count[channel] + 1'b1;
+                        end
                         mon_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_data_t <= 32'h0000_0000           ;
@@ -268,10 +284,10 @@ module ft601_multi_ch_mode_transceiver
                     begin
                         tx_count              <= tx_count - 1'b1        ;
                         s_fifo_ready[channel] <= (tx_count - 1'b1) != 0 ;
-                        if ( !FIX_SIZE_TX[channel] && s_fifo_valid[channel] && s_fifo_last[channel] ) begin
+                        if ( !FIXED_SIZE_TX[channel] && s_fifo_valid[channel] && s_fifo_last[channel] ) begin
                             s_fifo_ready[channel] <= 1'b0;  // 固定サイズでないときに last が来たら終える
                         end
-                        if ( (!FIX_SIZE_TX[channel] && !s_fifo_valid[channel]) || !s_fifo_ready[channel] ) begin
+                        if ( (!FIXED_SIZE_TX[channel] && !s_fifo_valid[channel]) || !s_fifo_ready[channel] ) begin
                             state                 <= FINAL1             ;
                             tx_count              <= 'x                 ;
                             s_fifo_ready[channel] <= 1'b0               ;

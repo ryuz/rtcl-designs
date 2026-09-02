@@ -17,11 +17,13 @@ module ft601_multi_ch_mode
             parameter   int                     COUNTER_BITS                = 32                            ,
             parameter   type                    counter_t                   = logic [COUNTER_BITS-1:0]      ,
             parameter   bit                     ASYNC                       = 1                             ,
+            parameter   int                     MAX_TRANSFER                = 1024 / CHANNELS               ,
+            parameter   int                     STREAM_SIZE                 = 1024                          ,
             parameter   int                     RX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
             parameter   int                     TX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
             parameter   int                     TX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
             parameter   int                     RX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
-            parameter   logic  [CHANNELS-1:0]   FIX_SIZE_TX                 = '0                            ,
+            parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX                 = '0                          ,
             localparam  type                    data_t                      = logic [31:0]                  ,
             localparam  type                    be_t                        = logic [3:0]                   
         )
@@ -75,8 +77,10 @@ module ft601_multi_ch_mode
     ft601_multi_ch_mode_transceiver
             #(
                 .CHANNELS           (CHANNELS                   ),
+                .MAX_TRANSFER       (MAX_TRANSFER               ),
+                .STREAM_SIZE        (STREAM_SIZE                ),
                 .TIMEOUT_BITS       ($bits(timeout_t)           ),
-                .FIX_SIZE_TX        (FIX_SIZE_TX                ),
+                .FIXED_SIZE_TX      (FIXED_SIZE_TX              ),
                 .MON_COUNT_BITS     (COUNTER_BITS               )
             )
         u_ft601_multi_ch_mode_transceiver
@@ -187,7 +191,7 @@ module ft601_multi_ch_mode
 
         // TX FIFO
         tx_size_t   fifo_tx_data_size   ;
-//      if ( FIX_SIZE_TX[i] ) begin : smoother
+//      if ( FIXED_SIZE_TX[i] ) begin : smoother
         if ( 1 ) begin : smoother
             jelly3_axi4s_if
                     #(
