@@ -31,6 +31,7 @@ module ft601_multi_ch_mode_transceiver
             input   var logic                       reset               ,
             input   var logic                       clk                 ,
 
+            input   var logic                       ft601_wakeup_n      ,
             input   var logic                       ft601_rxf_n         ,
             input   var logic                       ft601_txe_n         ,
             output  var logic                       ft601_wr_n          ,
@@ -78,14 +79,18 @@ module ft601_multi_ch_mode_transceiver
     parameter   int     STREAM_COUNT_BITS = STREAM_COUNT > 1 ? $clog2(STREAM_COUNT) : 1;
     localparam  type    scount_t          = logic [STREAM_COUNT_BITS-1:0];
 
+    localparam  type    alive_t           = logic [31:0];
+
+    logic       in_reset;
+    assign     in_reset = reset || ft601_wakeup_n;
 
     // 入力信号ラッチ
     logic       reg_ft601_rxf_n  = 1'b1 ;
     logic       reg_ft601_txe_n  = 1'b1 ;
     be_t        reg_ft601_be_i   ;
     data_t      reg_ft601_data_i ;
-    always_ff @( posedge clk or posedge reset) begin
-        if ( reset ) begin
+    always_ff @( posedge clk or posedge in_reset) begin
+        if ( in_reset ) begin
             reg_ft601_rxf_n  <= 1'b1  ;
             reg_ft601_txe_n  <= 1'b1  ;
         end
@@ -126,10 +131,12 @@ module ft601_multi_ch_mode_transceiver
     data_t                      reg_ft601_data_t = 32'h0000_ff00;
 
     // タイムアウト監視
+    alive_t     [CHANNELS-1:0]  tx_alive_count  ;
     timeout_t   [CHANNELS-1:0]  tx_timeout_count;
     logic       [CHANNELS-1:0]  tx_enable       ;
-    always_ff @( posedge clk or posedge reset ) begin
-        if ( reset ) begin
+    always_ff @( posedge clk or posedge in_reset ) begin
+        if ( in_reset ) begin
+            tx_alive_count   <= '0;
             tx_timeout_count <= '0;
             tx_enable        <= '0;
         end
@@ -137,6 +144,7 @@ module ft601_multi_ch_mode_transceiver
             for ( int i = 0; i < CHANNELS; i++ ) begin
                 if ( state == WRITE_DATA && channel == channel_t'(i) && reg_ft601_rxf_n == 1'b0 ) begin
                     // 送信発生でタイムアウトカウントをリセット
+                    tx_alive_count[i]   <= '0;
                     tx_timeout_count[i] <= '0;
                     tx_enable[i]        <= 1'b0;
                 end
@@ -156,9 +164,18 @@ module ft601_multi_ch_mode_transceiver
                     // 送信データなし
                     tx_timeout_count[i] <= '0;
                     tx_enable[i]        <= 1'b0;
-                    if ( FIXED_SIZE_TX[i] && stream_count[i] != 0 ) begin
+
+                    if ( FIXED_SIZE_TX[i] ) begin
                         // 固定サイズ送信でストリームカウントが残っている場合は送信許可
-                        tx_enable[i] <= 1'b1;
+                        if ( stream_count[i] != 0 ) begin
+                            tx_enable[i] <= 1'b1;
+                        end
+
+                        // 送信が発生していない場合定期的にダミー送信を行う
+                        tx_alive_count[i] <= tx_alive_count[i] + 1'b1;
+                        if ( tx_alive_count[i] >= 500_000 ) begin
+                            tx_enable[i] <= 1'b1;
+                        end
                     end
                 end
             end
@@ -166,8 +183,8 @@ module ft601_multi_ch_mode_transceiver
     end
 
     // 制御
-    always_ff @( posedge clk or posedge reset ) begin
-        if ( reset ) begin
+    always_ff @( posedge clk or posedge in_reset ) begin
+        if ( in_reset ) begin
             state            <= IDLE         ;
             channel          <= 'x           ;
             s_fifo_ready     <= '0           ;
@@ -276,8 +293,9 @@ module ft601_multi_ch_mode_transceiver
                         mon_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_data_t <= 32'h0000_0000           ;
-                        reg_ft601_data_o <= s_fifo_data[channel]    ;
-                        reg_ft601_be_o   <= s_fifo_strb[channel]    ;
+                        reg_ft601_data_o <= s_fifo_valid[channel] ? s_fifo_data[channel] : '1;
+                        reg_ft601_be_t   <= 4'h0                    ;
+                        reg_ft601_be_o   <= s_fifo_valid[channel] ? s_fifo_strb[channel] : '0;
                     end
 
                 WRITE_DATA:

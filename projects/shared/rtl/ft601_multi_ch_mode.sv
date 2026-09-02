@@ -30,6 +30,7 @@ module ft601_multi_ch_mode
         (
             input   var logic                           ft601_reset             ,
             input   var logic                           ft601_clk               ,
+            input   var logic                           ft601_wakeup_n          ,
             input   var logic                           ft601_rxf_n             ,
             input   var logic                           ft601_txe_n             ,
             output  var logic                           ft601_wr_n              ,
@@ -88,6 +89,7 @@ module ft601_multi_ch_mode
                 .reset              (ft601_reset                ),
                 .clk                (ft601_clk                  ),
 
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),

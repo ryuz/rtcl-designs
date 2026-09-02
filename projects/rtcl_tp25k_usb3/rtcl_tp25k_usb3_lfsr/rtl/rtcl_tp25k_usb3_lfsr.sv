@@ -208,6 +208,7 @@ module rtcl_tp25k_usb3_lfsr
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -477,10 +478,14 @@ module rtcl_tp25k_usb3_lfsr
     // --------------------------------
     //  PMOD
     // --------------------------------
-    
-    assign pmod[0] = mon_ft601_rxf_n;
-    assign pmod[1] = mon_ft601_wr_n;
-    assign pmod[2] = axi4s_ft601_rx[1].tready;
+
+    assign pmod[0] = usb_counter[2] ;
+    assign pmod[1] = ft601_reset_n  ;
+    assign pmod[2] = ft601_wakeup_n ;
+
+//    assign pmod[0] = mon_ft601_rxf_n;
+//    assign pmod[1] = mon_ft601_wr_n;
+//    assign pmod[2] = axi4s_ft601_rx[1].tready;
     assign pmod[3] = axi4s_ft601_rx[1].tvalid;
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;

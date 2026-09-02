@@ -415,6 +415,7 @@ module rtcl_tp25k_usb3_mipi_lane2
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
