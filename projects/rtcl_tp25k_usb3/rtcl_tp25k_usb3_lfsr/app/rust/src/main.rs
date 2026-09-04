@@ -46,8 +46,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("LFSR_TX_CORE_ID   : 0x{:08x}", axi4l.read_axi4l((REG_LFSR_TX_CORE_ID  ) as u32)?);
 
 
-    let packet_size : u32 = 512 - 1;
-    let data_size : u32 = 16*1024*packet_size;
+    let packet_size : u32 = 512 - 3;
+//  let data_size : u32 = 16*1024*packet_size;
+    let data_size : u32 = 1*packet_size;
     let lfsr_seed : u32 = 0x12345678;
 
 

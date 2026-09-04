@@ -251,7 +251,7 @@ impl D3xxFifo32DirectAxi4sRx {
         Ok(image)
     }
 
-    /*
+    #[cfg(target_os = "windows")]
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
 //      self.axi4s_reader.set_timeout(5000)?;
         let rx_data = self.axi4s_reader.read_with_timeout((width + 4) * height, std::time::Duration::from_secs(1))?;
@@ -271,8 +271,8 @@ impl D3xxFifo32DirectAxi4sRx {
         }
         Ok(image)
     }
-    */
 
+    #[cfg(not(target_os = "windows"))]
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
 //      self.axi4s_reader.set_timeout(5000)?;
         let mut image = Vec::with_capacity(width * height);
@@ -289,7 +289,6 @@ impl D3xxFifo32DirectAxi4sRx {
         }
         Ok(image)
     }
-
 }
 
 

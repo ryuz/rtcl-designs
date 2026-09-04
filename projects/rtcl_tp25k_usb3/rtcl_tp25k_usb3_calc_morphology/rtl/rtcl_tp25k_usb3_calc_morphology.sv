@@ -202,12 +202,13 @@ module rtcl_tp25k_usb3_calc_morphology
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
                 .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
-                .FIX_SIZE_TX        (2'b00                      )
+                .FIXED_SIZE_TX      (2'b00                      )
             )
         u_ft601_multi_ch_mode
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),

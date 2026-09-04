@@ -202,12 +202,13 @@ module rtcl_tp25k_usb3_lfsr
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
                 .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
-                .FIX_SIZE_TX        (2'b10                      )
+                .FIXED_SIZE_TX      (2'b10                      )
             )
         u_ft601_multi_ch_mode
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -477,7 +478,7 @@ module rtcl_tp25k_usb3_lfsr
     // --------------------------------
     //  PMOD
     // --------------------------------
-    
+
     assign pmod[0] = mon_ft601_rxf_n;
     assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_ft601_rx[1].tready;
@@ -487,18 +488,6 @@ module rtcl_tp25k_usb3_lfsr
     assign pmod[6] = mon_ft601_data[9];   // tx[1]
     assign pmod[7] = mon_ft601_data[13];  // rx[1]
 
-    /*
-    assign pmod[0] = dphy_byte_ready;
-    assign pmod[1] = dphy_hsrxd_vld[0];
-    assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = '0;
-    assign pmod[4] = '0;
-    assign pmod[5] = '0;
-    assign pmod[6] = '0;
-    assign pmod[7] = '0;
-    */
-
 endmodule
-
 
 `default_nettype wire
