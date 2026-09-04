@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::thread::sleep(std::time::Duration::from_millis(100));
 
     // 結果受信(4バイト受信しでリトルエンディアンでu32に変換して受信)
-    let result_bytes = axi4s_rx.recv_data(std::mem::size_of::<u32>())?;
+    let result_bytes = axi4s_rx.recv_data_exact(std::mem::size_of::<u32>())?;
     if result_bytes.len() != std::mem::size_of::<u32>() {
         return Err(format!(
             "unexpected result size: {}",
