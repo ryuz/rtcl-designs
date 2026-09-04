@@ -234,7 +234,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
     const OVERLAPS : usize = 8;     // 8以上に増やすとLinuxで発行待ちが起こる？
 //  const READ_UNIT : usize = 2048;
 //  const READ_UNIT : usize = 0x8000;
-    const READ_UNIT : usize = 0x1000;
+    const READ_UNIT : usize = 0x8000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
@@ -300,6 +300,12 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
                 packet_last = (operand & 0x80) != 0;
                 packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
                 assert!(opcode == OPCODE_NOP || opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+                // if opcode == OPCODE_NOP {
+                //     println!("recv_thread: NOP packet received, size={}", packet_size);
+                // }
+                // else {
+                //     println!("recv_thread: AXI4S packet received, size={}, last={}", packet_size, packet_last);
+                // }
                 rx_buffer.drain(0..4);
                 header = packet_size == 0;
             }

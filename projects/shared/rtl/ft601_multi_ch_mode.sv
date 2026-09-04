@@ -16,6 +16,7 @@ module ft601_multi_ch_mode
             parameter   type                    timeout_t                   = logic [TIMEOUT_BITS-1:0]      ,
             parameter   int                     COUNTER_BITS                = 32                            ,
             parameter   type                    counter_t                   = logic [COUNTER_BITS-1:0]      ,
+            parameter   int                     ALIVE_TIME                  = 5000000                       ,
             parameter   bit                     ASYNC                       = 1                             ,
             parameter   int                     MAX_TRANSFER                = 1024 / CHANNELS               ,
             parameter   int                     STREAM_SIZE                 = 1024                          ,
@@ -81,6 +82,7 @@ module ft601_multi_ch_mode
                 .MAX_TRANSFER       (MAX_TRANSFER               ),
                 .STREAM_SIZE        (STREAM_SIZE                ),
                 .TIMEOUT_BITS       ($bits(timeout_t)           ),
+                .ALIVE_TIME         (ALIVE_TIME                 ),
                 .FIXED_SIZE_TX      (FIXED_SIZE_TX              ),
                 .MON_COUNT_BITS     (COUNTER_BITS               )
             )

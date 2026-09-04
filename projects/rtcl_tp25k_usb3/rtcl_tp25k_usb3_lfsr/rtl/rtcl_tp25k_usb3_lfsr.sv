@@ -479,31 +479,15 @@ module rtcl_tp25k_usb3_lfsr
     //  PMOD
     // --------------------------------
 
-    assign pmod[0] = usb_counter[2] ;
-    assign pmod[1] = ft601_reset_n  ;
-    assign pmod[2] = ft601_wakeup_n ;
-
-//    assign pmod[0] = mon_ft601_rxf_n;
-//    assign pmod[1] = mon_ft601_wr_n;
-//    assign pmod[2] = axi4s_ft601_rx[1].tready;
+    assign pmod[0] = mon_ft601_rxf_n;
+    assign pmod[1] = mon_ft601_wr_n;
+    assign pmod[2] = axi4s_ft601_rx[1].tready;
     assign pmod[3] = axi4s_ft601_rx[1].tvalid;
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
     assign pmod[6] = mon_ft601_data[9];   // tx[1]
     assign pmod[7] = mon_ft601_data[13];  // rx[1]
 
-    /*
-    assign pmod[0] = dphy_byte_ready;
-    assign pmod[1] = dphy_hsrxd_vld[0];
-    assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = '0;
-    assign pmod[4] = '0;
-    assign pmod[5] = '0;
-    assign pmod[6] = '0;
-    assign pmod[7] = '0;
-    */
-
 endmodule
-
 
 `default_nettype wire
