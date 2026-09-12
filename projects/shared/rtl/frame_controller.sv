@@ -163,21 +163,6 @@ module frame_controller
                 .m_ready    (1'b1               )
             );
     
-    /*
-    jelly3_pulse_async
-        u_pulse_async
-            (
-                .s_reset    (~s_axi4l.aresetn   ),
-                .s_clk      (s_axi4l.aclk       ),
-                .s_cke      (s_axi4l.aclken     ),
-                .s_pulse    (reg_start          ),
-                
-                .m_reset    (~s_axi4s.aresetn   ),
-                .m_clk      (s_axi4s.aclk       ),
-                .m_cke      (s_axi4s.aclken     ),
-                .m_pulse    (ctl_start          )
-            );
-    */
 
     frames_t    capture_counter, next_capture_counter   ;
     logic       capture_enable,  next_capture_enable    ;

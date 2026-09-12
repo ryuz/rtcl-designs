@@ -17,10 +17,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let pixel_clock: f64 = 91000000.0;
     let binning =  true;
-//    let width: usize = 256;
-//    let height: usize = 256;
-//    let width: usize = 640;
-//    let height: usize = 480;
     let width: usize = 1280;
     let height: usize = 720;
 
@@ -69,12 +65,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     }
 
-    unsafe {
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL3, 512);     // max
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL4, 1024*8);  // limit
-        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL5, 10000);   // 100us
-    }
-
     // カメラOFF
     println!("camera power off");
     unsafe {
@@ -108,19 +98,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     imx219.reset().unwrap();
     std::thread::sleep(Duration::from_millis(100));
 
-    println!("set camera");
     // camera 設定
-
-    //  let width: i32 = 256;
-//  let height: i32 = 256;
-//    let frame_rate: i32 = 30;
-//    let exposure: i32 = 33;
-//    let a_gain: i32 = args.a_gain;
-//    let d_gain: i32 = args.d_gain;
+    println!("set camera");
     let aoi_x: i32 = -1;
     let aoi_y: i32 = -1;
-//    let flip_h: bool = false;
-//    let flip_v: bool = false;
     imx219.set_pixel_clock(pixel_clock).unwrap();
     imx219.set_aoi(width as i32, height as i32, aoi_x, aoi_y, binning, binning).unwrap();
     imx219.set_frame_rate(30.0).unwrap();
@@ -134,21 +115,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     imx219.start().unwrap();
     std::thread::sleep(Duration::from_millis(100)); 
 
-    /*
-    // 1 frame 取り込み指示
-    loop {
-        unsafe {
-            frm_acc.write_reg_u32(0x10, 1);
-        }
-
-//      print!("\nwait key : start capture...");
-        std::io::stdout().flush().unwrap();
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input).unwrap();   
-//      println!("");
-    }
-    return Ok(());
-    */
 
     // frame 取り込み開始
     unsafe {
@@ -239,8 +205,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
-
 
 
 

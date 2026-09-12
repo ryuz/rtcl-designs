@@ -260,6 +260,28 @@ impl D3xxWriter {
         Ok(bytes_written as usize)
     }
 
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    pub fn write_with_timeout(&self, data: &[u8], timeout: std::time::Duration) -> D3xxResult<usize> {
+        let start = std::time::Instant::now();
+        let mut written = 0;
+
+        while written < data.len() {
+            let n = match self.write(&data[written..]) {
+                Ok(n) => n,
+                Err(D3xxError::Timeout) => 0,
+                Err(e) => return Err(e),
+            };
+            written += n;
+
+            if written >= data.len() || start.elapsed() >= timeout {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_micros(100));
+        }
+
+        Ok(written)
+    }
+
     pub fn initialize_overlapped(&self, overlaped: &mut Overlapped) -> D3xxResult<()> {
         let status = unsafe { FT_InitializeOverlapped(self.device.handle, overlaped.as_mut_ptr()) };
         if status != FT_OK {
@@ -353,7 +375,6 @@ impl D3xxReader {
 
     pub fn set_stream_pipe(&mut self, stream_size: usize) -> D3xxResult<()> {
         let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 0, self.pipe_id, stream_size as u32) };
-//      let status = unsafe { FT_SetStreamPipe(self.device.handle, 0, 1, 0, stream_size) };
         if status != FT_OK {
             return Err(D3xxError::from_status(status));
         }
@@ -410,18 +431,18 @@ impl D3xxReader {
     }
 
     #[cfg(any(target_os = "linux", target_os = "windows"))]
-    pub fn read_until_size(&self, len: usize, max_reads: usize) -> D3xxResult<Vec<u8>> {
+    pub fn read_with_timeout(&self, len: usize, timeout: std::time::Duration) -> D3xxResult<Vec<u8>> {
+        let start = std::time::Instant::now();
         let mut buffer = Vec::with_capacity(len);
 
-        for _ in 0..max_reads {
-            if buffer.len() >= len {
+        while buffer.len() < len {
+            let mut data = self.read(len - buffer.len())?;
+            buffer.append(&mut data);
+
+            if buffer.len() >= len || start.elapsed() >= timeout {
                 break;
             }
-
-            let mut data = self.read(len - buffer.len())?;
-//          println!("read_until_size: read {} bytes, total {} bytes", data.len(), buffer.len() + data.len());
-            std::thread::sleep(std::time::Duration::from_micros(1000));
-            buffer.append(&mut data);
+            std::thread::sleep(std::time::Duration::from_micros(100));
         }
 
         Ok(buffer)

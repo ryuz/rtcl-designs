@@ -21,6 +21,7 @@ VLOG_SOURCES += $(SHARED_DIR)/rtl/ft601_multi_ch_mode_transceiver.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4l.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_arbiter.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4s_tx.sv
+VLOG_SOURCES += $(SHARED_DIR)/rtl/fifo32_cmd_axi4s_checker.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/gowin_dphy_rx.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/gowin_dphy_lane2_to_fifo32.sv
 VLOG_SOURCES += $(SHARED_DIR)/rtl/frame_controller.sv
@@ -35,9 +36,15 @@ VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_fifo_fwft_read.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_ram_simple_dualport.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_pulse_async.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_data_async.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_stream_ff.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_capacity_async.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/library/jelly3_capacity_buffer.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_if.sv
-VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4l_addr_decoder.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_if.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_ff.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_fifo.sv
+VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/bus/jelly3_axi4s_packet_smoother.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_gray.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_array_single.sv
 VLOG_SOURCES += $(JELLY_DIR)/rtl/v3/primitive/jelly3_cdc_single.sv
@@ -69,8 +76,10 @@ export USE_CPU_AS_GPIO=1
 export USE_I2C_AS_GPIO=1
 export USE_DONE_AS_GPIO=1
 export USE_READY_AS_GPIO=1
-export WSLENV=DEVICE_PART_NUMBER:DEVICE_NAME:TOP_MODULE:OUTPUT_BASE_NAME:VLOG_SOURCES:SDC_SOURCES:CST_SOURCES:USE_CPU_AS_GPIO:USE_I2C_AS_GPIO:USE_DONE_AS_GPIO:USE_READY_AS_GPIO
-
+export PLACE_OPTION=2
+export ROUTE_OPTION=2
+export CO_PLACE_IO_REGISTERS=1
+export WSLENV=DEVICE_PART_NUMBER:DEVICE_NAME:TOP_MODULE:OUTPUT_BASE_NAME:VLOG_SOURCES:SDC_SOURCES:CST_SOURCES:USE_CPU_AS_GPIO:USE_I2C_AS_GPIO:USE_DONE_AS_GPIO:USE_READY_AS_GPIO:PLACE_OPTION:ROUTE_OPTION:CO_PLACE_IO_REGISTERS
 
 .PHONY: all
 all: build

@@ -16,14 +16,6 @@ module fifo32_cmd_axi4l
             input   var logic           clk             ,
             input   var logic           cke             ,
 
-            /*
-            input   var logic   [31:0]  s_rx_data       ,
-            input   var logic           s_rx_valid      ,
-            output  var logic           s_rx_ready      ,
-            output  var logic   [31:0]  m_tx_data       ,
-            output  var logic           m_tx_valid      ,
-            input   var logic           m_tx_ready      ,
-            */
             jelly3_axi4s_if.s           s_axi4s_rx      ,
             jelly3_axi4s_if.m           m_axi4s_tx      ,
 
@@ -138,6 +130,7 @@ module fifo32_cmd_axi4l
     always_ff @(posedge clk) begin
         if ( reset ) begin
             tx_state <= TX_IDLE;
+            m_axi4s_tx.tlast  <= 'x    ;
             m_axi4s_tx.tdata  <= 'x    ;
             m_axi4s_tx.tvalid <= 1'b0  ;
         end
@@ -152,6 +145,7 @@ module fifo32_cmd_axi4l
                     begin
                         if ( m_axi4l.bvalid ) begin
                             tx_state <= TX_IDLE;
+                            m_axi4s_tx.tlast        <= 1'b1            ;
                             m_axi4s_tx.tdata        <= '0              ;
                             m_axi4s_tx.tdata[7:0]   <= 8'h02           ;   // opcode
                             m_axi4s_tx.tdata[9:8]   <= m_axi4l.bresp   ;   // operand
@@ -160,6 +154,7 @@ module fifo32_cmd_axi4l
                         end
                         if ( m_axi4l.rvalid ) begin
                             tx_state <= TX_RDATA;
+                            m_axi4s_tx.tlast        <= 1'b0            ;
                             m_axi4s_tx.tdata        <= '0              ;
                             m_axi4s_tx.tdata[7:0]   <= 8'h03           ;   // opcode
                             m_axi4s_tx.tdata[9:8]   <= m_axi4l.rresp   ;   // operand
@@ -171,8 +166,9 @@ module fifo32_cmd_axi4l
                 TX_RDATA:
                     begin
                         tx_state   <= TX_IDLE;
-                        m_axi4s_tx.tdata  <= 32'(m_axi4l.rdata);
-                        m_axi4s_tx.tvalid <= 1'b1              ;
+                        m_axi4s_tx.tlast  <= 1'b1               ;
+                        m_axi4s_tx.tdata  <= 32'(m_axi4l.rdata) ;
+                        m_axi4s_tx.tvalid <= 1'b1               ;
                     end
                 
                 default: tx_state <= TX_IDLE;

@@ -98,7 +98,7 @@ module ft601_mode245_transceiver
             reg_ft601_data_t <= '1      ;
             reg_ft601_buf    <= 1'b0    ;
         end
-        else begin          
+        else begin
             case ( state )
                 IDLE:
                     begin

@@ -386,13 +386,15 @@ module rtcl_tp25k_usb3_mipi_lane2
     parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,    9}                   ;
     parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   14}                   ;
     parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
-    parameter   int     FT601_TX_THRESHOLD     [2] = '{  1, 1024}                   ;
+    parameter   int     FT601_TX_THRESHOLD     [2] = '{  1,  512}                   ;
 
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
-    assign ft601_tx_timeout[1] = 1000     ;
+    assign ft601_tx_timeout[1] = 2000     ;
 
+    logic               ft601_tx_error      ;
+    logic               ft601_rx_error      ;
     logic   [1:0][31:0] mon_ft601_rx_counter;
     logic   [1:0][31:0] mon_ft601_tx_counter;
     logic               mon_ft601_wr_n      ;
@@ -408,12 +410,14 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
-                .TX_THRESHOLD       (FT601_TX_THRESHOLD         )
+                .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
+                .FIXED_SIZE_TX      (2'b10                      )
             )
         u_ft601_multi_ch_mode
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -427,10 +431,13 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .ft601_data_t       (ft601_data_t               ),
 
                 .tx_timeout         (ft601_tx_timeout           ),
+                .tx_dummy_enable    (2'b10                      ),
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
+                .rx_error           (                           ),
+                .tx_error           (                           ),
                 .mon_rx_counter     (mon_ft601_rx_counter       ),
                 .mon_tx_counter     (mon_ft601_tx_counter       ),
                 .mon_wr_n           (mon_ft601_wr_n             ),
@@ -515,10 +522,6 @@ module rtcl_tp25k_usb3_mipi_lane2
 
     logic   [31:0]      control0;
     logic   [31:0]      control1;
-    logic   [31:0]      control2;
-    logic   [31:0]      control3;
-    logic   [31:0]      control4;
-    logic   [31:0]      control5;
     jelly3_system_control
         #(
                 .DATA_BITS          (32                 ),
@@ -527,9 +530,9 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .INIT_CONTROL0      ('0                 ),
                 .INIT_CONTROL1      ('0                 ),
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      (512                ),  // max_len
-                .INIT_CONTROL4      (1024*4             ),  // limit_len
-                .INIT_CONTROL5      (10000              ),  // timeout
+                .INIT_CONTROL3      ('0                 ),
+                .INIT_CONTROL4      ('0                 ),
+                .INIT_CONTROL5      ('0                 ),
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -539,10 +542,10 @@ module rtcl_tp25k_usb3_mipi_lane2
 
                 .control0           (control0           ),
                 .control1           (control1           ),
-                .control2           (control2           ),
-                .control3           (control3           ),
-                .control4           (control4           ),
-                .control5           (control5           ),
+                .control2           (                   ),
+                .control3           (                   ),
+                .control4           (                   ),
+                .control5           (                   ),
                 .control6           (                   ),
                 .control7           (                   ),
 
@@ -625,8 +628,6 @@ module rtcl_tp25k_usb3_mipi_lane2
     gowin_dphy_lane2_to_fifo32
         u_gowin_dphy_lane2_to_fifo32
             (
-//              .dphy_data  ({dphy_byte_d1, dphy_byte_d0}   ),
-//              .dphy_valid (dphy_byte_ready                ),
                 .dphy_data  (dphy_bytes_data                ),
                 .dphy_valid (dphy_bytes_valid               ),
                 .data_type  (8'h2b                          ),
@@ -659,14 +660,41 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .m_axi4s    (axi4s_frame.m          )
             );
 
+    jelly3_axi4s_if
+            #(
+                .USE_STRB   (1          ),
+                .USE_LAST   (1          ),
+                .USER_BITS  (1          ),
+                .DATA_BITS  (32         ),
+                .STRB_BITS  (4          )
+            )
+        axi4s_frame_ff
+            (
+                .aresetn    (~dphy_reset),
+                .aclk       (dphy_clk   ),
+                .aclken     (1'b1       )
+            );
+
+    jelly3_axi4s_ff
+            #(
+                .S_REG      (1                  ),
+                .M_REG      (1                  )
+            )
+        u_axi4s_ff
+            (
+                .s_axi4s    (axi4s_frame.s      ),
+                .m_axi4s    (axi4s_frame_ff.m   )
+            );
+
+
     fifo32_cmd_axi4s_tx
             #(
-                .ASYNC              (1                  ),
-                .MAX_LEN            (512                )
+                .ASYNC          (1                  ),
+                .MAX_LEN        (512-1              )
             )
         u_fifo32_cmd_axi4s_tx
             (
-                .s_axi4s        (axi4s_frame.s      ),
+                .s_axi4s        (axi4s_frame_ff.s   ),
                 .m_axi4s        (axi4s_ft601_tx[1].m)
             );
 
@@ -674,6 +702,19 @@ module rtcl_tp25k_usb3_mipi_lane2
     // rx
     assign axi4s_ft601_rx[1].tready = 1'b1;
 
+
+    logic   pkt_error;
+    fifo32_cmd_axi4s_checker
+            #(
+                .MIN_PACKET_SIZE    (4                      ),
+                .MAX_PACKET_SIZE    (4096                   )
+            )
+        u_fifo32_cmd_axi4s_checker
+            (
+                .mon_axi4s          (axi4s_ft601_tx[1].mon  ),
+
+                .error              (pkt_error              )
+            );
 
 
     // --------------------------------
@@ -767,8 +808,8 @@ module rtcl_tp25k_usb3_mipi_lane2
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = frame_overflow  ;
-    assign led[3] = dphy_overflow   ;
+    assign led[2] = frame_overflow ^ push_sw[0] ^ ~dip_sw[0];
+    assign led[3] = dphy_overflow  ^ push_sw[1] ^ ~dip_sw[1];
 
 //    assign led[1] = dphy_count_error;//usb_counter[26] ;
 //    assign led[2] = frm_count_error; //frame_overflow  ;
@@ -778,7 +819,6 @@ module rtcl_tp25k_usb3_mipi_lane2
     //  PMOD
     // --------------------------------
 
-    
     assign pmod[0] = mon_ft601_rxf_n;
     assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_frame.tready;
@@ -791,18 +831,18 @@ module rtcl_tp25k_usb3_mipi_lane2
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
     assign pmod[6] = mon_ft601_txe_n;
-    assign pmod[7] = mon_ft601_data[9];
+//  assign pmod[7] = mon_ft601_data[9];
+
     
-    /*
-    assign pmod[0] = dphy_byte_ready;
-    assign pmod[1] = dphy_hsrxd_vld[0];
-    assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = dphy_hsrx_odten[0];
-    assign pmod[4] = dphy_di_lprx0[0];
-    assign pmod[5] = dphy_di_lprx0[1];
-    assign pmod[6] = dphy_di_lprx1[0];
-    assign pmod[7] = dphy_di_lprx1[1];
-    */
+    // assign pmod[0] = dphy_bytes_valid;
+    // assign pmod[1] = dphy_hsrxd_vld[0];
+    // assign pmod[2] = dphy_hsrxd_vld[1];
+    // assign pmod[3] = dphy_hsrx_odten[0];
+    // assign pmod[4] = dphy_lprx_n[0];
+    // assign pmod[5] = dphy_lprx_p[0];
+    // assign pmod[6] = dphy_lprx_n[1];
+    assign pmod[7] = dphy_lprx_p[1];
+    
 
 endmodule
 

@@ -13,22 +13,29 @@
 
 module ft601_multi_ch_mode_transceiver
         #(
-            parameter   int     CHANNELS       = 4                          ,
-            parameter   int     MAX_TRANSFER   = 1024 / CHANNELS            ,
-            parameter   int     TIMEOUT_BITS   = 16                         ,
-            parameter   int     COUNT_BITS     = $clog2(MAX_TRANSFER)       ,
-            parameter   type    count_t        = logic [COUNT_BITS-1:0]     ,
-            parameter   type    timeout_t      = logic [TIMEOUT_BITS-1:0]   ,
-            parameter   int     MON_COUNT_BITS = 32                         ,
-            parameter   type    mon_count_t    = logic [MON_COUNT_BITS-1:0] ,
-            localparam  type    data_t         = logic [31:0]               ,
-            localparam  type    be_t           = logic [3:0]                ,
-            localparam  type    strb_t         = be_t                       
+            parameter   int                     CHANNELS       = 4                          ,
+            parameter   bit                     TX_USE_STRB    = 0                          ,
+            parameter   int                     MAX_TRANSFER   = 1024 / CHANNELS            ,
+            parameter   int                     STREAM_SIZE    = 1024                       ,
+            parameter   int                     TIMEOUT_BITS   = 16                         ,
+            parameter   int                     COUNT_BITS     = $clog2(MAX_TRANSFER)       ,
+            parameter   type                    count_t        = logic [COUNT_BITS-1:0]     ,
+            parameter   type                    timeout_t      = logic [TIMEOUT_BITS-1:0]   ,
+            parameter   int                     TX_DUMMY_TIME  = 5000000                    ,
+            parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX  = '0                         ,
+            parameter   int                     MON_COUNT_BITS = 32                         ,
+            parameter   type                    mon_count_t    = logic [MON_COUNT_BITS-1:0] ,
+            localparam  type                    data_t         = logic [31:0]               ,
+            localparam  type                    be_t           = logic [3:0]                ,
+            localparam  type                    strb_t         = be_t                       
         )
         (
             input   var logic                       reset               ,
             input   var logic                       clk                 ,
 
+            input   var logic       [CHANNELS-1:0]  tx_dummy_enable     ,
+
+            input   var logic                       ft601_wakeup_n      ,
             input   var logic                       ft601_rxf_n         ,
             input   var logic                       ft601_txe_n         ,
             output  var logic                       ft601_wr_n          ,
@@ -43,6 +50,7 @@ module ft601_multi_ch_mode_transceiver
 
             input   var timeout_t   [CHANNELS-1:0]  s_fifo_timeout      ,
             input   var logic       [CHANNELS-1:0]  s_fifo_enough_data  ,
+            input   var logic       [CHANNELS-1:0]  s_fifo_last         ,
             input   var strb_t      [CHANNELS-1:0]  s_fifo_strb         ,
             input   var data_t      [CHANNELS-1:0]  s_fifo_data         ,
             input   var logic       [CHANNELS-1:0]  s_fifo_valid        ,
@@ -53,6 +61,10 @@ module ft601_multi_ch_mode_transceiver
             output  var strb_t      [CHANNELS-1:0]  m_fifo_strb         ,
             output  var data_t      [CHANNELS-1:0]  m_fifo_data         ,
             output  var logic       [CHANNELS-1:0]  m_fifo_valid        ,
+            input   var logic       [CHANNELS-1:0]  m_fifo_ready        ,
+
+            output  var logic                       rx_error            ,
+            output  var logic                       tx_error            ,
 
             output  var mon_count_t [CHANNELS-1:0]  mon_rx_counter      ,
             output  var mon_count_t [CHANNELS-1:0]  mon_tx_counter      ,
@@ -66,13 +78,24 @@ module ft601_multi_ch_mode_transceiver
     localparam  int     CHANNELS_BITS = CHANNELS > 1 ? $clog2(CHANNELS) : 1;
     localparam  type    channel_t     = logic [CHANNELS_BITS-1:0];
 
+    // FT_SetStreamPipe のサイズまで MAX_TRANSFER を繰り返すカウンタ
+    parameter   int     STREAM_COUNT      = STREAM_SIZE / MAX_TRANSFER;
+    parameter   int     STREAM_COUNT_BITS = STREAM_COUNT > 1 ? $clog2(STREAM_COUNT) : 1;
+    localparam  type    scount_t          = logic [STREAM_COUNT_BITS-1:0];
+
+    parameter   int     ALIVE_COUNT_BITS  = TX_DUMMY_TIME > 1 ? $clog2(TX_DUMMY_TIME) : 1;
+    localparam  type    alive_t           = logic [ALIVE_COUNT_BITS-1:0];
+
+    logic       in_reset;
+    assign     in_reset = reset || ft601_wakeup_n;
+
     // 入力信号ラッチ
     logic       reg_ft601_rxf_n  = 1'b1 ;
     logic       reg_ft601_txe_n  = 1'b1 ;
     be_t        reg_ft601_be_i   ;
     data_t      reg_ft601_data_i ;
-    always_ff @( posedge clk or posedge reset) begin
-        if ( reset ) begin
+    always_ff @( posedge clk or posedge in_reset) begin
+        if ( in_reset ) begin
             reg_ft601_rxf_n  <= 1'b1  ;
             reg_ft601_txe_n  <= 1'b1  ;
         end
@@ -92,8 +115,8 @@ module ft601_multi_ch_mode_transceiver
         READ_COMMAND  = 1   ,
         READ_TA1      = 2   ,
         READ_TA2      = 3   ,
-        READ_TA3    = 4   ,
-        READ_DATA    = 5   ,
+        READ_TA3      = 4   ,
+        READ_DATA     = 5   ,
         WRITE_COMMAND = 6   ,
         WRITE_TA      = 7   ,
         WRITE_DATA    = 8   ,
@@ -104,6 +127,7 @@ module ft601_multi_ch_mode_transceiver
     state_t                     state            = IDLE         ;
     channel_t                   channel                         ;
     count_t                     tx_count                        ;
+    scount_t    [CHANNELS-1:0]  stream_count                    ;
     logic                       mon_ft601_wr_n                  ;
     logic                       reg_ft601_wr_n   = 1'b1         ;
     be_t                        reg_ft601_be_o   = 4'hf         ;
@@ -112,10 +136,12 @@ module ft601_multi_ch_mode_transceiver
     data_t                      reg_ft601_data_t = 32'h0000_ff00;
 
     // タイムアウト監視
+    alive_t     [CHANNELS-1:0]  tx_dummy_count  ;
     timeout_t   [CHANNELS-1:0]  tx_timeout_count;
     logic       [CHANNELS-1:0]  tx_enable       ;
-    always_ff @( posedge clk or posedge reset ) begin
-        if ( reset ) begin
+    always_ff @( posedge clk or posedge in_reset ) begin
+        if ( in_reset ) begin
+            tx_dummy_count   <= '0;
             tx_timeout_count <= '0;
             tx_enable        <= '0;
         end
@@ -123,6 +149,7 @@ module ft601_multi_ch_mode_transceiver
             for ( int i = 0; i < CHANNELS; i++ ) begin
                 if ( state == WRITE_DATA && channel == channel_t'(i) && reg_ft601_rxf_n == 1'b0 ) begin
                     // 送信発生でタイムアウトカウントをリセット
+                    tx_dummy_count[i]   <= '0;
                     tx_timeout_count[i] <= '0;
                     tx_enable[i]        <= 1'b0;
                 end
@@ -142,18 +169,32 @@ module ft601_multi_ch_mode_transceiver
                     // 送信データなし
                     tx_timeout_count[i] <= '0;
                     tx_enable[i]        <= 1'b0;
+
+                    if ( FIXED_SIZE_TX[i] ) begin
+                        // 固定サイズ送信でストリームカウントが残っている場合は送信許可
+                        if ( stream_count[i] != 0 ) begin
+                            tx_enable[i] <= 1'b1;
+                        end
+
+                        // 送信が発生していない場合定期的にダミー送信を行う
+                        tx_dummy_count[i] <= tx_dummy_count[i] + 1'b1;
+                        if ( TX_DUMMY_TIME > 0 && tx_dummy_count[i] >= alive_t'(TX_DUMMY_TIME-1) ) begin
+                            tx_enable[i] <= tx_dummy_enable[i];
+                        end
+                    end
                 end
             end
         end
     end
 
     // 制御
-    always_ff @( posedge clk or posedge reset ) begin
-        if ( reset ) begin
+    always_ff @( posedge clk or posedge in_reset ) begin
+        if ( in_reset ) begin
             state            <= IDLE         ;
             channel          <= 'x           ;
             s_fifo_ready     <= '0           ;
             tx_count         <= 'x           ;
+            stream_count     <= '0           ;
             mon_ft601_wr_n   <= 1'b1         ;
             reg_ft601_wr_n   <= 1'b1         ;
             reg_ft601_be_t   <= 4'h0         ;
@@ -229,8 +270,8 @@ module ft601_multi_ch_mode_transceiver
 
                 READ_DATA:
                     begin
-//                      if ( reg_ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
-                        if ( reg_ft601_rxf_n == 1'b1 ) begin
+                        if ( reg_ft601_rxf_n == 1'b1 || m_fifo_almost_full[channel] ) begin
+//                      if ( reg_ft601_rxf_n == 1'b1 ) begin
                             state            <= FINAL1       ;
                             mon_ft601_wr_n   <= 1'b1         ;
                             reg_ft601_wr_n   <= 1'b1         ;
@@ -251,18 +292,25 @@ module ft601_multi_ch_mode_transceiver
                     begin
                         state            <= WRITE_DATA              ;
                         tx_count         <= count_t'(MAX_TRANSFER-1);
+                        if ( FIXED_SIZE_TX[channel] && STREAM_COUNT > 0 ) begin
+                            stream_count[channel] <= stream_count[channel] + 1'b1;
+                        end
                         mon_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_wr_n   <= 1'b0                    ;
+                        reg_ft601_be_t   <= 4'h0                    ;
+                        reg_ft601_be_o   <= s_fifo_valid[channel] ? (TX_USE_STRB ? s_fifo_strb[channel] : '1) : '0;
                         reg_ft601_data_t <= 32'h0000_0000           ;
-                        reg_ft601_data_o <= s_fifo_data[channel]    ;
-                        reg_ft601_be_o   <= s_fifo_strb[channel]    ;
+                        reg_ft601_data_o <= s_fifo_valid[channel] ? s_fifo_data[channel] : '0;
                     end
 
                 WRITE_DATA:
                     begin
                         tx_count              <= tx_count - 1'b1        ;
                         s_fifo_ready[channel] <= (tx_count - 1'b1) != 0 ;
-                        if ( !s_fifo_valid[channel] || !s_fifo_ready[channel] ) begin
+                        if ( !FIXED_SIZE_TX[channel] && s_fifo_valid[channel] && s_fifo_last[channel] ) begin
+                            s_fifo_ready[channel] <= 1'b0;  // 固定サイズでないときに last が来たら終える
+                        end
+                        if ( (!FIXED_SIZE_TX[channel] && !s_fifo_valid[channel]) || !s_fifo_ready[channel] ) begin
                             state                 <= FINAL1             ;
                             tx_count              <= 'x                 ;
                             s_fifo_ready[channel] <= 1'b0               ;
@@ -275,9 +323,9 @@ module ft601_multi_ch_mode_transceiver
                         end
                         else begin
                             reg_ft601_be_t    <= 4'h0                   ;
-                            reg_ft601_be_o    <= s_fifo_strb[channel]   ;
+                            reg_ft601_be_o    <= s_fifo_valid[channel] ? (TX_USE_STRB ? s_fifo_strb[channel] : '1) : '0;
                             reg_ft601_data_t  <= 32'h0000_0000          ;
-                            reg_ft601_data_o  <= s_fifo_data[channel]   ;
+                            reg_ft601_data_o  <= s_fifo_valid[channel] ? s_fifo_data[channel] : '0;
                         end
                     end
                 
@@ -338,6 +386,31 @@ module ft601_multi_ch_mode_transceiver
     assign ft601_data_t = reg_ft601_data_t  ;
 
 
+    // error check
+    logic   wr_state;
+    always_ff @( posedge clk ) begin
+        if ( reset ) begin
+            rx_error <= 1'b0;
+            wr_state <= 1'b0;
+            tx_error <= 1'b0;
+        end
+        else begin
+            // read check
+            for ( int i = 0; i < CHANNELS; i++ ) begin
+                if (  m_fifo_valid[i] && !m_fifo_ready[i] ) begin
+                    rx_error <= 1'b1;
+                end
+            end
+
+            // write check
+            wr_state <= (state == WRITE_DATA);
+            if ( wr_state && ~mon_ft601_wr_n && reg_ft601_rxf_n ) begin
+                tx_error <= 1'b1;
+            end
+        end
+    end
+
+    // monitor
     always_ff @( posedge clk ) begin
         if ( reset ) begin
             mon_tx_counter <= '0;

@@ -56,17 +56,20 @@ def main() -> None:
 
     kernel = np.ones((3, 3), dtype=np.uint8)
 
+    frames = 10
+
     t0 = time.perf_counter()
 
-    # 1) opening part
-    stage1_erode = cv2.erode(img, kernel, iterations=2)
-    stage2_dilate = cv2.dilate(stage1_erode, kernel, iterations=2)
+    for _ in range(frames):
+        # 1) opening part
+        stage1_erode = cv2.erode(img, kernel, iterations=2)
+        stage2_dilate = cv2.dilate(stage1_erode, kernel, iterations=2)
 
-    # 2) closing part
-    stage3_dilate = cv2.dilate(stage2_dilate, kernel, iterations=2)
-    stage4_erode = cv2.erode(stage3_dilate, kernel, iterations=2)
+        # 2) closing part
+        stage3_dilate = cv2.dilate(stage2_dilate, kernel, iterations=2)
+        stage4_erode = cv2.erode(stage3_dilate, kernel, iterations=2)
 
-    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0 / frames
 
     if not cv2.imwrite(str(args.output), stage4_erode):
         raise OSError(f"Failed to write output image: {args.output}")

@@ -94,8 +94,6 @@ module rtcl_tp25k_usb3_calc_summation
                 .mdclk              (in_clk50       ),
                 .reset              (reset          )
             );
-//  assign ft601_clk  = ft601_clk_in    ;
-//  assign ft601_lock = ~reset          ;
 
     logic ft601_reset;
     jelly3_reset_async
@@ -201,12 +199,14 @@ module rtcl_tp25k_usb3_calc_summation
                 .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
-                .TX_THRESHOLD       (FT601_TX_THRESHOLD         )
+                .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
+                .FIXED_SIZE_TX      (2'b00                      )
             )
         u_ft601_multi_ch_mode
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -220,10 +220,13 @@ module rtcl_tp25k_usb3_calc_summation
                 .ft601_data_t       (ft601_data_t               ),
 
                 .tx_timeout         (ft601_tx_timeout           ),
+                .tx_dummy_enable    (2'b10                      ),
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
+                .rx_error           (                           ),
+                .tx_error           (                           ),
                 .mon_rx_counter     (mon_ft601_rx_counter       ),
                 .mon_tx_counter     (mon_ft601_tx_counter       ),
                 .mon_wr_n           (mon_ft601_wr_n             ),

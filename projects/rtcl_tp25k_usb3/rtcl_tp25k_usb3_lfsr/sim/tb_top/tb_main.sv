@@ -133,6 +133,7 @@ module tb_main
             ft601_data_o = 32'h0000_ff00;
             @(negedge ft601_clk);
             @(negedge ft601_clk);
+            @(negedge ft601_clk);
         end
     endtask
 
@@ -162,6 +163,9 @@ module tb_main
         ft601_be_o   = 4'h3         ;
         ft601_data_t = 32'hffff_00ff;
         ft601_data_o = 32'h0000_ff00;
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
+        @(negedge ft601_clk);
     endtask
 
     task axi4l_write(input [31:0] addr, input [31:0] data, input [3:0] strb);
@@ -172,8 +176,12 @@ module tb_main
             header[15:12] = strb;     // write strobe
             header[31:16] = 16'h0008; // size
             ft601_write(0, '{header, addr, data});
+            @(negedge ft601_clk);
+            @(negedge ft601_clk);
 
             ft601_read(0, 1);
+            @(negedge ft601_clk);
+            @(negedge ft601_clk);
         end
     endtask
 
@@ -202,7 +210,8 @@ module tb_main
 
         for ( int loop = 0; loop < 2; loop++ ) begin
             $display("Write TX");
-            axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 1024-1,  4'hf);  // tx_len
+//          axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 1024-1,  4'hf);  // tx_len
+            axi4l_write(BASE_LFSR_TX + 32'h12 * 4, 17-1,  4'hf);  // tx_len
             axi4l_write(BASE_LFSR_TX + 32'h10 * 4,  1,      4'hf);  // start
             #100;
 

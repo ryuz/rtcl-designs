@@ -161,7 +161,7 @@ module rtcl_tp25k_usb3_lfsr
     jelly3_axi4s_if
             #(
                 .USE_STRB   (1      ),
-                .USE_LAST   (0      ),
+                .USE_LAST   (1      ),
                 .DATA_BITS  (32     )
             )
         axi4s_ft601_tx [2]
@@ -174,15 +174,17 @@ module rtcl_tp25k_usb3_lfsr
     localparam  int     FT601_CHANNELS             = 2                              ;
     localparam  int     FT601_TIMEOUT_BITS         = 16                             ;
     localparam  type    ft601_timeout_t            = logic [FT601_TIMEOUT_BITS-1:0] ;
-    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,    9}                   ;
+    parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,   10}                   ;
     parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   14}                   ;
-    parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
-    parameter   int     FT601_TX_THRESHOLD     [2] = '{256,  256}                   ;
-
+    parameter   int     FT601_RX_THRESHOLD     [2] = '{512,  512}                   ;
+    parameter   int     FT601_TX_THRESHOLD     [2] = '{512, 1024}                   ;
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
     assign ft601_tx_timeout[1] = 1000     ;
+
+    logic               rx_error            ;
+    logic               tx_error            ;
 
     logic   [1:0][31:0] mon_ft601_rx_counter;
     logic   [1:0][31:0] mon_ft601_tx_counter;
@@ -199,12 +201,14 @@ module rtcl_tp25k_usb3_lfsr
                 .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
-                .TX_THRESHOLD       (FT601_TX_THRESHOLD         )
+                .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
+                .FIXED_SIZE_TX      (2'b10                      )
             )
         u_ft601_multi_ch_mode
             (
                 .ft601_reset        (ft601_reset                ),
                 .ft601_clk          (ft601_clk                  ),
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
                 .ft601_rxf_n        (ft601_rxf_n                ),
                 .ft601_txe_n        (ft601_txe_n                ),
                 .ft601_wr_n         (ft601_wr_n                 ),
@@ -218,10 +222,13 @@ module rtcl_tp25k_usb3_lfsr
                 .ft601_data_t       (ft601_data_t               ),
 
                 .tx_timeout         (ft601_tx_timeout           ),
+                .tx_dummy_enable    (2'b10                      ),
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
+                .rx_error           (rx_error                   ),
+                .tx_error           (tx_error                   ),
                 .mon_rx_counter     (mon_ft601_rx_counter       ),
                 .mon_tx_counter     (mon_ft601_tx_counter       ),
                 .mon_wr_n           (mon_ft601_wr_n             ),
@@ -424,7 +431,7 @@ module rtcl_tp25k_usb3_lfsr
                 .ASYNC              (1                  ),
                 .DATA_BUF_SIZE      (512                ),
                 .CMD_BUF_SIZE       (64                 ),
-                .MAX_LEN            (512                )
+                .MAX_LEN            (512-1              )
             )
         u_fifo32_cmd_axi4s_tx
             (
@@ -464,14 +471,14 @@ module rtcl_tp25k_usb3_lfsr
 
     assign led[0] = clk_counter[24] ;
     assign led[1] = usb_counter[26] ;
-    assign led[2] = pkt_error       ;
-    assign led[3] = lfsr_rx_error   ;
+    assign led[2] = rx_error | pkt_error    ;
+    assign led[3] = tx_error | lfsr_rx_error;
 
 
     // --------------------------------
     //  PMOD
     // --------------------------------
-    
+
     assign pmod[0] = mon_ft601_rxf_n;
     assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_ft601_rx[1].tready;
@@ -481,18 +488,6 @@ module rtcl_tp25k_usb3_lfsr
     assign pmod[6] = mon_ft601_data[9];   // tx[1]
     assign pmod[7] = mon_ft601_data[13];  // rx[1]
 
-    /*
-    assign pmod[0] = dphy_byte_ready;
-    assign pmod[1] = dphy_hsrxd_vld[0];
-    assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = '0;
-    assign pmod[4] = '0;
-    assign pmod[5] = '0;
-    assign pmod[6] = '0;
-    assign pmod[7] = '0;
-    */
-
 endmodule
-
 
 `default_nettype wire

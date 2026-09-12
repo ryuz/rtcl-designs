@@ -399,9 +399,4 @@ unsafe extern "C" {
     // FT_STATUS FT_SetTransferParams(FT_TRANSFER_CONF *pConf, DWORD dwFifoID);
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn FT_SetTransferParams(pConf: *mut FT_TRANSFER_CONF, dwFifoID: DWORD) -> FT_STATUS;
-
-
-
-        
-
 }

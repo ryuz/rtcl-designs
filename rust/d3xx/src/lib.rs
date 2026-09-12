@@ -1,5 +1,6 @@
 
 
+const OPCODE_NOP: u8 = 0x00;
 const OPCODE_AXI4L_WRITE: u8 = 0x02;
 const OPCODE_AXI4L_READ: u8 = 0x03;
 const OPCODE_AXI4S_TRANS: u8 = 0x10;
