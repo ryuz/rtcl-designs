@@ -259,8 +259,6 @@ impl D3xxFifo32Axi4sTx {
 fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Stream>, rd_stop_rx: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
     const OVERLAPS : usize = 8;     // 8以上に増やすとLinuxで発行待ちが起こる？
-//  const READ_UNIT : usize = 2048;
-//  const READ_UNIT : usize = 0x8000;
     const READ_UNIT : usize = 0x8000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
@@ -300,9 +298,9 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-        if rx_size > 0 {
-            println!("recv_thread: rx_size: {} bytes", rx_size);
-        }
+        // if rx_size > 0 {
+        //     println!("recv_thread: rx_size: {} bytes", rx_size);
+        // }
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;
@@ -366,7 +364,7 @@ fn send_axi4s_thread(
     rd_packet_tx: mpsc::Receiver<Vec<u8>>,
 ) -> Result<(), Box<dyn Error>> {
     const OVERLAPS: usize = 8;
-    const WRITE_UNIT: usize = 0x8000;
+    const WRITE_UNIT: usize = 0x80000;
 
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffers = vec![vec![0u8; WRITE_UNIT]; OVERLAPS];
