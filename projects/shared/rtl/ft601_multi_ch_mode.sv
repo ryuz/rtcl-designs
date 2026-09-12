@@ -189,7 +189,7 @@ module ft601_multi_ch_mode
                 );
 
         always_ff @(posedge ft601_clk) begin
-            ft601_rx_fifo_almost_full[i]  <= fifo_rx_free_size < 64;
+            ft601_rx_fifo_almost_full[i]  <= fifo_rx_free_size <= 2;
             ft601_rx_fifo_enough_space[i] <= (fifo_rx_free_size >= RX_FIFO_TH);
         end
 

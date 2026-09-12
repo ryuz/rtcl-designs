@@ -306,10 +306,12 @@ module rtcl_tp25k_usb3_calc_morphology
 
     logic   [31:0]      control0;
     logic   [31:0]      control1;
-    logic   [31:0]      control2;
-    logic   [31:0]      control3;
-    logic   [31:0]      control4;
-    logic   [31:0]      control5;
+//  logic   [31:0]      control2;
+//  logic   [31:0]      control3;
+//  logic   [31:0]      control4;
+//  logic   [31:0]      control5;
+//  logic   [31:0]      control6;
+//  logic   [31:0]      control7;
 
     logic   [31:0]      monitor0;
     logic   [31:0]      monitor1;
@@ -328,9 +330,9 @@ module rtcl_tp25k_usb3_calc_morphology
                 .INIT_CONTROL0      (128/32             ),  // width
                 .INIT_CONTROL1      (128                ),  // height
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      (256                ),  // max_len
-                .INIT_CONTROL4      (512                ),  // limit_len
-                .INIT_CONTROL5      (10000              ),  // timeout
+                .INIT_CONTROL3      ('0                 ),
+                .INIT_CONTROL4      ('0                 ),
+                .INIT_CONTROL5      ('0                 ),
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -340,10 +342,10 @@ module rtcl_tp25k_usb3_calc_morphology
 
                 .control0           (control0           ),
                 .control1           (control1           ),
-                .control2           (control2           ),
-                .control3           (control3           ),
-                .control4           (control4           ),
-                .control5           (control5           ),
+                .control2           (                   ),
+                .control3           (                   ),
+                .control4           (                   ),
+                .control5           (                   ),
                 .control6           (                   ),
                 .control7           (                   ),
 
