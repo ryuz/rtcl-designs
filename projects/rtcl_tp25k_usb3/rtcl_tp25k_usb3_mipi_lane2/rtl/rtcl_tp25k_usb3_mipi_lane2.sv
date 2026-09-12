@@ -517,10 +517,6 @@ module rtcl_tp25k_usb3_mipi_lane2
 
     logic   [31:0]      control0;
     logic   [31:0]      control1;
-    logic   [31:0]      control2;
-    logic   [31:0]      control3;
-    logic   [31:0]      control4;
-    logic   [31:0]      control5;
     jelly3_system_control
         #(
                 .DATA_BITS          (32                 ),
@@ -529,9 +525,9 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .INIT_CONTROL0      ('0                 ),
                 .INIT_CONTROL1      ('0                 ),
                 .INIT_CONTROL2      ('0                 ),
-                .INIT_CONTROL3      (512                ),  // max_len
-                .INIT_CONTROL4      (1024*4             ),  // limit_len
-                .INIT_CONTROL5      (10000              ),  // timeout
+                .INIT_CONTROL3      ('0                 ),
+                .INIT_CONTROL4      ('0                 ),
+                .INIT_CONTROL5      ('0                 ),
                 .INIT_CONTROL6      ('0                 ),
                 .INIT_CONTROL7      ('0                 )
             )
@@ -541,10 +537,10 @@ module rtcl_tp25k_usb3_mipi_lane2
 
                 .control0           (control0           ),
                 .control1           (control1           ),
-                .control2           (control2           ),
-                .control3           (control3           ),
-                .control4           (control4           ),
-                .control5           (control5           ),
+                .control2           (                   ),
+                .control3           (                   ),
+                .control4           (                   ),
+                .control5           (                   ),
                 .control6           (                   ),
                 .control7           (                   ),
 
