@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use crate::d3xx_device::*;
-#[cfg(target_os = "linux")]
-use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
+// #[cfg(target_os = "linux")]
+// use crate::ffi::FT_TRANSFER_CONF;
 
 use super::*;
 
@@ -33,14 +33,14 @@ unsafe impl Sync for D3xxFifo32DirectAxi4sTx {}
 
 impl D3xxFifo32Direct {
     pub fn new(dev_index: usize) -> Result<(D3xxFifo32DirectAxi4l, D3xxFifo32DirectAxi4sRx, D3xxFifo32DirectAxi4sTx), Box<dyn Error>> {
-        #[cfg(target_os = "linux")]
-        {
-            let mut transfer_conf = FT_TRANSFER_CONF::default();
-//            transfer_conf.pipe[0].dwURBBufferSize = 1024;
-//            transfer_conf.pipe[1].dwURBBufferSize = 1024;
-//          D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
-//          D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
-        }
+        // #[cfg(target_os = "linux")]
+        // {
+        //     let mut transfer_conf = FT_TRANSFER_CONF::default();
+        //     transfer_conf.pipe[0].dwURBBufferSize = 1024;
+        //     transfer_conf.pipe[1].dwURBBufferSize = 1024;
+        //     D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+        //     D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+        // }
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
@@ -154,13 +154,13 @@ impl D3xxFifo32DirectAxi4sRx {
         self.axi4s_reader.set_timeout(timeout_us)
     }
 
-    pub fn recv_axi4s(&mut self, size: usize) -> Result<AxiStream, Box<dyn Error>> {
+    pub fn recv_axi4s_exact(&mut self, size: usize) -> Result<AxiStream, Box<dyn Error>> {
         if size == 0 {
             return Err("AXI4S requested size must be > 0".into());
         }
 
         let request_size = 4 + size;
-        let mut rx_data = self.axi4s_reader.read_until_size(request_size, 1000)?;
+        let mut rx_data = self.axi4s_reader.read_with_timeout(request_size, std::time::Duration::from_secs(1))?;
         while rx_data.len() < request_size {
             let remain_size = request_size - rx_data.len();
             let mut remain_data = self.axi4s_reader.read(remain_size)?;
@@ -184,8 +184,8 @@ impl D3xxFifo32DirectAxi4sRx {
         parse_axi4s_packet(&rx_data, size)
     }
 
-    pub fn recv_data(&mut self, size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
-        let stream = self.recv_axi4s(size)?;
+    pub fn recv_data_exact(&mut self, size: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        let stream = self.recv_axi4s_exact(size)?;
         Ok(stream.tdata)
     }
 
@@ -251,13 +251,11 @@ impl D3xxFifo32DirectAxi4sRx {
         Ok(image)
     }
 
+    /*
+    #[cfg(target_os = "windows")]
     pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
 //      self.axi4s_reader.set_timeout(5000)?;
-        let rx_data = self.axi4s_reader.read_until_size((width + 4) * height, 1000)?;
-//      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
-//      return Ok(vec![0u8; width * height]);
-//      let rx_data = self.axi4s_reader.read((width + 4) * height)?;
-//      println!("Received frame: {} bytes req:{}", rx_data.len(), (width + 4) * height);
+        let rx_data = self.axi4s_reader.read_with_timeout((width + 4) * height, std::time::Duration::from_secs(1))?;
         let mut image = Vec::with_capacity(width * height);
         for y in 0..height {
             let start = y * (width + 4);
@@ -271,6 +269,25 @@ impl D3xxFifo32DirectAxi4sRx {
             assert!(packet_last, "Expected AXI4S packet_last to be set");
             assert!(packet_size == width, "Expected AXI4S packet_size to match width: {} != {}", packet_size, width);
             image.extend_from_slice(&line_data[4..]);
+        }
+        Ok(image)
+    }
+    */
+
+//    #[cfg(not(target_os = "windows"))]
+    pub fn recv_frame(&mut self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+//      self.axi4s_reader.set_timeout(5000)?;
+        let mut image = Vec::with_capacity(width * height);
+        for y in 0..height {
+            let rx_line = self.axi4s_reader.read_with_timeout(width + 4, std::time::Duration::from_secs(1))?;
+            let opcode  = rx_line[0];
+            let operand = rx_line[1];
+            let packet_last = (operand & 0x80) != 0;
+            let packet_size = u16::from_le_bytes([rx_line[2], rx_line[3]]) as usize;
+            assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S y={} opcode={:02x}, oprand={:02x}, size={:04x}", y, opcode, operand, packet_size);
+            assert!(y < height-1 || packet_last, "Expected AXI4S packet_last to be set");
+            assert!(packet_size == width, "Expected AXI4S packet_size to match width: {} != {}", packet_size, width);
+            image.extend_from_slice(&rx_line[4..]);
         }
         Ok(image)
     }

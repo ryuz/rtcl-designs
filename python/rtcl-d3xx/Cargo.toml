@@ -1,0 +1,13 @@
+[package]
+name = "rtcl-d3xx-py"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "rtcl_d3xx"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.29.0"
+rtcl-d3xx-core = { package = "rtcl-d3xx", path = "../../rust/d3xx" }

@@ -131,14 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("module_id : 0x{:04x}", module_id);
     let module_ver = cam.module_version()?;
     println!("module_ver : 0x{:04x}", module_ver);
-
-    /* 1000fps
-    let width  = 256;
-    let height = 256;
-    let fr_length0 = 800;
-    let exposure0 = 700;
-    */
-
+    
     let width = config.width;
     let height = config.height;
     let fr_length0 = config.fr_length0;
@@ -192,52 +185,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 動作開始
     cam.set_sequencer_enable(true)?;
 
-    /*
-    loop {
-        unsafe {
-            frm_acc.write_reg_u32(0x10, 1);
-        }
-    }
-
-    // キー入力待ち
-    loop {
-        print!("\nPress Enter to start...");
-        std::io::stdout().flush()?;
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-        println!("");
-        std::io::stdout().flush()?;
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        unsafe {
-            frm_acc.write_reg_u32(0x10, 1);
-        }
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        std::io::stdout().flush()?;
-    }
-    return Ok(());
-
-    unsafe {
-//      frm_acc.write_reg_u32(0x10, 1);
-//      frm_acc.write_reg_u32(0x10, 1);
-    }
-    */
 
     println!("Start");
+    
+    // frame 取り込み開始
+    unsafe {
+        frm_acc.write_reg_u32(0x10, 1);
+    }
 
     loop {
-        // 1 frame 取り込み指示
-        unsafe {
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-            frm_acc.write_reg_u32(0x10, 1);
-        }
-
-//          println!("frame size = {}", size);
-
-        std::thread::sleep(Duration::from_millis(10));
-
+        // 1 frame 取り込み
         let frame = match usb.recv_video_timeout(Duration::from_millis(1000)) {
             Ok(frame) => frame,
             Err(_) => {

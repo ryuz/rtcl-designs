@@ -2,10 +2,14 @@ use std::error::Error;
 use std::collections::VecDeque;
 use std::sync::mpsc;
 use std::time::Duration;
+use std::io::Write;
+
+const OPCODE_THREAD_STOP: u8 = 0xff;
+
 
 use crate::d3xx_device::*;
 #[cfg(target_os = "linux")]
-use crate::ffi::{FT_PIPE_TRANSFER_CONF, FT_TRANSFER_CONF};
+use crate::ffi::FT_TRANSFER_CONF;
 
 use super::*;
 
@@ -22,17 +26,16 @@ unsafe impl Sync for D3xxFifo32Axi4l {}
 
 pub struct D3xxFifo32Axi4sRx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
-    rx_stream: mpsc::Receiver<Axi4Stream>,
-    tx_stop: mpsc::Sender<()>,
+    rd_axi4s_rx: mpsc::Receiver<Axi4Stream>,
+    wr_stop_rx: mpsc::Sender<()>,
 }
 
-unsafe impl Send for D3xxFifo32Axi4sRx {}
-unsafe impl Sync for D3xxFifo32Axi4sRx {}
+//unsafe impl Send for D3xxFifo32Axi4sRx {}
+//unsafe impl Sync for D3xxFifo32Axi4sRx {}
 
 pub struct D3xxFifo32Axi4sTx {
     thread_handle: Option<std::thread::JoinHandle<()>>,
-    tx_queue: mpsc::Sender<Vec<u8>>,
-    tx_stop: mpsc::Sender<()>,
+    wr_packet_tx: mpsc::Sender<Vec<u8>>,
 }
 
 unsafe impl Send for D3xxFifo32Axi4sTx {}
@@ -42,16 +45,17 @@ impl D3xxFifo32 {
     pub fn new(dev_index: usize) -> Result<(D3xxFifo32Axi4l, D3xxFifo32Axi4sRx, D3xxFifo32Axi4sTx), Box<dyn Error>> {
         #[cfg(target_os = "linux")]
         {
+            // FT_Create 前に設定必須。スレッドセーフ転送のままだと非同期書き込みが直列化される
             let mut transfer_conf = FT_TRANSFER_CONF::default();
-            transfer_conf.pipe[0].dwURBBufferSize = 1024;
-            transfer_conf.pipe[1].dwURBBufferSize = 1024;
-//          D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
-//          D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
+            transfer_conf.pipe[0].fNonThreadSafeTransfer = 1;
+            transfer_conf.pipe[1].fNonThreadSafeTransfer = 1;
+            D3xxDevice::set_transfer_params_for_fifo(0, &mut transfer_conf)?;
+            D3xxDevice::set_transfer_params_for_fifo(1, &mut transfer_conf)?;
         }
 
         let (dev_writers, dev_readers) = D3xxDevice::new(dev_index, 2)?;
 
-        let [axi4l_writer, mut axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
+        let [axi4l_writer, axi4s_writer]: [D3xxWriter; 2] = match dev_writers.try_into() {
             Ok(writers) => writers,
             Err(_) => panic!("Expected 2 writers"),
         };
@@ -60,22 +64,18 @@ impl D3xxFifo32 {
             Err(_) => panic!("Expected 2 readers"),
         };
 
-        axi4s_writer.set_timeout(10)?;
-        axi4s_writer.set_stream_pipe(0x100000)?;
-
-        let (tx_stream, rx_stream) = mpsc::channel::<Axi4Stream>();
-        let (tx_stop, rx_stop) = mpsc::channel::<()>();
-        let (tx_queue, rx_queue) = mpsc::channel::<Vec<u8>>();
-        let (tx_stop_tx, rx_stop_tx) = mpsc::channel::<()>();
+        let (wr_axi4s_rx, rd_axi4s_rx) = mpsc::channel::<Axi4Stream>();
+        let (wr_stop_rx, rd_stop_rx) = mpsc::channel::<()>();
+        let (wr_packet_tx, rd_packet_tx) = mpsc::channel::<Vec<u8>>();
         
         let thread_handle_rx = std::thread::spawn(move || {
-            if let Err(err) = recv_axi4s_thread(axi4s_reader, tx_stream, rx_stop) {
+            if let Err(err) = recv_axi4s_thread(axi4s_reader, wr_axi4s_rx, rd_stop_rx) {
                 eprintln!("recv_axi4s_thread error: {}", err);
             }
         });
 
         let thread_handle_tx = std::thread::spawn(move || {
-            if let Err(err) = send_axi4s_thread(axi4s_writer, rx_queue, rx_stop_tx) {
+            if let Err(err) = send_axi4s_thread(axi4s_writer, rd_packet_tx) {
                 eprintln!("send_axi4s_thread error: {}", err);
             }
         });
@@ -86,13 +86,12 @@ impl D3xxFifo32 {
         };
         let axi4s_rx = D3xxFifo32Axi4sRx {
             thread_handle: Some(thread_handle_rx),
-            rx_stream: rx_stream,
-            tx_stop: tx_stop,
+            rd_axi4s_rx: rd_axi4s_rx,
+            wr_stop_rx: wr_stop_rx,
         };
         let axi4s_tx = D3xxFifo32Axi4sTx {
             thread_handle: Some(thread_handle_tx),
-            tx_queue: tx_queue,
-            tx_stop: tx_stop_tx,
+            wr_packet_tx: wr_packet_tx,
         };
 
         Ok((axi4l, axi4s_rx, axi4s_tx))
@@ -138,23 +137,50 @@ impl D3xxFifo32Axi4l {
 
 impl D3xxFifo32Axi4sRx {
     pub fn recv_axi4s(&self) -> Result<Axi4Stream, Box<dyn Error>> {
-        self.rx_stream.recv().map_err(|e| e.into())
+        self.rd_axi4s_rx.recv().map_err(|e| e.into())
     }
 
     pub fn recv_axi4s_timeout(&self, timeout: Duration) -> Result<Axi4Stream, Box<dyn Error>> {
-        self.rx_stream.recv_timeout(timeout).map_err(|e| e.into())
+        self.rd_axi4s_rx.recv_timeout(timeout).map_err(|e| e.into())
     }
 
 
     pub fn try_recv_axi4s(&self) -> Result<Axi4Stream, Box<dyn Error>> {
-        if let Ok(packet) = self.rx_stream.try_recv() {
+        if let Ok(packet) = self.rd_axi4s_rx.try_recv() {
             return Ok(packet);
         }
         Err("No AXI4S packet available".into())
     }
     
     pub fn try_recv_axi4s_opt(&self) -> Option<Axi4Stream> {
-        self.rx_stream.try_recv().ok()
+        self.rd_axi4s_rx.try_recv().ok()
+    }
+
+    pub fn recv_frame(&self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        if width == 0 || height == 0 {
+            return Err("frame width and height must be > 0".into());
+        }
+
+        let image_size = width
+            .checked_mul(height)
+            .ok_or("frame size overflow")?;
+        let mut image = Vec::with_capacity(image_size);
+
+        for y in 0..height {
+            let stream = self.recv_axi4s_timeout(Duration::from_secs(1))?;
+            if stream.tdata.len() != width {
+                return Err(format!(
+                    "AXI4S line size mismatch at y={}: {} != {}",
+                    y,
+                    stream.tdata.len(),
+                    width
+                )
+                .into());
+            }
+            image.extend_from_slice(&stream.tdata);
+        }
+
+        Ok(image)
     }
 }
 
@@ -172,7 +198,7 @@ impl D3xxFifo32Axi4sTx {
             packet.push(OPCODE_AXI4S_TRANS);
             packet.push((stream.tuser & 0x7f) | 0x80);
             packet.extend_from_slice(&0u16.to_le_bytes());
-            self.tx_queue.send(packet)?;
+            self.wr_packet_tx.send(packet)?;
             return Ok(());
         }
 
@@ -188,7 +214,7 @@ impl D3xxFifo32Axi4sTx {
             packet.extend_from_slice(&(chunk_size as u16).to_le_bytes());
             packet.extend_from_slice(&stream.tdata[offset..offset + chunk_size]);
 
-            self.tx_queue.send(packet)?;
+            self.wr_packet_tx.send(packet)?;
             offset += chunk_size;
         }
 
@@ -230,21 +256,21 @@ impl D3xxFifo32Axi4sTx {
 }
 
 
-//#[cfg(target_os = "windows")]
-fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
+fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Stream>, rd_stop_rx: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
 
-    const OVERLAPS : usize = 16;
-//  const READ_UNIT : usize = 1024;
+    const OVERLAPS : usize = 8;     // 8以上に増やすとLinuxで発行待ちが起こる？
     const READ_UNIT : usize = 0x8000;
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffer = vec![[0u8; READ_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
     let mut index = 0;
 
+    std::io::stdout().flush().ok();
+
+
     reader.set_timeout(10)?;
     reader.set_stream_pipe(READ_UNIT)?;
-//  reader.set_stream_pipe(0x4)?;
-
+    
     // 読み出し要求を発行
     for i in 0..OVERLAPS {
         reader.initialize_overlapped(&mut overlapped[i])?; 
@@ -252,6 +278,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
     }
     let mut pending = OVERLAPS;
 
+    std::io::stdout().flush().ok();
 
     let mut stream = Axi4Stream {tuser: 0, tdata: Vec::<u8>::new()};
 
@@ -262,18 +289,18 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 
     let mut stop = false;
     loop {
-        if rx_stop.try_recv().is_ok() {
-            println!("recv_thread: stop");
+        if rd_stop_rx.try_recv().is_ok() {
             stop = true;
         }
 
         // 受信
+        std::io::stdout().flush().ok();
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-        if rx_size > 0 {
-//          println!("recv_thread: rx_size: {} bytes", rx_size);
-        }
+        // if rx_size > 0 {
+        //     println!("recv_thread: rx_size: {} bytes", rx_size);
+        // }
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;
@@ -297,10 +324,15 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
                 stream.tuser = operand & 0x7f;
                 packet_last = (operand & 0x80) != 0;
                 packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
-                assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+                assert!(opcode == OPCODE_NOP || opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
+                // if opcode == OPCODE_NOP {
+                //     println!("recv_thread: NOP packet received, size={}", packet_size);
+                // }
+                // else {
+                //     println!("recv_thread: AXI4S packet received, size={}, last={}", packet_size, packet_last);
+                // }
                 rx_buffer.drain(0..4);
-//              println!("axi4s : tuser : {} last : {}, packet_size: {} bytes", stream.tuser, packet_last, packet_size);
-                header = false;
+                header = packet_size == 0;
             }
             else {
                 if rx_buffer.len() >= packet_size {
@@ -310,7 +342,7 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
 
                     // 受信データを送信
                     if packet_last {
-                        tx_stream.send(stream.clone())?;
+                        wr_axi4s_rx.send(stream.clone())?;
                         stream.tdata.clear();
                     }
                 }
@@ -322,165 +354,89 @@ fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>
             }
         }
     }
-    println!("recv_thread: exit");
+
     Ok(())
 }
 
-/*
-#[cfg(target_os = "linux")]
-fn recv_axi4s_thread(mut reader: D3xxReader, tx_stream: mpsc::Sender<Axi4Stream>, rx_stop: mpsc::Receiver<()>) -> Result<(), Box<dyn Error>> {
-
-//  const READ_UNIT : usize = 1024;
-    const READ_UNIT : usize = 0x10000;
-
-    reader.set_timeout(10)?;
-    reader.set_stream_pipe(0x100000)?;
-//  reader.set_stream_pipe(0x4)?;
-
-  
-    let mut stream = Axi4Stream {tuser: 0, tdata: Vec::<u8>::new()};
-
-    let mut header = true;
-    let mut rx_buffer = Vec::<u8>::new();
-    let mut packet_size = 0;
-    let mut packet_last = false;
-
-    loop {
-        if rx_stop.try_recv().is_ok() {
-            println!("recv_thread: stop");
-            break;
-        }
-
-        // 受信
-        let rx_data = reader.read(READ_UNIT)?;
-        rx_buffer.extend_from_slice(&rx_data);
-        if rx_data.len() > 0 {
-//          println!("recv_thread: rx_size: {} bytes", rx_data.len());
-        }
-
-        while rx_buffer.len() > 0 {
-            assert!(rx_buffer.len() % 4 == 0);  // 32bit単位でしか通信しない
-
-            if header {
-                let opcode = rx_buffer[0];
-                let operand = rx_buffer[1];
-                stream.tuser = operand & 0x7f;
-                packet_last = (operand & 0x80) != 0;
-                packet_size = u16::from_le_bytes([rx_buffer[2], rx_buffer[3]]) as usize;
-                assert!(opcode == OPCODE_AXI4S_TRANS, "Expected OPCODE_AXI4S opcode={:02x}, oprand={:02x}, size={:04x}", opcode, operand, packet_size);
-                rx_buffer.drain(0..4);
-//              println!("axi4s : tuser : {} last : {}, packet_size: {} bytes", stream.tuser, packet_last, packet_size);
-                header = false;
-            }
-            else {
-                if rx_buffer.len() >= packet_size {
-                    stream.tdata.extend_from_slice(&rx_buffer[0..packet_size]);
-                    rx_buffer.drain(0..packet_size);
-                    header = true;
-
-                    // 受信データを送信
-                    if packet_last {
-                        tx_stream.send(stream.clone())?;
-                        stream.tdata.clear();
-                    }
-                }
-                else {
-                    stream.tdata.extend_from_slice(&rx_buffer);
-                    packet_size -= rx_buffer.len();
-                    rx_buffer.clear();
-                }
-            }
-        }
-    }
-    println!("recv_thread: exit");
-    Ok(())
-}
-*/
 
 fn send_axi4s_thread(
-    writer: D3xxWriter,
-    rx_queue: mpsc::Receiver<Vec<u8>>,
-    rx_stop: mpsc::Receiver<()>,
+    mut writer: D3xxWriter,
+    rd_packet_tx: mpsc::Receiver<Vec<u8>>,
 ) -> Result<(), Box<dyn Error>> {
-    const OVERLAPS: usize = 16;
-    const WRITE_UNIT: usize = 0x10000;
+    const OVERLAPS: usize = 8;
+    const WRITE_UNIT: usize = 0x8000;
 
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffers = vec![vec![0u8; WRITE_UNIT]; OVERLAPS];
     let mut bytes_transferred = vec![0u32; OVERLAPS];
-    let mut pending = vec![false; OVERLAPS];
-    let mut pending_count = 0usize;
-    let mut issue_index = 0usize;
-    let mut wait_index = 0usize;
+    let mut pending_count = 0usize;     // オーバーラップ発行中の個数
+    let mut issue_index = 0usize;       // 次に発行するスロット
+    let mut wait_index = 0usize;        // 次に完了を待つスロット
     let mut fifo = VecDeque::<u8>::new();
     let mut stop = false;
+   
+//  writer.set_timeout(10)?;
+    writer.set_stream_pipe(WRITE_UNIT)?;    // stream size は毎回の転送サイズと一致させる
 
     for i in 0..OVERLAPS {
         writer.initialize_overlapped(&mut overlapped[i])?;
     }
 
     loop {
+        // 送信データ受信 (fifo が空で継続中のときのみブロックして待つ)
+        if !stop && fifo.is_empty() {
+            match rd_packet_tx.recv() {
+                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => stop = true,
+                Ok(packet) => fifo.extend(packet),
+                Err(_) => stop = true,
+            }
+        }
+
+        // 後続が溜まっていれば纏めて取り込む
         while !stop {
-            match rx_queue.try_recv() {
+            match rd_packet_tx.try_recv() {
+                Ok(packet) if packet.first() == Some(&OPCODE_THREAD_STOP) => stop = true,
                 Ok(packet) => fifo.extend(packet),
                 Err(mpsc::TryRecvError::Empty) => break,
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    stop = true;
-                    break;
-                }
+                Err(mpsc::TryRecvError::Disconnected) => stop = true,
             }
         }
 
-        if !stop && rx_stop.try_recv().is_ok() {
-            stop = true;
+        // 発行順に完了チェック (待たない)
+        while pending_count > 0 {
+            if writer.get_async_result(&mut overlapped[wait_index], &mut bytes_transferred[wait_index], false).is_err() {
+                break;
+            }
+            wait_index = (wait_index + 1) % OVERLAPS;
+            pending_count -= 1;
         }
 
+        // 空きがある分だけオーバーラップ転送を発行
         while pending_count < OVERLAPS && !fifo.is_empty() {
-            while pending[issue_index] {
-                issue_index = (issue_index + 1) % OVERLAPS;
-            }
-
             let slot = issue_index;
             let tx_size = fifo.len().min(WRITE_UNIT);
-            let tx_buf = &mut buffers[slot];
-            for i in 0..tx_size {
-                tx_buf[i] = fifo.pop_front().expect("fifo should have enough bytes");
+            let (front, back) = fifo.as_slices();
+            let front_len = front.len().min(tx_size);
+            buffers[slot][..front_len].copy_from_slice(&front[..front_len]);
+            if front_len < tx_size {
+                buffers[slot][front_len..tx_size].copy_from_slice(&back[..tx_size - front_len]);
             }
-
-            bytes_transferred[slot] = tx_size as u32;
-            writer.write_async(&tx_buf[..tx_size], &mut bytes_transferred[slot], &mut overlapped[slot])?;
-            pending[slot] = true;
-            pending_count += 1;
+            fifo.drain(..tx_size);
+            writer.write_async(&buffers[slot][..tx_size], &mut bytes_transferred[slot], &mut overlapped[slot])?;
             issue_index = (issue_index + 1) % OVERLAPS;
+            pending_count += 1;
         }
 
         if stop && fifo.is_empty() && pending_count == 0 {
             break;
         }
 
-        if pending_count == 0 {
-            match rx_queue.recv_timeout(Duration::from_millis(1)) {
-                Ok(packet) => fifo.extend(packet),
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
-                Err(mpsc::RecvTimeoutError::Disconnected) => stop = true,
-            }
-            continue;
-        }
-
-        while !pending[wait_index] {
+        // これ以上発行できない場合のみ、1つだけ完了を待つ
+        if pending_count > 0 && (pending_count == OVERLAPS || (stop && fifo.is_empty())) {
+            writer.get_async_result(&mut overlapped[wait_index], &mut bytes_transferred[wait_index], true)?;
             wait_index = (wait_index + 1) % OVERLAPS;
+            pending_count -= 1;
         }
-
-        let slot = wait_index;
-        writer.get_async_result(&mut overlapped[slot], &mut bytes_transferred[slot], true)?;
-        let tx_size = bytes_transferred[slot] as usize;
-        if tx_size > WRITE_UNIT {
-            return Err(format!("invalid async tx size: {}", tx_size).into());
-        }
-
-        pending[slot] = false;
-        pending_count -= 1;
-        wait_index = (wait_index + 1) % OVERLAPS;
     }
 
     for i in 0..OVERLAPS {
@@ -493,7 +449,7 @@ fn send_axi4s_thread(
 
 impl Drop for D3xxFifo32Axi4sRx {
     fn drop(&mut self) {
-        let _ = self.tx_stop.send(());  // 受信スレッドに停止を通知
+        let _ = self.wr_stop_rx.send(());  // 受信スレッドに停止を通知
         if let Some(handle) = self.thread_handle.take() {
             let _ = handle.join();
         }
@@ -502,7 +458,7 @@ impl Drop for D3xxFifo32Axi4sRx {
 
 impl Drop for D3xxFifo32Axi4sTx {
     fn drop(&mut self) {
-        let _ = self.tx_stop.send(());  // 送信スレッドに停止を通知
+        let _ = self.wr_packet_tx.send(vec![OPCODE_THREAD_STOP]);
         if let Some(handle) = self.thread_handle.take() {
             let _ = handle.join();
         }
