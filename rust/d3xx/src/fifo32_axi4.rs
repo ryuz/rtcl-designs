@@ -155,6 +155,33 @@ impl D3xxFifo32Axi4sRx {
     pub fn try_recv_axi4s_opt(&self) -> Option<Axi4Stream> {
         self.rd_axi4s_rx.try_recv().ok()
     }
+
+    pub fn recv_frame(&self, width: usize, height: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+        if width == 0 || height == 0 {
+            return Err("frame width and height must be > 0".into());
+        }
+
+        let image_size = width
+            .checked_mul(height)
+            .ok_or("frame size overflow")?;
+        let mut image = Vec::with_capacity(image_size);
+
+        for y in 0..height {
+            let stream = self.recv_axi4s_timeout(Duration::from_secs(1))?;
+            if stream.tdata.len() != width {
+                return Err(format!(
+                    "AXI4S line size mismatch at y={}: {} != {}",
+                    y,
+                    stream.tdata.len(),
+                    width
+                )
+                .into());
+            }
+            image.extend_from_slice(&stream.tdata);
+        }
+
+        Ok(image)
+    }
 }
 
 impl D3xxFifo32Axi4sTx {
@@ -273,9 +300,9 @@ fn recv_axi4s_thread(mut reader: D3xxReader, wr_axi4s_rx: mpsc::Sender<Axi4Strea
         reader.get_async_result(&mut overlapped[index], &mut bytes_transferred[index], true)?;
         let rx_size = bytes_transferred[index] as usize;
         rx_buffer.extend_from_slice(&buffer[index][..rx_size]);
-        // if rx_size > 0 {
-        //     println!("recv_thread: rx_size: {} bytes", rx_size);
-        // }
+        if rx_size > 0 {
+            println!("recv_thread: rx_size: {} bytes", rx_size);
+        }
 
         if stop {
             reader.release_overlapped(&mut overlapped[index])?;

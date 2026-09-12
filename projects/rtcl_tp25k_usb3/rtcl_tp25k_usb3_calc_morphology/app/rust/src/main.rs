@@ -44,12 +44,14 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("Tang Ptimer25k Calc Morphology");
 
-    let width:  usize = 4096;
+//  let width:  usize = 4096;
+    let width:  usize = 512;
     let height:  usize = width;
     let filename = format!("input_{}x{}.bin", width, height);
 
     // OpenDevice
-    let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
+//  let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
+    let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32::new(0)?;
 
     // direct read/write
     println!("SYSCTL_CORE_ID        : 0x{:08x}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CORE_ID       ) as u32)?);
@@ -107,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //  std::thread::sleep(std::time::Duration::from_millis(10));
     let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
-        axi4s_rx.set_timeout(5000).map_err(|e| e.to_string())?;
+//      axi4s_rx.set_timeout(5000).map_err(|e| e.to_string())?;
         axi4s_rx
             .recv_frame(line_bytes, height)
             .map_err(|e| e.to_string())
