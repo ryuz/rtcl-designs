@@ -12,6 +12,3 @@ run:
 load:
 	make -C ../../syn/cli load
 	sleep 1
-
-.PHONY: load_run
-load_run: load run
