@@ -364,7 +364,7 @@ fn send_axi4s_thread(
     rd_packet_tx: mpsc::Receiver<Vec<u8>>,
 ) -> Result<(), Box<dyn Error>> {
     const OVERLAPS: usize = 8;
-    const WRITE_UNIT: usize = 0x80000;
+    const WRITE_UNIT: usize = 0x8000;
 
     let mut overlapped = vec![Overlapped::new(); OVERLAPS];
     let mut buffers = vec![vec![0u8; WRITE_UNIT]; OVERLAPS];

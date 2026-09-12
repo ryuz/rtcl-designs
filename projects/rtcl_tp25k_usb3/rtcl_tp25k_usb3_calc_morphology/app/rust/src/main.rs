@@ -44,8 +44,8 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("Tang Ptimer25k Calc Morphology");
 
+    let frames: usize = 10;
     let width:  usize = 4096;
-//  let width:  usize = 512;
     let height:  usize = width;
     let filename = format!("input_{}x{}.bin", width, height);
 
@@ -61,18 +61,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("MORPHO_PARAM_DILATION : 0x{:08x}", axi4l.read_axi4l((BASE_MORPHO + 4*REG_MORPHO_PARAM_DILATION) as u32)?);
 
     /*
-    println!("RX[0] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR4) as u32)?);
-    println!("TX[0] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR5) as u32)?);
-    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
-    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
-    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
-    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
-    */
-
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL3) as u32, 512, 0xf)?;  // max
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL4) as u32, 0, 0xf)?;    // limit
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL5) as u32, 0, 0xf)?;    // timeout
-
+    */
 
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL0) as u32, (width / 32) as u32, 0xf)?;
     axi4l.write_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_CONTROL1) as u32, (height    ) as u32, 0xf)?;
@@ -99,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start_time = Instant::now();
 
     let tx_handle = thread::spawn(move || -> Result<(), String> {
-        for _ in 0..1 {
+        for _ in 0..frames {
             axi4s_tx
                 .send_frame(line_bytes, height, &tx_data)
                 .map_err(|e| e.to_string())?;
@@ -107,9 +99,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         Ok(())
     });
 
-//  std::thread::sleep(std::time::Duration::from_millis(10));
     let rx_handle = thread::spawn(move || -> Result<Vec<u8>, String> {
-//      axi4s_rx.set_timeout(5000).map_err(|e| e.to_string())?;
+        for _ in 0..frames-1 {
+            axi4s_rx
+                .recv_frame(line_bytes, height)
+                .map_err(|e| e.to_string())?;
+        }
         axi4s_rx
             .recv_frame(line_bytes, height)
             .map_err(|e| e.to_string())
@@ -126,15 +121,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 時間計測終了
     let elapsed = start_time.elapsed();
-    println!("Processing time: {} microseconds", elapsed.as_micros());
+    println!("Processing time: {} microseconds", elapsed.as_micros() / frames as u128);
 
     println!("size = {}", (width/32+1) * height);
-    /*
-    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR2) as u32)?);
-    println!("RX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR6) as u32)?);
-    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR3) as u32)?);
-    println!("TX[1] : {}", axi4l.read_axi4l((BASE_SYSCTL + 4*REG_SYSCTL_MONITOR7) as u32)?);
-    */
 
     // 結果をファイルに書き込む（スレッド終了後に1度だけ実行）
     println!("Writing output image...");
