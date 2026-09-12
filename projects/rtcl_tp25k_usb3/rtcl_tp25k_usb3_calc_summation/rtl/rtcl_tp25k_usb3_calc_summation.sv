@@ -94,8 +94,6 @@ module rtcl_tp25k_usb3_calc_summation
                 .mdclk              (in_clk50       ),
                 .reset              (reset          )
             );
-//  assign ft601_clk  = ft601_clk_in    ;
-//  assign ft601_lock = ~reset          ;
 
     logic ft601_reset;
     jelly3_reset_async
@@ -201,7 +199,8 @@ module rtcl_tp25k_usb3_calc_summation
                 .RX_FIFO_PTR_BITS   (FT601_RX_FIFO_PTR_BITS     ),
                 .TX_FIFO_PTR_BITS   (FT601_TX_FIFO_PTR_BITS     ),
                 .RX_THRESHOLD       (FT601_RX_THRESHOLD         ),
-                .TX_THRESHOLD       (FT601_TX_THRESHOLD         )
+                .TX_THRESHOLD       (FT601_TX_THRESHOLD         ),
+                .FIXED_SIZE_TX      (2'b00                      )
             )
         u_ft601_multi_ch_mode
             (
