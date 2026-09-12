@@ -806,13 +806,10 @@ module rtcl_tp25k_usb3_mipi_lane2
         end
     end
 
-    assign led[0] = clk_counter[24]     ;
-    assign led[1] = pkt_error;// usb_counter[26] ;
-    assign led[2] = ft601_tx_error      ;
-    assign led[3] = ft601_rx_error      ;
-
-//    assign led[2] = frame_overflow  ;
-//    assign led[3] = dphy_overflow   ;
+    assign led[0] = clk_counter[24] ;
+    assign led[1] = usb_counter[26] ;
+    assign led[2] = frame_overflow ^ push_sw[0] ^ ~dip_sw[0];
+    assign led[3] = dphy_overflow  ^ push_sw[1] ^ ~dip_sw[1];
 
 //    assign led[1] = dphy_count_error;//usb_counter[26] ;
 //    assign led[2] = frm_count_error; //frame_overflow  ;
