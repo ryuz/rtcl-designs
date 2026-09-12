@@ -44,7 +44,8 @@ const REG_MORPHO_PARAM_DILATION : usize = 0x09;
 fn main() -> Result<(), Box<dyn Error>> {
     println!("Tang Ptimer25k Calc Morphology");
 
-    let width:  usize = 4096;
+//  let width:  usize = 4096;
+    let width:  usize = 512;
     let height:  usize = width;
     let filename = format!("input_{}x{}.bin", width, height);
 
