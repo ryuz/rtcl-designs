@@ -14,6 +14,7 @@
 module ft601_multi_ch_mode_transceiver
         #(
             parameter   int                     CHANNELS       = 4                          ,
+            parameter   bit                     TX_USE_STRB    = 0                          ,
             parameter   int                     MAX_TRANSFER   = 1024 / CHANNELS            ,
             parameter   int                     STREAM_SIZE    = 1024                       ,
             parameter   int                     TIMEOUT_BITS   = 16                         ,
@@ -295,7 +296,7 @@ module ft601_multi_ch_mode_transceiver
                         mon_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_wr_n   <= 1'b0                    ;
                         reg_ft601_be_t   <= 4'h0                    ;
-                        reg_ft601_be_o   <= s_fifo_valid[channel] ? s_fifo_strb[channel] : '0;
+                        reg_ft601_be_o   <= s_fifo_valid[channel] ? (TX_USE_STRB ? s_fifo_strb[channel] : '1) : '0;
                         reg_ft601_data_t <= 32'h0000_0000           ;
                         reg_ft601_data_o <= s_fifo_valid[channel] ? s_fifo_data[channel] : '0;
                     end
@@ -320,7 +321,7 @@ module ft601_multi_ch_mode_transceiver
                         end
                         else begin
                             reg_ft601_be_t    <= 4'h0                   ;
-                            reg_ft601_be_o    <= s_fifo_valid[channel] ? s_fifo_strb[channel] : '0;
+                            reg_ft601_be_o    <= s_fifo_valid[channel] ? (TX_USE_STRB ? s_fifo_strb[channel] : '1) : '0;
                             reg_ft601_data_t  <= 32'h0000_0000          ;
                             reg_ft601_data_o  <= s_fifo_valid[channel] ? s_fifo_data[channel] : '0;
                         end

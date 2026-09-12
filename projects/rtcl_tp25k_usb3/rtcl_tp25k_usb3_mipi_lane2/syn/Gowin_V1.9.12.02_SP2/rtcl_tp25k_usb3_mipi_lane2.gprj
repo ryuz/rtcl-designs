@@ -40,6 +40,7 @@
         <File path="../../../../shared/rtl/fifo32_cmd_arbiter.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_axi4l.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_axi4s_tx.sv" type="file.verilog" enable="1" />
+        <File path="../../../../shared/rtl/fifo32_cmd_axi4s_checker.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/frame_controller.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/ft601_multi_ch_mode.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/ft601_multi_ch_mode_transceiver.sv" type="file.verilog" enable="1" />

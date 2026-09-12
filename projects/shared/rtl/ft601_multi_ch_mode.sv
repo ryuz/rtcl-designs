@@ -24,7 +24,7 @@ module ft601_multi_ch_mode
             parameter   int                     TX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
             parameter   int                     TX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
             parameter   int                     RX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
-            parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX                 = '0                          ,
+            parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX               = '0                            ,
             localparam  type                    data_t                      = logic [31:0]                  ,
             localparam  type                    be_t                        = logic [3:0]                   
         )

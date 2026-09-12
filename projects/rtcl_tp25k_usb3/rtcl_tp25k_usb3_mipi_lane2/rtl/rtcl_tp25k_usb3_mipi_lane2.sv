@@ -698,6 +698,19 @@ module rtcl_tp25k_usb3_mipi_lane2
     assign axi4s_ft601_rx[1].tready = 1'b1;
 
 
+    logic   pkt_error;
+    fifo32_cmd_axi4s_checker
+            #(
+                .MIN_PACKET_SIZE    (4                      ),
+                .MAX_PACKET_SIZE    (4096                   )
+            )
+        u_fifo32_cmd_axi4s_checker
+            (
+                .mon_axi4s          (axi4s_ft601_tx[1].mon  ),
+
+                .error              (pkt_error              )
+            );
+
 
     // --------------------------------
     //  LED
@@ -789,7 +802,7 @@ module rtcl_tp25k_usb3_mipi_lane2
     end
 
     assign led[0] = clk_counter[24] ;
-    assign led[1] = usb_counter[26] ;
+    assign led[1] = pkt_error;// usb_counter[26] ;
     assign led[2] = frame_overflow  ;
     assign led[3] = dphy_overflow   ;
 
@@ -801,7 +814,6 @@ module rtcl_tp25k_usb3_mipi_lane2
     //  PMOD
     // --------------------------------
 
-    
     assign pmod[0] = mon_ft601_rxf_n;
     assign pmod[1] = mon_ft601_wr_n;
     assign pmod[2] = axi4s_frame.tready;
@@ -814,18 +826,18 @@ module rtcl_tp25k_usb3_mipi_lane2
     assign pmod[4] = axi4s_ft601_tx[1].tready;
     assign pmod[5] = axi4s_ft601_tx[1].tvalid;
     assign pmod[6] = mon_ft601_txe_n;
-    assign pmod[7] = mon_ft601_data[9];
+//  assign pmod[7] = mon_ft601_data[9];
+
     
-    /*
-    assign pmod[0] = dphy_byte_ready;
-    assign pmod[1] = dphy_hsrxd_vld[0];
-    assign pmod[2] = dphy_hsrxd_vld[1];
-    assign pmod[3] = dphy_hsrx_odten[0];
-    assign pmod[4] = dphy_di_lprx0[0];
-    assign pmod[5] = dphy_di_lprx0[1];
-    assign pmod[6] = dphy_di_lprx1[0];
-    assign pmod[7] = dphy_di_lprx1[1];
-    */
+    // assign pmod[0] = dphy_bytes_valid;
+    // assign pmod[1] = dphy_hsrxd_vld[0];
+    // assign pmod[2] = dphy_hsrxd_vld[1];
+    // assign pmod[3] = dphy_hsrx_odten[0];
+    // assign pmod[4] = dphy_lprx_n[0];
+    // assign pmod[5] = dphy_lprx_p[0];
+    // assign pmod[6] = dphy_lprx_n[1];
+    assign pmod[7] = dphy_lprx_p[1];
+    
 
 endmodule
 
