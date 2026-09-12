@@ -386,13 +386,15 @@ module rtcl_tp25k_usb3_mipi_lane2
     parameter   int     FT601_RX_FIFO_PTR_BITS [2] = '{  9,    9}                   ;
     parameter   int     FT601_TX_FIFO_PTR_BITS [2] = '{  9,   14}                   ;
     parameter   int     FT601_RX_THRESHOLD     [2] = '{256,  256}                   ;
-    parameter   int     FT601_TX_THRESHOLD     [2] = '{  1, 1024}                   ;
+    parameter   int     FT601_TX_THRESHOLD     [2] = '{  1,  512}                   ;
 
 
     ft601_timeout_t [FT601_CHANNELS-1:0]    ft601_tx_timeout;
     assign ft601_tx_timeout[0] = 0        ;
     assign ft601_tx_timeout[1] = 2000     ;
 
+    logic               ft601_tx_error      ;
+    logic               ft601_rx_error      ;
     logic   [1:0][31:0] mon_ft601_rx_counter;
     logic   [1:0][31:0] mon_ft601_tx_counter;
     logic               mon_ft601_wr_n      ;
@@ -429,10 +431,13 @@ module rtcl_tp25k_usb3_mipi_lane2
                 .ft601_data_t       (ft601_data_t               ),
 
                 .tx_timeout         (ft601_tx_timeout           ),
+                .tx_dummy_enable    (2'b10                      ),
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
+                .rx_error           (                           ),
+                .tx_error           (                           ),
                 .mon_rx_counter     (mon_ft601_rx_counter       ),
                 .mon_tx_counter     (mon_ft601_tx_counter       ),
                 .mon_wr_n           (mon_ft601_wr_n             ),
@@ -801,10 +806,13 @@ module rtcl_tp25k_usb3_mipi_lane2
         end
     end
 
-    assign led[0] = clk_counter[24] ;
+    assign led[0] = clk_counter[24]     ;
     assign led[1] = pkt_error;// usb_counter[26] ;
-    assign led[2] = frame_overflow  ;
-    assign led[3] = dphy_overflow   ;
+    assign led[2] = ft601_tx_error      ;
+    assign led[3] = ft601_rx_error      ;
+
+//    assign led[2] = frame_overflow  ;
+//    assign led[3] = dphy_overflow   ;
 
 //    assign led[1] = dphy_count_error;//usb_counter[26] ;
 //    assign led[2] = frm_count_error; //frame_overflow  ;

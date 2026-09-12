@@ -21,7 +21,7 @@ module ft601_multi_ch_mode_transceiver
             parameter   int                     COUNT_BITS     = $clog2(MAX_TRANSFER)       ,
             parameter   type                    count_t        = logic [COUNT_BITS-1:0]     ,
             parameter   type                    timeout_t      = logic [TIMEOUT_BITS-1:0]   ,
-            parameter   int                     ALIVE_TIME     = 5000000                    ,
+            parameter   int                     TX_DUMMY_TIME  = 5000000                    ,
             parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX  = '0                         ,
             parameter   int                     MON_COUNT_BITS = 32                         ,
             parameter   type                    mon_count_t    = logic [MON_COUNT_BITS-1:0] ,
@@ -32,6 +32,8 @@ module ft601_multi_ch_mode_transceiver
         (
             input   var logic                       reset               ,
             input   var logic                       clk                 ,
+
+            input   var logic       [CHANNELS-1:0]  tx_dummy_enable     ,
 
             input   var logic                       ft601_wakeup_n      ,
             input   var logic                       ft601_rxf_n         ,
@@ -81,7 +83,7 @@ module ft601_multi_ch_mode_transceiver
     parameter   int     STREAM_COUNT_BITS = STREAM_COUNT > 1 ? $clog2(STREAM_COUNT) : 1;
     localparam  type    scount_t          = logic [STREAM_COUNT_BITS-1:0];
 
-    parameter   int     ALIVE_COUNT_BITS  = ALIVE_TIME > 1 ? $clog2(ALIVE_TIME) : 1;
+    parameter   int     ALIVE_COUNT_BITS  = TX_DUMMY_TIME > 1 ? $clog2(TX_DUMMY_TIME) : 1;
     localparam  type    alive_t           = logic [ALIVE_COUNT_BITS-1:0];
 
     logic       in_reset;
@@ -134,12 +136,12 @@ module ft601_multi_ch_mode_transceiver
     data_t                      reg_ft601_data_t = 32'h0000_ff00;
 
     // タイムアウト監視
-    alive_t     [CHANNELS-1:0]  tx_alive_count  ;
+    alive_t     [CHANNELS-1:0]  tx_dummy_count  ;
     timeout_t   [CHANNELS-1:0]  tx_timeout_count;
     logic       [CHANNELS-1:0]  tx_enable       ;
     always_ff @( posedge clk or posedge in_reset ) begin
         if ( in_reset ) begin
-            tx_alive_count   <= '0;
+            tx_dummy_count   <= '0;
             tx_timeout_count <= '0;
             tx_enable        <= '0;
         end
@@ -147,7 +149,7 @@ module ft601_multi_ch_mode_transceiver
             for ( int i = 0; i < CHANNELS; i++ ) begin
                 if ( state == WRITE_DATA && channel == channel_t'(i) && reg_ft601_rxf_n == 1'b0 ) begin
                     // 送信発生でタイムアウトカウントをリセット
-                    tx_alive_count[i]   <= '0;
+                    tx_dummy_count[i]   <= '0;
                     tx_timeout_count[i] <= '0;
                     tx_enable[i]        <= 1'b0;
                 end
@@ -175,9 +177,9 @@ module ft601_multi_ch_mode_transceiver
                         end
 
                         // 送信が発生していない場合定期的にダミー送信を行う
-                        tx_alive_count[i] <= tx_alive_count[i] + 1'b1;
-                        if ( ALIVE_TIME > 0 && tx_alive_count[i] >= alive_t'(ALIVE_TIME-1) ) begin
-                            tx_enable[i] <= 1'b1;
+                        tx_dummy_count[i] <= tx_dummy_count[i] + 1'b1;
+                        if ( TX_DUMMY_TIME > 0 && tx_dummy_count[i] >= alive_t'(TX_DUMMY_TIME-1) ) begin
+                            tx_enable[i] <= tx_dummy_enable[i];
                         end
                     end
                 end

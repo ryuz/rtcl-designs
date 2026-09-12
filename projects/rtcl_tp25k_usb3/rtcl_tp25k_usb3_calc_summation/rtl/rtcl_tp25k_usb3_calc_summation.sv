@@ -220,10 +220,13 @@ module rtcl_tp25k_usb3_calc_summation
                 .ft601_data_t       (ft601_data_t               ),
 
                 .tx_timeout         (ft601_tx_timeout           ),
+                .tx_dummy_enable    (2'b10                      ),
 
                 .s_axi4s_tx         (axi4s_ft601_tx             ),
                 .m_axi4s_rx         (axi4s_ft601_rx             ),
 
+                .rx_error           (                           ),
+                .tx_error           (                           ),
                 .mon_rx_counter     (mon_ft601_rx_counter       ),
                 .mon_tx_counter     (mon_ft601_tx_counter       ),
                 .mon_wr_n           (mon_ft601_wr_n             ),
