@@ -240,7 +240,7 @@ bin_copy.*
 
 a.out
 bitmap.h
-*.ipynb
+#*.ipynb
 
 # exefile
 *.exe

@@ -14,7 +14,7 @@ const ADDR_PMOD    : u32 =0x0000_001c;
 
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("Tang Ptimer25k Calc Summation");
+    println!("Tang Ptimer25k User Module Sample");
 
     // OpenDevice
     let (axi4l, mut axi4s_rx, axi4s_tx) = D3xxFifo32Direct::new(0)?;
