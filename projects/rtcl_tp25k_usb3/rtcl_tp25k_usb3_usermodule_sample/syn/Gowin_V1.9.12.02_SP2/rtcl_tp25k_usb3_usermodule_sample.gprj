@@ -33,8 +33,8 @@
         <File path="../../ip/gowin_pll/gowin_pll_ft601_mod.v" type="file.verilog" enable="1" />
         <File path="../../ip/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1" />
         <File path="../../ip/pll_init.v" type="file.verilog" enable="1" />
-        <File path="../../rtl/calc_summation.sv" type="file.verilog" enable="1" />
-        <File path="../../rtl/rtcl_tp25k_usb3_calc_summation.sv" type="file.verilog" enable="1" />
+        <File path="../../rtl/usermodule.sv" type="file.verilog" enable="1" />
+        <File path="../../rtl/Trtcl_tp25k_usb3_usermodule_sample.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_arbiter.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_axi4l.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/fifo32_cmd_axi4s_checker.sv" type="file.verilog" enable="1" />
@@ -43,8 +43,8 @@
         <File path="../../../../shared/rtl/frame_controller.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/ft601_multi_ch_mode.sv" type="file.verilog" enable="1" />
         <File path="../../../../shared/rtl/ft601_multi_ch_mode_transceiver.sv" type="file.verilog" enable="1" />
-        <File path="../../constrain/rtcl_tp25k_usb3_calc_summation.cst" type="file.cst" enable="1" />
-        <File path="../../constrain/rtcl_tp25k_usb3_calc_summation.sdc" type="file.sdc" enable="1" />
-        <File path="src/rtcl_tp25k_usb3_calc_summation.rao" type="file.gao" enable="1" />
+        <File path="../../constrain/Trtcl_tp25k_usb3_usermodule_sample.cst" type="file.cst" enable="1" />
+        <File path="../../constrain/Trtcl_tp25k_usb3_usermodule_sample.sdc" type="file.sdc" enable="1" />
+        <File path="src/Trtcl_tp25k_usb3_usermodule_sample.rao" type="file.gao" enable="1" />
     </FileList>
 </Project>
