@@ -16,6 +16,7 @@
     - `rtcl_tp25k_usb3_lfsr/` : LFSRデータ送受信サンプル
     - `rtcl_tp25k_usb3_mipi_lane2/` : MIPI-CSI2 2レーンサンプル(ラズパイカメラ／RTCL-P3S70-MIPI)
     - `rtcl_tp25k_usb3_mode245_loopback/` : 245モードループバック確認サンプル
+    - `rtcl_tp25k_usb3_usermodule_sample/` : USB3 経由で PC から制御するユーザーモジュールサンプル
   - `kv260/` : KV260 用
     - `kv260_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
     - `kv260_rtcl_p3s7_csi2/` : RTCL-P3S70-MIPI CSI2 仕様実験版
