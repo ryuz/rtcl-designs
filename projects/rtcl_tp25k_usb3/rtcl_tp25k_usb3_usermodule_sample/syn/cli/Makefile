@@ -1,6 +1,4 @@
 
-
-
 DEVICE_PART_NUMBER=GW5A-LV25MG121NC1/I0
 DEVICE_NAME=GW5A-25A
 
@@ -46,10 +44,10 @@ VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601.v
 VLOG_SOURCES += $(PRJ_DIR)/ip/gowin_pll/gowin_pll_ft601_mod.v
 
 # SDC File
-SDC_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_calc_summation.sdc
+SDC_SOURCES = $(CONSTRAIN_DIR)/$(TOP_MODULE).sdc
 
 # CST File
-CST_SOURCES = $(CONSTRAIN_DIR)/rtcl_tp25k_usb3_calc_summation.cst
+CST_SOURCES = $(CONSTRAIN_DIR)/$(TOP_MODULE).cst
 
 # for tcl script
 export DEVICE_PART_NUMBER
