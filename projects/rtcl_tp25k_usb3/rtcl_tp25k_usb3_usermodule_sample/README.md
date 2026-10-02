@@ -48,7 +48,18 @@ make load
 
 `syn/Gowin_V1.9.12.02_SP2/rtcl_tp25k_usb3_calc_summation.gprj` を GOWIN EDA で開いてビルドすることもできます。
 
-### PC 側のソフト
+### PC 側のソフト (Python ノートブック)
+
+Jupyter Notebook で動かすサンプルとして [app/python/sample.ipynb](app/python/sample.ipynb) を用意しています。ノートブックのセルを順に実行することで、以下を一通り体験できます。
+
+1. `gw_sh` を使った FPGA 回路の合成 (`syn/cli/Makefile` と同等のビルド)
+2. `programmer_cli` または `openFPGALoader` による bitstream のロード
+3. `rtcl_d3xx` パッケージのインストール (未インストール時は [python/rtcl-d3xx](../../../python/rtcl-d3xx) から自動インストール)
+4. AXI4-Lite によるレジスタの読み書き、LED/PMOD の点滅、AXI4-Stream データの送受信
+
+合成・ロードのセルを実行する場合は、`gw_sh` や `programmer_cli` などの GOWIN のツールに PATH を通しておいてください。
+
+### PC 側のソフト (Rust)
 
 PC 側では Rust で書かれたサンプルアプリを使って、FPGA の制御レジスタの確認、LED/PMOD の制御、AXI4-Stream データの送受信を行います。FPGA に書き込んだ後、以下を実行してください。
 
