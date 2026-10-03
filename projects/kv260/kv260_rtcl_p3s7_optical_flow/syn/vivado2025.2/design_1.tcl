@@ -50,7 +50,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
    create_project project_1 myproj -part xck26-sfvc784-2LV-c
-   set_property BOARD_PART xilinx.com:kv260_som:part0:1.2 [current_project]
+   set_property BOARD_PART xilinx.com:kv260_som:part0:1.4 [current_project]
 }
 
 
@@ -799,6 +799,8 @@ MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 
     CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__ACT_FREQMHZ {249.997498} \
     CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRF_APB__DBG_FPD_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRF_APB__DBG_TRACE_CTRL__ACT_FREQMHZ {125} \
+    CONFIG.PSU__CRF_APB__DBG_TRACE_CTRL__FREQMHZ {125} \
     CONFIG.PSU__CRF_APB__DBG_TRACE_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRF_APB__DBG_TSTMP_CTRL__ACT_FREQMHZ {249.997498} \
     CONFIG.PSU__CRF_APB__DBG_TSTMP_CTRL__FREQMHZ {250} \
@@ -1165,6 +1167,8 @@ MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 
     CONFIG.PSU__IRQ_P2F_TTC3__INT0 {0} \
     CONFIG.PSU__IRQ_P2F_TTC3__INT1 {0} \
     CONFIG.PSU__IRQ_P2F_TTC3__INT2 {0} \
+    CONFIG.PSU__IRQ_P2F_USB2_OTG__INT0 {0} \
+    CONFIG.PSU__IRQ_P2F_USB2_OTG__INT1 {0} \
     CONFIG.PSU__IRQ_P2F_USB3_ENDPOINT__INT0 {0} \
     CONFIG.PSU__IRQ_P2F_USB3_ENDPOINT__INT1 {0} \
     CONFIG.PSU__IRQ_P2F_USB3_OTG__INT0 {0} \
@@ -1248,12 +1252,12 @@ MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 MIO#GPIO1 
     CONFIG.PSU__PRESET_APPLIED {1} \
     CONFIG.PSU__PROTECTION__DDR_SEGMENTS {NONE} \
     CONFIG.PSU__PROTECTION__ENABLE {0} \
-    CONFIG.PSU__PROTECTION__FPD_SEGMENTS {SA:0xFD1A0000; SIZE:1280; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD000000; SIZE:64; UNIT:KB; RegionTZ:Secure;\
-WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD010000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD020000; SIZE:64; UNIT:KB; RegionTZ:Secure;\
-WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD030000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD040000; SIZE:64; UNIT:KB; RegionTZ:Secure;\
-WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD050000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD610000; SIZE:512; UNIT:KB; RegionTZ:Secure;\
-WrAllowed:Read/Write; subsystemId:PMU Firmware     |      SA:0xFD5D0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware     |     SA:0xFD1A0000 ; SIZE:1280; UNIT:KB;\
-RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem} \
+    CONFIG.PSU__PROTECTION__FPD_SEGMENTS {SA:0xFD1A0000; SIZE:1280; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD000000; SIZE:64; UNIT:KB; RegionTZ:Secure;\
+WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD010000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD020000; SIZE:64; UNIT:KB;\
+RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD030000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD040000;\
+SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD050000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |  \
+    SA:0xFD610000; SIZE:512; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware      |       SA:0xFD5D0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU\
+Firmware      |      SA:0xFD1A0000 ; SIZE:1280; UNIT:KB; RegionTZ:Secure ; WrAllowed:Read/Write; subsystemId:Secure Subsystem} \
     CONFIG.PSU__PROTECTION__LPD_SEGMENTS {SA:0xFF980000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF5E0000; SIZE:2560; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write;\
 subsystemId:PMU Firmware| SA:0xFFCC0000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFF180000; SIZE:768; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU\
 Firmware| SA:0xFF410000; SIZE:640; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware| SA:0xFFA70000; SIZE:64; UNIT:KB; RegionTZ:Secure; WrAllowed:Read/Write; subsystemId:PMU Firmware|\
@@ -1350,6 +1354,7 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.PSU__USB1__PERIPHERAL__ENABLE {0} \
     CONFIG.PSU__USB1__RESET__ENABLE {0} \
     CONFIG.PSU__USE_DIFF_RW_CLK_GP2 {0} \
+    CONFIG.PSU__USE_DIFF_RW_CLK_GP3 {0} \
     CONFIG.PSU__USE__ADMA {0} \
     CONFIG.PSU__USE__APU_LEGACY_INTERRUPT {0} \
     CONFIG.PSU__USE__AUDIO {0} \
@@ -1412,6 +1417,7 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.UART1_BOARD_INTERFACE {custom} \
     CONFIG.USB0_BOARD_INTERFACE {custom} \
     CONFIG.USB1_BOARD_INTERFACE {custom} \
+    CONFIG.preset {None} \
   ] $zynq_ultra_ps_e_0
 
 
@@ -1451,22 +1457,22 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   [get_bd_pins axi_protocol_convert_0/aresetn]
   connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn  [get_bd_pins rst_ps8_0_99M/peripheral_aresetn] \
   [get_bd_ports m_axi4l_peri_aresetn] \
-  [get_bd_pins axi_iic_0/s_axi_aresetn] \
   [get_bd_pins ps8_0_axi_periph/ARESETN] \
   [get_bd_pins ps8_0_axi_periph/S00_ARESETN] \
-  [get_bd_pins ps8_0_axi_periph/M00_ARESETN]
+  [get_bd_pins ps8_0_axi_periph/M00_ARESETN] \
+  [get_bd_pins axi_iic_0/s_axi_aresetn]
   connect_bd_net -net xlslice_0_Dout  [get_bd_pins xlslice_0/Dout] \
   [get_bd_ports fan_en]
   connect_bd_net -net zynq_ultra_ps_e_0_emio_ttc0_wave_o  [get_bd_pins zynq_ultra_ps_e_0/emio_ttc0_wave_o] \
   [get_bd_pins xlslice_0/Din]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0  [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] \
   [get_bd_ports m_axi4l_peri_aclk] \
-  [get_bd_pins axi_iic_0/s_axi_aclk] \
   [get_bd_pins axi_protocol_convert_0/aclk] \
-  [get_bd_pins clk_wiz_0/clk_in1] \
   [get_bd_pins ps8_0_axi_periph/ACLK] \
   [get_bd_pins ps8_0_axi_periph/S00_ACLK] \
   [get_bd_pins ps8_0_axi_periph/M00_ACLK] \
+  [get_bd_pins axi_iic_0/s_axi_aclk] \
+  [get_bd_pins clk_wiz_0/clk_in1] \
   [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] \
   [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] \
   [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk]
