@@ -1,6 +1,51 @@
 use std::error::Error;
+use clap::Parser;
 use rtcl_d3xx::*;
 use std::time::Duration;
+
+#[derive(Parser, Debug)]
+#[command(about = "IMX219 camera capture via FT601")]
+struct Args {
+    /// 画像幅 [pixel]
+    #[arg(long, default_value_t = 1280)]
+    width: usize,
+
+    /// 画像高さ [pixel]
+    #[arg(long, default_value_t = 720)]
+    height: usize,
+
+    /// フレームレート [fps]
+    #[arg(long, default_value_t = 30.0)]
+    fps: f64,
+
+    /// 露光時間 [ms]
+    #[arg(long, default_value_t = 20.0)]
+    exposure: f64,
+
+    /// アナログゲイン [dB]
+    #[arg(long, default_value_t = 3.0)]
+    gain: f64,
+
+    /// デジタルゲイン [dB]
+    #[arg(long, default_value_t = 1.0)]
+    digital_gain: f64,
+
+    /// ビニング無効化
+    #[arg(long)]
+    no_binning: bool,
+
+    /// AOI X 座標 (-1 で中央)
+    #[arg(long, default_value_t = -1)]
+    aoi_x: i32,
+
+    /// AOI Y 座標 (-1 で中央)
+    #[arg(long, default_value_t = -1)]
+    aoi_y: i32,
+
+    /// ピクセルクロック [Hz]
+    #[arg(long, default_value_t = 91_000_000.0)]
+    pixel_clock: f64,
+}
 
 
 const REGADR_SYSCTL_CONTROL0 : usize = 0x10;
@@ -15,10 +60,11 @@ type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndia
 fn main() -> Result<(), Box<dyn Error>> {
     println!("FT601 test");
 
-    let pixel_clock: f64 = 91000000.0;
-    let binning =  true;
-    let width: usize = 1280;
-    let height: usize = 720;
+    let args = Args::parse();
+    let pixel_clock: f64 = args.pixel_clock;
+    let binning = !args.no_binning;
+    let width: usize = args.width;
+    let height: usize = args.height;
 
 
     // OpenDevice
@@ -100,15 +146,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // camera 設定
     println!("set camera");
-    let aoi_x: i32 = -1;
-    let aoi_y: i32 = -1;
     imx219.set_pixel_clock(pixel_clock).unwrap();
-    imx219.set_aoi(width as i32, height as i32, aoi_x, aoi_y, binning, binning).unwrap();
-    imx219.set_frame_rate(30.0).unwrap();
-    imx219.set_exposure_time(20.0).unwrap();
+    imx219.set_aoi(width as i32, height as i32, args.aoi_x, args.aoi_y, binning, binning).unwrap();
+    imx219.set_frame_rate(args.fps).unwrap();
+    imx219.set_exposure_time(args.exposure).unwrap();
 
-    imx219.set_gain(3.0).unwrap();
-    imx219.set_digital_gain(1.0).unwrap();
+    imx219.set_gain(args.gain).unwrap();
+    imx219.set_digital_gain(args.digital_gain).unwrap();
     println!("set camera end");
 
     println!("start camera");
