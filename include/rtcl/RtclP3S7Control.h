@@ -39,6 +39,10 @@ namespace rtcl {
 #define RTCL_P3S7_DPHY_INIT_DONE        0x0088
 #define RTCL_P3S7_MMCM_CONTROL          0x00a0
 #define RTCL_P3S7_PLL_CONTROL           0x00a1
+#define RTCL_P3S7_PMOD_MODE             0x00b0
+#define RTCL_P3S7_PMOD_GPIO_IN          0x00b2
+#define RTCL_P3S7_PMOD_GPIO_OUT         0x00b3
+#define RTCL_P3S7_PMOD_GPIO_DIR         0x00b4
 
 #define RTCL_P3S7_MMCM_DRP              0x1000
 
@@ -47,7 +51,9 @@ class RtclP3S7ControlI2c
 {
 protected:
     jelly::I2cAccessor  m_i2c;
-    std::uint16_t       m_general_configuration = 0;
+    std::uint16_t       m_general_configuration = 0x084c;
+    std::uint16_t       m_xsm_delay = (21 << 8);
+    double              m_dphy_speed = 1250000000.0;
     float               m_analog_gain  = 1.0;
     float               m_digital_gain = 1.0;
 
@@ -165,12 +171,14 @@ public:
             for ( std::size_t i = 0; i < sizeof(m_mmcm_tbl_1250) / sizeof(m_mmcm_tbl_1250[0]); i++ ) {
                 i2c_write(RTCL_P3S7_MMCM_DRP + m_mmcm_tbl_1250[i][0], m_mmcm_tbl_1250[i][1]);
             }
+            m_dphy_speed = 1250000000.0;
         }
         else if ( speed >= 950000000 ) {
             // D-PHY 950Mbps用設定
             for ( std::size_t i = 0; i < sizeof(m_mmcm_tbl_950) / sizeof(m_mmcm_tbl_950[0]); i++ ) {
                 i2c_write(RTCL_P3S7_MMCM_DRP + m_mmcm_tbl_950[i][0], m_mmcm_tbl_950[i][1]);
             }
+            m_dphy_speed = 950000000.0;
         }
         else {
             return false;
@@ -210,35 +218,174 @@ public:
 
 protected:
     bool SensorBoot() {
-        // SPI 初期設定
-        spi_write(16, 0x0003);    // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
-        spi_write(32, 0x0007);    // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
-        spi_write( 8, 0x0000);    // pll_soft_reset, pll_lock_soft_reset
-        spi_write( 9, 0x0000);    // cgen_soft_reset
-        spi_write(34, 0x1);       // config0 Logic General Enable Configuration
-        spi_write(40, 0x7);       // image_core_config0 
-        spi_write(48, 0x1);       // AFE Power down for AFE’s
-        spi_write(64, 0x1);       // Bias Bias Power Down Configuration
-        spi_write(72, 0x2227);    // Charge Pump
-        spi_write(112, 0x7);      // Serializers/LVDS/IO 
-        spi_write(10, 0x0000);    // soft_reset_analog
-        spi_write(192, m_general_configuration); 
+        // Rust版(rtcl_p3s7_module_driver.rs)と同じシーケンス
+        spi_write( 32, 0x2004);
+        spi_write( 20, 0x0000);
+        spi_write( 17, 0x2113);
+        spi_write( 26, 0x2280);
+        spi_write( 27, 0x3d2d);
+        spi_write(  8, 0x0000);
+        spi_write( 16, 0x0003);
+        spi_write(  9, 0x0000);
+        spi_write( 32, 0x2006);
+        spi_write( 34, 0x0001);
+        spi_write( 41, 0x085f);
+        spi_write( 42, 0x4113);
+        spi_write( 43, 0x0008);
+        spi_write( 65, 0x282b);
+        spi_write( 66, 0x53c8);
+        spi_write( 67, 0x0777);
+        spi_write( 68, 0x0087);
+        spi_write( 70, 0x1111);
+        spi_write( 71, 0x4800);
+        spi_write( 72, 0x0017);
+        spi_write(128, 0x470f);
+        spi_write(129, 0x0030);
+        spi_write(130, 0x000f);
+        spi_write(194, 0x0ee4);
+        spi_write(197, 0x191c);
+        spi_write(199, 0x06a1);
+        spi_write(200, 0x01f4);
+        spi_write(201, 0x06a1);
+        spi_write(204, 0x00e1);
+        spi_write(207, 0x0000);
+        spi_write(211, 0x0e49);
+        spi_write(215, 0x0107);
+        spi_write(216, 0x7f00);
+        spi_write(217, 0x4444);
+        spi_write(219, 0x0020);
+        spi_write(220, 0x3a28);
+        spi_write(222, 0x6259);
+        spi_write(224, 0x3e5e);
+        spi_write(384, 0xc800);
+        spi_write(385, 0xfb1f);
+        spi_write(386, 0xfb1f);
+        spi_write(387, 0xfb12);
+        spi_write(388, 0xf903);
+        spi_write(389, 0xf802);
+        spi_write(390, 0xf30f);
+        spi_write(391, 0xf30f);
+        spi_write(392, 0xf30f);
+        spi_write(393, 0xf30a);
+        spi_write(394, 0xf101);
+        spi_write(395, 0xf00f);
+        spi_write(396, 0xf24b);
+        spi_write(397, 0xf226);
+        spi_write(398, 0xf001);
+        spi_write(399, 0xf402);
+        spi_write(400, 0xf001);
+        spi_write(401, 0xf402);
+        spi_write(402, 0xf001);
+        spi_write(403, 0xf401);
+        spi_write(404, 0xf007);
+        spi_write(405, 0xf20f);
+        spi_write(406, 0xf20f);
+        spi_write(407, 0xf202);
+        spi_write(408, 0xf006);
+        spi_write(409, 0xec02);
+        spi_write(410, 0xe801);
+        spi_write(411, 0xec02);
+        spi_write(412, 0xe801);
+        spi_write(413, 0xec02);
+        spi_write(414, 0xc801);
+        spi_write(415, 0xc800);
+        spi_write(416, 0xc800);
+        spi_write(417, 0xcc02);
+        spi_write(418, 0xc801);
+        spi_write(419, 0xcc02);
+        spi_write(420, 0xc801);
+        spi_write(421, 0xcc02);
+        spi_write(422, 0xc806);
+        spi_write(423, 0xc800);
+        spi_write(424, 0x0030);
+        spi_write(425, 0x207c);
+        spi_write(426, 0x2071);
+        spi_write(427, 0x0074);
+        spi_write(428, 0x107f);
+        spi_write(429, 0x1072);
+        spi_write(430, 0x1074);
+        spi_write(431, 0x0076);
+        spi_write(432, 0x0031);
+        spi_write(433, 0x21bb);
+        spi_write(434, 0x20b1);
+        spi_write(435, 0x20b1);
+        spi_write(436, 0x00b1);
+        spi_write(437, 0x10bf);
+        spi_write(438, 0x10b2);
+        spi_write(439, 0x10b4);
+        spi_write(440, 0x00b1);
+        spi_write(441, 0x0030);
+        spi_write(442, 0x0030);
+        spi_write(443, 0x217b);
+        spi_write(444, 0x2071);
+        spi_write(445, 0x2071);
+        spi_write(446, 0x0074);
+        spi_write(447, 0x107f);
+        spi_write(448, 0x1072);
+        spi_write(449, 0x1074);
+        spi_write(450, 0x0076);
+        spi_write(451, 0x0031);
+        spi_write(452, 0x20bb);
+        spi_write(453, 0x20b1);
+        spi_write(454, 0x20b1);
+        spi_write(455, 0x00b1);
+        spi_write(456, 0x10bf);
+        spi_write(457, 0x10b2);
+        spi_write(458, 0x10b4);
+        spi_write(459, 0x00b1);
+        spi_write(460, 0x0030);
+        spi_write(473, 0x2030);
+        spi_write(474, 0x20f3);
+        spi_write(475, 0x2071);
+        spi_write(476, 0x0071);
+        spi_write(477, 0x0179);
+        spi_write(478, 0x0078);
+        spi_write(479, 0x1074);
+        spi_write(480, 0x0076);
+        spi_write(481, 0x0031);
+        spi_write(482, 0x21bd);
+        spi_write(483, 0x20b1);
+        spi_write(484, 0x00b1);
+        spi_write(485, 0x10bf);
+        spi_write(486, 0x10b2);
+        spi_write(487, 0x10b4);
+        spi_write(488, 0x00b1);
+        spi_write(489, 0x0030);
+        spi_write( 32, 0x2007);
+        spi_write( 10, 0x0000);
+        spi_write( 64, 0x0001);
+        spi_write( 72, 0x0017);
+        spi_write( 40, 0x0003);
+        spi_write( 48, 0x0001);
+        spi_write(112, 0x0007);
+        spi_write(192, 0x087d);
+        spi_write(193, m_xsm_delay);
+        spi_write(197, 0x0102);
+        spi_write(224, 0x3e03);
+        spi_write(192, 0x087c);
+        spi_write(220, 0x3a28);
+        spi_write(192, 0x087d);
+        spi_write(195, 0x0001);
+        spi_write(129, 0x0084);
+        spi_write(204, 0x01e1);
+        spi_write( 66, 0x53c8);
+        spi_write(192, m_general_configuration);
         return true;
     }
 
     bool SensorShutdown(void) {
         spi_write(192, 0x0000);
-        spi_write(10,  0x0999); // soft_reset_analog
         spi_write(112, 0x0000); // Serializers/LVDS/IO
-        spi_write(72,  0x2220); // Charge Pump
-        spi_write(64,  0x0000); // Bias Bias Power Down Configuration
         spi_write(48,  0x0000); // AFE Power down for AFE’s
         spi_write(40,  0x0000); // image_core_config0
+        spi_write(72,  0x2220); // Charge Pump
+        spi_write(64,  0x0000); // Bias Bias Power Down Configuration
+        spi_write(10,  0x0999); // soft_reset_analog
+        spi_write(32,  0x0004); // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
         spi_write(34,  0x0000); // config0 Logic General Enable Configuration
         spi_write(9,   0x0009); // cgen_soft_reset
-        spi_write(8,   0x0099); // pll_soft_reset, pll_lock_soft_reset
-        spi_write(32,  0x0004); // config0 (10bit mode) 0: enable_analog, 1: enabale_log, 2: select PLL
         spi_write(16,  0x0004); // power_down  0:pwd_n, 1:PLL enable, 2: PLL Bypass
+        spi_write(8,   0x0099); // pll_soft_reset, pll_lock_soft_reset
         return true;
     }
 
@@ -246,8 +393,6 @@ protected:
         if ( enable ) {
             // シーケンサ停止(トレーニングパターン出力状態へ)
             SetSequencerEnable(false);
-
-            usleep(1000);
             i2c_write(RTCL_P3S7_RECEIVER_RESET, 1);
             i2c_write(RTCL_P3S7_RECEIVER_CLK_DLY, 8);
             i2c_write(RTCL_P3S7_ALIGN_RESET, 1);
@@ -384,11 +529,45 @@ public:
         return true;
     }
 
-    bool SetXsmDelay(int delay) {
+    bool SetPmodMode(std::uint16_t mode) {
         if ( !IsOpend() ) { return false; }
-        delay &= 0xff;
-        spi_write(193, delay << 8);
+        i2c_write(RTCL_P3S7_PMOD_MODE, mode);
         return true;
+    }
+
+    std::uint8_t ReadPmod(void) {
+        if ( !IsOpend() ) { return 0; }
+        return static_cast<std::uint8_t>(i2c_read(RTCL_P3S7_PMOD_GPIO_IN) & 0xff);
+    }
+
+    bool SetPmodGpioOut(std::uint8_t value) {
+        if ( !IsOpend() ) { return false; }
+        i2c_write(RTCL_P3S7_PMOD_GPIO_OUT, value);
+        return true;
+    }
+
+    bool SetPmodGpioDir(std::uint8_t dir) {
+        if ( !IsOpend() ) { return false; }
+        i2c_write(RTCL_P3S7_PMOD_GPIO_DIR, dir);
+        return true;
+    }
+
+    bool SetXsmDelay(int delay) {
+        m_xsm_delay = static_cast<std::uint16_t>((delay & 0xff) << 8);
+        if ( !IsOpend() ) { return false; }
+        spi_write(193, m_xsm_delay);
+        return true;
+    }
+
+    std::uint16_t CalcXsmDelay(std::size_t line_length) const {
+        // Rust版 calc_xsm_delay と同じ式
+        const double sensor_rate = 720000000.0 / 10.0 * 4.0; // Sensor: 10bit, 4lane
+        const double dphy_rate   = m_dphy_speed / 10.0 * 2.0; // D-PHY: 10bit, 2lane
+        if ( sensor_rate <= dphy_rate ) {
+            return 0;
+        }
+        const double xsm_delay = (sensor_rate - dphy_rate) * static_cast<double>(line_length) / dphy_rate / 4.0;
+        return static_cast<std::uint16_t>(std::ceil(xsm_delay));
     }
     
     bool SetRoi0(int width, int height, int x=-1, int y=-1) {

@@ -265,7 +265,8 @@ module kv260_rtcl_p3s7_optical_flow
     localparam DEC_LOG1     = 6;
     localparam DEC_LOG2     = 7;
     localparam DEC_IMPRC    = 8;
-    localparam DEC_NUM      = 9;
+    localparam DEC_UART     = 9;
+    localparam DEC_NUM      = 10;
 
     jelly3_axi4l_if
             #(
@@ -289,6 +290,7 @@ module kv260_rtcl_p3s7_optical_flow
     assign {axi4l_dec[DEC_LOG1    ].addr_base, axi4l_dec[DEC_LOG1    ].addr_high} = {40'ha031_0000, 40'ha031_ffff};
     assign {axi4l_dec[DEC_LOG2    ].addr_base, axi4l_dec[DEC_LOG2    ].addr_high} = {40'ha032_0000, 40'ha032_ffff};
     assign {axi4l_dec[DEC_IMPRC   ].addr_base, axi4l_dec[DEC_IMPRC   ].addr_high} = {40'ha040_0000, 40'ha04f_ffff};
+    assign {axi4l_dec[DEC_UART    ].addr_base, axi4l_dec[DEC_UART    ].addr_high} = {40'ha050_0000, 40'ha050_ffff};
 
     jelly3_axi4l_addr_decoder
             #(
@@ -1079,6 +1081,37 @@ module kv260_rtcl_p3s7_optical_flow
     assign pmod[7] = dac_sclk   ;
 
 
+    // ----------------------------------------
+    //  Uart
+    // ----------------------------------------
+
+    logic   uart_tx;
+    logic   uart_rx = 1'b1;
+
+    jelly3_uart
+            #(
+                .ASYNC              (1                  ),
+                .TX_FIFO_PTR_BITS   (4                  ),
+                .RX_FIFO_PTR_BITS   (4                  ),
+                .RAM_TYPE           ("distributed"      ),
+                .DIVIDER_BITS       (8                  ),
+                .INIT_DIVIDER       (25-1               ),  // 200,000,000Hz / 1,000,000bps / 8 = 25
+                .DEVICE             ("RTL"              ),
+                .SIMULATION         ("false"            ),
+                .DEBUG              ("false"            )
+            )
+        u_uart
+            (
+                
+                .uart_reset         (sys_reset          ),
+                .uart_clk           (sys_clk200         ),
+                .uart_tx            (uart_tx            ),
+                .uart_rx            (uart_rx            ),
+
+                .s_axi4l            (axi4l_dec[DEC_UART]),
+                .irq_rx             (                   ),
+                .irq_tx             (                   )
+        );
     
     // ----------------------------------------
     //  Debug
@@ -1168,8 +1201,8 @@ module kv260_rtcl_p3s7_optical_flow
     assign pmod[7:6] = reg_counter_clk100[9:8];
     */
 
-    assign pmod[3:0] = timegen_frames[3:0];
-    
+    assign pmod[2:0] = timegen_frames[2:0];
+    assign pmod[3]   = uart_tx;
     
     // Debug
     /*

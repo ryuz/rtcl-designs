@@ -1,6 +1,7 @@
 
 use tonic::{transport::Server, Request, Response, Status};
 use std::sync::{Arc, Mutex};
+use clap::Parser;
 
 use rtcl_p3s7_control::rtcl_p3s7_control_server::{RtclP3s7Control, RtclP3s7ControlServer};
 //use rtcl_p3s7_control::{WriteRegRequest, BoolResponse, ReadRegRequest, ReadRegResponse};
@@ -9,6 +10,18 @@ use rtcl_p3s7_control::*;
 //mod rtcl_p3s7_i2c;
 mod rtcl_p3s7_mng;
 use rtcl_p3s7_mng::RtclP3s7Mng;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Verbosity level (0=off, 1=on)
+    #[arg(short, long, default_value_t = 0)]
+    verbose: i32,
+
+    /// Server address to bind to
+    #[arg(short, long, default_value = "0.0.0.0:50051")]
+    address: String,
+}
 
 pub mod rtcl_p3s7_control {
     tonic::include_proto!("rtcl_p3s7_control"); // The string specified here must match the proto package name
@@ -175,6 +188,16 @@ impl RtclP3s7Control for RtclP3s7ControlService {
         }
     }
 
+    async fn camera_set_color(&self, request: Request<BoolRequest>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        mng.camera_set_color(req.value);
+        if self.verbose >= 1 {
+            println!("camera_set_color({})", req.value);
+        }
+        Ok(Response::new(BoolResponse { result: true }))
+    }
+
     async fn camera_set_image_size(&self, request: Request<ImageSizeRequest>) -> Result<Response<BoolResponse>, Status> {
         let req = request.into_inner();
         let mut mng = self.mng.lock().unwrap();
@@ -188,6 +211,44 @@ impl RtclP3s7Control for RtclP3s7ControlService {
             Err(e) => {
                 if self.verbose >= 1 {
                     eprintln!("camera_set_image_size failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_set_black_lines(&self, request: Request<U16Request>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_black_lines(req.value as u16) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_black_lines({})", req.value);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_black_lines failed: {}", e);
+                }
+                Ok(Response::new(BoolResponse { result: false }))
+            }
+        }
+    }
+
+    async fn camera_set_xsm_delay(&self, request: Request<U16Request>) -> Result<Response<BoolResponse>, Status> {
+        let req = request.into_inner();
+        let mut mng = self.mng.lock().unwrap();
+        match mng.camera_set_xsm_delay(req.value as u16) {
+            Ok(()) => {
+                if self.verbose >= 1 {
+                    println!("camera_set_xsm_delay({})", req.value);
+                }
+                Ok(Response::new(BoolResponse { result: true }))
+            }
+            Err(e) => {
+                if self.verbose >= 1 {
+                    eprintln!("camera_set_xsm_delay failed: {}", e);
                 }
                 Ok(Response::new(BoolResponse { result: false }))
             }
@@ -524,14 +585,17 @@ impl RtclP3s7Control for RtclP3s7ControlService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let address = "0.0.0.0:50051".parse().unwrap();
+    let args = Args::parse();
+    
+    let address = args.address.parse().unwrap();
 
     println!("Starting RTCL P3S7 Control gRPC server...");
     println!("address : {}", address);
+    println!("verbose : {}", args.verbose);
     let mng = Arc::new(Mutex::new(RtclP3s7Mng::new()?));
 
     let rtcl_p3s7_control_service = RtclP3s7ControlService{
-        verbose: 0,
+        verbose: args.verbose,
         mng: mng,
     };
 

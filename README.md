@@ -7,11 +7,20 @@
 ## リポジトリ構成
 
 - `projects/` : 各種プロジェクトの設計データ
-  - `rtcl_p3s7_mipi/` : RTCL-P3S70-MIPI カメラモジュール用
+  - `rtcl_p3s7_mipi/` : [RTCL-P3S70-MIPI](https://github.com/ryuz/rtcl-p3s7-mipi-pcb) グローバルシャッター高速度MIPIカメラモジュール用
     - `rtcl_p3s7_mipi/` : カメラモジュール用FPGA設計
+  - `rtcl_tp25k_usb3/` : [RTCL_TP25K_USB3](https://github.com/ryuz/rtcl-tp25k-usb3-pcb) Primer 25k USB3ボード用
+    - `rtcl_tp25k_usb3_blinking_led/` : LED 点滅確認サンプル
+    - `rtcl_tp25k_usb3_calc_morphology/` : 画像モルフォロジー処理サンプル
+    - `rtcl_tp25k_usb3_calc_summation/` : USB3 経由の累算処理サンプル
+    - `rtcl_tp25k_usb3_lfsr/` : LFSRデータ送受信サンプル
+    - `rtcl_tp25k_usb3_mipi_lane2/` : MIPI-CSI2 2レーンサンプル(ラズパイカメラ／RTCL-P3S70-MIPI)
+    - `rtcl_tp25k_usb3_mode245_loopback/` : 245モードループバック確認サンプル
+    - `rtcl_tp25k_usb3_usermodule_sample/` : USB3 経由で PC から制御するユーザーモジュールサンプル
   - `kv260/` : KV260 用
     - `kv260_rtcl_p3s7_hs/` : RTCL-P3S70-MIPI ハイスピード仕様版
     - `kv260_rtcl_p3s7_csi2/` : RTCL-P3S70-MIPI CSI2 仕様実験版
+    - `kv260_rtcl_p3s7_hs/app/multispectral/` : RTCL-LED-PMOD のマルチバンド LED 照明ボードを使ったマルチバンド撮影アプリ
     - `kv260_rtcl_p3s7_mnist_seg/` : 1000fps MNISTセマンティックセグメンテーションサンプル
     - `kv260_rtcl_p3s7_optical_flow/` : 1000fps オプティカルフロー計測サンプル
   - `zybo_z7/` : ZYBO Z7用
@@ -20,6 +29,14 @@
 ## 著作権
 
 本リポジトリの内容は個別の表記があるものを除き、渕上竜司(屋号：リアルタイムコンピューティング研究所)が著作権を有します。
+
+
+## 利用言語など
+
+本システムは主に RTL は SystemVerilog、CPU側のソフトウェアは Rust を用いて開発しております。
+一部で C++ のサンプルも用意しておりますが、 Rust 版が先行している点をご了承ください。
+
+特に Rust の cross によって仮想環境を用いたクロスコンパイルなどを利用すると、セルフコンパイル環境を作る苦労が緩和され、高速にビルドできる場合があります。
 
 
 ## ライセンス

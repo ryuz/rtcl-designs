@@ -1,12 +1,14 @@
-# RTCL-P3S7-MIPI グローバルシャッター高速度カメラ の 1000fps でのオプティカルフロー計測
+# RTCL-P3S7-MIPI グローバルシャッター高速度カメラ の 1000fps での輝度重心計測
 
 ## 概要
 
-Kria KV260 でRTCL-P3S7-MIPI グローバルシャッター高速度カメラを 1000fps で動かして Lucas-Kanade法にてオプティカルフロー計測を行うサンプルです。
+Kria KV260 でRTCL-P3S7-MIPI グローバルシャッター高速度カメラを 1000fps で動かして輝度重心計測を行うサンプルです。
 
 モノク版の RTCL-P3S7-MIPI カメラモジュールを前提としています。
 
 アプリは Rust 版のみ提供しています。
+
+[![デモ動画](https://img.youtube.com/vi/a_S5naYyBKw/0.jpg)](https://www.youtube.com/watch?v=a_S5naYyBKw)
 
 
 ## 環境準備
@@ -115,6 +117,17 @@ KV260_SSH_ADDRESS="kria-kv260"
 ```bash
 make remote_run RUN_OPT="--width 256 --height 256 --fps 500"
 ```
+
+
+## レーザープロジェクタ(ガルバノミラー)の制御サンプル
+
+試験的に [簡易レーザープロジェクタ ProjectionBall Unit](https://www.switch-science.com/products/9393) を制御する機能を追加しております。
+
+[こちら](https://github.com/ryuz/ProjectionBallUnit)に当方で fork して、外部から UART で座標を受け取ってレーザーを制御するように改造したものを置いております。
+
+現在のプロジェクトは KV260 の PMOD 端子の 4番ピンより UART にて座標を出力しますので、これを ProjectionBall Unit の P1 の R 端子に接続し、さらに GND も接続すれば、カメラで捉えた運動量でレーザーを動かすことができます。
+
+実行例は[こちらの動画](https://youtu.be/a_S5naYyBKw?si=yVp-rikakngwe0o5)などを参照ください。
 
 
 ## 参考情報

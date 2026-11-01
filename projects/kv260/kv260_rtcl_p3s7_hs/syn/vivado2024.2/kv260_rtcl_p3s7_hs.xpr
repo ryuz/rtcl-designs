@@ -468,21 +468,21 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/rtcl_p3s7_hs_cnv_axi4s.sv">
+      <File Path="$PPRDIR/../../../../shared/rtl/rtcl_p3s7_hs_cnv_axi4s.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/rtcl_p3s7_hs_dphy_recv.sv">
+      <File Path="$PPRDIR/../../../../shared/rtl/rtcl_p3s7_hs_dphy_recv.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/timing_generator.sv">
+      <File Path="$PPRDIR/../../../../shared/rtl/timing_generator.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>

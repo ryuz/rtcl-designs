@@ -6,13 +6,13 @@ use jelly_lib::i2c_hal::I2cHal;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 //use rtcl_lib::rtcl_p3s7_module_driver::*;
-use kv260_rtcl_p3s7_hs::*;
+use rtcl_p3s7_shared::*;
 
 type UioAccessor = jelly_mem_access::UioAccessor<usize>;
 type UdmabufAccessor = jelly_mem_access::UdmabufAccessor<usize>;
 type CameraDriver = camera_driver::CameraDriver<LinuxI2c, usize>;
 type CaptureDriver =  capture_driver::CaptureDriver<UioAccessor, UdmabufAccessor>;
-type TimingGeneratorDriver = kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver<UioAccessor>;
+type TimingGeneratorDriver = rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver<UioAccessor>;
 
 pub struct RtclP3s7Mng {
     uio_acc : UioAccessor,
@@ -138,8 +138,20 @@ impl RtclP3s7Mng {
         self.cam.set_trigger_mode(enable)
     }
 
+    pub fn camera_set_color(&mut self, color: bool) {
+        self.cam.set_color(color)
+    }
+
     pub fn camera_set_image_size(&mut self, width: usize, height: usize) -> Result<(), Box<dyn Error>> {
         self.cam.set_image_size(width, height)
+    }
+
+    pub fn camera_set_black_lines(&mut self, lines: u16) -> Result<(), Box<dyn Error>> {
+        self.cam.set_black_lines(lines as usize)
+    }
+
+    pub fn camera_set_xsm_delay(&mut self, delay: u16) -> Result<(), Box<dyn Error>> {
+        self.cam.set_xsm_delay(delay)
     }
 
     pub fn camera_get_image_width(&self) -> usize {

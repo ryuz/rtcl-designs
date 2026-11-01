@@ -34,6 +34,33 @@ const REG_IMG_LK_ACC_OUT_DX1: usize = 0x65;
 const REG_IMG_LK_ACC_OUT_DY0: usize = 0x66;
 const REG_IMG_LK_ACC_OUT_DY1: usize = 0x67;
 
+const OCM_X_MIN: usize = 0x10;
+const OCM_X_MAX: usize = 0x11;
+const OCM_Y_MIN: usize = 0x12;
+const OCM_Y_MAX: usize = 0x13;
+const OCM_LATENCY: usize = 0x18;
+const OCM_PRJ_GIAN_X: usize = 0x20;
+const OCM_PRJ_GIAN_Y: usize = 0x21;
+const OCM_PRJ_DECAY_X: usize = 0x22;
+const OCM_PRJ_DECAY_Y: usize = 0x23;
+const OCM_PRJ_OFFSET_X: usize = 0x24;
+const OCM_PRJ_OFFSET_Y: usize = 0x25;
+const OCM_PRJ_X_MIN: usize = 0x26;
+const OCM_PRJ_X_MAX: usize = 0x27;
+const OCM_PRJ_Y_MIN: usize = 0x28;
+const OCM_PRJ_Y_MAX: usize = 0x29;
+const OCM_PRJ_X: usize = 0x40;
+const OCM_PRJ_Y: usize = 0x41;
+
+const MAX_FRAME_LATENCY: usize = 999;
+const FRAME_HISTORY_LEN: usize = MAX_FRAME_LATENCY + 1;
+
+static mut DX_HISTORY: [f64; FRAME_HISTORY_LEN] = [0.0; FRAME_HISTORY_LEN];
+static mut DY_HISTORY: [f64; FRAME_HISTORY_LEN] = [0.0; FRAME_HISTORY_LEN];
+static mut HISTORY_WR_INDEX: usize = 0;
+static mut HISTORY_VALID_COUNT: usize = 0;
+
+
 // レジスタ書き込み
 fn wrtie_reg(reg: usize, data: i64) {
     let p = (LK_ACC_BASE + 8 * reg) as *mut i64;
@@ -48,6 +75,61 @@ fn read_reg(reg: usize) -> i64 {
     unsafe { core::ptr::read_volatile(p) }
 }
 
+
+// OCM書き込み
+fn write_ocm_u64(index: usize, data: u64) {
+    let p = (0xfffc0000 + 8 * index) as *mut u64;
+    unsafe {
+        core::ptr::write_volatile(p, data);
+    }
+}
+
+// OCM読み出し
+pub fn read_ocm_u64(index: usize) -> u64 {
+    let p = (0xfffc0000 + 8 * index) as *mut u64;
+    unsafe { core::ptr::read_volatile(p) }
+}
+
+// OCM書き込み(f64)
+fn write_ocm_f64(index: usize, data: f64) {
+    let p = (0xfffc0000 + 8 * index) as *mut f64;
+    unsafe {
+        core::ptr::write_volatile(p, data);
+    }
+}
+
+// OCM読み出し(f64)
+pub fn read_ocm_f64(index: usize) -> f64 {
+    let p = (0xfffc0000 + 8 * index) as *mut f64;
+    unsafe { core::ptr::read_volatile(p) }
+}
+
+
+// UART書き込み
+fn wrtie_uart(tx: u8) {
+    let p = 0xa0500000 as *mut u8;
+    unsafe {
+        core::ptr::write_volatile(p, tx);
+    }
+}
+
+fn send_projector_xy(x: i16, y: i16, laser_on: bool) {
+    let xh = ((x as u16) >> 8) as u8;
+    let xl = (x as u16 & 0xff) as u8;
+    let yh = ((y as u16) >> 8) as u8;
+    let yl = (y as u16 & 0xff) as u8;
+    let flg = if laser_on { 0x01 } else { 0x00 };
+    let chk = xh ^ xl ^ yh ^ yl ^ flg;
+    wrtie_uart(0xa5);
+    wrtie_uart(xh);
+    wrtie_uart(xl);
+    wrtie_uart(yh);
+    wrtie_uart(yl);
+    wrtie_uart(flg);
+    wrtie_uart(chk);
+}
+
+
 pub fn get_id() -> u64 {
     read_reg(REG_IMG_LK_ACC_CORE_ID) as u64
 }
@@ -61,10 +143,35 @@ pub fn get_irq_status() -> u64 {
 }
 
 pub fn get_acc_valid() -> u64 {
-    read_reg(REG_IMG_LK_ACC_IRQ_STATUS) as u64
+    read_reg(REG_IMG_LK_ACC_ACC_VALID) as u64
 }
 
 pub fn start() {
+    write_ocm_f64(OCM_X_MIN, -255.0);
+    write_ocm_f64(OCM_X_MAX, 255.0);
+    write_ocm_f64(OCM_Y_MIN, -255.0);
+    write_ocm_f64(OCM_Y_MAX, 255.0);
+    write_ocm_u64(OCM_LATENCY, 0);
+    write_ocm_f64(OCM_PRJ_GIAN_X, 1.0);
+    write_ocm_f64(OCM_PRJ_GIAN_Y, 1.0);
+    write_ocm_f64(OCM_PRJ_DECAY_X, 0.999);
+    write_ocm_f64(OCM_PRJ_DECAY_Y, 0.999);
+    write_ocm_f64(OCM_PRJ_OFFSET_X, 0.0);
+    write_ocm_f64(OCM_PRJ_OFFSET_Y, 0.0);
+    write_ocm_f64(OCM_PRJ_X_MIN, -255.0*2.0);
+    write_ocm_f64(OCM_PRJ_X_MAX, 255.0*2.0);
+    write_ocm_f64(OCM_PRJ_Y_MIN, -255.0*2.0);
+    write_ocm_f64(OCM_PRJ_Y_MAX, 255.0*2.0);
+    write_ocm_f64(OCM_PRJ_X, 0.0);
+    write_ocm_f64(OCM_PRJ_Y, 0.0);
+
+    unsafe {
+        HISTORY_WR_INDEX = 0;
+        HISTORY_VALID_COUNT = 0;
+        DX_HISTORY = [0.0; FRAME_HISTORY_LEN];
+        DY_HISTORY = [0.0; FRAME_HISTORY_LEN];
+    }
+
     wrtie_reg(REG_IMG_LK_ACC_IRQ_ENABLE, 0x1); // IRQ enable
 }
 
@@ -87,29 +194,78 @@ pub fn irq_handler() {
     let dx = 64.0 * -(gy2 * ex - gxy * ey) / det;
     let dy = 64.0 * -(gx2 * ey - gxy * ex) / det;
 
-    /*
-    unsafe {
-        static mut irq_count: u32 = 0;
-        irq_count += 1;
-        if irq_count % 1000 == 0 {
-            println!("dx : {}  dy : {}", dx, dy);
+    // クリップ
+    let dx = dx.min(255.0).max(-255.0);
+    let dy = dy.min(255.0).max(-255.0);
+
+    // ここまでの dx/dy を保存して、指定レイテンシ数前のフレームの計算結果を利用
+    let latency = (read_ocm_u64(OCM_LATENCY) as usize).min(MAX_FRAME_LATENCY);
+    let (dx, dy) = unsafe {
+        DX_HISTORY[HISTORY_WR_INDEX] = dx;
+        DY_HISTORY[HISTORY_WR_INDEX] = dy;
+
+        if HISTORY_VALID_COUNT < FRAME_HISTORY_LEN {
+            HISTORY_VALID_COUNT += 1;
         }
-    }
-    */
+
+        let delay = latency.min(HISTORY_VALID_COUNT - 1);
+        let read_index = (HISTORY_WR_INDEX + FRAME_HISTORY_LEN - delay) % FRAME_HISTORY_LEN;
+
+        let delayed_dx = DX_HISTORY[read_index];
+        let delayed_dy = DY_HISTORY[read_index];
+
+        HISTORY_WR_INDEX = (HISTORY_WR_INDEX + 1) % FRAME_HISTORY_LEN;
+
+        (delayed_dx, delayed_dy)
+    };
+    
+
 
     // 固定小数点化
-    let dx = (dx.min(255.0).max(-255.0) * 65536.0) as i64;
-    let dy = (dy.min(255.0).max(-255.0) * 65536.0) as i64;
-
-    /*
-    println!(
-        "dx:{} dy:{} gx2:{} gy2:{} gxy:{} ex:{} ey:{}",
-        dx, dy, gx2, gy2, gxy, ex, ey
-    );
-    */
+    let vx = (dx * 65536.0) as i64;
+    let vy = (dy * 65536.0) as i64;
 
     // 書き込み
-    wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, dx);
-    wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, dy);
-    wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
+    unsafe {
+        wrtie_reg(REG_IMG_LK_ACC_OUT_DX0, vx);
+        wrtie_reg(REG_IMG_LK_ACC_OUT_DY0, vy);
+        wrtie_reg(REG_IMG_LK_ACC_OUT_VALID, 0x1);
+    }
+
+
+    // Laser Projectorへ送信
+    let mut prj_x : f64 = read_ocm_f64(OCM_PRJ_X);
+    let mut prj_y : f64 = read_ocm_f64(OCM_PRJ_Y);
+
+    prj_x += dx * read_ocm_f64(OCM_PRJ_GIAN_X);
+    prj_y += dy * read_ocm_f64(OCM_PRJ_GIAN_Y);
+
+    // 減衰
+    prj_x *= read_ocm_f64(OCM_PRJ_DECAY_X);
+    prj_y *= read_ocm_f64(OCM_PRJ_DECAY_Y);
+
+    // クリップ
+    prj_x = prj_x.min(read_ocm_f64(OCM_PRJ_X_MAX)).max(read_ocm_f64(OCM_PRJ_X_MIN));
+    prj_y = prj_y.min(read_ocm_f64(OCM_PRJ_Y_MAX)).max(read_ocm_f64(OCM_PRJ_Y_MIN));
+
+    // 現在地更新
+    write_ocm_f64(OCM_PRJ_X, prj_x);
+    write_ocm_f64(OCM_PRJ_Y, prj_y);
+
+    // プロジェクタへ送信
+    let px = prj_x + read_ocm_f64(OCM_PRJ_OFFSET_X);
+    let py = prj_y + read_ocm_f64(OCM_PRJ_OFFSET_Y);
+    send_projector_xy(px as i16, py as i16, true);
+
+    // デバッグ出力
+    if false {
+        unsafe {
+            static mut IRQ_COUNT: u32 = 0;
+            IRQ_COUNT += 1;
+            if IRQ_COUNT % 1000 == 0 {
+                println!("dx : {}  dy : {}", dx, dy);
+                println!("px : {}  py : {}", px, py);
+            }
+        }
+    }
 }

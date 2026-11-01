@@ -7,9 +7,9 @@ use opencv::core::*;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use kv260_rtcl_p3s7_hs::camera_driver::*;
-use kv260_rtcl_p3s7_hs::capture_driver::*;
-use kv260_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_p3s7_shared::camera_driver::*;
+use rtcl_p3s7_shared::capture_driver::*;
+use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -32,6 +32,18 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     color: bool,
 
+    /// Master Mode (No External Triggers)
+    #[arg(short = 'm', long, default_value_t = false)]
+    master : bool,
+
+    /// Trigger Mode (External Triggers)
+    #[arg(short = 't', long, default_value_t = false)]
+    trigger : bool,
+
+    /// PMOD の動作モード (default: 0)
+    #[arg(long="pmod-mode", default_value_t = 0)]
+    pmod_mode: u16,
+
     /// Enable color mode (default: monochrome)
     #[arg(long="pgood-off", default_value_t = false)]
     pgood_off: bool,
@@ -39,16 +51,20 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    println!("start kv260_rtcl_p3s7_hs");
-    println!("Configuration:");
-    println!("  width:  {}", args.width);
-    println!("  height: {}", args.height);
-    println!("  color:  {}", args.color);
 
-    let width = args.width;
-    let height = args.height;
+    let width = (args.width + 15) & !0xf;  // 16ピクセル境界に合わせる
+    let height = (args.height + 1) & !0x01;  // 2ピクセル境界に合わせる
     let color = args.color;
     let fps = args.fps;
+    let trigger_mode = args.trigger;
+
+    println!("start kv260_rtcl_p3s7_hs");
+    println!("Configuration:");
+    println!("  width:  {}", width);
+    println!("  height: {}", height);
+    println!("  color:  {}", color);
+    println!("  fps:    {}", fps);
+    println!("  trigger mode: {}", trigger_mode);
 
     // Ctrl+C の設定
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -100,9 +116,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         cam.set_sensor_pgood_enable(false);
     }
 
+    cam.set_color(color);
+    cam.set_black_lines(15)?;
     cam.set_image_size(width, height)?;
-    cam.set_slave_mode(true)?;
-    cam.set_trigger_mode(true)?;
+    cam.set_slave_mode(trigger_mode)?;
+    cam.set_trigger_mode(trigger_mode)?;
     if let Err(err) = cam.open() {
         if err.to_string().contains("Sensor power good signal indicates failure") {
             println!("\n!! sensor power good error. !! Retry with --pgood-off option.");
@@ -111,6 +129,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Err(err);
         }
     }
+
+    // PMODモード設定
+    cam.set_pmod_mode(args.pmod_mode)?;
+
+    cam.set_monitor_select(2)?;
+
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -124,10 +148,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     highgui::resize_window("img", width as i32 + 128, height as i32 + 256)?;
 
     // トラックバー生成
-    create_cv_trackbar("gain",       0,  200,  10)?;
+    create_cv_trackbar("sgain",      0,  200,  10)?;    // センサーゲイン
+    create_cv_trackbar("dgain",      0,  200,  10)?;    // デジタルゲイン
     create_cv_trackbar("fps",       10, 1000, fps)?;
-    create_cv_trackbar("exposure",  10,  900, 900)?;
-
+    create_cv_trackbar("exposure",  10, 1000, 950)?;
+    create_cv_trackbar("xsm_delay",  0,  255,   0)?;
+    
     // 画像表示ループ
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         // ESC キーで終了
@@ -137,20 +163,37 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // トラックバー値取得
-        let gain = (get_cv_trackbar_pos("gain")? as f32 - 10.0) / 10.0;
+        let sgain_db = (get_cv_trackbar_pos("sgain")? as f32 - 10.0) / 10.0;
+        let dgain_db = (get_cv_trackbar_pos("dgain")? as f32 - 10.0) / 10.0;
         let fps = get_cv_trackbar_pos("fps")? as f32;
         let exposure = get_cv_trackbar_pos("exposure")? as u16;
 
-        cam.set_gain(gain)?;
+        let xsm_delay = get_cv_trackbar_pos("xsm_delay")? as u16;
+        cam.set_xsm_delay(xsm_delay)?;
 
         // us 単位に変換
         let period_us = 1000000.0 / fps;
         let exposure_us = period_us * (exposure as f32 / 1000.0);
-        timgen.set_timing(period_us, exposure_us)?;
-
+        if trigger_mode {
+            timgen.set_timing(period_us, exposure_us)?;
+        }
+        else {
+            cam.set_frame_period(period_us)?;
+            cam.set_exposure(exposure_us)?;
+        }
+        
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
-        let img = video_capture.read_image_mat(0)?;
+        let mut img = video_capture.read_image_mat(0)?;
+
+        // センサーゲインを適用
+        cam.set_gain(sgain_db)?;
+
+        // センサーゲインの代わりにデジタルゲインを適用
+        let dgain_scale = 10.0_f64.powf(dgain_db as f64 / 20.0);
+        let mut img_dgain = Mat::default();
+        img.convert_to(&mut img_dgain, -1, dgain_scale, 0.0)?;
+        img = img_dgain;
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
@@ -174,8 +217,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("camera sensor id      : {:04x}", cam.sensor_id()?);
                 println!("sensor_ready : {}", cam.sensor_ready()?);
                 println!("sensor_pgood : {}", cam.sensor_pgood()?);
+                println!("fr_length    : {}", cam.fr_length());
                 println!("fps : {:8.3} ({:8.3} ns)", cam.measure_fps(), cam.measure_frame_period());
             },
+            'x' => {
+                println!("---- sensor reg ----");
+                cam.print_sensor_register();
+                println!("------ end  ------");
+            },
+            'z' => {
+                cam.print_timing_status();
+            }
             'd' => {
                 println!("write : dump.png");
                 imgcodecs::imwrite("dump.png", &view, &Vector::<i32>::new())?;

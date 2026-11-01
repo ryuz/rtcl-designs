@@ -1,0 +1,21 @@
+[package]
+name = "kv260_rtcl_p3s7_csi2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jelly-mem_access = "0.2.9"
+jelly-lib = "0.2.4"
+jelly-pac = "0.1.4"
+jelly-fpgautil = {git="https://github.com/ryuz/jelly-fpgautil-rs.git", tag="v0.0.2"}
+rtcl_p3s7_shared = { path = "../../../../shared/rust/rtcl_p3s7_shared", default-features = false }
+rtcl-lib = { path = "../../../../../rust/lib" }
+opencv = { version = "0.93.5", optional = true }
+chrono = { version = "0.4", features = ["clock", "std"] }
+ctrlc = "3.5.0"
+clap = { version = "4.0", features = ["derive"] }
+
+[features]
+default = ["std", "opencv"]
+std = ["rtcl_p3s7_shared/std"]
+opencv = ["dep:opencv", "rtcl_p3s7_shared/opencv"]

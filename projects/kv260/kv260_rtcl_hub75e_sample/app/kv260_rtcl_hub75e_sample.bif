@@ -1,0 +1,5 @@
+all:
+{
+    kv260_rtcl_hub75e_sample.bit
+}
+

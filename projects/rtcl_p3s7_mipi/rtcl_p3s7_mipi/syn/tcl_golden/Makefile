@@ -55,6 +55,7 @@ SOURCES += $(PRJ_DIR)/rtl/python_to_axi4s.sv
 SOURCES += $(PRJ_DIR)/rtl/rtcl_hs_tx.sv
 SOURCES += $(PRJ_DIR)/rtl/sensor_pwr_mng.sv
 SOURCES += $(PRJ_DIR)/rtl/system_control.sv
+SOURCES += $(PRJ_DIR)/rtl/pmod_control.sv
 SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
 

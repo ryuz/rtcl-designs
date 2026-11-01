@@ -1,0 +1,361 @@
+use std::error::Error;
+use std::env;
+use rtcl_d3xx::*;
+use std::time::Duration;
+use opencv::prelude::*;
+
+use rtcl_lib::rtcl_p3s7_module_driver::*;
+
+const REGADR_SYSCTL_CONTROL0 : usize = 0x10;
+const REGADR_SYSCTL_CONTROL1 : usize = 0x11;
+//const REGADR_SYSCTL_CONTROL2 : usize = 0x12;
+const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
+
+type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
+
+struct CameraConfig {
+    width: u16,
+    height: u16,
+    fr_length0: u16,
+    exposure0: u16,
+}
+
+fn parse_args() -> Result<CameraConfig, Box<dyn Error>> {
+    let mut config = CameraConfig {
+        width: 640 + 16 * 2,
+        height: 480 + 16 * 2,
+        fr_length0: 16000,
+        exposure0: 15000,
+    };
+    let mut args = env::args().skip(1);
+
+    while let Some(arg) = args.next() {
+        if arg == "-h" || arg == "--help" {
+            println!("Usage: p3s7 [--width N] [--height N] [--fr-length0 N] [--exposure0 N]");
+            std::process::exit(0);
+        }
+
+        let (name, value) = if let Some((name, value)) = arg.split_once('=') {
+            (name, value.to_owned())
+        } else {
+            let name = arg.as_str();
+            let value = args.next().ok_or_else(|| format!("missing value for {name}"))?;
+            (name, value)
+        };
+
+        match name {
+            "--width" => config.width = value.parse()?,
+            "--height" => config.height = value.parse()?,
+            "--fr-length0" => config.fr_length0 = value.parse()?,
+            "--exposure0" => config.exposure0 = value.parse()?,
+            _ => return Err(format!("unknown option: {name}").into()),
+        }
+    }
+
+    Ok(config)
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let config = parse_args()?;
+    println!("FT601 test");
+
+    // OpenDevice
+//  let mut usb = RtclFifo32CtlD3xx::new(0)?;
+    let usb = D3xxVideoCapture::new_capture(0, 10)?;
+
+    // direct read/write
+    println!("id : 0x{:08x}", usb.read_axi4l(0)?);
+
+    usb.write_axi4l(0x13*4, 0x01234567, 0xf)?;
+    let data = usb.read_axi4l(0x13*4)?;
+    println!("Read data: {:04x}", data);
+    usb.write_axi4l(0x13*4, 0x89abcdef, 0xf)?;
+    let data = usb.read_axi4l(0x13*4)?;
+    println!("Read data: {:04x}", data);
+
+    let usb = Arc::new(usb);
+    let axi4l_bus = RtclD3xxAxi4lBus::new(usb.clone());
+    let usb_accessor = SharedBusAccessor::<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>::new(axi4l_bus);
+
+    let ctl_acc = usb_accessor.subclone(0x0000_0000, 0x1000);
+    let i2c_acc = usb_accessor.subclone(0x0001_0000, 0x1000);
+    let frm_acc = usb_accessor.subclone(0x0004_0000, 0x1000);
+
+    unsafe {
+        let id = ctl_acc
+            .try_read_reg_u32(0)
+            .expect("read_axi4l(scratch before) failed");
+        println!("id : {id:04x}");
+
+        let scratch = ctl_acc
+            .try_read_reg_u32(REGADR_SYSCTL_CONTROL3)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
+
+        ctl_acc
+            .try_write_reg_u32(REGADR_SYSCTL_CONTROL3, 0x1234)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
+
+        let scratch = ctl_acc
+            .try_read_reg_u32(REGADR_SYSCTL_CONTROL3)
+            .expect("read_axi4l(scratch before) failed");
+        println!("scratch : {scratch:04x}");
+
+    }
+
+    // カメラOFF
+    println!("camera power off");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
+        std::thread::sleep(Duration::from_millis(100));
+    }
+
+    // カメラ電源ON
+    println!("camera power on");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 1);
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 1);
+        std::thread::sleep(Duration::from_millis(500));
+    }
+
+    const P3S7_DEVADR: u8 =     0x10;    // 7bit address
+    let i2c = JellyI2c::<UsbAccessor>::new(i2c_acc, None);
+    let i2c = JellyI2cDevice::<P3S7_DEVADR, UsbAccessor>::new(i2c);
+    let mut cam = RtclP3s7ModuleDriver::new(i2c);
+
+    let module_id = cam.module_id()?;
+    println!("module_id : 0x{:04x}", module_id);
+    let module_ver = cam.module_version()?;
+    println!("module_ver : 0x{:04x}", module_ver);
+    
+    let width = config.width;
+    let height = config.height;
+    let fr_length0 = config.fr_length0;
+    let exposure0 = config.exposure0;
+
+    println!("camera set");
+    cam.set_dphy_speed(1250000000.0)?;
+//  cam.set_dphy_speed(950000000.0)?;
+    cam.set_sensor_pgood_enable(false)?;
+    cam.set_sensor_power_enable(false)?;
+    cam.set_dphy_reset(true)?;
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+//  cam.set_camera_mode(CameraMode::HighSpeed)?;   // 高速モード設定
+    cam.set_camera_mode(CameraMode::Csi2)?;   // CSI2 like なモード
+    cam.set_csi2_word_count((width * 10 / 8) as u16)?;
+
+    cam.set_pmod_mode(0xff00)?;
+
+    // センサー電源ON
+    cam.set_sensor_power_enable(true)?;
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    // センサー基板 DPHY-TX リセット解除
+    cam.set_dphy_reset(false)?;
+
+    // xsm_delay
+//  let xsm_delay = cam.calc_xsm_delay(width);
+//  cam.set_xsm_delay(255)?; // xsm_delay)?;
+    cam.set_xsm_delay(100)?; // xsm_delay)?;
+    cam.set_nzrot_xsm_delay_enable(true)?;
+    cam.set_zero_rot_enable(true)?;
+
+    // センサー起動
+    cam.set_color(false)?;
+    cam.set_sensor_enable(true)?;
+
+    // ROI 設定
+    cam.set_roi0(width as u16, height as u16, None, None)?;
+    cam.set_gain_db(10.0)?;
+
+    cam.set_mult_timer0(72)?;
+//  cam.set_fr_length0(33000)?;
+//  cam.set_exposure0(30000)?;
+    cam.set_fr_length0(fr_length0)?;
+    cam.set_exposure0(exposure0)?;
+
+    cam.set_slave_mode(false)?;
+    cam.set_triggered_mode(false)?;
+
+    // 動作開始
+    cam.set_sequencer_enable(true)?;
+
+
+    println!("Start");
+    
+    // frame 取り込み開始
+    unsafe {
+        frm_acc.write_reg_u32(0x10, 1);
+    }
+
+    loop {
+        // 1 frame 取り込み
+        let frame = match usb.recv_video_timeout(Duration::from_millis(1000)) {
+            Ok(frame) => frame,
+            Err(_) => {
+                continue;
+            }
+        };
+
+        if frame.width == 0 || frame.height == 0 {
+            continue;
+        }
+        if frame.width % 5 != 0 {
+            eprintln!("Received frame with unexpected line size: {} bytes", frame.width);
+            continue;
+        }
+
+        let h = frame.height as usize;
+        let line_bytes = frame.width;
+        if frame.data.len() != line_bytes * h {
+            eprintln!(
+                "Received frame with unexpected payload size: {} bytes expected : {}",
+                frame.data.len(),
+                line_bytes * h
+            );
+            continue;
+        }
+
+        let image_width = (line_bytes / 5) * 4;
+        let mut image = vec![vec![0u16; image_width]; h];
+        for y in 0..h {
+            let line = &frame.data[(y * line_bytes)..((y + 1) * line_bytes)];
+            for x in 0..(image_width / 4) {
+                image[y][x * 4 + 0] = (((line[x * 5 + 0] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 0) & 0x03) * 64;
+                image[y][x * 4 + 1] = (((line[x * 5 + 1] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 2) & 0x03) * 64;
+                image[y][x * 4 + 2] = (((line[x * 5 + 2] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 4) & 0x03) * 64;
+                image[y][x * 4 + 3] = (((line[x * 5 + 3] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 6) & 0x03) * 64;
+            }
+        }
+        
+        // OpenCV で画像を表示
+        let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
+        let mat = opencv::core::Mat::new_rows_cols_with_data(
+            h as i32,
+            image_width as i32,
+            &flat_image,
+        )?;
+        
+        // BYAER を BGR に変換
+//      let mut mat_bgr = opencv::core::Mat::default();
+//      opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
+
+        opencv::highgui::imshow("image", &mat)?;
+        let key = opencv::highgui::wait_key(10)?;
+        if (key & 0xff) == 27 { // ESC
+            break;
+        }
+
+        if (key & 0xff) == 'r' as i32 {
+            println!("start record");
+            let mut frames = Vec::<VideoFrame>::new();
+            for _ in 0..1000 {
+                let frame = match usb.recv_video_timeout(Duration::from_millis(1000)) {
+                    Ok(frame) => frame,
+                    Err(_) => {
+                        continue;
+                    }
+                };
+                frames.push(frame);
+            }
+            println!("end record");
+
+            // record/時刻 でディレクトリを作って、連番静止画で保存
+            let now = chrono::Local::now();
+            let dir_name = format!("record/{}", now.format("%Y%m%d_%H%M%S"));
+            std::fs::create_dir_all(&dir_name)?;
+            for (i, frame) in frames.iter().enumerate() {
+                let mat = frame_to_mat(frame);
+                let file_name = format!("{}/frame_{:04}.png", dir_name, i);
+                opencv::imgcodecs::imwrite(&file_name, &mat, &opencv::core::Vector::new())?;
+            }
+        }
+    }
+    
+
+    println!("End Test");
+
+    // カメラOFF
+    println!("camera power off");
+    unsafe {
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL0, 0);   // 電源
+        std::thread::sleep(Duration::from_millis(100));
+        ctl_acc.write_reg_u32(REGADR_SYSCTL_CONTROL1, 0);
+        std::thread::sleep(Duration::from_millis(100));
+    }
+
+    Ok(())
+}
+
+fn frame_to_mat(frame: &VideoFrame) -> opencv::core::Mat {
+    let h = frame.height as usize;
+    let line_bytes = frame.width;
+    let image_width = (line_bytes / 5) * 4;
+    let mut image = vec![vec![0u16; image_width]; h];
+    for y in 0..h {
+        let line = &frame.data[(y * line_bytes)..((y + 1) * line_bytes)];
+        for x in 0..(image_width / 4) {
+            image[y][x * 4 + 0] = (((line[x * 5 + 0] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 0) & 0x03) * 64;
+            image[y][x * 4 + 1] = (((line[x * 5 + 1] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 2) & 0x03) * 64;
+            image[y][x * 4 + 2] = (((line[x * 5 + 2] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 4) & 0x03) * 64;
+            image[y][x * 4 + 3] = (((line[x * 5 + 3] as u16) << 2) | ((line[x * 5 + 4] as u16) >> 6) & 0x03) * 64;
+        }
+    }
+    let flat_image: Vec<u16> = image.iter().flatten().copied().collect();
+    let mat_ref = opencv::core::Mat::new_rows_cols_with_data(
+        h as i32,
+        image_width as i32,
+        &flat_image,
+    ).unwrap();
+    let mut mat = opencv::core::Mat::default();
+    mat_ref.copy_to(&mut mat).unwrap();
+    mat
+}
+
+
+
+
+
+use std::sync::Arc;
+use jelly_mem_access::*;
+use jelly_mem_access::bus_accessor::LittleEndian;
+use jelly_pac::i2c::*;
+use jelly_pac::i2c_device::*;
+
+
+struct RtclD3xxAxi4lBus {
+    d3xx: Arc<D3xxVideoCapture>,
+}
+
+impl RtclD3xxAxi4lBus {
+    fn new(d3xx: Arc<D3xxVideoCapture>) -> Self {
+        Self { d3xx }
+    }
+
+    fn write_axi4l(&self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
+        self.d3xx.write_axi4l(addr, data, strb)
+    }
+
+    fn read_axi4l(&self, addr: u32) -> Result<u32, Box<dyn Error>> {
+        self.d3xx.read_axi4l(addr)
+    }
+}
+
+impl Bus<u32, u32, u8> for RtclD3xxAxi4lBus {
+    type Error = Box<dyn Error>;
+
+    fn write(&mut self, addr: u32, data: u32, strb: u8) -> Result<(), Box<dyn Error>> {
+        self.write_axi4l(addr, data, strb)?;
+        Ok(())
+    }
+
+    fn read(&mut self, addr: u32) -> Result<u32, Box<dyn Error>> {
+        let v = self.read_axi4l(addr)?;
+        Ok(v)
+    }
+}

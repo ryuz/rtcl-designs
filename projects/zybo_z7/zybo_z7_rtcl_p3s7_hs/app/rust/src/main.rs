@@ -4,12 +4,15 @@ use clap::Parser;
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use zybo_z7_rtcl_p3s7_hs::camera_driver::CameraDriver;
-use zybo_z7_rtcl_p3s7_hs::capture_driver::CaptureDriver;
-use zybo_z7_rtcl_p3s7_hs::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_p3s7_shared::camera_driver::*;
+use rtcl_p3s7_shared::capture_driver::*;
+use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 use opencv::*;
 use opencv::core::*;
+
+const ZYBO_DPHY_SPEED_BPS: f64 = 950_000_000.0;
+const ZYBO_FPS_COUNTER_CLOCK_HZ: f32 = 200_000_000.0;
 
 /// ZYBO Z7 RTCL P3S7 High Speed Camera Application
 #[derive(Parser, Debug)]
@@ -26,6 +29,10 @@ struct Args {
     /// Enable color mode (default: monochrome)
     #[arg(short = 'c', long)]
     color: bool,
+
+    /// Frame Rate
+    #[arg(short = 'f', long, default_value_t = 60)]
+    fps: usize,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -36,6 +43,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("  width:  {}", args.width);
     println!("  height: {}", args.height);
     println!("  color:  {}", args.color);
+    println!("  dphy_speed[bps]: {}", ZYBO_DPHY_SPEED_BPS);
+    println!("  fps_counter_clock[Hz]: {}", ZYBO_FPS_COUNTER_CLOCK_HZ);
 
     let width = args.width;
     let height = args.height;
@@ -87,11 +96,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let i2c = LinuxI2c::new("/dev/i2c-0", 0x10)?;
     let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    cam.set_sensor_pgood_enable(false);
+    cam.set_dphy_speed(ZYBO_DPHY_SPEED_BPS);
+    cam.set_fps_counter_clock_hz(ZYBO_FPS_COUNTER_CLOCK_HZ);
+    cam.set_color(color);
+    cam.set_black_lines(1)?;
     cam.set_image_size(width, height)?;
-//  cam.set_slave_mode(true)?;
-//  cam.set_trigger_mode(true)?;
+    cam.set_slave_mode(true)?;
+    cam.set_trigger_mode(true)?;
     cam.open()?;
-    cam.set_color(color)?;
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
     println!("camera module id      : {:04x}", cam.module_id()?);
@@ -106,7 +119,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // トラックバー生成
     create_cv_trackbar("gain",       0,  200,  10)?;
-    create_cv_trackbar("fps",       10, 1000,  60)?;
+    create_cv_trackbar("fps",       10, 1000, args.fps as i32)?;
     create_cv_trackbar("exposure",  10,  900, 900)?;
 
     // 画像表示ループ
@@ -131,7 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // CaptureDriver で 1frame キャプチャ
         video_capture.record(width, height, 1)?;
-        let img = video_capture.read_image(0)?;
+        let img = video_capture.read_image_mat(0)?;
 
         // 10bit 画像なので加工して表示
         let mut view = Mat::default();
@@ -168,7 +181,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let frames = 100;
                 video_capture.record(width, height, frames)?;
                 for f in 0..frames {
-                   let img = video_capture.read_image(f)?;
+                         let img = video_capture.read_image_mat(f)?;
                     let mut view = Mat::default();
                     img.convert_to(&mut view, CV_16U, 64.0, 0.0)?;
                     let file_name = format!("{}/img{:04}.png", dir_name, f);

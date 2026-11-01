@@ -12,17 +12,17 @@
 module rtcl_p3s7_mipi
         #(
             parameter   bit     [15:0]  MODULE_ID      = 16'h527a   ,
-            parameter   bit     [15:0]  MODULE_VERSION = 16'h0107   ,
+            parameter   bit     [15:0]  MODULE_VERSION = 16'h0109   ,
             parameter   int             I2C_DIVIDER    = 8          ,
             parameter                   DEVICE         = "7SERIES"  ,
             parameter                   SIMULATION     = "false"    ,
-            parameter                   DEBUG          = "false"     
+            parameter                   DEBUG          = "true"     
         )
         (
             input   var logic           in_clk50                ,
             input   var logic           in_clk72                ,
             output  var logic   [1:0]   led                     ,
-            output  var logic   [7:0]   pmod                    ,
+            inout   tri logic   [7:0]   pmod                    ,
 
             output  var logic           spi_flash_wp_n          ,
             output  var logic           spi_flash_hold_n        ,
@@ -313,35 +313,71 @@ module rtcl_p3s7_mipi
     //  System Controller
     // ----------------------------------------
 
+    localparam  int     PMOD_BITS       = 8                         ;
+    localparam  type    pmod_t          = logic [PMOD_BITS-1:0]     ;
+    localparam  int     PMOD_MODE_BITS  = 16                        ;
+    localparam  type    pmod_mode_t     = logic [PMOD_MODE_BITS-1:0];
+    localparam  int     SLOTS           = 16                        ;
+    localparam  int     SLOT_BITS       = $clog2(SLOTS)             ;
+    localparam  type    slot_t          = logic [SLOT_BITS-1:0]     ;
+    localparam  int     TIMER_BITS      = 16                        ;
+    localparam  type    timer_t         = logic [TIMER_BITS-1:0]    ;
+    localparam  int     TRG_SEL_BITS    = 2                         ;
+    localparam  type    trg_sel_t       = logic [TRG_SEL_BITS-1:0]  ;
+    localparam  int     HDR_SEL_BITS    = 3                         ;
+    localparam  type    hdr_sel_t       = logic [HDR_SEL_BITS-1:0]  ;
+
 `ifdef GOLDEN_IMAGE
     localparam  bit     [15:0]    MODULE_CONFIG = 16'h0001;
 `else
     localparam  bit     [15:0]    MODULE_CONFIG = 16'h0000;
 `endif
 
-    logic           ctl_sensor_enable   ;
-    logic           ctl_sensor_ready    ;
-    logic           ctl_sensor_pgood_en ;
-    logic           ctl_receiver_reset  ;
-    logic   [4:0]   ctl_receiver_clk_dly;
-    logic           ctl_align_reset     ;
-    logic   [9:0]   ctl_align_pattern   ;
-    logic           ctl_align_done      ;
-    logic           ctl_align_error     ;
-    logic           ctl_clip_enable     ;
-    logic           ctl_csi_mode        ;
-    logic   [7:0]   ctl_csi_dt          ;
-    logic   [15:0]  ctl_csi_wc          ;
-    logic           ctl_dphy_core_reset ;
-    logic           ctl_dphy_sys_reset  ;
-    logic           ctl_dphy_init_done  ;
-    logic           ctl_mmcm_rst        ;
-    logic           ctl_mmcm_pwrdwn     ;
-    logic           ctl_pll_rst         ;
-    logic           ctl_pll_pwrdwn      ;
+    logic               ctl_sensor_enable   ;
+    logic               ctl_sensor_ready    ;
+    logic               ctl_sensor_pgood_en ;
+    logic               ctl_receiver_reset  ;
+    logic   [4:0]       ctl_receiver_clk_dly;
+    logic               ctl_align_reset     ;
+    logic   [9:0]       ctl_align_pattern   ;
+    logic               ctl_align_done      ;
+    logic               ctl_align_error     ;
+    logic               ctl_clip_enable     ;
+    logic               ctl_csi_mode        ;
+    logic   [7:0]       ctl_csi_dt          ;
+    logic   [15:0]      ctl_csi_wc          ;
+    logic               ctl_dphy_core_reset ;
+    logic               ctl_dphy_sys_reset  ;
+    logic               ctl_dphy_init_done  ;
+    logic               ctl_mmcm_rst        ;
+    logic               ctl_mmcm_pwrdwn     ;
+    logic               ctl_pll_rst         ;
+    logic               ctl_pll_pwrdwn      ;
+    logic   [15:0]      ctl_pmod_mode       ;
+    logic   [7:0]       ctl_pmod_gpio_o     ;
+    logic   [7:0]       ctl_pmod_dir        ;
+    logic   [7:0]       ctl_pmod_gpio_i     ;
+    trg_sel_t           ctl_pmod_trg_sel    ;
+    hdr_sel_t           ctl_pmod_hdr_sel    ;
+    slot_t              ctl_pmod_slot_len   ;
+    pmod_t  [SLOTS-1:0] ctl_pmod_slot_ptn   ;
+    timer_t [SLOTS-1:0] ctl_pmod_slot_tim   ;
 
     system_control
             #(
+                .PMOD_BITS              ($bits(pmod_t)          ),
+                .pmod_t                 (pmod_t                 ),
+                .PMOD_MODE_BITS         ($bits(pmod_t)          ),
+                .pmod_mode_t            (pmod_mode_t            ),
+                .SLOTS                  (SLOTS                  ),
+                .SLOT_BITS              ($bits(slot_t)          ),
+                .slot_t                 (slot_t                 ),
+                .TIMER_BITS             ($bits(timer_t)         ),
+                .timer_t                (timer_t                ),
+                .TRG_SEL_BITS           ($bits(trg_sel_t)       ),
+                .trg_sel_t              (trg_sel_t              ),
+                .HDR_SEL_BITS           ($bits(hdr_sel_t)       ),
+                .hdr_sel_t              (hdr_sel_t              ),
                 .MODULE_ID              (MODULE_ID              ),
                 .MODULE_VERSION         (MODULE_VERSION         ),
                 .MODULE_CONFIG          (MODULE_CONFIG          ),
@@ -387,7 +423,16 @@ module rtcl_p3s7_mipi
                 .out_mmcm_rst           (ctl_mmcm_rst           ),
                 .out_mmcm_pwrdwn        (ctl_mmcm_pwrdwn        ),
                 .out_pll_rst            (ctl_pll_rst            ),
-                .out_pll_pwrdwn         (ctl_pll_pwrdwn         )
+                .out_pll_pwrdwn         (ctl_pll_pwrdwn         ),
+                .out_pmod_mode          (ctl_pmod_mode          ),
+                .out_pmod_data          (ctl_pmod_gpio_o        ),
+                .out_pmod_dir           (ctl_pmod_dir           ),
+                .in_pmod_data           (ctl_pmod_gpio_i        ),
+                .out_pmod_trg_sel       (ctl_pmod_trg_sel       ),
+                .out_pmod_hdr_sel       (ctl_pmod_hdr_sel       ),
+                .out_pmod_slot_len      (ctl_pmod_slot_len      ),
+                .out_pmod_slot_ptn      (ctl_pmod_slot_ptn      ),
+                .out_pmod_slot_tim      (ctl_pmod_slot_tim      )
             );
     
 
@@ -536,7 +581,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_recv
             (
@@ -566,7 +611,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_swap
             (
@@ -589,7 +634,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_clip
             (
@@ -621,6 +666,7 @@ module rtcl_p3s7_mipi
     logic   dphy_oserdes_clkdiv     ;
     logic   dphy_oserdes_clk        ;
     logic   dphy_oserdes_clk90      ;
+    logic   dphy_tst_clk            ;
 
     mipi_dphy_clk_gen
         u_mipi_dphy_clk_gen
@@ -644,7 +690,8 @@ module rtcl_p3s7_mipi
                 .txclkesc           (dphy_txclkesc          ),
                 .oserdes_clkdiv     (dphy_oserdes_clkdiv    ),
                 .oserdes_clk        (dphy_oserdes_clk       ),
-                .oserdes_clk90      (dphy_oserdes_clk90     )
+                .oserdes_clk90      (dphy_oserdes_clk90     ),
+                .dphy_tst_clk       (dphy_tst_clk           )
             );
 
 
@@ -717,6 +764,8 @@ module rtcl_p3s7_mipi
                 .oserdes_clk_in         (dphy_oserdes_clk           ),   //  input
                 .oserdes_clk90_in       (dphy_oserdes_clk90         ),   //  input
                 .system_rst_in          (dphy_system_reset || ctl_dphy_sys_reset ),   //  input
+                .cl_tst_clk_in          (dphy_tst_clk               ),
+                .dl_tst_clk_in          (dphy_tst_clk               ),
 
                 .init_done              (dphy_init_done             ),    // output
                 .cl_txclkactivehs       (dphy_cl_txclkactivehs      ),    // output
@@ -820,7 +869,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_fifo [1]
             (
@@ -853,7 +902,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (AXI4S_TDATA_BITS   ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_sw_in [2]
             (
@@ -868,7 +917,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (2*8                ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_sw_out[2]
             (
@@ -884,7 +933,7 @@ module rtcl_p3s7_mipi
                 .DEFAULT_READY  (1'b0               ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_axi4s_switch_in
             (
@@ -905,7 +954,7 @@ module rtcl_p3s7_mipi
                 .DPHY_LANES     (2                  ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_rtcl_hs_tx
             (
@@ -917,38 +966,37 @@ module rtcl_p3s7_mipi
             );
     
     // 将来の照明制御などの為に、撮影時状態をヘッダに付与できるようにしておく
+    /*
     (* ASYNC_REG = "true" *)    logic   [7:0]   pmod_ff0,    pmod_ff1   ;
     (* ASYNC_REG = "true" *)    logic   [1:0]   monitor_ff0, monitor_ff1;
                                 logic   [1:0]   monitor_ff2             ;
     always_ff @(posedge dphy_clk) begin
-        pmod_ff0 <= pmod;
+//      pmod_ff0 <= pmod;
+        pmod_ff0 <= ctl_pmod_gpio_i;
         pmod_ff1 <= pmod_ff0;
         monitor_ff0 <= python_monitor;
         monitor_ff1 <= monitor_ff0;
         monitor_ff2 <= monitor_ff1;
     end
+    */
     
-    logic   [7:0]   hs_header_pmod  ;
+
     logic   [7:0]   hs_header_count ;
+    logic   [7:0]   hs_header_pmod  ;
     always_ff @(posedge dphy_clk) begin
         if ( dphy_reset ) begin
-            hs_header_pmod  <= '0;
             hs_header_count <= '0;
         end
         else begin
-            // 露光完了時のPMODの状態をラッチ
-            if ( {monitor_ff2[0], monitor_ff1[0]} == 2'b01 ) begin
-                hs_header_pmod <= pmod_ff1;
-            end
-
             // フレームカウント
             if ( hs_header_update ) begin
                 hs_header_count <= hs_header_count + 1;
             end
         end
     end
-    assign hs_header_data[7:0]  = hs_header_count;
-    assign hs_header_data[15:8] = hs_header_pmod;
+
+    assign hs_header_data[7:0]  = hs_header_count   ;
+    assign hs_header_data[15:8] = hs_header_pmod    ;
 
 
     // MIPI-CSI2 TX
@@ -959,7 +1007,7 @@ module rtcl_p3s7_mipi
                 .SYNC_FF        (2                  ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_pulse_async
             (
@@ -979,7 +1027,7 @@ module rtcl_p3s7_mipi
             #(
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_mipi_csi2_tx
             (
@@ -1000,7 +1048,7 @@ module rtcl_p3s7_mipi
                 .USE_USER       (1                  ),
                 .DATA_BITS      (2*8                ),
                 .USER_BITS      (AXI4S_TUSER_BITS   ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         axi4s_dphy [1]
             (
@@ -1016,7 +1064,7 @@ module rtcl_p3s7_mipi
                 .DEFAULT_READY  (1'b0               ),
                 .DEVICE         (DEVICE             ),
                 .SIMULATION     (SIMULATION         ),
-                .DEBUG          (DEBUG              )
+                .DEBUG          ("false"            )
             )
         u_axi4s_switch_out
             (
@@ -1084,21 +1132,81 @@ module rtcl_p3s7_mipi
         led[0] <= !reset || (clk72_counter[25] & clk72_counter[16]) ;
         led[1] <= sensor_ready                                      ;
     end
-//  assign led[1] = sensor_pgood;
 
 
     // --------------------------------
     //  PMOD
     // --------------------------------
+    
+    logic  [7:0]   test0;
+    assign test0[0] = python_monitor[0]      ;
+    assign test0[1] = python_monitor[1]      ;
+    assign test0[2] = python_trigger[0]      ;
+    assign test0[3] = axi4s_recv.tvalid      ;
+    assign test0[4] = python_frame_toggle    ;
+    assign test0[5] = dphy_dl0_txrequesths   ;
+    assign test0[6] = dphy_dl0_txreadyhs     ;
+    assign test0[7] = sensor_pgood           ;
 
-    assign pmod[0] = python_monitor[0]      ;
-    assign pmod[1] = python_monitor[1]      ;
-    assign pmod[2] = python_trigger[0]      ;
-    assign pmod[3] = axi4s_recv.tvalid      ;
-    assign pmod[4] = python_frame_toggle    ;
-    assign pmod[5] = dphy_dl0_txrequesths   ;
-    assign pmod[6] = dphy_dl0_txreadyhs     ;
-    assign pmod[7] = sensor_pgood           ;
+    logic   [7:0]   pmod_pkt_hdr    ;
+
+    pmod_control
+            #(
+                .TIME_DIV       (72                     ),
+                .PMOD_BITS      ($bits(pmod_t)          ),
+                .pmod_t         (pmod_t                 ),
+                .MODE_BITS      ($bits(pmod_t)          ),
+                .mode_t         (pmod_mode_t            ),
+                .SLOTS          (SLOTS                  ),
+                .SLOT_BITS      ($bits(slot_t)          ),
+                .slot_t         (slot_t                 ),
+                .TIMER_BITS     ($bits(timer_t)         ),
+                .timer_t        (timer_t                ),
+                .TRG_SEL_BITS   ($bits(trg_sel_t)       ),
+                .trg_sel_t      (trg_sel_t              ),
+                .HDR_SEL_BITS   ($bits(hdr_sel_t)       ),
+                .hdr_sel_t      (hdr_sel_t              )
+            )
+        u_pmod_control
+            (
+                .reset          (reset                  ),
+                .clk            (clk72                  ),
+
+                .pmod           (pmod                   ),
+                .pkt_hdr        (pmod_pkt_hdr           ),
+
+                .trigger        (mipi_gpio1             ),
+                .monitor        (python_monitor         ),
+                .test0          (test0                  ),
+
+                .mode           (ctl_pmod_mode          ),
+                .gpio_in        (ctl_pmod_gpio_i        ),
+                .gpio_out       (ctl_pmod_gpio_o        ),
+                .gpio_dir       (ctl_pmod_dir           ),
+
+                .trg_sel        (ctl_pmod_trg_sel       ),
+                .hdr_sel        (ctl_pmod_hdr_sel       ),
+                .slot_len       (ctl_pmod_slot_len      ),
+                .slot_ptn       (ctl_pmod_slot_ptn      ),
+                .slot_tim       (ctl_pmod_slot_tim      )
+            );
+
+    jelly3_cdc_array_single
+            #(
+                .DEST_SYNC_FF       (3              ),
+                .SRC_INPUT_REG      (0              ),
+                .WIDTH              (8              ),
+                .DEVICE             (DEVICE         ),
+                .SIMULATION         (SIMULATION     ),
+                .DEBUG              ("false"        )
+            )
+        u_cdc_array_single_hdr
+            (
+                .src_clk            (clk72          ),
+                .src_in             (pmod_pkt_hdr   ),
+                .dest_clk           (dphy_clk       ),
+                .dest_out           (hs_header_pmod )
+            );
 
 endmodule
 

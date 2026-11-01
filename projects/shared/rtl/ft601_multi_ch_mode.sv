@@ -1,0 +1,292 @@
+// -----------------------------------------------------------------------------
+//  RTC-Lab Designs
+//  Real-Time Computing Lab
+//
+//  Copyright (C) 2025-2026 Ryuji Fuchikami
+//  https://rtc-lab.com/
+// -----------------------------------------------------------------------------
+
+`timescale 1ns / 1ps
+`default_nettype none
+
+module ft601_multi_ch_mode
+        #(
+            parameter   int                     CHANNELS                    = 1                             ,
+            parameter   int                     TIMEOUT_BITS                = 16                            ,
+            parameter   type                    timeout_t                   = logic [TIMEOUT_BITS-1:0]      ,
+            parameter   int                     COUNTER_BITS                = 32                            ,
+            parameter   type                    counter_t                   = logic [COUNTER_BITS-1:0]      ,
+            parameter   int                     TX_DUMMY_TIME                  = 5000000                       ,
+            parameter   bit                     ASYNC                       = 1                             ,
+            parameter   int                     MAX_TRANSFER                = 1024 / CHANNELS               ,
+            parameter   int                     STREAM_SIZE                 = 1024                          ,
+            parameter   int                     RX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
+            parameter   int                     TX_FIFO_PTR_BITS [CHANNELS] = '{default: 9}                 ,
+            parameter   int                     TX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
+            parameter   int                     RX_THRESHOLD     [CHANNELS] = '{default: 1024 / CHANNELS}   ,
+            parameter   logic  [CHANNELS-1:0]   FIXED_SIZE_TX               = '0                            ,
+            localparam  type                    data_t                      = logic [31:0]                  ,
+            localparam  type                    be_t                        = logic [3:0]                   
+        )
+        (
+            input   var logic                           ft601_reset             ,
+            input   var logic                           ft601_clk               ,
+            input   var logic                           ft601_wakeup_n          ,
+            input   var logic                           ft601_rxf_n             ,
+            input   var logic                           ft601_txe_n             ,
+            output  var logic                           ft601_wr_n              ,
+            output  var logic                           ft601_rd_n              ,
+            output  var logic                           ft601_oe_n              ,
+            input   var be_t                            ft601_be_i              ,
+            output  var be_t                            ft601_be_o              ,
+            output  var be_t                            ft601_be_t              ,
+            input   var data_t                          ft601_data_i            ,
+            output  var data_t                          ft601_data_o            ,
+            output  var data_t                          ft601_data_t            ,
+
+            input   var timeout_t   [CHANNELS-1:0]      tx_timeout              ,
+            input   var logic       [CHANNELS-1:0]      tx_dummy_enable         ,
+
+            jelly3_axi4s_if.s                           s_axi4s_tx  [CHANNELS]  ,
+            jelly3_axi4s_if.m                           m_axi4s_rx  [CHANNELS]  ,
+
+            output  var logic                           rx_error                ,
+            output  var logic                           tx_error                ,
+
+            output  var counter_t   [CHANNELS-1:0]      mon_rx_counter          ,
+            output  var counter_t   [CHANNELS-1:0]      mon_tx_counter          ,
+            output  var logic                           mon_wr_n                ,
+            output  var logic                           mon_rxf_n               ,
+            output  var logic                           mon_txe_n               ,
+            output  var be_t                            mon_be                  ,
+            output  var data_t                          mon_data                
+        );
+    
+    timeout_t   [CHANNELS-1:0]  ft601_tx_timeout            ;
+    logic       [CHANNELS-1:0]  ft601_tx_enough_data        ;
+    logic       [CHANNELS-1:0]  ft601_tx_fifo_last          ;
+    be_t        [CHANNELS-1:0]  ft601_tx_fifo_strb          ;
+    data_t      [CHANNELS-1:0]  ft601_tx_fifo_data          ;
+    logic       [CHANNELS-1:0]  ft601_tx_fifo_valid         ;
+    logic       [CHANNELS-1:0]  ft601_tx_fifo_ready         ;
+
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_almost_full   ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_enough_space  ;
+    be_t        [CHANNELS-1:0]  ft601_rx_fifo_strb          ;
+    data_t      [CHANNELS-1:0]  ft601_rx_fifo_data          ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_valid         ;
+    logic       [CHANNELS-1:0]  ft601_rx_fifo_ready         ;
+    
+    ft601_multi_ch_mode_transceiver
+            #(
+                .CHANNELS           (CHANNELS                   ),
+                .MAX_TRANSFER       (MAX_TRANSFER               ),
+                .STREAM_SIZE        (STREAM_SIZE                ),
+                .TIMEOUT_BITS       ($bits(timeout_t)           ),
+                .TX_DUMMY_TIME      (TX_DUMMY_TIME              ),
+                .FIXED_SIZE_TX      (FIXED_SIZE_TX              ),
+                .MON_COUNT_BITS     (COUNTER_BITS               )
+            )
+        u_ft601_multi_ch_mode_transceiver
+            (
+                .reset              (ft601_reset                ),
+                .clk                (ft601_clk                  ),
+
+                .tx_dummy_enable    (tx_dummy_enable            ),
+
+                .ft601_wakeup_n     (ft601_wakeup_n             ),
+                .ft601_rxf_n        (ft601_rxf_n                ),
+                .ft601_txe_n        (ft601_txe_n                ),
+                .ft601_wr_n         (ft601_wr_n                 ),
+                .ft601_rd_n         (ft601_rd_n                 ),
+                .ft601_oe_n         (ft601_oe_n                 ),
+                .ft601_be_i         (ft601_be_i                 ),
+                .ft601_be_o         (ft601_be_o                 ),
+                .ft601_be_t         (ft601_be_t                 ),
+                .ft601_data_i       (ft601_data_i               ),
+                .ft601_data_o       (ft601_data_o               ),
+                .ft601_data_t       (ft601_data_t               ),
+
+                .s_fifo_timeout     (ft601_tx_timeout           ),
+                .s_fifo_enough_data (ft601_tx_enough_data       ),
+                .s_fifo_last        (ft601_tx_fifo_last         ),
+                .s_fifo_strb        (ft601_tx_fifo_strb         ),
+                .s_fifo_data        (ft601_tx_fifo_data         ),
+                .s_fifo_valid       (ft601_tx_fifo_valid        ),
+                .s_fifo_ready       (ft601_tx_fifo_ready        ),
+
+                .m_fifo_almost_full (ft601_rx_fifo_almost_full  ),
+                .m_fifo_enough_space(ft601_rx_fifo_enough_space ),
+                .m_fifo_strb        (ft601_rx_fifo_strb         ),
+                .m_fifo_data        (ft601_rx_fifo_data         ),
+                .m_fifo_valid       (ft601_rx_fifo_valid        ),
+                .m_fifo_ready       (ft601_rx_fifo_ready        ),
+
+                .rx_error           (rx_error                   ),
+                .tx_error           (tx_error                   ),
+
+                .mon_rx_counter     (mon_rx_counter             ),
+                .mon_tx_counter     (mon_tx_counter             ),
+                .mon_wr_n           (mon_wr_n                   ),
+                .mon_rxf_n          (mon_rxf_n                  ),
+                .mon_txe_n          (mon_txe_n                  ),
+                .mon_be             (mon_be                     ),
+                .mon_data           (mon_data                   )
+            );
+
+
+    // -------------------------------
+    //  Command FIFO
+    // -------------------------------
+
+    for ( genvar i = 0; i < CHANNELS; i++ ) begin : gen_ch
+        // type
+        localparam int          RX_FIFO_SIZE_BITS = RX_FIFO_PTR_BITS[i] + 1         ;
+        localparam type         rx_size_t         = logic [RX_FIFO_SIZE_BITS-1:0]   ;
+        localparam rx_size_t    RX_FIFO_TH        = rx_size_t'(RX_THRESHOLD[i])     ;
+        localparam int          TX_FIFO_SIZE_BITS = TX_FIFO_PTR_BITS[i] + 1         ;
+        localparam type         tx_size_t         = logic [TX_FIFO_SIZE_BITS-1:0]   ;
+        localparam tx_size_t    TX_FIFO_TH        = tx_size_t'(TX_THRESHOLD[i])     ;
+
+        // RX FIFO
+        rx_size_t       fifo_rx_free_size   ;
+
+        logic   [3:0]   cmd_rx_fifo_strb    ;
+        logic   [31:0]  cmd_rx_fifo_data    ;
+        logic           cmd_rx_fifo_valid   ;
+        logic           cmd_rx_fifo_ready   ;
+
+        jelly3_stream_fifo
+                #(
+                    .ASYNC          (ASYNC                  ),
+                    .PTR_BITS       (RX_FIFO_PTR_BITS[i]    ),
+                    .DATA_BITS      (4+32                   ),
+                    .S_SYNC_FF      (3                      ),
+                    .M_SYNC_FF      (3                      ),
+                    .RAM_TYPE       ("block"                ),
+                    .DOUT_REG       (1                      )
+                )
+            u_stream_fifo_rx
+                (
+                    .s_reset        (ft601_reset            ),
+                    .s_clk          (ft601_clk              ),
+                    .s_cke          (1'b1                   ),
+                    .s_data         ({
+                                        ft601_rx_fifo_strb[i],
+                                        ft601_rx_fifo_data[i]
+                                    }),
+                    .s_valid        (ft601_rx_fifo_valid[i] ),
+                    .s_ready        (ft601_rx_fifo_ready[i] ),
+                    .s_free_size    (fifo_rx_free_size      ),
+
+                    .m_reset        (~m_axi4s_rx[i].aresetn ),
+                    .m_clk          (m_axi4s_rx[i].aclk     ),
+                    .m_cke          (m_axi4s_rx[i].aclken   ),
+                    .m_data         ({
+                                        m_axi4s_rx[i].tstrb,
+                                        m_axi4s_rx[i].tdata
+                                    }),
+                    .m_valid        (m_axi4s_rx[i].tvalid   ),
+                    .m_ready        (m_axi4s_rx[i].tready   ),
+                    .m_data_size    (                       )
+                );
+
+        always_ff @(posedge ft601_clk) begin
+            ft601_rx_fifo_almost_full[i]  <= fifo_rx_free_size <= 2;
+            ft601_rx_fifo_enough_space[i] <= (fifo_rx_free_size >= RX_FIFO_TH);
+        end
+
+        // TX FIFO
+        tx_size_t   fifo_tx_data_size   ;
+//      if ( FIXED_SIZE_TX[i] ) begin : smoother
+        if ( 1 ) begin : smoother
+            jelly3_axi4s_if
+                    #(
+                        .USE_STRB   (s_axi4s_tx[i].USE_STRB ),
+                        .DATA_BITS  (32                     )
+                    )
+                axi4s_smoother
+                    (
+                        .aresetn    (~ft601_reset           ),
+                        .aclk       (ft601_clk              ),
+                        .aclken     (1'b1                   )
+                    );
+            
+            jelly3_axi4s_packet_smoother
+                    #(
+                        .ASYNC          (ASYNC              ),
+                        .FIFO_PTR_BITS  (TX_FIFO_PTR_BITS[i]),
+                        .FIFO_RAM_TYPE  ("block"            ),
+                        .LIMIT_SIZE     (1024               )
+                    )
+                u_axi4s_packet_smoother
+                    (
+                        .s_axi4s        (s_axi4s_tx[i]      ),
+                        .s_free_size    (                   ),
+
+                        .m_axi4s        (axi4s_smoother     ),
+                        .m_data_size    (fifo_tx_data_size  )
+                    );
+
+            assign ft601_tx_fifo_last[i]  = axi4s_smoother.tlast    ;
+            assign ft601_tx_fifo_strb[i]  = axi4s_smoother.USE_STRB ? axi4s_smoother.tstrb : '1;
+            assign ft601_tx_fifo_data[i]  = axi4s_smoother.tdata    ;
+            assign ft601_tx_fifo_valid[i] = axi4s_smoother.tvalid   ;
+            assign axi4s_smoother.tready  = ft601_tx_fifo_ready[i]  ;
+        end
+        else begin : fifo
+            logic   [3:0]       cmd_tx_fifo_strb    ;
+            logic   [31:0]      cmd_tx_fifo_data    ;
+            logic               cmd_tx_fifo_valid   ;
+            logic               cmd_tx_fifo_ready   ;
+
+            logic   [3:0]       s_axi4s_tx_tstrb    ;
+            assign s_axi4s_tx_tstrb = s_axi4s_tx[i].USE_STRB ? s_axi4s_tx[i].tstrb : '1;
+
+            jelly3_stream_fifo
+                    #(
+                        .ASYNC          (ASYNC                  ),
+                        .PTR_BITS       (TX_FIFO_PTR_BITS[i]    ),
+                        .DATA_BITS      (1+4+32                 ),
+                        .S_SYNC_FF      (3                      ),
+                        .M_SYNC_FF      (3                      ),
+                        .RAM_TYPE       ("block"                ),
+                        .DOUT_REG       (1                      )
+                    )
+                u_stream_fifo_tx
+                    (
+                        .s_reset        (~s_axi4s_tx[i].aresetn ),
+                        .s_clk          (s_axi4s_tx[i].aclk     ),
+                        .s_cke          (s_axi4s_tx[i].aclken   ),
+                        .s_data         ({
+                                            s_axi4s_tx[i].tlast ,
+                                            s_axi4s_tx_tstrb    ,
+                                            s_axi4s_tx[i].tdata
+                                        }),
+                        .s_valid        (s_axi4s_tx[i].tvalid   ),
+                        .s_ready        (s_axi4s_tx[i].tready   ),
+                        .s_free_size    (                       ),
+
+                        .m_reset        (ft601_reset            ),
+                        .m_clk          (ft601_clk              ),
+                        .m_cke          (1'b1                   ),
+                        .m_data         ({
+                                            ft601_tx_fifo_last[i],
+                                            ft601_tx_fifo_strb[i],
+                                            ft601_tx_fifo_data[i]
+                                        }),
+                        .m_valid        (ft601_tx_fifo_valid[i] ),
+                        .m_ready        (ft601_tx_fifo_ready[i] ),
+                        .m_data_size    (fifo_tx_data_size      )
+                    );
+        end
+        always_ff @(posedge ft601_clk) begin
+            ft601_tx_timeout[i]     <= tx_timeout[i];
+            ft601_tx_enough_data[i] <= ft601_tx_fifo_valid[i] && (fifo_tx_data_size >= TX_FIFO_TH);
+        end
+    end
+
+endmodule
+
+
+`default_nettype wire
