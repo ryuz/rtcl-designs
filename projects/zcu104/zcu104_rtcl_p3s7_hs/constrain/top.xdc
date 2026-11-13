@@ -43,3 +43,34 @@ set_property IOSTANDARD LVDS [get_ports {cam_data_hs_p[0][0]}]
 
 set_property IOSTANDARD LVCMOS18 [get_ports {cam_gpio[0]}]
 set_property IOSTANDARD LVCMOS18 [get_ports cam_pwup]
+
+
+# LED
+set_property PACKAGE_PIN D5 [get_ports {led[0]}]
+set_property PACKAGE_PIN D6 [get_ports {led[1]}]
+set_property PACKAGE_PIN A5 [get_ports {led[2]}]
+set_property PACKAGE_PIN B5 [get_ports {led[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[3]}]
+
+# PUSH SWITCH
+set_property PACKAGE_PIN B4 [get_ports {push_sw[0]}]
+set_property PACKAGE_PIN C4 [get_ports {push_sw[1]}]
+set_property PACKAGE_PIN B3 [get_ports {push_sw[2]}]
+set_property PACKAGE_PIN C3 [get_ports {push_sw[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {push_sw[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {push_sw[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {push_sw[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {push_sw[3]}]
+
+# DIP SWITCH
+set_property PACKAGE_PIN E4 [get_ports {dip_sw[0]}]
+set_property PACKAGE_PIN D4 [get_ports {dip_sw[1]}]
+set_property PACKAGE_PIN F5 [get_ports {dip_sw[2]}]
+set_property PACKAGE_PIN F4 [get_ports {dip_sw[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[3]}]

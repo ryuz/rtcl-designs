@@ -43,7 +43,8 @@ SOURCES += $(JELLY_RTL_SOURCES)
 export SOURCES
 
 # IP cores
-IP_CORES = ../../ip/vivado$(VIVADO_VERSION)/mipi_dphy_cam/mipi_dphy_cam.xci
+#IP_CORES = ../../ip/vivado$(VIVADO_VERSION)/mipi_dphy_cam/mipi_dphy_cam.xci
+IP_CORES =
 export IP_CORES
 
 # block design

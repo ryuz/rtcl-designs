@@ -17,6 +17,7 @@ module fmc_pcam_rx
         )
         (
             input   var logic                   reset       ,
+            input   var logic                   clk         ,
 
             input   var logic                   clk_lp_p    ,
             input   var logic                   clk_lp_n    ,
@@ -136,6 +137,22 @@ module fmc_pcam_rx
                     .FIFO_RD_CLK        (1'b0           ),
                     .FIFO_RD_EN         (1'b0           )
                 );
+    end
+
+
+    // -------------------------------------------------------------------------
+    // Debug
+    // -------------------------------------------------------------------------
+
+    (* mark_debug="true" *) logic                   dbg_clk_lp_p    ;
+    (* mark_debug="true" *) logic                   dbg_clk_lp_n    ;
+    (* mark_debug="true" *) logic   [LANES-1:0]     dbg_data_lp_p   ;
+    (* mark_debug="true" *) logic   [LANES-1:0]     dbg_data_lp_n   ;
+    always_ff @( posedge clk ) begin
+        dbg_clk_lp_p  <= clk_lp_p   ;
+        dbg_clk_lp_n  <= clk_lp_n   ;
+        dbg_data_lp_p <= data_lp_p  ;
+        dbg_data_lp_n <= data_lp_n  ;
     end
 
 endmodule

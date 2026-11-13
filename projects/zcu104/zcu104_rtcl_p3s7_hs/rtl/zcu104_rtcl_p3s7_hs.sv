@@ -30,9 +30,13 @@ module zcu104_rtcl_p3s7_hs
             input   var logic   [0:0][1:0]  cam_data_hs_p   ,
             input   var logic   [0:0][1:0]  cam_data_hs_n   ,
             output  var logic   [0:0]       cam_gpio        ,
-            output  var logic               cam_pwup        
+            output  var logic               cam_pwup        ,
+
+            output  var logic   [3:0]       led             ,
+            input   var logic   [3:0]       push_sw         ,
+            input   var logic   [3:0]       dip_sw          
             
-//          output  var logic   [7:0]   pmod        
+//          output  var logic   [7:0]       pmod        
         );
     
 
@@ -390,6 +394,8 @@ module zcu104_rtcl_p3s7_hs
         u_fmc_pcam_rx
             (
                 .reset          (sys_reset          ),
+                .clk            (sys_clk200         ),
+
                 .clk_lp_p       (cam_clk_lp_p [0]   ),
                 .clk_lp_n       (cam_clk_lp_n [0]   ),
                 .clk_hs_p       (cam_clk_hs_p [0]   ),
@@ -874,6 +880,12 @@ module zcu104_rtcl_p3s7_hs
             end
         end
     end
+
+    assign led[0] = reg_clk200_time[23];
+    assign led[1] = reg_clk200_time[24];
+    assign led[2] = reg_clk250_time[23];
+    assign led[3] = reg_clk250_time[24];
+
     
     // frame monitor
     (* mark_debug = "true" *) logic   [31:0]  mon_frame_rate_count;

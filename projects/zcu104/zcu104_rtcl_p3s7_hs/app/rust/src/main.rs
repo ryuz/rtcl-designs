@@ -1,15 +1,17 @@
 use std::error::Error;
 use clap::Parser;
 
-//use opencv::*;
-//use opencv::core::*;
+use opencv::*;
+use opencv::core::*;
 
 use jelly_lib::linux_i2c::LinuxI2c;
 use jelly_mem_access::*;
 
-use rtcl_p3s7_shared::camera_driver::*;
-use rtcl_p3s7_shared::capture_driver::*;
-use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
+use rtcl_lib::rtcl_p3s7_module_driver::*;
+
+// use rtcl_p3s7_shared::camera_driver::*;
+// use rtcl_p3s7_shared::capture_driver::*;
+// use rtcl_p3s7_shared::timing_generator_driver::TimingGeneratorDriver;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -108,10 +110,75 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
     let i2c = LinuxI2c::new("/dev/i2c-10", 0x10)?;
-    let mut cam = CameraDriver::new(i2c, reg_sys, reg_fmtr);
+    let mut cam = RtclP3s7ModuleDriver::new(i2c);
     println!("camera module id      : {:04x}", cam.module_id()?);
     println!("camera module version : {:04x}", cam.module_version()?);
     println!("camera sensor id      : {:04x}", cam.sensor_id()?);
+
+    /*
+    cam.set_sensor_pgood_enable(false);
+    cam.set_color(color);
+    cam.set_black_lines(15)?;
+    cam.set_image_size(width, height)?;
+    cam.set_slave_mode(trigger_mode)?;
+    cam.set_trigger_mode(trigger_mode)?;
+    */
+    
+    // MMCM 設定
+    cam.set_dphy_speed(1250000000.0)?;
+
+    // カメラ基板初期化
+    cam.set_sensor_pgood_enable(false)?;
+    cam.set_sensor_power_enable(false)?;
+    cam.set_dphy_reset(true)?;
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    // モード設定
+    cam.set_camera_mode(CameraMode::HighSpeed)?;
+
+    // CSI2の場合
+//  cam_i2c.set_csi2_word_count((width * 10 / 8) as u16)?;
+
+    // センサー電源ON
+    cam.set_sensor_power_enable(true)?;
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    // センサー基板 DPHY-TX リセット解除
+    cam.set_dphy_reset(false)?;
+    if !cam.dphy_init_done()? {
+        return Err("CAM DPHY TX init_done = 0".into());
+    }
+        
+    // xsm_delay
+    let xsm_delay = cam.calc_xsm_delay(width);
+    cam.set_xsm_delay(xsm_delay)?;
+    cam.set_nzrot_xsm_delay_enable(true)?;
+    cam.set_zero_rot_enable(true)?;
+
+    // センサー起動
+    cam.set_color(false)?;
+    cam.set_sensor_enable(true)?;
+
+    // ROI 設定
+    cam.set_roi0(width as u16, height as u16, None, None)?;
+    cam.set_gain_db(0.0)?;
+    cam.set_mult_timer0(72)?;  // 68MHz
+    cam.set_fr_length0(0)?;
+    cam.set_exposure0(10000)?;
+    std::thread::sleep(std::time::Duration::from_micros(1000));
+
+    // スレーブモード、トリガーモード設定
+    cam.set_slave_mode(false)?;
+    cam.set_triggered_mode(false)?;
+
+    // 動作開始
+    cam.set_sequencer_enable(true)?;
+
+    // ウィンドウ作成
+    highgui::named_window("img", highgui::WINDOW_AUTOSIZE)?;
+    highgui::resize_window("img", width as i32 + 128, height as i32 + 256)?;
+    highgui::wait_key(0)?;
+
     return Ok(());
 
 
