@@ -109,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("reg_fmtr     : {:08x}", unsafe { reg_fmtr.read_reg(0) });
     println!("reg_wdma_img : {:08x}", unsafe { reg_wdma_img.read_reg(0) });
 
-    let i2c = LinuxI2c::new("/dev/i2c-10", 0x10)?;
+    let i2c = LinuxI2c::new("/dev/i2c-11", 0x10)?;
     let mut cam = RtclP3s7ModuleDriver::new(i2c);
     println!("camera module id      : {:04x}", cam.module_id()?);
     println!("camera module version : {:04x}", cam.module_version()?);

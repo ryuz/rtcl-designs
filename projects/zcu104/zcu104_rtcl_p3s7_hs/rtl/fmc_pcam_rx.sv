@@ -16,19 +16,19 @@ module fmc_pcam_rx
             parameter               DEBUG       = "true"                    
         )
         (
-            input   var logic                   reset       ,
-            input   var logic                   clk         ,
+            input   var logic                       reset       ,
+            input   var logic                       clk         ,
 
-            input   var logic                   clk_lp_p    ,
-            input   var logic                   clk_lp_n    ,
-            input   var logic                   clk_hs_p    ,
-            input   var logic                   clk_hs_n    ,
-            input   var logic   [LANES-1:0]     data_lp_p   ,
-            input   var logic   [LANES-1:0]     data_lp_n   ,
-            input   var logic   [LANES-1:0]     data_hs_p   ,
-            input   var logic   [LANES-1:0]     data_hs_n   ,
-            output  var logic                   clk_div_out ,
-            output  var logic   [LANES-1:0][7:0] data_out
+            input   var logic                       clk_lp_p    ,
+            input   var logic                       clk_lp_n    ,
+            input   var logic                       clk_hs_p    ,
+            input   var logic                       clk_hs_n    ,
+            input   var logic   [LANES-1:0]         data_lp_p   ,
+            input   var logic   [LANES-1:0]         data_lp_n   ,
+            input   var logic   [LANES-1:0]         data_hs_p   ,
+            input   var logic   [LANES-1:0]         data_hs_n   ,
+            output  var logic                       clk_div_out ,
+            output  var logic   [LANES-1:0][7:0]    data_out    
         );
 
     // -------------------------------------------------------------------------
@@ -144,15 +144,80 @@ module fmc_pcam_rx
     // Debug
     // -------------------------------------------------------------------------
 
-    (* mark_debug="true" *) logic                   dbg_clk_lp_p    ;
-    (* mark_debug="true" *) logic                   dbg_clk_lp_n    ;
-    (* mark_debug="true" *) logic   [LANES-1:0]     dbg_data_lp_p   ;
-    (* mark_debug="true" *) logic   [LANES-1:0]     dbg_data_lp_n   ;
+    logic                       tmp_clk_lp_p    ;
+    logic                       tmp_clk_lp_n    ;
+    logic   [LANES-1:0]         tmp_data_lp_p   ;
+    logic   [LANES-1:0]         tmp_data_lp_n   ;
+    logic   [LANES-1:0][7:0]    tmp_data_out    ;
+    logic                       tmp_valid       ;
+    
+    jelly3_stream_fifo
+            #(
+                .ASYNC          (1          ),
+                .PTR_BITS       (5          ),
+                .DATA_BITS      (2+4+8*2    ),
+                .RAM_TYPE       ("block"    ),
+                .DOUT_REG       (1'b0       ),
+                .DEVICE         ("RTL"      ),
+                .SIMULATION     ("false"    ),
+                .DEBUG          ("false"    )
+            )
+        u_stream_fifo
+            (
+                .s_reset        (reset      ),
+                .s_clk          (clk_div    ),
+                .s_cke          (1          ),
+                .s_data         ({
+                                    clk_lp_p    ,
+                                    clk_lp_n    ,
+                                    data_lp_p   ,
+                                    data_lp_n   ,
+                                    data_out    
+                                }),
+                .s_valid        (1'b1       ),
+                .s_ready        (           ),
+                .s_free_size    (           ),
+
+                .m_reset        (reset      ),
+                .m_clk          (clk        ),
+                .m_cke          (1          ),
+                .m_data         ({
+                                    tmp_clk_lp_p    ,
+                                    tmp_clk_lp_n    ,
+                                    tmp_data_lp_p   ,
+                                    tmp_data_lp_n   ,
+                                    tmp_data_out    
+                                }),
+                .m_valid        (tmp_valid  ),
+                .m_ready        (1'b1       ),
+                .m_data_size    (           )
+            );
+
+
+    (* mark_debug="true" *) logic                       dbg_clk_lp_p    ;
+    (* mark_debug="true" *) logic                       dbg_clk_lp_n    ;
+    (* mark_debug="true" *) logic   [LANES-1:0]         dbg_data_lp_p   ;
+    (* mark_debug="true" *) logic   [LANES-1:0]         dbg_data_lp_n   ;
+
+    (* mark_debug="true" *) logic                       mon_clk_lp_p    ;
+    (* mark_debug="true" *) logic                       mon_clk_lp_n    ;
+    (* mark_debug="true" *) logic   [LANES-1:0]         mon_data_lp_p   ;
+    (* mark_debug="true" *) logic   [LANES-1:0]         mon_data_lp_n   ;
+    (* mark_debug="true" *) logic   [LANES-1:0][7:0]    mon_data_out    ;
+    (* mark_debug="true" *) logic                       mon_valid       ;
+
     always_ff @( posedge clk ) begin
-        dbg_clk_lp_p  <= clk_lp_p   ;
-        dbg_clk_lp_n  <= clk_lp_n   ;
-        dbg_data_lp_p <= data_lp_p  ;
-        dbg_data_lp_n <= data_lp_n  ;
+        dbg_clk_lp_p  <= clk_lp_p       ;
+        dbg_clk_lp_n  <= clk_lp_n       ;
+        dbg_data_lp_p <= data_lp_p      ;
+        dbg_data_lp_n <= data_lp_n      ;
+
+        mon_clk_lp_p  <= tmp_clk_lp_p   ;
+        mon_clk_lp_n  <= tmp_clk_lp_n   ;
+        mon_data_lp_p <= tmp_data_lp_p  ;
+        mon_data_lp_n <= tmp_data_lp_n  ;
+        mon_data_out  <= tmp_data_out   ;
+        mon_valid     <= tmp_valid      ;
     end
 
 endmodule
