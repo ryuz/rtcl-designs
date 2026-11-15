@@ -3,13 +3,21 @@
 ################################
 
 
-# cam_clk_p
+# cam_clk_p 1250MHz
 create_clock -period 1.600 -name {cam_clk_hs_p[0]} -waveform {0.000 0.800} [get_ports {cam_clk_hs_p[0]}]
+
+create_clock -period 3.333 -name in_clk300_p -waveform {0.000 1.666} [get_ports in_clk300_p]
 
 
 ################################
 # Pin assignments
 ################################
+
+# 300MHz 基板で終端
+set_property PACKAGE_PIN AH18 [get_ports in_clk300_p]
+set_property PACKAGE_PIN AH17 [get_ports in_clk300_n]
+set_property IOSTANDARD DIFF_HSTL_I_12 [get_ports in_clk300_p]
+
 
 # MIPI(CH-A)
 # set_property PACKAGE_PIN E18 [get_ports {cam_clk_lp_p[0]}]
@@ -55,10 +63,12 @@ set_property IOSTANDARD LVCMOS18 [get_ports {cam_data_lp_p[0][0]}]
 set_property IOSTANDARD LVDS [get_ports {cam_clk_hs_p[0]}]
 set_property IOSTANDARD LVDS [get_ports {cam_data_hs_p[0][1]}]
 set_property IOSTANDARD LVDS [get_ports {cam_data_hs_p[0][0]}]
+set_property DIFF_TERM_ADV TERM_100 [get_ports {cam_clk_hs_p[0]}]
+set_property DIFF_TERM_ADV TERM_100 [get_ports {cam_data_hs_p[0][1]}]
+set_property DIFF_TERM_ADV TERM_100 [get_ports {cam_data_hs_p[0][0]}]
 
 set_property IOSTANDARD LVCMOS18 [get_ports {cam_gpio[0]}]
 set_property IOSTANDARD LVCMOS18 [get_ports cam_pwup]
-
 
 # LED
 set_property PACKAGE_PIN D5 [get_ports {led[0]}]
@@ -89,3 +99,4 @@ set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[0]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[1]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[2]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {dip_sw[3]}]
+

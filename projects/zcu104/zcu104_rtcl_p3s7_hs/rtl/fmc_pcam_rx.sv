@@ -37,7 +37,7 @@ module fmc_pcam_rx
 
     logic                   rx_clk;
     logic                   clk_in_buf;
-    logic   [LANES-1:0]     rx_data;
+//  logic   [LANES-1:0]     rx_data;
     IBUFDS
         u_ibufds_clk
             (
@@ -79,38 +79,40 @@ module fmc_pcam_rx
     // -------------------------------------------------------------------------
 
     for ( genvar i = 0; i < LANES; i++ ) begin : ibufds_data_gen
+        logic       data_in_buf;
+
         IBUFDS
             u_ibufds_data
                 (
                     .I  (data_hs_p[i]   ),
                     .IB (data_hs_n[i]   ),
-                    .O  (rx_data[i]     )
+                    .O  (data_in_buf    )
                 );
 
         logic   data_delayed;
-        
-        /*
         IDELAYE3
                 #(
-                    .DELAY_SRC          ("IDATAIN"      ),
-                    .DELAY_TYPE         ("FIXED"        ),
-                    .DELAY_VALUE        (IDELAY_TAPS    ),
-                    .REFCLK_FREQUENCY   (300.0          )
+                    .DELAY_FORMAT       ("COUNT"            ),
+                    .DELAY_SRC          ("IDATAIN"          ),
+                    .DELAY_TYPE         ("FIXED"            ),
+                    .DELAY_VALUE        (511                ),
+                    .SIM_DEVICE         ("ULTRASCALE_PLUS"  ),
+                    .REFCLK_FREQUENCY   (300.0              )
                 )
             u_idelaye3
                 (
                     .IDATAIN            (data_in_buf    ),
                     .DATAOUT            (data_delayed   ),
                     .CLK                (clk_div        ),
-                    .CE                 (1'b0),
-                    .INC                (1'b0),
-                    .LOAD               (1'b0),
-                    .CNTVALUEIN         (9'd0),
-                    .CNTVALUEOUT        (),
-                    .EN_VTC             (1'b0)  // クロック停止対応のためCOUNTモード（VTC無効）
+                    .CE                 (1'b0           ),
+                    .INC                (1'b0           ),
+                    .LOAD               (1'b0           ),
+                    .CNTVALUEIN         (9'd0           ),
+                    .CNTVALUEOUT        (               ),
+                    .EN_VTC             (1'b0           )  // クロック停止対応のためCOUNTモード（VTC無効）
                 );
-        */
-        assign data_delayed = rx_data[i];
+        
+//      assign data_delayed = data_in_buf;
 
 
         // -------------------------------------------------------------------------
@@ -119,12 +121,12 @@ module fmc_pcam_rx
 
         ISERDESE3
                 #(
-                    .DATA_WIDTH         (8      ),  // 1:8 デシリアライズ
-                    .IS_CLK_INVERTED    (1'b0   ),  // CLK 反転なし
-                    .IS_CLK_B_INVERTED  (1'b1   ),  // CLK_B は CLK の反転として使用
-                    .IS_RST_INVERTED    (1'b0   ),  // アクティブHIGHリセット
-                    .SIM_DEVICE         ("ULTRASCALE_PLUS"),
-                    .FIFO_ENABLE        ("FALSE")   // 内部FIFO不使用（低レイテンシ）
+                    .DATA_WIDTH         (8                  ),  // 1:8 デシリアライズ
+                    .IS_CLK_INVERTED    (1'b0               ),  // CLK 反転なし
+                    .IS_CLK_B_INVERTED  (1'b1               ),  // CLK_B は CLK の反転として使用
+                    .IS_RST_INVERTED    (1'b0               ),  // アクティブHIGHリセット
+                    .SIM_DEVICE         ("ULTRASCALE_PLUS"  ),
+                    .FIFO_ENABLE        ("FALSE"            )   // 内部FIFO不使用（低レイテンシ）
                 )
             u_iserdese3
                 (

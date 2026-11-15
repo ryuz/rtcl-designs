@@ -134,7 +134,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::thread::sleep(std::time::Duration::from_millis(10));
 
     // モード設定
-    cam.set_camera_mode(CameraMode::HighSpeed)?;
+//  cam.set_camera_mode(CameraMode::HighSpeed)?;
+    cam.set_camera_mode(CameraMode::Csi2)?;
 
     // CSI2の場合
 //  cam_i2c.set_csi2_word_count((width * 10 / 8) as u16)?;

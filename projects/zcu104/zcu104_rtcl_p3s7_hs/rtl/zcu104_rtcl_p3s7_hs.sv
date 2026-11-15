@@ -21,6 +21,9 @@ module zcu104_rtcl_p3s7_hs
             parameter               DEBUG       = "true"                    
         )
         (
+            input   var logic               in_clk300_p     ,
+            input   var logic               in_clk300_n     ,
+
             input   var logic   [0:0]       cam_clk_lp_p    ,
             input   var logic   [0:0]       cam_clk_lp_n    ,
             input   var logic   [0:0]       cam_clk_hs_p    ,
@@ -39,6 +42,16 @@ module zcu104_rtcl_p3s7_hs
 //          output  var logic   [7:0]       pmod        
         );
     
+
+    logic               clk300;
+    IBUFDS
+        u_ibufds_clk300
+            (
+                .I  (in_clk300_p    ),
+                .IB (in_clk300_n    ),
+                .O  (clk300         )
+            );
+
 
     // ----------------------------------------
     //  Zynq UltraScale+ MPSoC block
@@ -218,6 +231,18 @@ module zcu104_rtcl_p3s7_hs
                 .s_axi4_mem1_rready     (axi4_mem1.rready   )
             );
     
+    
+    IDELAYCTRL
+            #(
+                .SIM_DEVICE     ("ULTRASCALE"   )
+            )
+        u_idelayctrl
+            (
+                .RDY            (               ),
+                .REFCLK         (clk300         ),
+                .RST            (sys_reset      )
+            );
+
 
     // ----------------------------------------
     //  Address decoder
@@ -881,10 +906,26 @@ module zcu104_rtcl_p3s7_hs
         end
     end
 
-    assign led[0] = reg_clk200_time[23];
-    assign led[1] = reg_clk200_time[24];
-    assign led[2] = reg_clk250_time[23];
-    assign led[3] = reg_clk250_time[24];
+    logic   [31:0]      reg_clk300_time;
+    logic               reg_clk300_led;
+    always_ff @(posedge clk300) begin
+        if ( sys_reset ) begin
+            reg_clk300_time <= 0;
+            reg_clk300_led  <= 0;
+        end
+        else begin
+            reg_clk300_time <= reg_clk300_time + 1;
+            if ( reg_clk300_time == 300000000-1 ) begin
+                reg_clk300_time <= 0;
+                reg_clk300_led  <= ~reg_clk300_led;
+            end
+        end
+    end
+
+    assign led[0] = reg_clk200_led;
+    assign led[1] = reg_clk250_led;
+    assign led[2] = reg_clk300_led;
+    assign led[3] = 0;
 
     
     // frame monitor
