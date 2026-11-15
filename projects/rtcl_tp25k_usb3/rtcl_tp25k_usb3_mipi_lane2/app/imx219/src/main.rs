@@ -58,7 +58,7 @@ const REGADR_SYSCTL_CONTROL5 : usize = 0x15;
 type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("FT601 test");
+    println!("FT601 Tang Primer25k + IMX219");
 
     let args = Args::parse();
     let pixel_clock: f64 = args.pixel_clock;
