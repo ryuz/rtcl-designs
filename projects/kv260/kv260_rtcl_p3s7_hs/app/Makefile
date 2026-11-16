@@ -110,7 +110,7 @@ load_jelly: unload_jelly
 
 .PHONY: unload_jelly
 unload_jelly:
-	-jelly-fpga-loader unload --ip $(ZYBO_Z7_SERVER_ADDRESS)
+	-jelly-fpga-loader unload --ip $(KV260_SERVER_ADDRESS)
 
 
 ### Device Tree Overlay Management

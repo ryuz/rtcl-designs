@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::env;
+use clap::Parser;
 use rtcl_d3xx::*;
 use std::time::Duration;
 use opencv::prelude::*;
@@ -13,51 +13,56 @@ const REGADR_SYSCTL_CONTROL3 : usize = 0x13;
 
 type UsbAccessor = SharedBusAccessor<RtclD3xxAxi4lBus, u32, u32, u8, LittleEndian>;
 
-struct CameraConfig {
+#[derive(Parser, Debug)]
+#[command(about = "RTCL-P3S7-MIPI camera capture via FT601")]
+struct Args {
+    /// 画像幅 [pixel] (16〜672、16の倍数)
+    #[arg(long, default_value_t = 672)]
     width: u16,
+
+    /// 画像高さ [pixel] (2〜512、2の倍数)
+    #[arg(long, default_value_t = 512)]
     height: u16,
-    fr_length0: u16,
-    exposure0: u16,
+
+    /// フレームレート [fps]
+    #[arg(long, default_value_t = 1_000_000.0 / (16000.0 + 45.4133), conflicts_with = "fr_length0")]
+    fps: f64,
+
+    /// 露光時間 [ms]
+    #[arg(long, default_value_t = 15.0, conflicts_with = "exposure0")]
+    exposure: f64,
+
+    /// アナログ・デジタル合計ゲイン [dB]
+    #[arg(long, default_value_t = 10.0, allow_hyphen_values = true)]
+    gain: f32,
+
+    /// フレーム長レジスタ [us] (省略時は16000)
+    #[arg(long)]
+    fr_length0: Option<u16>,
+
+    /// 露光時間レジスタ [us] (省略時は15000)
+    #[arg(long)]
+    exposure0: Option<u16>,
+
+    /// カラーセンサーの Bayer 画像を現像して表示
+    #[arg(long)]
+    color: bool,
 }
 
-fn parse_args() -> Result<CameraConfig, Box<dyn Error>> {
-    let mut config = CameraConfig {
-        width: 640 + 16 * 2,
-        height: 480 + 16 * 2,
-        fr_length0: 16000,
-        exposure0: 15000,
-    };
-    let mut args = env::args().skip(1);
-
-    while let Some(arg) = args.next() {
-        if arg == "-h" || arg == "--help" {
-            println!("Usage: p3s7 [--width N] [--height N] [--fr-length0 N] [--exposure0 N]");
-            std::process::exit(0);
-        }
-
-        let (name, value) = if let Some((name, value)) = arg.split_once('=') {
-            (name, value.to_owned())
-        } else {
-            let name = arg.as_str();
-            let value = args.next().ok_or_else(|| format!("missing value for {name}"))?;
-            (name, value)
-        };
-
-        match name {
-            "--width" => config.width = value.parse()?,
-            "--height" => config.height = value.parse()?,
-            "--fr-length0" => config.fr_length0 = value.parse()?,
-            "--exposure0" => config.exposure0 = value.parse()?,
-            _ => return Err(format!("unknown option: {name}").into()),
-        }
+impl Args {
+    fn timing(&self) -> (u16, u16) {
+        // The shared P3S7 driver uses a 72 MHz clock and a measured 45.4133 us FOT.
+        let frame_length = self.fr_length0
+            .unwrap_or(((1_000_000.0 / self.fps - 45.4133).round()) as u16);
+        let exposure = self.exposure0.unwrap_or((self.exposure * 1000.0).round() as u16);
+        (frame_length, exposure)
     }
-
-    Ok(config)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = parse_args()?;
-    println!("FT601 test");
+    let args = Args::parse();
+    let (fr_length0, exposure0) = args.timing();
+    println!("FT601 Tang Primer25k + RTCL-P3S7-MIPI");
 
     // OpenDevice
 //  let mut usb = RtclFifo32CtlD3xx::new(0)?;
@@ -132,10 +137,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let module_ver = cam.module_version()?;
     println!("module_ver : 0x{:04x}", module_ver);
     
-    let width = config.width;
-    let height = config.height;
-    let fr_length0 = config.fr_length0;
-    let exposure0 = config.exposure0;
+    let width = args.width;
+    let height = args.height;
 
     println!("camera set");
     cam.set_dphy_speed(1250000000.0)?;
@@ -147,7 +150,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //  cam.set_camera_mode(CameraMode::HighSpeed)?;   // 高速モード設定
     cam.set_camera_mode(CameraMode::Csi2)?;   // CSI2 like なモード
-    cam.set_csi2_word_count((width * 10 / 8) as u16)?;
+    cam.set_csi2_word_count(width * 10 / 8)?;
 
     cam.set_pmod_mode(0xff00)?;
 
@@ -166,12 +169,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     cam.set_zero_rot_enable(true)?;
 
     // センサー起動
-    cam.set_color(false)?;
+    cam.set_color(args.color)?;
     cam.set_sensor_enable(true)?;
 
     // ROI 設定
     cam.set_roi0(width as u16, height as u16, None, None)?;
-    cam.set_gain_db(10.0)?;
+    cam.set_gain_db(args.gain)?;
 
     cam.set_mult_timer0(72)?;
 //  cam.set_fr_length0(33000)?;
@@ -241,11 +244,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             &flat_image,
         )?;
         
-        // BYAER を BGR に変換
-//      let mut mat_bgr = opencv::core::Mat::default();
-//      opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
-
-        opencv::highgui::imshow("image", &mat)?;
+        if args.color {
+            let mut mat_bgr = opencv::core::Mat::default();
+            opencv::imgproc::cvt_color(&mat, &mut mat_bgr, opencv::imgproc::COLOR_BayerBG2BGR, 0)?;
+            opencv::highgui::imshow("image", &mat_bgr)?;
+        } else {
+            opencv::highgui::imshow("image", &mat)?;
+        }
         let key = opencv::highgui::wait_key(10)?;
         if (key & 0xff) == 27 { // ESC
             break;
@@ -357,5 +362,68 @@ impl Bus<u32, u32, u8> for RtclD3xxAxi4lBus {
     fn read(&mut self, addr: u32) -> Result<u32, Box<dyn Error>> {
         let v = self.read_axi4l(addr)?;
         Ok(v)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config(args: &[&str]) -> Result<(Args, u16, u16), Box<dyn Error>> {
+        let args = Args::try_parse_from(std::iter::once("p3s7").chain(args.iter().copied()))?;
+        let (frame_length, exposure) = args.timing();
+        Ok((args, frame_length, exposure))
+    }
+
+    #[test]
+    fn defaults_to_monochrome_and_existing_timing() {
+        let (args, frame_length, exposure) = config(&[]).unwrap();
+        assert!(!args.color);
+        assert_eq!((args.width, args.height), (672, 512));
+        assert_eq!((frame_length, exposure), (16000, 15000));
+        assert_eq!(args.gain, 10.0);
+    }
+
+    #[test]
+    fn parses_color_size_and_frame_rate() {
+        let (args, frame_length, exposure) = config(&[
+            "--color", "--width", "640", "--height=480", "--fps", "30",
+            "--exposure", "12.5", "--gain", "6",
+        ]).unwrap();
+        assert!(args.color);
+        assert_eq!((args.width, args.height), (640, 480));
+        assert_eq!(frame_length, 33288);
+        assert_eq!(exposure, 12500);
+        assert_eq!(args.gain, 6.0);
+    }
+
+    #[test]
+    fn preserves_raw_timing_options() {
+        let (_, frame_length, exposure) = config(&["--fr-length0", "33000", "--exposure0", "30000"]).unwrap();
+        assert_eq!((frame_length, exposure), (33000, 30000));
+    }
+
+    #[test]
+    fn preserves_exposure_for_faster_frame_rates() {
+        let (_, frame_length, exposure) = config(&["--fps=100"]).unwrap();
+        assert_eq!(frame_length, 9955);
+        assert_eq!(exposure, 15000);
+    }
+
+    #[test]
+    fn accepts_negative_gain_and_maximum_exposure() {
+        let (args, _, exposure) = config(&["--gain", "-6", "--exposure", "65.535"]).unwrap();
+        assert_eq!(args.gain, -6.0);
+        assert_eq!(exposure, u16::MAX);
+    }
+
+    #[test]
+    fn rejects_conflicting_timing_options() {
+        for args in [
+            &["--fps", "30", "--fr-length0", "16000"][..],
+            &["--exposure", "15", "--exposure0", "15000"],
+        ] {
+            assert!(config(args).is_err(), "accepted {args:?}");
+        }
     }
 }

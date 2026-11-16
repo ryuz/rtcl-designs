@@ -318,7 +318,9 @@ dependencies = [
 
 [[package]]
 name = "jelly-lib"
-version = "0.2.0"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92666700f02c4b28dc9818b31e4f13d36f4b045a76356a41d01f5eeca9b919a1"
 dependencies = [
  "jelly-mem_access",
  "libc",
@@ -328,22 +330,24 @@ dependencies = [
 
 [[package]]
 name = "jelly-mem_access"
-version = "0.2.5"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3e5a54c5ef3f2cd906250807781294bd4d432697f8a531fa302c7a63d15b5bf"
+checksum = "2347e2e9386d1f03841b475505a5e0ec5aec7b6fbacc9d953e1c1ea8f555671e"
 dependencies = [
  "delegate",
  "libc",
- "nix 0.29.0",
+ "nix 0.30.1",
  "thiserror",
 ]
 
 [[package]]
 name = "jelly-pac"
-version = "0.1.1"
-source = "git+https://github.com/ryuz/jelly-pac-rs.git?rev=6a62e64#6a62e6442a810ada592bf4057f469b828fac3016"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c9417c5772e27f7d88de30f3e06990a4a60fda85bbe0636f3b5349e4bad6538"
 dependencies = [
  "delegate",
+ "jelly-lib",
  "jelly-mem_access",
 ]
 

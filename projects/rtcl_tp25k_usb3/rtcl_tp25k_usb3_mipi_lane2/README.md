@@ -64,6 +64,14 @@ cargo run
 書きこんだ後、PC側で下記のコマンドを実行すると、USB3.0経由で画像が転送され表示されます。
 
 ```bash
-cd projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_mipi_lane2/pc/app/p3s7
+cd projects/rtcl_tp25k_usb3/rtcl_tp25k_usb3_mipi_lane2/app/p3s7
 cargo run
 ```
+
+カラーセンサーでは `--color` を指定すると、OpenCV で Bayer 画像を現像して表示します。省略時はモノクロ表示です。例えば、サイズとフレームレートは次のように指定できます。
+
+```bash
+cargo run -- --color --width 640 --height 480 --fps 30
+```
+
+幅は 16〜672 の16の倍数、高さは 2〜512 の2の倍数を指定してください。`--fps` はセンサーのフレーム周期から算出する概算値で、実際のフレームレートは撮像条件に依存します。露光時間は `--exposure` でミリ秒単位、アナログ・デジタル合計ゲインは `--gain` で dB 単位で指定できます。露光時間は自動調整されないため、フレームレートに合わせて指定してください。従来の `--fr-length0` と `--fps`、およびマイクロ秒単位の `--exposure0` と `--exposure` はそれぞれ同時に指定できません。その他の設定は `cargo run -- --help` を参照してください。`r` キーで保存する画像は、カラー表示時も現像前の Bayer 画像です。
